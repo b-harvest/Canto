@@ -1,0 +1,22 @@
+syntax = "proto3";
+package canto.liquidstaking.v1;
+
+import "google/api/annotations.proto";
+import "gogoproto/gogo.proto";
+import "canto/liquidstaking/v1/params.proto";
+option go_package = "github.com/Canto-Network/Canto-Testnet-v2/v1/x/liquidstaking/types";
+
+// TBD
+service Query {
+  // TBD
+  rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
+    option (google.api.http).get = "/canto/liquidstaking/params";
+  }
+}
+
+message QueryParamsRequest {}
+
+message QueryParamsResponse {
+  // TBD
+  Params params = 1 [ (gogoproto.nullable) = false ];
+}

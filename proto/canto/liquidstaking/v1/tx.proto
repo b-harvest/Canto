@@ -1,0 +1,10 @@
+syntax = "proto3";
+package canto.liquidstaking.v1;
+
+// import "gogoproto/gogo.proto";
+option go_package = "github.com/Canto-Network/Canto-Testnet-v2/v1/x/liquidstaking/types";
+
+// TBD
+service Msg {
+  // TBD
+}
