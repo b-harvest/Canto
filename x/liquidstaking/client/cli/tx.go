@@ -1,7 +1,7 @@
 package cli
 
 import (
-	"github.com/Canto-Network/Canto/v2/x/fees/types"
+	"github.com/Canto-Network/Canto-Testnet-v2/v1/x/liquidstaking/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/spf13/cobra"
 )

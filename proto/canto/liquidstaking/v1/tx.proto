@@ -1,10 +1,100 @@
 syntax = "proto3";
 package canto.liquidstaking.v1;
 
-// import "gogoproto/gogo.proto";
+import "cosmos/base/v1beta1/coin.proto";
+import "gogoproto/gogo.proto";
+
 option go_package = "github.com/Canto-Network/Canto-Testnet-v2/v1/x/liquidstaking/types";
+option (gogoproto.goproto_getters_all) = false;
+option (gogoproto.equal_all) = false;
 
 // TBD
 service Msg {
   // TBD
+  rpc LiquidStaking(MsgLiquidStaking) returns (MsgLiquidStakingResponse);
+  // TBD
+  rpc CancelLiquidStaking(MsgCancelLiquidStaking)
+      returns (MsgCancelLiquidStakingResponse);
+  // TBD
+  rpc LiquidUnstaking(MsgLiquidUnstaking) returns (MsgLiquidUnstakingResponse);
+  // TBD
+  rpc CancelLiquidUnstaking(MsgCancelLiquidUnstaking)
+      returns (MsgCancelLiquidUnstakingResponse);
+  // TBD
+  rpc BidInsurance(MsgBidInsurance) returns (MsgBidInsuranceResponse);
+  // TBD
+  rpc CancelInsuranceBid(MsgCancelInsuranceBid)
+      returns (MsgCancelInsuranceBidResponse);
+  // TBD
+  rpc UnbondInsurance(MsgUnbondInsurance) returns (MsgUnbondInsuranceResponse);
+  // TBD
+  rpc CancelInsuranceUnbond(MsgCancelInsuranceUnbond)
+      returns (MsgCancelInsuranceUnbondResponse);
 }
+
+message MsgLiquidStaking {
+  string requester_address = 1;
+  string token_amount = 2 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+}
+
+message MsgLiquidStakingResponse { uint64 chunk_id = 1; }
+
+message MsgCancelLiquidStaking {
+  string requester_address = 1;
+  uint64 chunk_bond_request_id = 2;
+}
+
+message MsgCancelLiquidStakingResponse {}
+
+message MsgLiquidUnstaking {
+  string requester_address = 1;
+  uint64 num_chunk_unstake = 2;
+}
+
+message MsgLiquidUnstakingResponse {}
+
+message MsgCancelLiquidUnstaking {
+  string requester_address = 1;
+  uint64 chunk_unbond_request_id = 2;
+}
+
+message MsgCancelLiquidUnstakingResponse {}
+
+message MsgBidInsurance {
+  string requester_address = 1;
+  string validator_address = 2;
+  cosmos.base.v1beta1.Coin amount = 3 [ (gogoproto.nullable) = false ];
+  string insurance_fee_rate = 4 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable) = false
+  ];
+}
+
+message MsgBidInsuranceResponse {
+  string requester_address = 1;
+  uint64 bid_id = 2;
+}
+
+message MsgCancelInsuranceBid {
+  string requester_address = 1;
+  uint64 bid_id = 2;
+}
+
+message MsgCancelInsuranceBidResponse {}
+
+message MsgUnbondInsurance {
+  string requester_address = 1;
+  uint64 alive_chunk_id = 2;
+}
+
+message MsgUnbondInsuranceResponse { uint64 unbond_request_id = 1; }
+
+message MsgCancelInsuranceUnbond {
+  string requester_address = 1;
+  uint64 unbond_request_id = 2;
+}
+
+message MsgCancelInsuranceUnbondResponse {}

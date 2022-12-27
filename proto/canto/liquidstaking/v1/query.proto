@@ -4,19 +4,94 @@ package canto.liquidstaking.v1;
 import "google/api/annotations.proto";
 import "gogoproto/gogo.proto";
 import "canto/liquidstaking/v1/params.proto";
+import "canto/liquidstaking/v1/liquidstaking.proto";
 option go_package = "github.com/Canto-Network/Canto-Testnet-v2/v1/x/liquidstaking/types";
 
 // TBD
 service Query {
   // TBD
   rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
-    option (google.api.http).get = "/canto/liquidstaking/params";
+    option (google.api.http).get = "/canto/liquidstaking/v1/params";
+  }
+
+  // TBD
+  rpc LiquidValidators(QueryLiquidValidatorsRequest)
+      returns (QueryLiquidValidatorsResponse) {
+    option (google.api.http).get = "/canto/liquidstaking/v1/liquid_validators";
+  }
+
+  // TRD
+  rpc LiquidStakingState(QueryLiquidStakingStateRequest)
+      returns (QueryLiquidStakingStateResponse) {
+    option (google.api.http).get =
+        "/canto/liquidstaking/v1/liquid_staking_state";
+  }
+
+  // TBD
+  rpc AliveChunks(QueryAliveChunksRequest) returns (QueryAliveChunksResponse) {
+    option (google.api.http).get = "/canto/liquidstaking/v1/alive_chunks";
+  }
+
+  // TBD
+  rpc UnbondingChunks(QueryUnbondingChunksRequest)
+      returns (QueryUnbondingChunksResponse) {
+    option (google.api.http).get = "/canto/liquidstaking/v1/unbonding_chunks";
+  }
+
+  // TBD
+  rpc ChunkBondRequests(QueryChunkBondRequests)
+      returns (QueryChunkBondRequestsResponse) {
+    option (google.api.http).get =
+        "/canto/liquidstaking/v1/chunk_bond_requests";
+  }
+
+  // TBD
+  rpc ChunkUnbondRequests(QueryChunkUnbondRequests)
+      returns (QueryChunkUnbondRequestsResponse) {
+    option (google.api.http).get =
+        "/canto/liquidstaking/v1/chunk_unbond_requests";
+  }
+
+  // TBD
+  rpc InsuranceBids(QueryInsuranceBidRequest)
+      returns (QueryInsuranceBidResponse) {
+    option (google.api.http).get = "/canto/liquidstaking/v1/insurance_bid";
   }
 }
 
 message QueryParamsRequest {}
 
 message QueryParamsResponse {
-  // TBD
   Params params = 1 [ (gogoproto.nullable) = false ];
 }
+
+message QueryLiquidValidatorsRequest {}
+
+message QueryLiquidValidatorsResponse {
+  repeated LiquidValidatorState liquid_validators = 1
+      [ (gogoproto.nullable) = false ];
+}
+
+message QueryLiquidStakingStateRequest {}
+
+message QueryLiquidStakingStateResponse {}
+
+message QueryAliveChunksRequest {}
+
+message QueryAliveChunksResponse {}
+
+message QueryUnbondingChunksRequest {}
+
+message QueryUnbondingChunksResponse {}
+
+message QueryChunkBondRequests {}
+
+message QueryChunkBondRequestsResponse {}
+
+message QueryChunkUnbondRequests {}
+
+message QueryChunkUnbondRequestsResponse {}
+
+message QueryInsuranceBidRequest {}
+
+message QueryInsuranceBidResponse {}

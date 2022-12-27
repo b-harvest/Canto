@@ -1,10 +1,28 @@
 syntax = "proto3";
 package canto.liquidstaking.v1;
 
-// import "gogoproto/gogo.proto";
+import "gogoproto/gogo.proto";
 option go_package = "github.com/Canto-Network/Canto-Testnet-v2/v1/x/liquidstaking/types";
 
 // TBD
 message Params {
-  // option (gogoproto.goproto_stringer) = false;
+  string liquid_bond_denom = 1;
+  // minimum insurance percentage for liquid staking
+  // should be larger than maximum slashable percentage within an epoch
+  string min_insurance_percentage = 2 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable) = false
+  ];
+
+  // size of one liquid staking chunk in CANTO
+  string chunk_size = 3 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+
+  // maximum number of chunks to be alive
+  string max_alive_chunk = 4 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
 }
