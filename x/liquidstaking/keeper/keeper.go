@@ -14,9 +14,22 @@ type Keeper struct {
 	storeKey   sdk.StoreKey
 	cdc        codec.BinaryCodec
 	paramstore paramtypes.Subspace
+	ak         types.AccountKeeper
+	bk         types.BankKeeper
+	stk        types.StakingKeeper
+	dk         types.DistrKeeper
+	slk        types.SlashingKeeper
 }
 
-func NewKeeper(storeKey sdk.StoreKey, cdc codec.BinaryCodec, ps paramtypes.Subspace) Keeper {
+func NewKeeper(storeKey sdk.StoreKey,
+	cdc codec.BinaryCodec,
+	ps paramtypes.Subspace,
+	ak types.AccountKeeper,
+	bk types.BankKeeper,
+	stk types.StakingKeeper,
+	dk types.DistrKeeper,
+	slk types.SlashingKeeper,
+) Keeper {
 	if !ps.HasKeyTable() {
 		ps = ps.WithKeyTable(types.ParamKeyTable())
 	}
@@ -24,6 +37,11 @@ func NewKeeper(storeKey sdk.StoreKey, cdc codec.BinaryCodec, ps paramtypes.Subsp
 		storeKey:   storeKey,
 		cdc:        cdc,
 		paramstore: ps,
+		ak:         ak,
+		bk:         bk,
+		stk:        stk,
+		dk:         dk,
+		slk:        slk,
 	}
 }
 
