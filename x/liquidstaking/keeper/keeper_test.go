@@ -1,16 +1,20 @@
 package keeper_test
 
 import (
+	"math"
 	"testing"
 	"time"
 
 	"github.com/Canto-Network/Canto-Testnet-v2/v1/app"
 	"github.com/cosmos/cosmos-sdk/baseapp"
+	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/crypto/tmhash"
+	tmrand "github.com/tendermint/tendermint/libs/rand"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	tmversion "github.com/tendermint/tendermint/proto/tendermint/version"
 	"github.com/tendermint/tendermint/version"
@@ -111,4 +115,97 @@ func (suite *KeeperTestSuite) CommitAfter(t time.Duration) {
 	queryHelper := baseapp.NewQueryServerTestHelper(suite.ctx, suite.app.InterfaceRegistry())
 	evm.RegisterQueryServer(queryHelper, suite.app.EvmKeeper)
 	suite.queryClientEvm = evm.NewQueryClient(queryHelper)
+}
+
+func generateRandomId() uint64 {
+	return uint64(tmrand.Int63n(10000))
+}
+
+func generateRandomAccount() sdk.AccAddress {
+	pk := ed25519.GenPrivKey().PubKey()
+	return sdk.AccAddress(pk.Address())
+}
+
+func generateRandomTokenAmount() sdk.Int {
+	return sdk.NewInt(tmrand.Int63n(math.MaxInt64)).AddRaw(1)
+}
+
+func generateRandomValidatorAccount(suite *KeeperTestSuite) (ret sdk.ValAddress) {
+	pk := ed25519.GenPrivKey().PubKey()
+	ret = sdk.ValAddress(pk.Address())
+	val, err := stakingtypes.NewValidator(ret, pk, stakingtypes.Description{})
+	rate := sdk.NewDec(tmrand.Int63n(100)).QuoInt64(int64(100))
+	val.SetInitialCommission(stakingtypes.NewCommission(rate, sdk.OneDec(), sdk.OneDec()))
+	suite.Require().NoError(err)
+
+	suite.app.StakingKeeper.SetValidator(suite.ctx, val)
+	err = suite.app.StakingKeeper.SetValidatorByConsAddr(suite.ctx, val)
+	suite.Require().NoError(err)
+
+	suite.app.StakingKeeper.AfterValidatorCreated(suite.ctx, val.GetOperator())
+
+	return val.GetOperator()
+}
+
+func depositCoinsIntoModule(suite *KeeperTestSuite, coin sdk.Coin) {
+	err := suite.app.BankKeeper.MintCoins(suite.ctx, types.ModuleName, sdk.NewCoins(coin))
+	suite.Require().NoError(err)
+}
+
+func generateRandomAliveChunk(suite *KeeperTestSuite, id types.AliveChunkId) types.AliveChunk {
+	return types.NewAliveChunk(
+		id,
+		generateRandomChunkBondRequest(generateRandomId()),
+		generateRandomInsuranceBid(suite, generateRandomId()),
+	)
+}
+
+func generateRandomInsuranceBid(suite *KeeperTestSuite, id types.InsuranceBidId) types.InsuranceBid {
+	return types.InsuranceBid{
+		Id:                       id,
+		ValidatorAddress:         generateRandomValidatorAccount(suite).String(),
+		InsuranceProviderAddress: generateRandomAccount().String(),
+		InsuranceAmount:          generateRandomTokenAmount(),
+		InsuranceFeeRate:         sdk.NewDec(tmrand.Int63n(math.MaxInt64)),
+	}
+}
+
+func generateRandomUnbondingChunk(suite *KeeperTestSuite, id types.UnbondingChunkId) types.UnbondingChunk {
+	return types.UnbondingChunk{
+		Id:                       id,
+		ValidatorAddress:         generateRandomValidatorAccount(suite).String(),
+		InsuranceProviderAddress: generateRandomAccount().String(),
+		TokenAmount:              generateRandomTokenAmount(),
+		InsuranceAmount:          generateRandomTokenAmount(),
+	}
+}
+
+func generateRandomChunkBondRequest(id types.ChunkBondRequestId) types.ChunkBondRequest {
+	return types.ChunkBondRequest{
+		Id:          id,
+		Address:     generateRandomAccount().String(),
+		TokenAmount: generateRandomTokenAmount(),
+	}
+}
+
+func generateRandomChunkBondRequestWithTokenAmount(id types.ChunkBondRequestId, tokenAmount sdk.Int) types.ChunkBondRequest {
+	return types.ChunkBondRequest{
+		Id:          id,
+		Address:     generateRandomAccount().String(),
+		TokenAmount: tokenAmount,
+	}
+}
+
+func generateRandomChunkUnbondRequest(id types.ChunkUnbondRequestId) types.ChunkUnbondRequest {
+	return types.ChunkUnbondRequest{
+		Id:             id,
+		Address:        generateRandomAccount().String(),
+		NumChunkUnbond: uint64(tmrand.Int63n(math.MaxInt64)),
+	}
+}
+
+func generateRandomInsuranceUnbondRequest(id types.AliveChunkId) types.InsuranceUnbondRequest {
+	return types.InsuranceUnbondRequest{
+		AliveChunkId: id,
+	}
 }
