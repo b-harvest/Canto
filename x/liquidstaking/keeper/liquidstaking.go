@@ -71,3 +71,58 @@ func (k Keeper) LiquidUnstake(ctx sdk.Context, liquidUnstaker sdk.AccAddress, nu
 	k.SetLastChunkUnbondRequestId(ctx, id)
 	return id, nil
 }
+
+func (k Keeper) getMinimumInsuranceAmount(ctx *sdk.Context) sdk.Int {
+	params := k.GetParams(*ctx)
+	// TODO: calc correct minimum amount
+	return params.MinInsurancePercentage.Add(sdk.NewDec(100)).MulInt(params.ChunkSize).TruncateInt()
+}
+
+func (k Keeper) BidInsurance(
+	ctx sdk.Context,
+	insurer sdk.AccAddress,
+	val sdk.ValAddress,
+	amount sdk.Int,
+	insuranceFeeRate sdk.Dec,
+) (types.InsuranceBidId, error) {
+	minimumInsuranceAmount := k.getMinimumInsuranceAmount(&ctx)
+	if minimumInsuranceAmount.GT(amount) {
+		return 0, types.ErrInvalidTokenAmount
+	}
+
+	// TODO: check speculation. for now, just deposit coins from insurer into module
+	bondDenom := k.stk.BondDenom(ctx)
+	if err := k.bk.SendCoinsFromAccountToModule(ctx, insurer, types.ModuleName, sdk.NewCoins(sdk.NewCoin(bondDenom, amount))); err != nil {
+		return 0, err
+	}
+	id := k.GetLastInsuranceBidId(ctx) + 1
+	bid := types.InsuranceBid{
+		Id:                       id,
+		ValidatorAddress:         val.String(),
+		InsuranceProviderAddress: insurer.String(),
+		InsuranceAmount:          amount,
+		InsuranceFeeRate:         insuranceFeeRate,
+	}
+
+	k.SetLastInsuranceBidId(ctx, id)
+	k.SetInsuranceBid(ctx, bid)
+
+	return id, nil
+}
+
+func (k Keeper) UnbondInsurance(
+	ctx sdk.Context,
+	insurer sdk.AccAddress,
+	aliveChunkId types.AliveChunkId,
+) (types.AliveChunkId, error) {
+	if _, found := k.GetAliveChunk(ctx, aliveChunkId); !found {
+		return 0, types.ErrInvalidAliveChunkId
+	}
+	req := types.InsuranceUnbondRequest{
+		InsuranceProviderAddress: insurer.String(),
+		AliveChunkId:             aliveChunkId,
+	}
+	k.SetInsuranceUnbondRequest(ctx, req)
+
+	return aliveChunkId, nil
+}
