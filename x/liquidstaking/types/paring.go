@@ -54,3 +54,19 @@ var _ Rankable = &AliveChunk{}
 func (aliveChunk *AliveChunk) GetInsuranceFeeRate() sdk.Dec {
 	return aliveChunk.InsuranceFeeRate
 }
+
+type DelegationState struct {
+	SortedValidators LiquidValidators
+	DelegationMap    map[string]sdk.Int
+}
+
+func (state *DelegationState) ChangeDelegation(from, to string, amount sdk.Int) {
+	if len(from) > 0 {
+		state.DelegationMap[from] =
+			state.DelegationMap[from].Sub(amount)
+	}
+	if len(to) > 0 {
+		state.DelegationMap[to] =
+			state.DelegationMap[to].Add(amount)
+	}
+}
