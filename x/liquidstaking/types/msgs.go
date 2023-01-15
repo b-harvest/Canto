@@ -6,51 +6,59 @@ import (
 )
 
 const (
-	TypeMsgLiquidStake         = "liquid_stake"
-	TypeMsgLiquidUnstake       = "liquid_unstake"
-	TypeMsgRegisterInsurance   = "register_insurance"
-	TypeMsgUnregisterInsurance = "unregister_insurance"
+	TypeMsgLiquidStaking         = "liquid_staking"
+	TypeMsgCancelLiquidStaking   = "cancel_liquid_staking"
+	TypeMsgLiquidUnstaking       = "liquid_unstaking"
+	TypeMsgCancelLiquidUnstaking = "cancel_liquid_unstaking"
+	TypeMsgBidInsurance          = "bid_insurance"
+	TypeMsgCancelInsuranceBid    = "cancel_insurance_bid"
+	TypeMsgUnbondInsurance       = "unbond_insurance"
+	TypeMsgCancelInsuranceUnbond = "cancel_insurance_unbond"
 )
 
 var (
-	_ sdk.Msg = &MsgLiquidStake{}
-	_ sdk.Msg = &MsgLiquidUnstake{}
-	_ sdk.Msg = &MsgRegisterInsurance{}
-	_ sdk.Msg = &MsgUnregisterInsurance{}
+	_ sdk.Msg = &MsgLiquidStaking{}
+	_ sdk.Msg = &MsgCancelLiquidStaking{}
+	_ sdk.Msg = &MsgLiquidUnstaking{}
+	_ sdk.Msg = &MsgCancelLiquidUnstaking{}
+	_ sdk.Msg = &MsgBidInsurance{}
+	_ sdk.Msg = &MsgCancelInsuranceBid{}
+	_ sdk.Msg = &MsgUnbondInsurance{}
+	_ sdk.Msg = &MsgCancelInsuranceUnbond{}
 )
 
 // Route returns the name of the module
-func (msg MsgLiquidStake) Route() string { return RouterKey }
+func (msg MsgLiquidStaking) Route() string { return RouterKey }
 
 // Type returns the the action
-func (msg MsgLiquidStake) Type() string { return TypeMsgLiquidStake }
+func (msg MsgLiquidStaking) Type() string { return TypeMsgLiquidStaking }
 
 // ValidateBasic runs stateless checks on the message
-func (msg MsgLiquidStake) ValidateBasic() error {
-	if _, err := sdk.AccAddressFromBech32(msg.DelegatorAddress); err != nil {
-		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid delegator address %q: %v", msg.DelegatorAddress, err)
+func (msg MsgLiquidStaking) ValidateBasic() error {
+	if _, err := sdk.AccAddressFromBech32(msg.RequesterAddress); err != nil {
+		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid requester address %q: %v", msg.RequesterAddress, err)
 	}
-	if msg.NumChunks == 0 {
-		return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "the number of staking chunk must not be 0")
+	if !msg.TokenAmount.IsPositive() {
+		return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "token amount should be greater than 0")
 	}
 	return nil
 }
 
 // GetSignBytes encodes the message for signing
-func (msg *MsgLiquidStake) GetSignBytes() []byte {
+func (msg *MsgLiquidStaking) GetSignBytes() []byte {
 	return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(msg))
 }
 
-func (msg MsgLiquidStake) GetSigners() []sdk.AccAddress {
-	addr, err := sdk.AccAddressFromBech32(msg.DelegatorAddress)
+func (msg MsgLiquidStaking) GetSigners() []sdk.AccAddress {
+	addr, err := sdk.AccAddressFromBech32(msg.RequesterAddress)
 	if err != nil {
 		panic(err)
 	}
 	return []sdk.AccAddress{addr}
 }
 
-func (msg MsgLiquidStake) GetDelegator() sdk.AccAddress {
-	addr, err := sdk.AccAddressFromBech32(msg.DelegatorAddress)
+func (msg MsgLiquidStaking) GetRequester() sdk.AccAddress {
+	addr, err := sdk.AccAddressFromBech32(msg.RequesterAddress)
 	if err != nil {
 		panic(err)
 	}
@@ -58,37 +66,64 @@ func (msg MsgLiquidStake) GetDelegator() sdk.AccAddress {
 }
 
 // Route returns the name of the module
-func (msg MsgLiquidUnstake) Route() string { return RouterKey }
+func (msg MsgCancelLiquidStaking) Route() string { return RouterKey }
 
 // Type returns the the action
-func (msg MsgLiquidUnstake) Type() string { return TypeMsgLiquidUnstake }
+func (msg MsgCancelLiquidStaking) Type() string { return TypeMsgCancelLiquidStaking }
 
 // ValidateBasic runs stateless checks on the message
-func (msg MsgLiquidUnstake) ValidateBasic() error {
-	if _, err := sdk.AccAddressFromBech32(msg.DelegatorAddress); err != nil {
-		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid delegator address %q: %v", msg.DelegatorAddress, err)
+func (msg MsgCancelLiquidStaking) ValidateBasic() error {
+	if _, err := sdk.AccAddressFromBech32(msg.RequesterAddress); err != nil {
+		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid requester address %q: %v", msg.RequesterAddress, err)
 	}
-	if msg.NumChunks == 0 {
+	return nil
+}
+
+// GetSignBytes encodes the message for signing
+func (msg *MsgCancelLiquidStaking) GetSignBytes() []byte {
+	return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(msg))
+}
+
+func (msg MsgCancelLiquidStaking) GetSigners() []sdk.AccAddress {
+	addr, err := sdk.AccAddressFromBech32(msg.RequesterAddress)
+	if err != nil {
+		panic(err)
+	}
+	return []sdk.AccAddress{addr}
+}
+
+// Route returns the name of the module
+func (msg MsgLiquidUnstaking) Route() string { return RouterKey }
+
+// Type returns the the action
+func (msg MsgLiquidUnstaking) Type() string { return TypeMsgLiquidUnstaking }
+
+// ValidateBasic runs stateless checks on the message
+func (msg MsgLiquidUnstaking) ValidateBasic() error {
+	if _, err := sdk.AccAddressFromBech32(msg.RequesterAddress); err != nil {
+		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid requester address %q: %v", msg.RequesterAddress, err)
+	}
+	if msg.NumChunkUnstake == 0 {
 		return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "the number of unstaking chunk must not be 0")
 	}
 	return nil
 }
 
 // GetSignBytes encodes the message for signing
-func (msg *MsgLiquidUnstake) GetSignBytes() []byte {
+func (msg *MsgLiquidUnstaking) GetSignBytes() []byte {
 	return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(msg))
 }
 
-func (msg MsgLiquidUnstake) GetSigners() []sdk.AccAddress {
-	addr, err := sdk.AccAddressFromBech32(msg.DelegatorAddress)
+func (msg MsgLiquidUnstaking) GetSigners() []sdk.AccAddress {
+	addr, err := sdk.AccAddressFromBech32(msg.RequesterAddress)
 	if err != nil {
 		panic(err)
 	}
 	return []sdk.AccAddress{addr}
 }
 
-func (msg MsgLiquidUnstake) GetDelegator() sdk.AccAddress {
-	addr, err := sdk.AccAddressFromBech32(msg.DelegatorAddress)
+func (msg MsgLiquidUnstaking) GetRequester() sdk.AccAddress {
+	addr, err := sdk.AccAddressFromBech32(msg.RequesterAddress)
 	if err != nil {
 		panic(err)
 	}
@@ -96,15 +131,42 @@ func (msg MsgLiquidUnstake) GetDelegator() sdk.AccAddress {
 }
 
 // Route returns the name of the module
-func (msg MsgRegisterInsurance) Route() string { return RouterKey }
+func (msg MsgCancelLiquidUnstaking) Route() string { return RouterKey }
 
 // Type returns the the action
-func (msg MsgRegisterInsurance) Type() string { return TypeMsgRegisterInsurance }
+func (msg MsgCancelLiquidUnstaking) Type() string { return TypeMsgCancelLiquidUnstaking }
 
 // ValidateBasic runs stateless checks on the message
-func (msg MsgRegisterInsurance) ValidateBasic() error {
-	if _, err := sdk.AccAddressFromBech32(msg.InsurerAddress); err != nil {
-		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid insurer address %q: %v", msg.InsurerAddress, err)
+func (msg MsgCancelLiquidUnstaking) ValidateBasic() error {
+	if _, err := sdk.AccAddressFromBech32(msg.RequesterAddress); err != nil {
+		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid requester address %q: %v", msg.RequesterAddress, err)
+	}
+	return nil
+}
+
+// GetSignBytes encodes the message for signing
+func (msg *MsgCancelLiquidUnstaking) GetSignBytes() []byte {
+	return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(msg))
+}
+
+func (msg MsgCancelLiquidUnstaking) GetSigners() []sdk.AccAddress {
+	addr, err := sdk.AccAddressFromBech32(msg.RequesterAddress)
+	if err != nil {
+		panic(err)
+	}
+	return []sdk.AccAddress{addr}
+}
+
+// Route returns the name of the module
+func (msg MsgBidInsurance) Route() string { return RouterKey }
+
+// Type returns the the action
+func (msg MsgBidInsurance) Type() string { return TypeMsgBidInsurance }
+
+// ValidateBasic runs stateless checks on the message
+func (msg MsgBidInsurance) ValidateBasic() error {
+	if _, err := sdk.AccAddressFromBech32(msg.RequesterAddress); err != nil {
+		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid requester address %q: %v", msg.RequesterAddress, err)
 	}
 	if msg.Amount.IsZero() {
 		return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "staking insurance amount must not be zero")
@@ -113,27 +175,62 @@ func (msg MsgRegisterInsurance) ValidateBasic() error {
 }
 
 // GetSignBytes encodes the message for signing
-func (msg *MsgRegisterInsurance) GetSignBytes() []byte {
+func (msg *MsgBidInsurance) GetSignBytes() []byte {
 	return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(msg))
 }
 
-func (msg MsgRegisterInsurance) GetSigners() []sdk.AccAddress {
-	addr, err := sdk.AccAddressFromBech32(msg.InsurerAddress)
+func (msg MsgBidInsurance) GetSigners() []sdk.AccAddress {
+	addr, err := sdk.AccAddressFromBech32(msg.RequesterAddress)
 	if err != nil {
 		panic(err)
 	}
 	return []sdk.AccAddress{addr}
 }
 
-func (msg MsgRegisterInsurance) GetInsurer() sdk.AccAddress {
-	addr, err := sdk.AccAddressFromBech32(msg.InsurerAddress)
+func (msg MsgBidInsurance) GetInsurer() sdk.AccAddress {
+	addr, err := sdk.AccAddressFromBech32(msg.RequesterAddress)
 	if err != nil {
 		panic(err)
 	}
 	return addr
 }
 
-func (msg MsgRegisterInsurance) GetValidator() sdk.ValAddress {
+// Route returns the name of the module
+func (msg MsgCancelInsuranceBid) Route() string { return RouterKey }
+
+// Type returns the the action
+func (msg MsgCancelInsuranceBid) Type() string { return TypeMsgCancelInsuranceBid }
+
+// ValidateBasic runs stateless checks on the message
+func (msg MsgCancelInsuranceBid) ValidateBasic() error {
+	if _, err := sdk.AccAddressFromBech32(msg.RequesterAddress); err != nil {
+		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid requester address %q: %v", msg.RequesterAddress, err)
+	}
+	return nil
+}
+
+// GetSignBytes encodes the message for signing
+func (msg *MsgCancelInsuranceBid) GetSignBytes() []byte {
+	return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(msg))
+}
+
+func (msg MsgCancelInsuranceBid) GetSigners() []sdk.AccAddress {
+	addr, err := sdk.AccAddressFromBech32(msg.RequesterAddress)
+	if err != nil {
+		panic(err)
+	}
+	return []sdk.AccAddress{addr}
+}
+
+func (msg MsgCancelInsuranceBid) GetInsurer() sdk.AccAddress {
+	addr, err := sdk.AccAddressFromBech32(msg.RequesterAddress)
+	if err != nil {
+		panic(err)
+	}
+	return addr
+}
+
+func (msg MsgBidInsurance) GetValidator() sdk.ValAddress {
 	addr, err := sdk.ValAddressFromBech32(msg.ValidatorAddress)
 	if err != nil {
 		panic(err)
@@ -142,35 +239,71 @@ func (msg MsgRegisterInsurance) GetValidator() sdk.ValAddress {
 }
 
 // Route returns the name of the module
-func (msg MsgUnregisterInsurance) Route() string { return RouterKey }
+func (msg MsgUnbondInsurance) Route() string { return RouterKey }
 
 // Type returns the the action
-func (msg MsgUnregisterInsurance) Type() string { return TypeMsgUnregisterInsurance }
+func (msg MsgUnbondInsurance) Type() string { return TypeMsgUnbondInsurance }
 
 // ValidateBasic runs stateless checks on the message
-func (msg MsgUnregisterInsurance) ValidateBasic() error {
-	if _, err := sdk.AccAddressFromBech32(msg.InsurerAddress); err != nil {
-		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid insurer address %q: %v", msg.InsurerAddress, err)
+func (msg MsgUnbondInsurance) ValidateBasic() error {
+	if _, err := sdk.AccAddressFromBech32(msg.RequesterAddress); err != nil {
+		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid insurer address %q: %v", msg.RequesterAddress, err)
 	}
 	// TODO: need to validate insurance_id
 	return nil
 }
 
 // GetSignBytes encodes the message for signing
-func (msg *MsgUnregisterInsurance) GetSignBytes() []byte {
+func (msg *MsgUnbondInsurance) GetSignBytes() []byte {
 	return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(msg))
 }
 
-func (msg MsgUnregisterInsurance) GetSigners() []sdk.AccAddress {
-	addr, err := sdk.AccAddressFromBech32(msg.InsurerAddress)
+func (msg MsgUnbondInsurance) GetSigners() []sdk.AccAddress {
+	addr, err := sdk.AccAddressFromBech32(msg.RequesterAddress)
 	if err != nil {
 		panic(err)
 	}
 	return []sdk.AccAddress{addr}
 }
 
-func (msg MsgUnregisterInsurance) GetInsurer() sdk.AccAddress {
-	addr, err := sdk.AccAddressFromBech32(msg.InsurerAddress)
+func (msg MsgUnbondInsurance) GetInsurer() sdk.AccAddress {
+	addr, err := sdk.AccAddressFromBech32(msg.RequesterAddress)
+	if err != nil {
+		panic(err)
+	}
+	return addr
+}
+
+// Route returns the name of the module
+func (msg MsgCancelInsuranceUnbond) Route() string { return RouterKey }
+
+// Type returns the the action
+func (msg MsgCancelInsuranceUnbond) Type() string { return TypeMsgCancelInsuranceUnbond }
+
+// ValidateBasic runs stateless checks on the message
+func (msg MsgCancelInsuranceUnbond) ValidateBasic() error {
+	if _, err := sdk.AccAddressFromBech32(msg.RequesterAddress); err != nil {
+		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid insurer address %q: %v", msg.RequesterAddress, err)
+	}
+	// TODO: need to validate insurance_id
+	return nil
+}
+
+// GetSignBytes encodes the message for signing
+func (msg *MsgCancelInsuranceUnbond) GetSignBytes() []byte {
+	return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(msg))
+}
+
+func (msg MsgCancelInsuranceUnbond) GetSigners() []sdk.AccAddress {
+	addr, err := sdk.AccAddressFromBech32(msg.RequesterAddress)
+	if err != nil {
+		panic(err)
+	}
+	return []sdk.AccAddress{addr}
+}
+
+func (msg MsgCancelInsuranceUnbond) GetInsurer() sdk.AccAddress {
+	addr, err := sdk.AccAddressFromBech32(msg.RequesterAddress)
 	if err != nil {
 		panic(err)
 	}
