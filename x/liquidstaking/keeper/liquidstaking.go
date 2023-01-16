@@ -50,12 +50,37 @@ func (k Keeper) LiquidStake(
 	return id, nil
 }
 
+func (k Keeper) CancelLiquidStaking(
+	ctx sdk.Context, liquidStaker sdk.AccAddress, id types.ChunkBondRequestId) (interface{}, error) {
+	req, found := k.GetChunkBondRequest(ctx, id)
+	if !found {
+		return nil, types.ErrInvalidChunkBondRequestId
+	}
+	requesterAddress, err := sdk.AccAddressFromBech32(req.Address)
+	if err != nil {
+		return nil, err
+	}
+	if !liquidStaker.Equals(requesterAddress) {
+		return nil, types.ErrInvalidRequesterAddress
+	}
+
+	// TODO: check speculation.
+	bondDenom := k.stk.BondDenom(ctx)
+	stake := sdk.NewCoin(bondDenom, req.TokenAmount)
+	if err := k.bk.SendCoinsFromModuleToAccount(ctx, types.ModuleName, liquidStaker, sdk.NewCoins(stake)); err != nil {
+		return 0, err
+	}
+
+	k.DeleteChunkBondRequest(ctx, id)
+	return nil, nil
+}
+
 func (k Keeper) LiquidUnstake(ctx sdk.Context, liquidUnstaker sdk.AccAddress, numChunkUnbond uint64) (types.ChunkUnbondRequestId, error) {
 	chunkSize := k.GetParams(ctx).ChunkSize
 
 	// TODO: check speculation. for now, just deposit liquid coins from liquidUnstaker into module
 	liquidBondDenom := k.LiquidBondDenom(ctx)
-	liquidStake := sdk.NewCoin(liquidBondDenom, chunkSize)
+	liquidStake := sdk.NewCoin(liquidBondDenom, chunkSize.Mul(sdk.NewIntFromUint64(numChunkUnbond)))
 	if err := k.bk.SendCoinsFromAccountToModule(ctx, liquidUnstaker, types.ModuleName, sdk.NewCoins(liquidStake)); err != nil {
 		return 0, err
 	}
@@ -70,6 +95,31 @@ func (k Keeper) LiquidUnstake(ctx sdk.Context, liquidUnstaker sdk.AccAddress, nu
 	k.SetChunkUnbondRequest(ctx, req)
 	k.SetLastChunkUnbondRequestId(ctx, id)
 	return id, nil
+}
+
+func (k Keeper) CancelLiquidUnstaking(
+	ctx sdk.Context, liquidUnstaker sdk.AccAddress, id types.ChunkUnbondRequestId) (interface{}, error) {
+	req, found := k.GetChunkUnbondRequest(ctx, id)
+	if !found {
+		return nil, types.ErrInvalidChunkBondRequestId
+	}
+	requesterAddress, err := sdk.AccAddressFromBech32(req.Address)
+	if err != nil {
+		return nil, err
+	}
+	if !liquidUnstaker.Equals(requesterAddress) {
+		return nil, types.ErrInvalidRequesterAddress
+	}
+	// TODO: check speculation. for now, just deposit liquid coins from liquidUnstaker into module
+	chunkSize := k.GetParams(ctx).ChunkSize
+	liquidBondDenom := k.LiquidBondDenom(ctx)
+	liquidStake := sdk.NewCoin(liquidBondDenom, chunkSize.Mul(sdk.NewIntFromUint64(req.NumChunkUnbond)))
+	if err := k.bk.SendCoinsFromModuleToAccount(ctx, types.ModuleName, liquidUnstaker, sdk.NewCoins(liquidStake)); err != nil {
+		return 0, err
+	}
+
+	k.DeleteChunkUnbondRequest(ctx, id)
+	return nil, nil
 }
 
 func (k Keeper) getMinimumInsuranceAmount(ctx *sdk.Context) sdk.Int {
@@ -110,6 +160,24 @@ func (k Keeper) BidInsurance(
 	return id, nil
 }
 
+func (k Keeper) CancelInsuranceBid(
+	ctx sdk.Context, insurer sdk.AccAddress, id types.InsuranceBidId) (interface{}, error) {
+	bid, found := k.GetInsuranceBid(ctx, id)
+	if !found {
+		return nil, types.ErrInvalidInsuranceBidId
+	}
+
+	requesterAddress, err := sdk.AccAddressFromBech32(bid.InsuranceProviderAddress)
+	if err != nil {
+		return nil, err
+	}
+	if !insurer.Equals(requesterAddress) {
+		return nil, types.ErrInvalidRequesterAddress
+	}
+	k.DeleteInsuranceBid(ctx, id)
+	return nil, nil
+}
+
 func (k Keeper) UnbondInsurance(
 	ctx sdk.Context,
 	insurer sdk.AccAddress,
@@ -125,4 +193,22 @@ func (k Keeper) UnbondInsurance(
 	k.SetInsuranceUnbondRequest(ctx, req)
 
 	return aliveChunkId, nil
+}
+
+func (k Keeper) CancelInsuranceUnbond(
+	ctx sdk.Context, insurer sdk.AccAddress, id types.AliveChunkId) (interface{}, error) {
+	req, found := k.GetInsuranceUnbondRequest(ctx, id)
+	if !found {
+		return nil, types.ErrInvalidAliveChunkId
+	}
+
+	requesterAddress, err := sdk.AccAddressFromBech32(req.InsuranceProviderAddress)
+	if err != nil {
+		return nil, err
+	}
+	if !insurer.Equals(requesterAddress) {
+		return nil, types.ErrInvalidRequesterAddress
+	}
+	k.DeleteInsuranceUnbondRequest(ctx, id)
+	return nil, nil
 }
