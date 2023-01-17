@@ -234,3 +234,12 @@ func generateUniqueId[T any](suite *KeeperTestSuite, m map[uint64]T) (id uint64)
 	suite.Require().False(found)
 	return
 }
+
+func getMin(nums ...int) (ret int) {
+	for i, num := range nums {
+		if (i == 0) || (ret > num) {
+			ret = num
+		}
+	}
+	return
+}
