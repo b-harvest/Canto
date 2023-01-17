@@ -223,3 +223,14 @@ func accountWithCoins(addr sdk.AccAddress, bankKeeper bankkeeper.Keeper, ctx sdk
 	}
 	return addr
 }
+
+func generateUniqueId[T any](suite *KeeperTestSuite, m map[uint64]T) (id uint64) {
+	found := true
+	for j := 0; found; j++ {
+		suite.Require().Greater(10, j)
+		id = generateRandomId()
+		_, found = m[id]
+	}
+	suite.Require().False(found)
+	return
+}
