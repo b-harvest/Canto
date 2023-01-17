@@ -9,6 +9,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -208,4 +209,17 @@ func generateRandomInsuranceUnbondRequest(id types.AliveChunkId) types.Insurance
 	return types.InsuranceUnbondRequest{
 		AliveChunkId: id,
 	}
+}
+
+func accountWithCoins(addr sdk.AccAddress, bankKeeper bankkeeper.Keeper, ctx sdk.Context, coins sdk.Coins) sdk.AccAddress {
+	// TODO: check this logic
+	err := bankKeeper.MintCoins(ctx, types.ModuleName, coins)
+	if err != nil {
+		panic(err)
+	}
+	err = bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, addr, coins)
+	if err != nil {
+		panic(err)
+	}
+	return addr
 }
