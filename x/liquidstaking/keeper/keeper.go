@@ -30,6 +30,11 @@ func NewKeeper(storeKey sdk.StoreKey,
 	dk types.DistrKeeper,
 	slk types.SlashingKeeper,
 ) Keeper {
+	// ensure liquidstaking module account is set
+	if addr := ak.GetModuleAddress(types.ModuleName); addr == nil {
+		panic(fmt.Sprintf("%s module account has not been set", types.ModuleName))
+	}
+
 	if !ps.HasKeyTable() {
 		ps = ps.WithKeyTable(types.ParamKeyTable())
 	}
