@@ -18,6 +18,8 @@ var (
 	DefaultMinInsurancePercentage = sdk.NewDec(10)
 	DefaultChunkSize              = sdk.NewInt(500)
 	DefaultMaxAliveChunk          = sdk.NewInt(10)
+
+	LiquidStakingModuleAccount = DeriveAddress(ModuleName, "LiquidStakingAcc")
 )
 
 func NewParams(liquidBondDenom string, minInsurancePercentage sdk.Dec, chunkSize, maxAliveChunk sdk.Int) Params {

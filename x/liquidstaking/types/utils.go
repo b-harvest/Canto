@@ -1,6 +1,11 @@
 package types
 
-import "sort"
+import (
+	"sort"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/address"
+)
 
 func FilterSlice[T any](s []T, f func(T) bool) []T {
 	var r []T
@@ -21,4 +26,8 @@ func MapToSortedSlice[T any](m map[uint64]T, f func(i, j T) bool) []T {
 		return f(r[i], r[j])
 	})
 	return r
+}
+
+func DeriveAddress(moduleName, name string) sdk.AccAddress {
+	return sdk.AccAddress(address.Module(moduleName, []byte(name)))
 }
