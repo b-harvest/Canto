@@ -1,5 +1,7 @@
 package types
 
+import sdk "github.com/cosmos/cosmos-sdk/types"
+
 type LiquidValidators []LiquidValidator
 type LiquidValidatorStates []LiquidValidatorState
 
@@ -24,4 +26,14 @@ func NewUnbondingChunk(aliveChunk AliveChunk) UnbondingChunk {
 		TokenAmount:              aliveChunk.TokenAmount,
 		InsuranceAmount:          aliveChunk.InsuranceAmount,
 	}
+}
+
+func NativeTokenToLiquidToken(state LiquidStakingState, nativeTokenAmount sdk.Int) (sdk.Int, error) {
+	// TODO: calc
+	return nativeTokenAmount, nil
+}
+
+func LiquidTokenToNativeToken(state LiquidStakingState, liquidTokenAmount sdk.Int) (sdk.Int, error) {
+	// TODO: calc
+	return liquidTokenAmount, nil
 }
