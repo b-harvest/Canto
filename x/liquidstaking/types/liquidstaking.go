@@ -18,16 +18,6 @@ type InsuranceUnbondRequests []InsuranceUnbondRequest
 
 // type InsuranceUnbondRequestId = uint64
 
-func NewUnbondingChunk(aliveChunk AliveChunk) UnbondingChunk {
-	return UnbondingChunk{
-		Id:                       aliveChunk.Id,
-		ValidatorAddress:         aliveChunk.ValidatorAddress,
-		InsuranceProviderAddress: aliveChunk.InsuranceProviderAddress,
-		TokenAmount:              aliveChunk.TokenAmount,
-		InsuranceAmount:          aliveChunk.InsuranceAmount,
-	}
-}
-
 func NativeTokenToLiquidToken(state LiquidStakingState, nativeTokenAmount sdk.Int) (sdk.Int, error) {
 	// TODO: calc
 	return nativeTokenAmount, nil
@@ -36,4 +26,10 @@ func NativeTokenToLiquidToken(state LiquidStakingState, nativeTokenAmount sdk.In
 func LiquidTokenToNativeToken(state LiquidStakingState, liquidTokenAmount sdk.Int) (sdk.Int, error) {
 	// TODO: calc
 	return liquidTokenAmount, nil
+}
+
+var _ Rankable = &InsuranceBid{}
+
+func (bid *InsuranceBid) GetInsuranceFeeRate() sdk.Dec {
+	return bid.InsuranceFeeRate
 }
