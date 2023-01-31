@@ -132,3 +132,76 @@ func (k Keeper) UndelegateTokenAmount(
 
 	return completionTime, nil
 }
+
+func (k *Keeper) getModuleAccountBalance(ctx *sdk.Context) sdk.Coin {
+	bondDenom := k.stk.BondDenom(*ctx)
+	return sdk.NewCoin(bondDenom, k.bk.SpendableCoins(*ctx, types.LiquidStakingModuleAccount).AmountOf(bondDenom))
+}
+
+func (k *Keeper) getDelegationReward(ctx *sdk.Context) sdk.Dec {
+	bondDenom := k.stk.BondDenom(*ctx)
+	totalReward := sdk.ZeroDec()
+
+	// Cache ctx for calculate rewards
+	cachedCtx, _ := ctx.CacheContext()
+	k.stk.IterateDelegations(
+		cachedCtx, types.LiquidStakingModuleAccount,
+		func(_ int64, delegation stakingtypes.DelegationI) (stop bool) {
+			valAddr := delegation.GetValidatorAddr()
+			val := k.stk.Validator(cachedCtx, valAddr)
+			endingPeriod := k.dk.IncrementValidatorPeriod(cachedCtx, val)
+			reward := k.dk.CalculateDelegationRewards(cachedCtx, val, delegation, endingPeriod).AmountOf(bondDenom)
+
+			if reward.IsPositive() {
+				totalReward = totalReward.Add(reward)
+			}
+			return false
+		},
+	)
+	return totalReward
+}
+
+func (k *Keeper) withdrawDelegationReward(ctx *sdk.Context) sdk.Int {
+	totalRewards := sdk.ZeroInt()
+	bondDenom := k.stk.BondDenom(*ctx)
+	k.stk.IterateDelegations(
+		*ctx, types.LiquidStakingModuleAccount,
+		func(_ int64, delegation stakingtypes.DelegationI) (stop bool) {
+			valAddr := delegation.GetValidatorAddr()
+			reward, err := k.dk.WithdrawDelegationRewards(*ctx, types.LiquidStakingModuleAccount, valAddr)
+			if err != nil {
+				panic(err)
+			}
+			totalRewards = totalRewards.Add(reward.AmountOf(bondDenom))
+			return false
+		},
+	)
+	return totalRewards
+}
+
+func (k Keeper) DistributeReward(ctx sdk.Context) error {
+	// TODO: check threshold
+	// delegationReward := k.getDelegationReward(&ctx)
+
+	reward := k.withdrawDelegationReward(&ctx)
+	balance := k.getModuleAccountBalance(&ctx)
+	if !reward.Equal(balance.Amount) {
+		// NOTE: just for debug why?
+		reward = balance.Amount
+	}
+	aliveChunks := k.GetAllAliveChunks(ctx)
+	numAliveChunks := len(aliveChunks)
+	rewardPerAliveChunk := reward.QuoRaw(int64(numAliveChunks))
+	if rewardPerAliveChunk.IsZero() {
+		return nil
+	}
+	for _, aliveChunk := range aliveChunks {
+		aliveChunk.TokenAmount = aliveChunk.TokenAmount.Add(rewardPerAliveChunk)
+		if err := k.DelegateTokenAmount(ctx, aliveChunk.ValidatorAddress, rewardPerAliveChunk); err != nil {
+			return err
+		}
+		k.SetAliveChunk(ctx, aliveChunk)
+	}
+
+	return nil
+}
