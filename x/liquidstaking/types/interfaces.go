@@ -65,5 +65,10 @@ type StakingKeeper interface {
 	HasMaxUnbondingDelegationEntries(ctx sdk.Context, delegatorAddr sdk.AccAddress, validatorAddr sdk.ValAddress) bool
 }
 
-type DistrKeeper interface{}
+type DistrKeeper interface {
+	IncrementValidatorPeriod(ctx sdk.Context, val stakingtypes.ValidatorI) uint64
+	CalculateDelegationRewards(ctx sdk.Context, val stakingtypes.ValidatorI, del stakingtypes.DelegationI, endingPeriod uint64) (rewards sdk.DecCoins)
+	WithdrawDelegationRewards(ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress) (sdk.Coins, error)
+}
+
 type SlashingKeeper interface{}
