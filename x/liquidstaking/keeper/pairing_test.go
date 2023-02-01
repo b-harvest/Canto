@@ -140,7 +140,7 @@ func (suite *KeeperTestSuite) randomizeCurrentState(
 		depositCoinsIntoModule(suite, sdk.NewCoin(bondDenom, insuranceBid.InsuranceAmount))
 	}
 
-	// hack to ensure last counter is greather than existing ids
+	// hack to ensure last counter is greater than existing ids
 	suite.keeper.SetLastAliveChunkId(suite.ctx, 50000)
 	suite.keeper.SetLastChunkBondRequestId(suite.ctx, 50000)
 	suite.keeper.SetLastChunkUnbondRequestId(suite.ctx, 50000)
