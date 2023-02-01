@@ -389,16 +389,24 @@ func (k *Keeper) unpairPairRankedAlivedChunks(ctx *sdk.Context,
 
 	lastAliveChunkId := k.GetLastAliveChunkId(*ctx)
 	id := lastAliveChunkId + 1
+	numUnpairedAliveChunk := len(unpairedAliveChunks)
 	numInsuranceUnbonded := len(state.InsuranceUnbonded)
-	numUnpairedAliveChunk := len(unpairedAliveChunks) + numInsuranceUnbonded
 	numPairedInsuranceBid := 0
 	for _, elem := range rankedItems {
 		switch v := elem.(type) {
 		case *types.InsuranceBid:
 			// pair qualified insurance bid
 			var aliveChunk types.AliveChunk
-			if numPairedInsuranceBid < numInsuranceUnbonded {
-				unpaired := state.InsuranceUnbonded[numPairedInsuranceBid]
+			if numPairedInsuranceBid < numUnpairedAliveChunk {
+				unpaired := unpairedAliveChunks[numPairedInsuranceBid]
+				aliveChunk = types.NewAliveChunk(unpaired.Id,
+					// only token amount is used
+					types.ChunkBondRequest{TokenAmount: unpaired.TokenAmount},
+					*v,
+				)
+				delegationState.ChangeDelegation(unpaired.ValidatorAddress, v.ValidatorAddress, aliveChunk.TokenAmount)
+			} else if numPairedInsuranceBid-numUnpairedAliveChunk < numInsuranceUnbonded {
+				unpaired := state.InsuranceUnbonded[numPairedInsuranceBid-numUnpairedAliveChunk]
 				aliveChunk = types.NewAliveChunk(id,
 					// only token amount is used
 					types.ChunkBondRequest{TokenAmount: unpaired.TokenAmount},
@@ -410,16 +418,8 @@ func (k *Keeper) unpairPairRankedAlivedChunks(ctx *sdk.Context,
 				k.DeleteInsuranceUnbondRequest(*ctx, unpaired.Id)
 				k.DeleteAliveChunk(*ctx, unpaired.Id)
 				id++
-			} else if numPairedInsuranceBid < numUnpairedAliveChunk {
-				unpaired := unpairedAliveChunks[numPairedInsuranceBid-numInsuranceUnbonded]
-				aliveChunk = types.NewAliveChunk(unpaired.Id,
-					// only token amount is used
-					types.ChunkBondRequest{TokenAmount: unpaired.TokenAmount},
-					*v,
-				)
-				delegationState.ChangeDelegation(unpaired.ValidatorAddress, v.ValidatorAddress, aliveChunk.TokenAmount)
 			} else {
-				chunkBondRequest := state.ChunkBondRequests[numPairedInsuranceBid-numUnpairedAliveChunk]
+				chunkBondRequest := state.ChunkBondRequests[numPairedInsuranceBid-numUnpairedAliveChunk-numInsuranceUnbonded]
 				aliveChunk = types.NewAliveChunk(id, chunkBondRequest, *v)
 				k.DeleteChunkBondRequest(*ctx, chunkBondRequest.Id)
 				k.DeleteInsuranceBid(*ctx, v.Id)
@@ -440,10 +440,14 @@ func (k *Keeper) unpairPairRankedAlivedChunks(ctx *sdk.Context,
 		}
 	}
 
-	if numInsuranceUnbonded > numPairedInsuranceBid {
-		numInsuranceUnbonded = numPairedInsuranceBid
+	numPairedInsuranceUnbonded := numPairedInsuranceBid - numUnpairedAliveChunk
+	if numPairedInsuranceUnbonded < 0 {
+		numPairedInsuranceUnbonded = 0
+	} else if numPairedInsuranceUnbonded > numInsuranceUnbonded {
+		numPairedInsuranceUnbonded = numInsuranceUnbonded
 	}
-	state.InsuranceUnbonded = state.InsuranceUnbonded[numInsuranceUnbonded:]
+	state.InsuranceUnbonded = state.InsuranceUnbonded[numPairedInsuranceUnbonded:]
+
 	if id != lastAliveChunkId {
 		k.SetLastAliveChunkId(*ctx, id)
 	}
