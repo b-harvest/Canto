@@ -452,15 +452,19 @@ containerProtoGenSwagger=cosmos-sdk-proto-gen-swagger-$(containerProtoVer)
 containerProtoFmt=cosmos-sdk-proto-fmt-$(containerProtoVer)
 
 #proto-all: proto-format proto-lint proto-gen
-proto-all: proto-format proto-gen
+proto-all: proto-format proto-gen proto-swagger-gen update-swagger-docs
 
 proto-gen:
 	@echo "Generating Protobuf files"
 	$(DOCKER) run --rm -v $(CURDIR):/workspace --workdir /workspace tendermintdev/sdk-proto-gen sh ./scripts/protocgen.sh
 
+#proto-swagger-gen:
+#	@echo "Generating Protobuf Swagger"
+#	@./scripts/protoc-swagger-gen.sh
 proto-swagger-gen:
 	@echo "Generating Protobuf Swagger"
-	@./scripts/protoc-swagger-gen.sh
+	@if docker ps -a --format '{{.Names}}' | grep -Eq "^${containerProtoGenSwagger}$$"; then docker start -a $(containerProtoGenSwagger); else docker run --name $(containerProtoGenSwagger) -v $(CURDIR):/workspace --workdir /workspace $(containerProtoImage) \
+		sh ./scripts/protoc-swagger-gen.sh; fi
 
 proto-format:
 	@echo "Formatting Protobuf files"
