@@ -159,6 +159,14 @@
           "Params": "BaseParams"
         }
       }
+    },
+    {
+      "url": "./tmp-swagger-gen/canto/liquidstaking/v1/query.swagger.json",
+      "operationIds": {
+        "rename": {
+          "Params": "LiquidStakingParams"
+        }
+      }
     }
   ]
 }
