@@ -8,11 +8,9 @@ for dir in $proto_dirs; do
 
   # generate swagger files (filter query files)
   query_file=$(find "${dir}" -maxdepth 1 \( -name 'query.proto' -o -name 'service.proto' \))
-  #query_file=$(find "${dir}" -maxdepth 1 \( -name 'query.proto' -o -name 'msg.proto' \))
   # TODO: migrate to `buf build`
   if [[ ! -z "$query_file" ]]; then
-  #  buf alpha protoc  \
-    buf protoc  \
+    buf alpha protoc  \
     -I "proto" \
     -I "third_party/proto" \
     "$query_file" \
@@ -30,4 +28,4 @@ swagger-combine ./client/docs/config.json -o ./client/docs/swagger-ui/swagger.ya
 rm -rf ./tmp-swagger-gen
 
 # generate binary for static server
-# statik -src=./client/docs/swagger-ui -dest=./client/docs
+statik -src=./client/docs/swagger-ui -dest=./client/docs
