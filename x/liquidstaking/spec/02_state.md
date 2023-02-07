@@ -21,6 +21,7 @@ type AliveChunk struct {
 
 ```go
 type UnbondingChunk struct {
+  Id                       uint64     // id of unbonding chunk
   ValidatorAddress         string     // address of the validator that the chunk is staked to
   InsuranceProviderAddress string     // address of the insurance provider for the chunk
   TokenAmount              sdk.Int    // amount of the native token in the chunk
@@ -64,6 +65,7 @@ type InsuranceBid struct {
 
 ```go
 type InsuranceUnbondRequest struct {
+  InsuranceProviderAddress string
   AliveChunkId             uint64
 }
 ```
@@ -75,7 +77,7 @@ type InsuranceUnbondRequest struct {
 ```go
 type ChunkBondRequest struct {
   Id                       uint64
-  RequestorAddress         string
+  RequesterAddress         string
   TokenAmount              sdk.Int
 }
 ```
@@ -87,7 +89,7 @@ type ChunkBondRequest struct {
 ```go
 type ChunkUnbondRequest struct {
   Id                       uint64
-  RequestorAddress         string
+  RequesterAddress         string
   NumChunkUnbond           uint64
 }
 ```
