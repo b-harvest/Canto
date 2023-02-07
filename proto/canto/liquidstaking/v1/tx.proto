@@ -66,7 +66,10 @@ message MsgCancelLiquidUnstakingResponse {}
 message MsgBidInsurance {
   string requester_address = 1;
   string validator_address = 2;
-  cosmos.base.v1beta1.Coin amount = 3 [ (gogoproto.nullable) = false ];
+  string insurance_amount = 3 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
   string insurance_fee_rate = 4 [
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
     (gogoproto.nullable) = false

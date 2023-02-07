@@ -168,10 +168,10 @@ func (msg MsgBidInsurance) ValidateBasic() error {
 	if _, err := sdk.AccAddressFromBech32(msg.RequesterAddress); err != nil {
 		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid requester address %q: %v", msg.RequesterAddress, err)
 	}
-	if msg.Amount.IsZero() {
+	if msg.InsuranceAmount.IsZero() {
 		return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "staking insurance amount must not be zero")
 	}
-	return msg.Amount.Validate()
+	return nil
 }
 
 // GetSignBytes encodes the message for signing

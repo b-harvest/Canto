@@ -227,9 +227,9 @@ $ %s tx %s register-insurance 500stake --from mykey
 			if err != nil {
 				return err
 			}
-			amount, err := sdk.ParseCoinNormalized(args[3])
-			if err != nil {
-				return err
+			amount, ok := sdk.NewIntFromString(args[3])
+			if !ok {
+				return fmt.Errorf("invalid amount %s", args[3])
 			}
 			if err != nil {
 				return err
@@ -239,7 +239,7 @@ $ %s tx %s register-insurance 500stake --from mykey
 				RequesterAddress: insurer.String(),
 				ValidatorAddress: validator.String(),
 				InsuranceFeeRate: insuranceFeeRate,
-				Amount:           amount,
+				InsuranceAmount:  amount,
 			}
 
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
