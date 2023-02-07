@@ -6,6 +6,7 @@
 
 ```go
 type MsgBidInsurance struct {
+  RequesterAddress      string
   ValidatorAddress      string
   InsuranceAmount       sdk.Int
   InsuranceFeeRate      sdk.Dec
@@ -14,7 +15,7 @@ type MsgBidInsurance struct {
 
 **Validity checks**
 
-The transaction that is triggered with `MsgBidInsurance`fails if:
+The transaction that is triggered with `MsgBidInsurance` fails if:
 
 - The designated validator does not exist
 - The balance of msg sender does not have enough amount of coins for `InsuranceAmount`
@@ -25,13 +26,14 @@ The transaction that is triggered with `MsgBidInsurance`fails if:
 
 ```go
 type MsgCancelInsuranceBid struct {
-  BidId   uint64
+  RequesterAddress string
+  BidId            uint64
 }
 ```
 
 **Validity checks**
 
-The transaction that is triggered with `MsgCancelInsuranceBid`fails if:
+The transaction that is triggered with `MsgCancelInsuranceBid` fails if:
 
 - The `BidId` does not exist
 - The address of msg sender does not match with `InsuranceBid.InsuranceProviderAddress`
@@ -40,13 +42,14 @@ The transaction that is triggered with `MsgCancelInsuranceBid`fails if:
 
 ```go
 type MsgUnbondInsurance struct {
-  AliveChunkId   uint64
+  RequesterAddress string
+  AliveChunkId     uint64
 }
 ```
 
 **Validity checks**
 
-The transaction that is triggered with `MsgUnbondInsurance`fails if:
+The transaction that is triggered with `MsgUnbondInsurance` fails if:
 
 - The `AliveChunkId` does not exist
 - The address of msg sender does not match with `AliveChunk.InsuranceProviderAddress`
@@ -55,13 +58,14 @@ The transaction that is triggered with `MsgUnbondInsurance`fails if:
 
 ```go
 type MsgCancelInsuranceUnbond struct {
-  AliveChunkId   uint64
+  RequesterAddress string
+  AliveChunkId     uint64
 }
 ```
 
 **Validity checks**
 
-The transaction that is triggered with `MsgCancelInsuranceUnbond`fails if:
+The transaction that is triggered with `MsgCancelInsuranceUnbond` fails if:
 
 - The `AliveChunkId` does not exist
 - The address of msg sender does not match with `AliveChunk.InsuranceProviderAddress`
@@ -70,13 +74,14 @@ The transaction that is triggered with `MsgCancelInsuranceUnbond`fails if:
 
 ```go
 type MsgLiquidStaking struct {
+  RequesterAddress string
   TokenAmount      sdk.Int
 }
 ```
 
 **Validity checks**
 
-The transaction that is triggered with `MsgLiquidStaking`fails if:
+The transaction that is triggered with `MsgLiquidStaking` fails if:
 
 - The balance of msg sender does not have enough amount of coins for `TokenAmount`
 - The `TokenAmount` is less than `ChunkSize` / `MintRate`
@@ -85,13 +90,14 @@ The transaction that is triggered with `MsgLiquidStaking`fails if:
 
 ```go
 type MsgCancelLiquidStaking struct {
+  RequesterAddress    string
   ChunkBondRequestId  uint64
 }
 ```
 
 **Validity checks**
 
-The transaction that is triggered with `MsgCancelLiquidStaking`fails if:
+The transaction that is triggered with `MsgCancelLiquidStaking` fails if:
 
 - The `ChunkBondRequestId` does not exist
 - The address of msg sender does not match with `ChunkBondRequest.RequestorAddress`
@@ -100,13 +106,14 @@ The transaction that is triggered with `MsgCancelLiquidStaking`fails if:
 
 ```go
 type MsgLiquidUnstaking struct {
+  RequesterAddress string
   NumChunkUnstake  uint64
 }
 ```
 
 **Validity checks**
 
-The transaction that is triggered with `MsgLiquidUnstaking`fails if:
+The transaction that is triggered with `MsgLiquidUnstaking` fails if:
 
 - The balance of msg sender does not have enough amount of coins for `NumChunkUnstake` * `ChunkSize`
 
@@ -114,13 +121,14 @@ The transaction that is triggered with `MsgLiquidUnstaking`fails if:
 
 ```go
 type MsgCancelLiquidUnstaking struct {
+  RequesterAddress string
   ChunkUnbondRequestId  uint64
 }
 ```
 
 **Validity checks**
 
-The transaction that is triggered with `MsgCancelLiquidUntaking`fails if:
+The transaction that is triggered with `MsgCancelLiquidUntaking` fails if:
 
 - The `ChunkUnbondRequestId` does not exist
 - The address of msg sender does not match with `ChunkUnbondRequest.RequestorAddress`
