@@ -18,12 +18,12 @@ type InsuranceUnbondRequests []InsuranceUnbondRequest
 
 // type InsuranceUnbondRequestId = uint64
 
-func NativeTokenToLiquidToken(state LiquidStakingState, nativeTokenAmount sdk.Int) (sdk.Int, error) {
+func NativeTokenToLiquidToken(liquidStakingInfo LiquidStakingInfo, nativeTokenAmount sdk.Int) (sdk.Int, error) {
 	// TODO: calc
 	return nativeTokenAmount, nil
 }
 
-func LiquidTokenToNativeToken(state LiquidStakingState, liquidTokenAmount sdk.Int) (sdk.Int, error) {
+func LiquidTokenToNativeToken(liquidStakingInfo LiquidStakingInfo, liquidTokenAmount sdk.Int) (sdk.Int, error) {
 	// TODO: calc
 	return liquidTokenAmount, nil
 }

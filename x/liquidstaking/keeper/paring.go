@@ -46,15 +46,15 @@ func resolveUnbondingInsuranceInAlivePairs(k *Keeper, ctx *sdk.Context, currentS
 
 func resolveChunkBondRequest(k *Keeper,
 	ctx *sdk.Context,
-	liquidStakingState types.LiquidStakingState,
+	liquidStakingInfo types.LiquidStakingInfo,
 	chunkBondRequest types.ChunkBondRequest,
 ) error {
 	liquidBondDenom := k.LiquidBondDenom(*ctx)
-	liquidStaker, err := sdk.AccAddressFromBech32(chunkBondRequest.Address)
+	liquidStaker, err := sdk.AccAddressFromBech32(chunkBondRequest.RequesterAddress)
 	if err != nil {
 		return err
 	}
-	mintAmount, err := types.NativeTokenToLiquidToken(liquidStakingState, chunkBondRequest.TokenAmount)
+	mintAmount, err := types.NativeTokenToLiquidToken(liquidStakingInfo, chunkBondRequest.TokenAmount)
 	if err != nil {
 		return err
 	}
@@ -77,11 +77,11 @@ func resolveChunkBondRequest(k *Keeper,
 
 func resolveChunkUnbondRequest(k *Keeper,
 	ctx *sdk.Context,
-	liquidStakingState types.LiquidStakingState,
+	liquidStakingInfo types.LiquidStakingInfo,
 	chunkUnbondRequest *types.ChunkUnbondRequest,
 	chunkBondRequests types.ChunkBondRequests,
 ) error {
-	liquidUnstaker, err := sdk.AccAddressFromBech32(chunkUnbondRequest.Address)
+	liquidUnstaker, err := sdk.AccAddressFromBech32(chunkUnbondRequest.RequesterAddress)
 	if err != nil {
 		return err
 	}
@@ -135,10 +135,10 @@ func resolveUnbondingChunksAndBondingChunks(k *Keeper, ctx *sdk.Context, state *
 		}
 		chunkBondRequests := state.ChunkBondRequests[indexBondRequest:newIndexBondRequest]
 		// TODO: create current liquid staking state
-		liquidStakingState := types.LiquidStakingState{}
+		liquidStakingInfo := types.LiquidStakingInfo{}
 
 		// TODO: FIFO rule?
-		if err := resolveChunkUnbondRequest(k, ctx, liquidStakingState, chunkUnbondRequest, chunkBondRequests); err != nil {
+		if err := resolveChunkUnbondRequest(k, ctx, liquidStakingInfo, chunkUnbondRequest, chunkBondRequests); err != nil {
 			panic(err)
 		}
 		if chunkUnbondRequest.NumChunkUnbond == 0 {
@@ -146,7 +146,7 @@ func resolveUnbondingChunksAndBondingChunks(k *Keeper, ctx *sdk.Context, state *
 			indexUnbondRequest++
 		}
 		for _, chunkBondRequest := range chunkBondRequests {
-			if err := resolveChunkBondRequest(k, ctx, liquidStakingState, chunkBondRequest); err != nil {
+			if err := resolveChunkBondRequest(k, ctx, liquidStakingInfo, chunkBondRequest); err != nil {
 				panic(err)
 			}
 			k.DeleteChunkBondRequest(*ctx, chunkBondRequest)
@@ -242,7 +242,7 @@ func unpairUnbondingChunksInAliveChunks(k *Keeper, ctx *sdk.Context, state *type
 
 		state.ChunkUnbonded = append(state.ChunkUnbonded, types.ChunkUnbondRequestedAliveChunk{
 			AliveChunk: *aliveChunk,
-			Address:    chunkUnbondRequest.Address,
+			Address:    chunkUnbondRequest.RequesterAddress,
 		})
 
 		indexAliveChunk--
@@ -276,7 +276,7 @@ func unpairUnbondingChunksInInsuranceUnbonded(k *Keeper, ctx *sdk.Context, state
 
 		state.ChunkUnbonded = append(state.ChunkUnbonded, types.ChunkUnbondRequestedAliveChunk{
 			AliveChunk: insuranceUnbonded.AliveChunk,
-			Address:    chunkUnbondRequest.Address,
+			Address:    chunkUnbondRequest.RequesterAddress,
 		})
 
 		indexAliveChunk++

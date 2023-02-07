@@ -56,16 +56,37 @@ message LiquidValidatorState {
   LiquidValidatorStatus status = 3;
 }
 
-message LiquidStakingState {
+message LiquidStakingInfo {
   string mint_rate = 1 [
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable) = false
+  ];
+  string ls_token_total_supply = 2 [
+    (gogoproto.customname) = "LSTokenTotalSupply",
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+  string net_amount = 3 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+  string token_amount = 4 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+  string total_remaining_rewards = 5 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable) = false
+  ];
+  string total_unbonding_balance = 6 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
     (gogoproto.nullable) = false
   ];
 }
 
 message ChunkBondRequest {
   uint64 id = 1;
-  string address = 2;
+  string requester_address = 2;
   string token_amount = 3 [
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
     (gogoproto.nullable) = false
@@ -74,7 +95,7 @@ message ChunkBondRequest {
 
 message ChunkUnbondRequest {
   uint64 id = 1;
-  string address = 2;
+  string requester_address = 2;
   uint64 num_chunk_unbond = 3;
 }
 

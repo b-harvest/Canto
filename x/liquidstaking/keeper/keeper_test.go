@@ -183,25 +183,25 @@ func generateRandomUnbondingChunk(suite *KeeperTestSuite, id types.UnbondingChun
 
 func generateRandomChunkBondRequest(id types.ChunkBondRequestId) types.ChunkBondRequest {
 	return types.ChunkBondRequest{
-		Id:          id,
-		Address:     generateRandomAccount().String(),
-		TokenAmount: generateRandomTokenAmount(),
+		Id:               id,
+		RequesterAddress: generateRandomAccount().String(),
+		TokenAmount:      generateRandomTokenAmount(),
 	}
 }
 
 func generateRandomChunkBondRequestWithTokenAmount(id types.ChunkBondRequestId, tokenAmount sdk.Int) types.ChunkBondRequest {
 	return types.ChunkBondRequest{
-		Id:          id,
-		Address:     generateRandomAccount().String(),
-		TokenAmount: tokenAmount,
+		Id:               id,
+		RequesterAddress: generateRandomAccount().String(),
+		TokenAmount:      tokenAmount,
 	}
 }
 
 func generateRandomChunkUnbondRequest(id types.ChunkUnbondRequestId) types.ChunkUnbondRequest {
 	return types.ChunkUnbondRequest{
-		Id:             id,
-		Address:        generateRandomAccount().String(),
-		NumChunkUnbond: uint64(tmrand.Int63n(math.MaxInt64)),
+		Id:               id,
+		RequesterAddress: generateRandomAccount().String(),
+		NumChunkUnbond:   uint64(tmrand.Int63n(math.MaxInt64)),
 	}
 }
 

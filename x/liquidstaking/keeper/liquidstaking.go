@@ -11,9 +11,9 @@ func (k Keeper) LiquidBondDenom(ctx sdk.Context) (res string) {
 	return
 }
 
-func (k Keeper) NewLiquidStakingState() types.LiquidStakingState {
+func (k Keeper) NewLiquidStakingInfo() types.LiquidStakingInfo {
 	// TODO: calc mint rate
-	return types.LiquidStakingState{
+	return types.LiquidStakingInfo{
 		MintRate: sdk.OneDec(),
 	}
 }
@@ -22,8 +22,8 @@ func (k Keeper) LiquidStake(
 	ctx sdk.Context, liquidStaker sdk.AccAddress, tokenAmount sdk.Int) (types.ChunkBondRequestId, error) {
 	chunkSize := k.GetParams(ctx).ChunkSize
 
-	liquidStakingState := k.NewLiquidStakingState()
-	mintTokenAmount, err := types.NativeTokenToLiquidToken(liquidStakingState, tokenAmount)
+	liquidStakingInfo := k.NewLiquidStakingInfo()
+	mintTokenAmount, err := types.NativeTokenToLiquidToken(liquidStakingInfo, tokenAmount)
 	if err != nil {
 		return 0, err
 	}
@@ -40,9 +40,9 @@ func (k Keeper) LiquidStake(
 
 	id := k.GetLastChunkBondRequestId(ctx) + 1
 	req := types.ChunkBondRequest{
-		Id:          id,
-		Address:     liquidStaker.String(),
-		TokenAmount: tokenAmount,
+		Id:               id,
+		RequesterAddress: liquidStaker.String(),
+		TokenAmount:      tokenAmount,
 	}
 
 	k.SetChunkBondRequest(ctx, req)
@@ -56,7 +56,7 @@ func (k Keeper) CancelLiquidStaking(
 	if !found {
 		return nil, types.ErrInvalidChunkBondRequestId
 	}
-	requesterAddress, err := sdk.AccAddressFromBech32(req.Address)
+	requesterAddress, err := sdk.AccAddressFromBech32(req.RequesterAddress)
 	if err != nil {
 		return nil, err
 	}
@@ -87,9 +87,9 @@ func (k Keeper) LiquidUnstake(ctx sdk.Context, liquidUnstaker sdk.AccAddress, nu
 
 	id := k.GetLastChunkUnbondRequestId(ctx) + 1
 	req := types.ChunkUnbondRequest{
-		Id:             id,
-		Address:        liquidUnstaker.String(),
-		NumChunkUnbond: numChunkUnbond,
+		Id:               id,
+		RequesterAddress: liquidUnstaker.String(),
+		NumChunkUnbond:   numChunkUnbond,
 	}
 
 	k.SetChunkUnbondRequest(ctx, req)
@@ -103,7 +103,7 @@ func (k Keeper) CancelLiquidUnstaking(
 	if !found {
 		return nil, types.ErrInvalidChunkBondRequestId
 	}
-	requesterAddress, err := sdk.AccAddressFromBech32(req.Address)
+	requesterAddress, err := sdk.AccAddressFromBech32(req.RequesterAddress)
 	if err != nil {
 		return nil, err
 	}
