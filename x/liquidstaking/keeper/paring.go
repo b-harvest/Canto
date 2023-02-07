@@ -207,7 +207,7 @@ func rankRankable(ctx *sdk.Context, k *Keeper, rankable []types.Rankable) {
 }
 
 func (k *Keeper) rankAliveChunks(ctx *sdk.Context, state *types.State) (ret []types.Rankable) {
-	for i, _ := range state.AliveChunks {
+	for i := range state.AliveChunks {
 		ret = append(ret, &state.AliveChunks[i])
 	}
 	rankRankable(ctx, k, ret)
@@ -215,10 +215,10 @@ func (k *Keeper) rankAliveChunks(ctx *sdk.Context, state *types.State) (ret []ty
 }
 
 func (k *Keeper) rankAliveChunksAndInsuranceBid(ctx *sdk.Context, state *types.State) (ret []types.Rankable) {
-	for i, _ := range state.AliveChunks {
+	for i := range state.AliveChunks {
 		ret = append(ret, &state.AliveChunks[i])
 	}
-	for i, _ := range state.InsuranceBids {
+	for i := range state.InsuranceBids {
 		ret = append(ret, &state.InsuranceBids[i])
 	}
 	rankRankable(ctx, k, ret)
