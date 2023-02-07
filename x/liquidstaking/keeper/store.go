@@ -97,9 +97,9 @@ func (k Keeper) GetChunkBondRequest(ctx sdk.Context, id types.ChunkBondRequestId
 	return req, true
 }
 
-func (k Keeper) DeleteChunkBondRequest(ctx sdk.Context, id types.ChunkBondRequestId) {
+func (k Keeper) DeleteChunkBondRequest(ctx sdk.Context, req types.ChunkBondRequest) {
 	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.GetChunkBondRequestKey(id))
+	store.Delete(types.GetChunkBondRequestKey(req.Id))
 }
 
 func (k Keeper) SetChunkUnbondRequest(ctx sdk.Context, req types.ChunkUnbondRequest) {
@@ -119,15 +119,15 @@ func (k Keeper) GetChunkUnbondRequest(ctx sdk.Context, id types.ChunkUnbondReque
 	return req, true
 }
 
-func (k Keeper) DeleteChunkUnbondRequest(ctx sdk.Context, id types.ChunkUnbondRequestId) {
+func (k Keeper) DeleteChunkUnbondRequest(ctx sdk.Context, req types.ChunkUnbondRequest) {
 	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.GetChunkUnbondRequestKey(id))
+	store.Delete(types.GetChunkUnbondRequestKey(req.Id))
 }
 
-func (k Keeper) SetInsuranceBid(ctx sdk.Context, chunk types.InsuranceBid) {
+func (k Keeper) SetInsuranceBid(ctx sdk.Context, bid types.InsuranceBid) {
 	store := ctx.KVStore(k.storeKey)
-	bz := k.cdc.MustMarshal(&chunk)
-	store.Set(types.GetInsuranceBidKey(chunk.Id), bz)
+	bz := k.cdc.MustMarshal(&bid)
+	store.Set(types.GetInsuranceBidKey(bid.Id), bz)
 }
 
 func (k Keeper) GetInsuranceBid(ctx sdk.Context, id types.InsuranceBidId) (bid types.InsuranceBid, found bool) {
@@ -141,9 +141,9 @@ func (k Keeper) GetInsuranceBid(ctx sdk.Context, id types.InsuranceBidId) (bid t
 	return bid, true
 }
 
-func (k Keeper) DeleteInsuranceBid(ctx sdk.Context, id types.InsuranceBidId) {
+func (k Keeper) DeleteInsuranceBid(ctx sdk.Context, bid types.InsuranceBid) {
 	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.GetInsuranceBidKey(id))
+	store.Delete(types.GetInsuranceBidKey(bid.Id))
 }
 
 func (k Keeper) SetInsuranceUnbondRequest(ctx sdk.Context, req types.InsuranceUnbondRequest) {
@@ -163,9 +163,9 @@ func (k Keeper) GetInsuranceUnbondRequest(ctx sdk.Context, id types.AliveChunkId
 	return req, true
 }
 
-func (k Keeper) DeleteInsuranceUnbondRequest(ctx sdk.Context, id types.AliveChunkId) {
+func (k Keeper) DeleteInsuranceUnbondRequest(ctx sdk.Context, req types.InsuranceUnbondRequest) {
 	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.GetInsuranceUnbondRequestKey(id))
+	store.Delete(types.GetInsuranceUnbondRequestKey(req.AliveChunkId))
 }
 
 func (k Keeper) SetAliveChunk(ctx sdk.Context, aliveChunk types.AliveChunk) {
@@ -185,9 +185,9 @@ func (k Keeper) GetAliveChunk(ctx sdk.Context, id types.AliveChunkId) (aliveChun
 	return aliveChunk, true
 }
 
-func (k Keeper) DeleteAliveChunk(ctx sdk.Context, id types.AliveChunkId) {
+func (k Keeper) DeleteAliveChunk(ctx sdk.Context, aliveChunk types.AliveChunk) {
 	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.GetAliveChunkKey(id))
+	store.Delete(types.GetAliveChunkKey(aliveChunk.Id))
 }
 
 func (k Keeper) SetUnbondingChunk(ctx sdk.Context, unbondingChunk types.UnbondingChunk) {
@@ -207,9 +207,9 @@ func (k Keeper) GetUnbondingChunk(ctx sdk.Context, id types.UnbondingChunkId) (u
 	return unbondingChunk, true
 }
 
-func (k Keeper) DeleteUnbondingChunk(ctx sdk.Context, id types.UnbondingChunkId) {
+func (k Keeper) DeleteUnbondingChunk(ctx sdk.Context, unbondingChunk types.UnbondingChunk) {
 	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.GetUnbondingChunkKey(id))
+	store.Delete(types.GetUnbondingChunkKey(unbondingChunk.Id))
 }
 
 func (k Keeper) iterateAliveChunks(ctx sdk.Context, cb func(aliveChunk types.AliveChunk) (stop bool)) {

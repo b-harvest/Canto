@@ -150,18 +150,15 @@ func (suite *KeeperTestSuite) TestStoreAliveChunk() {
 			}
 			_, found := suite.keeper.GetAliveChunk(suite.ctx, id)
 			suite.Require().Equal(false, found)
-			suite.keeper.DeleteAliveChunk(suite.ctx, id)
-			_, found = suite.keeper.GetAliveChunk(suite.ctx, id)
-			suite.Require().Equal(false, found)
 		}
 	})
 	suite.Run("Delete Alive chunk with existing keys", func() {
 		count := 0
 		for _, expected := range chunkMap {
 			id := expected.Id
-			_, found := suite.keeper.GetAliveChunk(suite.ctx, id)
+			aliveChunk, found := suite.keeper.GetAliveChunk(suite.ctx, id)
 			suite.Require().Equal(true, found)
-			suite.keeper.DeleteAliveChunk(suite.ctx, id)
+			suite.keeper.DeleteAliveChunk(suite.ctx, aliveChunk)
 			_, found = suite.keeper.GetAliveChunk(suite.ctx, id)
 			suite.Require().Equal(false, found)
 			count++
@@ -228,18 +225,15 @@ func (suite *KeeperTestSuite) TestStoreUnbondingChunk() {
 			}
 			_, found := suite.keeper.GetUnbondingChunk(suite.ctx, id)
 			suite.Require().Equal(false, found)
-			suite.keeper.DeleteUnbondingChunk(suite.ctx, id)
-			_, found = suite.keeper.GetUnbondingChunk(suite.ctx, id)
-			suite.Require().Equal(false, found)
 		}
 	})
 	suite.Run("Delete Unbonding chunk with existing keys", func() {
 		count := 0
 		for _, expected := range chunkMap {
 			id := expected.Id
-			_, found := suite.keeper.GetUnbondingChunk(suite.ctx, id)
+			unbondingChunk, found := suite.keeper.GetUnbondingChunk(suite.ctx, id)
 			suite.Require().Equal(true, found)
-			suite.keeper.DeleteUnbondingChunk(suite.ctx, id)
+			suite.keeper.DeleteUnbondingChunk(suite.ctx, unbondingChunk)
 			_, found = suite.keeper.GetUnbondingChunk(suite.ctx, id)
 			suite.Require().Equal(false, found)
 			count++
@@ -285,18 +279,15 @@ func (suite *KeeperTestSuite) TestStoreChunkBondRequest() {
 			}
 			_, found := suite.keeper.GetChunkBondRequest(suite.ctx, id)
 			suite.Require().Equal(false, found)
-			suite.keeper.DeleteChunkBondRequest(suite.ctx, id)
-			_, found = suite.keeper.GetChunkBondRequest(suite.ctx, id)
-			suite.Require().Equal(false, found)
 		}
 	})
 	suite.Run("Delete Alive chunk with existing keys", func() {
 		count := 0
 		for _, expected := range chunkMap {
 			id := expected.Id
-			_, found := suite.keeper.GetChunkBondRequest(suite.ctx, id)
+			req, found := suite.keeper.GetChunkBondRequest(suite.ctx, id)
 			suite.Require().Equal(true, found)
-			suite.keeper.DeleteChunkBondRequest(suite.ctx, id)
+			suite.keeper.DeleteChunkBondRequest(suite.ctx, req)
 			_, found = suite.keeper.GetChunkBondRequest(suite.ctx, id)
 			suite.Require().Equal(false, found)
 			count++
@@ -363,18 +354,15 @@ func (suite *KeeperTestSuite) TestStoreChunkUnbondRequest() {
 			}
 			_, found := suite.keeper.GetChunkUnbondRequest(suite.ctx, id)
 			suite.Require().Equal(false, found)
-			suite.keeper.DeleteChunkUnbondRequest(suite.ctx, id)
-			_, found = suite.keeper.GetChunkUnbondRequest(suite.ctx, id)
-			suite.Require().Equal(false, found)
 		}
 	})
 	suite.Run("Delete Alive chunk with existing keys", func() {
 		count := 0
 		for _, expected := range chunkMap {
 			id := expected.Id
-			_, found := suite.keeper.GetChunkUnbondRequest(suite.ctx, id)
+			req, found := suite.keeper.GetChunkUnbondRequest(suite.ctx, id)
 			suite.Require().Equal(true, found)
-			suite.keeper.DeleteChunkUnbondRequest(suite.ctx, id)
+			suite.keeper.DeleteChunkUnbondRequest(suite.ctx, req)
 			_, found = suite.keeper.GetChunkUnbondRequest(suite.ctx, id)
 			suite.Require().Equal(false, found)
 			count++
@@ -441,18 +429,15 @@ func (suite *KeeperTestSuite) TestStoreInsuranceBid() {
 			}
 			_, found := suite.keeper.GetInsuranceBid(suite.ctx, id)
 			suite.Require().Equal(false, found)
-			suite.keeper.DeleteInsuranceBid(suite.ctx, id)
-			_, found = suite.keeper.GetInsuranceBid(suite.ctx, id)
-			suite.Require().Equal(false, found)
 		}
 	})
 	suite.Run("Delete insurance with existing keys", func() {
 		count := 0
 		for _, expected := range expectedMap {
 			id := expected.Id
-			_, found := suite.keeper.GetInsuranceBid(suite.ctx, id)
+			bid, found := suite.keeper.GetInsuranceBid(suite.ctx, id)
 			suite.Require().Equal(true, found)
-			suite.keeper.DeleteInsuranceBid(suite.ctx, id)
+			suite.keeper.DeleteInsuranceBid(suite.ctx, bid)
 			_, found = suite.keeper.GetInsuranceBid(suite.ctx, id)
 			suite.Require().Equal(false, found)
 			count++
@@ -519,18 +504,15 @@ func (suite *KeeperTestSuite) TestStoreInsuranceUnbondRequest() {
 			}
 			_, found := suite.keeper.GetInsuranceUnbondRequest(suite.ctx, id)
 			suite.Require().Equal(false, found)
-			suite.keeper.DeleteInsuranceUnbondRequest(suite.ctx, id)
-			_, found = suite.keeper.GetInsuranceUnbondRequest(suite.ctx, id)
-			suite.Require().Equal(false, found)
 		}
 	})
 	suite.Run("Delete insurance with existing keys", func() {
 		count := 0
 		for _, expected := range expectedMap {
 			id := expected.AliveChunkId
-			_, found := suite.keeper.GetInsuranceUnbondRequest(suite.ctx, id)
+			req, found := suite.keeper.GetInsuranceUnbondRequest(suite.ctx, id)
 			suite.Require().Equal(true, found)
-			suite.keeper.DeleteInsuranceUnbondRequest(suite.ctx, id)
+			suite.keeper.DeleteInsuranceUnbondRequest(suite.ctx, req)
 			_, found = suite.keeper.GetInsuranceUnbondRequest(suite.ctx, id)
 			suite.Require().Equal(false, found)
 			count++

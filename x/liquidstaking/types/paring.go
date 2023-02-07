@@ -39,6 +39,13 @@ func NewAliveChunk(id AliveChunkId, chunkBondRequest ChunkBondRequest, insurance
 	}
 }
 
+func NewInsuranceUnbondRequest(insuranceProviderAddr string, aliveChunkId uint64) InsuranceUnbondRequest {
+	return InsuranceUnbondRequest{
+		InsuranceProviderAddress: insuranceProviderAddr,
+		AliveChunkId:             aliveChunkId,
+	}
+}
+
 type State struct {
 	InsuranceBids           InsuranceBids
 	InsuranceUnbondRequests InsuranceUnbondRequests

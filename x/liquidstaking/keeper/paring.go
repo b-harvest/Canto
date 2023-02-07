@@ -142,14 +142,14 @@ func resolveUnbondingChunksAndBondingChunks(k *Keeper, ctx *sdk.Context, state *
 			panic(err)
 		}
 		if chunkUnbondRequest.NumChunkUnbond == 0 {
-			k.DeleteChunkUnbondRequest(*ctx, chunkUnbondRequest.Id)
+			k.DeleteChunkUnbondRequest(*ctx, *chunkUnbondRequest)
 			indexUnbondRequest++
 		}
 		for _, chunkBondRequest := range chunkBondRequests {
 			if err := resolveChunkBondRequest(k, ctx, liquidStakingState, chunkBondRequest); err != nil {
 				panic(err)
 			}
-			k.DeleteChunkBondRequest(*ctx, chunkBondRequest.Id)
+			k.DeleteChunkBondRequest(*ctx, chunkBondRequest)
 		}
 		indexBondRequest = newIndexBondRequest
 	}
@@ -248,7 +248,7 @@ func unpairUnbondingChunksInAliveChunks(k *Keeper, ctx *sdk.Context, state *type
 		indexAliveChunk--
 		chunkUnbondRequest.NumChunkUnbond--
 		if chunkUnbondRequest.NumChunkUnbond == 0 {
-			k.DeleteChunkUnbondRequest(*ctx, chunkUnbondRequest.Id)
+			k.DeleteChunkUnbondRequest(*ctx, *chunkUnbondRequest)
 			indexChunkUnbondReq++
 		}
 	}
@@ -282,7 +282,7 @@ func unpairUnbondingChunksInInsuranceUnbonded(k *Keeper, ctx *sdk.Context, state
 		indexAliveChunk++
 		chunkUnbondRequest.NumChunkUnbond--
 		if chunkUnbondRequest.NumChunkUnbond == 0 {
-			k.DeleteChunkUnbondRequest(*ctx, chunkUnbondRequest.Id)
+			k.DeleteChunkUnbondRequest(*ctx, *chunkUnbondRequest)
 			indexChunkUnbondReq++
 		}
 	}
@@ -415,19 +415,19 @@ func (k *Keeper) unpairPairRankedAlivedChunks(ctx *sdk.Context,
 				delegationState.ChangeDelegation(unpaired.ValidatorAddress, v.ValidatorAddress, aliveChunk.TokenAmount)
 
 				// TODO: accept insurance unbond request
-				k.DeleteInsuranceUnbondRequest(*ctx, unpaired.Id)
-				k.DeleteAliveChunk(*ctx, unpaired.Id)
+				k.DeleteInsuranceUnbondRequest(*ctx, types.NewInsuranceUnbondRequest(unpaired.InsuranceProviderAddress, unpaired.Id))
+				k.DeleteAliveChunk(*ctx, unpaired.AliveChunk)
 				id++
 			} else {
 				chunkBondRequest := state.ChunkBondRequests[numPairedInsuranceBid-numUnpairedAliveChunk-numInsuranceUnbonded]
 				aliveChunk = types.NewAliveChunk(id, chunkBondRequest, *v)
-				k.DeleteChunkBondRequest(*ctx, chunkBondRequest.Id)
-				k.DeleteInsuranceBid(*ctx, v.Id)
+				k.DeleteChunkBondRequest(*ctx, chunkBondRequest)
+				k.DeleteInsuranceBid(*ctx, *v)
 
 				delegationState.ChangeDelegation("", v.ValidatorAddress, aliveChunk.TokenAmount)
 				id++
 			}
-			k.DeleteInsuranceBid(*ctx, v.Id)
+			k.DeleteInsuranceBid(*ctx, *v)
 			k.SetAliveChunk(*ctx, aliveChunk)
 			numPairedInsuranceBid++
 		case *types.AliveChunk:
@@ -531,8 +531,9 @@ func (k Keeper) PairChunkAndInsurance(ctx sdk.Context) error {
 
 	{
 		for _, insuranceUnbonded := range state.InsuranceUnbonded {
-			k.DeleteAliveChunk(ctx, insuranceUnbonded.Id)
-			k.DeleteInsuranceUnbondRequest(ctx, insuranceUnbonded.Id)
+			k.DeleteAliveChunk(ctx, insuranceUnbonded.AliveChunk)
+			k.DeleteInsuranceUnbondRequest(ctx,
+				types.NewInsuranceUnbondRequest(insuranceUnbonded.InsuranceProviderAddress, insuranceUnbonded.Id))
 			// TODO: check logic
 			delegationState.ChangeDelegation("", insuranceUnbonded.ValidatorAddress, insuranceUnbonded.TokenAmount)
 		}
@@ -546,9 +547,10 @@ func (k Keeper) PairChunkAndInsurance(ctx sdk.Context) error {
 			if _, found := k.GetInsuranceUnbondRequest(ctx, chunkUnbonded.Id); found {
 				// TODO: check spec, insurance unbond request is converted chunk unbond request
 				//       due to lack of available chunk
-				k.DeleteInsuranceUnbondRequest(ctx, chunkUnbonded.Id)
+				k.DeleteInsuranceUnbondRequest(ctx,
+					types.NewInsuranceUnbondRequest(chunkUnbonded.InsuranceProviderAddress, chunkUnbonded.Id))
 			}
-			k.DeleteAliveChunk(ctx, chunkUnbonded.Id)
+			k.DeleteAliveChunk(ctx, chunkUnbonded.AliveChunk)
 			if _, err := k.UndelegateTokenAmount(ctx,
 				chunkUnbonded.Address,
 				chunkUnbonded.ValidatorAddress,

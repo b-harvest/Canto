@@ -71,7 +71,7 @@ func (k Keeper) CancelLiquidStaking(
 		return 0, err
 	}
 
-	k.DeleteChunkBondRequest(ctx, id)
+	k.DeleteChunkBondRequest(ctx, req)
 	return nil, nil
 }
 
@@ -118,7 +118,7 @@ func (k Keeper) CancelLiquidUnstaking(
 		return 0, err
 	}
 
-	k.DeleteChunkUnbondRequest(ctx, id)
+	k.DeleteChunkUnbondRequest(ctx, req)
 	return nil, nil
 }
 
@@ -174,7 +174,7 @@ func (k Keeper) CancelInsuranceBid(
 	if !insurer.Equals(requesterAddress) {
 		return nil, types.ErrInvalidRequesterAddress
 	}
-	k.DeleteInsuranceBid(ctx, id)
+	k.DeleteInsuranceBid(ctx, bid)
 	return nil, nil
 }
 
@@ -209,6 +209,6 @@ func (k Keeper) CancelInsuranceUnbond(
 	if !insurer.Equals(requesterAddress) {
 		return nil, types.ErrInvalidRequesterAddress
 	}
-	k.DeleteInsuranceUnbondRequest(ctx, id)
+	k.DeleteInsuranceUnbondRequest(ctx, req)
 	return nil, nil
 }
