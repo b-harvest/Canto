@@ -208,7 +208,7 @@ message QueryUnbondingChunksResponse {}
 message QueryChunkBondRequestRequest { uint64 id = 1; }
 
 message QueryChunkBondRequestResponse {
-  ChunkBondRequest chunkBondRequests = 1 [ (gogoproto.nullable) = false ];
+  ChunkBondRequest chunk_bond_requests = 1 [ (gogoproto.nullable) = false ];
 }
 
 message QueryChunkBondRequestsRequest {
@@ -221,7 +221,7 @@ message QueryChunkBondRequestsByDelegatorRequest {
 }
 
 message QueryChunkBondRequestsResponse {
-  repeated ChunkBondRequest chunkBondRequests = 1
+  repeated ChunkBondRequest chunk_bond_requests = 1
       [ (gogoproto.nullable) = false ];
 
   cosmos.base.query.v1beta1.PageResponse pagination = 2;
