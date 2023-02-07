@@ -78,19 +78,6 @@ message ChunkUnbondRequest {
   uint64 num_chunk_unbond = 3;
 }
 
-// TBD
-enum InsuranceBidStatus {
-  option (gogoproto.goproto_enum_prefix) = false;
-  // TBD
-  INSURANCE_BID_STATUS_TOBE_UNSPECIFIED = 0;
-  // TBD
-  INSURANCE_BID_STATUS_TOBE_BONDED = 1;
-  // TBD
-  INSURANCE_BID_STATUS_BONDED = 2;
-  // TBD
-  INSURANCE_BID_STATUS_UNBONDING = 3;
-}
-
 message InsuranceBid {
   uint64 id = 1;
   string validator_address = 2;
@@ -103,7 +90,6 @@ message InsuranceBid {
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
     (gogoproto.nullable) = false
   ];
-  InsuranceBidStatus status = 6;
 }
 
 message InsuranceUnbondRequest {
