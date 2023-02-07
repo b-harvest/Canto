@@ -86,6 +86,15 @@ func (k Keeper) SetChunkBondRequest(ctx sdk.Context, req types.ChunkBondRequest)
 	store.Set(types.GetChunkBondRequestKey(req.Id), bz)
 }
 
+func (k Keeper) SetChunkBondRequestIndex(ctx sdk.Context, req types.ChunkBondRequest) {
+	store := ctx.KVStore(k.storeKey)
+	store.Set(types.GetChunkBondRequestIndexKey(
+		sdk.MustAccAddressFromBech32(req.RequesterAddress),
+		req.Id),
+		[]byte{},
+	)
+}
+
 func (k Keeper) GetChunkBondRequest(ctx sdk.Context, id types.ChunkBondRequestId) (req types.ChunkBondRequest, found bool) {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.GetChunkBondRequestKey(id))
@@ -100,12 +109,27 @@ func (k Keeper) GetChunkBondRequest(ctx sdk.Context, id types.ChunkBondRequestId
 func (k Keeper) DeleteChunkBondRequest(ctx sdk.Context, req types.ChunkBondRequest) {
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.GetChunkBondRequestKey(req.Id))
+	k.DeleteChunkBondRequestIndex(ctx, req)
+}
+
+func (k Keeper) DeleteChunkBondRequestIndex(ctx sdk.Context, req types.ChunkBondRequest) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.GetChunkBondRequestIndexKey(sdk.MustAccAddressFromBech32(req.RequesterAddress), req.Id))
 }
 
 func (k Keeper) SetChunkUnbondRequest(ctx sdk.Context, req types.ChunkUnbondRequest) {
 	store := ctx.KVStore(k.storeKey)
 	bz := k.cdc.MustMarshal(&req)
 	store.Set(types.GetChunkUnbondRequestKey(req.Id), bz)
+}
+
+func (k Keeper) SetChunkUnbondRequestIndex(ctx sdk.Context, req types.ChunkBondRequest) {
+	store := ctx.KVStore(k.storeKey)
+	store.Set(types.GetChunkUnbondRequestIndexKey(
+		sdk.MustAccAddressFromBech32(req.RequesterAddress),
+		req.Id),
+		[]byte{},
+	)
 }
 
 func (k Keeper) GetChunkUnbondRequest(ctx sdk.Context, id types.ChunkUnbondRequestId) (req types.ChunkUnbondRequest, found bool) {
@@ -122,6 +146,12 @@ func (k Keeper) GetChunkUnbondRequest(ctx sdk.Context, id types.ChunkUnbondReque
 func (k Keeper) DeleteChunkUnbondRequest(ctx sdk.Context, req types.ChunkUnbondRequest) {
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.GetChunkUnbondRequestKey(req.Id))
+	k.DeleteChunkUnbondRequestIndex(ctx, req)
+}
+
+func (k Keeper) DeleteChunkUnbondRequestIndex(ctx sdk.Context, req types.ChunkUnbondRequest) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.GetChunkUnbondRequestIndexKey(sdk.MustAccAddressFromBech32(req.RequesterAddress), req.Id))
 }
 
 func (k Keeper) SetInsuranceBid(ctx sdk.Context, bid types.InsuranceBid) {
@@ -399,6 +429,36 @@ func (k Keeper) GetAllChunkBondRequests(ctx sdk.Context) (ret types.ChunkBondReq
 	return
 }
 
+func (k Keeper) IterateChunkBondRequestsByRequesterAddr(ctx sdk.Context,
+	requesterAddr sdk.AccAddress,
+	cb func(req types.ChunkBondRequest) (stop bool),
+) {
+
+	store := ctx.KVStore(k.storeKey)
+	iter := sdk.KVStorePrefixIterator(store, types.GetChunkBondRequestIndexPrefixKey(requesterAddr))
+	defer iter.Close()
+	for ; iter.Valid(); iter.Next() {
+		_, id := types.ParseChunkBondRequestIndex(iter.Key())
+		req, found := k.GetChunkBondRequest(ctx, id)
+		if !found {
+			panic("invalid scenario")
+		}
+		if cb(req) {
+			break
+		}
+	}
+}
+
+func (k Keeper) GetChunkBondRequestsByRequesterAddr(ctx sdk.Context,
+	requesterAddr sdk.AccAddress,
+) (ret types.ChunkBondRequests) {
+	k.IterateChunkBondRequestsByRequesterAddr(ctx, requesterAddr, func(req types.ChunkBondRequest) (stop bool) {
+		ret = append(ret, req)
+		return false
+	})
+	return
+}
+
 func (k Keeper) IterateChunkUnbondRequests(ctx sdk.Context, cb func(req types.ChunkUnbondRequest) (stop bool)) {
 	store := ctx.KVStore(k.storeKey)
 	iter := sdk.KVStorePrefixIterator(store, types.KeyPrefixChunkUnbondRequest)
@@ -414,6 +474,36 @@ func (k Keeper) IterateChunkUnbondRequests(ctx sdk.Context, cb func(req types.Ch
 
 func (k Keeper) GetAllChunkUnbondRequests(ctx sdk.Context) (ret types.ChunkUnbondRequests) {
 	k.IterateChunkUnbondRequests(ctx, func(req types.ChunkUnbondRequest) (stop bool) {
+		ret = append(ret, req)
+		return false
+	})
+	return
+}
+
+func (k Keeper) IterateChunkUnbondRequestsByRequesterAddr(ctx sdk.Context,
+	requesterAddr sdk.AccAddress,
+	cb func(req types.ChunkUnbondRequest) (stop bool),
+) {
+
+	store := ctx.KVStore(k.storeKey)
+	iter := sdk.KVStorePrefixIterator(store, types.GetChunkUnbondRequestIndexPrefixKey(requesterAddr))
+	defer iter.Close()
+	for ; iter.Valid(); iter.Next() {
+		_, id := types.ParseChunkUnbondRequestIndex(iter.Key())
+		req, found := k.GetChunkUnbondRequest(ctx, id)
+		if !found {
+			panic("invalid scenario")
+		}
+		if cb(req) {
+			break
+		}
+	}
+}
+
+func (k Keeper) GetChunkUnbondRequestsByRequesterAddr(ctx sdk.Context,
+	requesterAddr sdk.AccAddress,
+) (ret types.ChunkUnbondRequests) {
+	k.IterateChunkUnbondRequestsByRequesterAddr(ctx, requesterAddr, func(req types.ChunkUnbondRequest) (stop bool) {
 		ret = append(ret, req)
 		return false
 	})
