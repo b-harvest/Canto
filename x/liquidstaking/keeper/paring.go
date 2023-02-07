@@ -337,6 +337,7 @@ func (k *Keeper) unpairUnrankedAliveChunks(ctx *sdk.Context, unranked types.Rank
 		}
 		k.SetLastInsuranceBidId(*ctx, id)
 		k.SetInsuranceBid(*ctx, bid)
+		k.SetInsuranceBidIndex(*ctx, bid)
 	}
 	return
 }
@@ -429,11 +430,13 @@ func (k *Keeper) unpairPairRankedAlivedChunks(ctx *sdk.Context,
 			}
 			k.DeleteInsuranceBid(*ctx, *v)
 			k.SetAliveChunk(*ctx, aliveChunk)
+			k.SetAliveChunkIndex(*ctx, aliveChunk)
 			numPairedInsuranceBid++
 		case *types.AliveChunk:
 			if _, found := k.GetAliveChunk(*ctx, v.Id); !found {
 				k.Logger(*ctx).Error("alive chunk has changed", "alive chunk id", v.Id)
 				k.SetAliveChunk(*ctx, *v)
+				k.SetAliveChunkIndex(*ctx, *v)
 			}
 		default:
 			panic("items must be alive chunk or insurance bid")

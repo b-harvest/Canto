@@ -136,6 +136,7 @@ func (suite *KeeperTestSuite) randomizeCurrentState(
 		insuranceBid := generateRandomInsuranceBid(suite, id)
 		record.InsuranceBid[id] = insuranceBid
 		suite.keeper.SetInsuranceBid(suite.ctx, insuranceBid)
+		suite.keeper.SetInsuranceBidIndex(suite.ctx, insuranceBid)
 
 		depositCoinsIntoModule(suite, sdk.NewCoin(bondDenom, insuranceBid.InsuranceAmount))
 	}
@@ -163,6 +164,7 @@ func (suite *KeeperTestSuite) randomizeCurrentState(
 		}()
 		record.InsuranceUnbondRequest[insuranceUnbondRequest.AliveChunkId] = insuranceUnbondRequest
 		suite.keeper.SetInsuranceUnbondRequest(suite.ctx, insuranceUnbondRequest)
+		suite.keeper.SetInsuranceUnbondRequestIndex(suite.ctx, insuranceUnbondRequest)
 	}
 	ret = getStateFromKeeper(suite)
 	return

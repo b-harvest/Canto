@@ -130,6 +130,25 @@ func (k Keeper) SetInsuranceBid(ctx sdk.Context, bid types.InsuranceBid) {
 	store.Set(types.GetInsuranceBidKey(bid.Id), bz)
 }
 
+func (k Keeper) SetInsuranceBidIndex(ctx sdk.Context, bid types.InsuranceBid) {
+	store := ctx.KVStore(k.storeKey)
+	store.Set(types.GetInsuranceBidIndexByInsuranceProviderKey(
+		sdk.MustAccAddressFromBech32(bid.InsuranceProviderAddress),
+		bid.Id),
+		[]byte{},
+	)
+
+	valAddr, err := sdk.ValAddressFromBech32(bid.ValidatorAddress)
+	if err != nil {
+		panic(err)
+	}
+	store.Set(
+		types.GetAliveChunkIndexByValidatorKey(
+			valAddr,
+			bid.Id),
+		[]byte{})
+}
+
 func (k Keeper) GetInsuranceBid(ctx sdk.Context, id types.InsuranceBidId) (bid types.InsuranceBid, found bool) {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.GetInsuranceBidKey(id))
@@ -144,12 +163,39 @@ func (k Keeper) GetInsuranceBid(ctx sdk.Context, id types.InsuranceBidId) (bid t
 func (k Keeper) DeleteInsuranceBid(ctx sdk.Context, bid types.InsuranceBid) {
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.GetInsuranceBidKey(bid.Id))
+	k.DeleteInsuranceBidIndex(ctx, bid)
+}
+
+func (k Keeper) DeleteInsuranceBidIndex(ctx sdk.Context, bid types.InsuranceBid) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(
+		types.GetInsuranceBidIndexByInsuranceProviderKey(
+			sdk.MustAccAddressFromBech32(bid.InsuranceProviderAddress),
+			bid.Id))
+	valAddr, err := sdk.ValAddressFromBech32(bid.ValidatorAddress)
+	if err != nil {
+		// TODO: check
+		panic(err)
+	}
+	store.Delete(
+		types.GetInsuranceBidIndexByValidatorKey(
+			valAddr,
+			bid.Id))
 }
 
 func (k Keeper) SetInsuranceUnbondRequest(ctx sdk.Context, req types.InsuranceUnbondRequest) {
 	store := ctx.KVStore(k.storeKey)
 	bz := k.cdc.MustMarshal(&req)
 	store.Set(types.GetInsuranceUnbondRequestKey(req.AliveChunkId), bz)
+}
+
+func (k Keeper) SetInsuranceUnbondRequestIndex(ctx sdk.Context, req types.InsuranceUnbondRequest) {
+	store := ctx.KVStore(k.storeKey)
+	store.Set(
+		types.GetInsuranceUnbondRequestIndexByInsuranceProviderKey(
+			sdk.MustAccAddressFromBech32(req.InsuranceProviderAddress),
+			req.AliveChunkId),
+		[]byte{})
 }
 
 func (k Keeper) GetInsuranceUnbondRequest(ctx sdk.Context, id types.AliveChunkId) (req types.InsuranceUnbondRequest, found bool) {
@@ -166,12 +212,39 @@ func (k Keeper) GetInsuranceUnbondRequest(ctx sdk.Context, id types.AliveChunkId
 func (k Keeper) DeleteInsuranceUnbondRequest(ctx sdk.Context, req types.InsuranceUnbondRequest) {
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.GetInsuranceUnbondRequestKey(req.AliveChunkId))
+	k.DeleteInsuranceUnbondRequestIndex(ctx, req)
+}
+
+func (k Keeper) DeleteInsuranceUnbondRequestIndex(ctx sdk.Context, req types.InsuranceUnbondRequest) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(
+		types.GetInsuranceUnbondRequestIndexByInsuranceProviderKey(
+			sdk.MustAccAddressFromBech32(req.InsuranceProviderAddress),
+			req.AliveChunkId))
 }
 
 func (k Keeper) SetAliveChunk(ctx sdk.Context, aliveChunk types.AliveChunk) {
 	store := ctx.KVStore(k.storeKey)
 	bz := k.cdc.MustMarshal(&aliveChunk)
 	store.Set(types.GetAliveChunkKey(aliveChunk.Id), bz)
+}
+
+func (k Keeper) SetAliveChunkIndex(ctx sdk.Context, aliveChunk types.AliveChunk) {
+	store := ctx.KVStore(k.storeKey)
+	store.Set(
+		types.GetAliveChunkIndexByInsuranceProviderKey(
+			sdk.MustAccAddressFromBech32(aliveChunk.InsuranceProviderAddress),
+			aliveChunk.Id),
+		[]byte{})
+	valAddr, err := sdk.ValAddressFromBech32(aliveChunk.ValidatorAddress)
+	if err != nil {
+		panic(err)
+	}
+	store.Set(
+		types.GetAliveChunkIndexByValidatorKey(
+			valAddr,
+			aliveChunk.Id),
+		[]byte{})
 }
 
 func (k Keeper) GetAliveChunk(ctx sdk.Context, id types.AliveChunkId) (aliveChunk types.AliveChunk, found bool) {
@@ -188,6 +261,24 @@ func (k Keeper) GetAliveChunk(ctx sdk.Context, id types.AliveChunkId) (aliveChun
 func (k Keeper) DeleteAliveChunk(ctx sdk.Context, aliveChunk types.AliveChunk) {
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.GetAliveChunkKey(aliveChunk.Id))
+	k.DeleteAliveChunkIndex(ctx, aliveChunk)
+}
+
+func (k Keeper) DeleteAliveChunkIndex(ctx sdk.Context, aliveChunk types.AliveChunk) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(
+		types.GetAliveChunkIndexByInsuranceProviderKey(
+			sdk.MustAccAddressFromBech32(aliveChunk.InsuranceProviderAddress),
+			aliveChunk.Id))
+	valAddr, err := sdk.ValAddressFromBech32(aliveChunk.ValidatorAddress)
+	if err != nil {
+		// TODO: check
+		panic(err)
+	}
+	store.Delete(
+		types.GetAliveChunkIndexByValidatorKey(
+			valAddr,
+			aliveChunk.Id))
 }
 
 func (k Keeper) SetUnbondingChunk(ctx sdk.Context, unbondingChunk types.UnbondingChunk) {
@@ -212,7 +303,7 @@ func (k Keeper) DeleteUnbondingChunk(ctx sdk.Context, unbondingChunk types.Unbon
 	store.Delete(types.GetUnbondingChunkKey(unbondingChunk.Id))
 }
 
-func (k Keeper) iterateAliveChunks(ctx sdk.Context, cb func(aliveChunk types.AliveChunk) (stop bool)) {
+func (k Keeper) IterateAliveChunks(ctx sdk.Context, cb func(aliveChunk types.AliveChunk) (stop bool)) {
 	store := ctx.KVStore(k.storeKey)
 	iter := sdk.KVStorePrefixIterator(store, types.KeyPrefixAliveChunk)
 	defer iter.Close()
@@ -226,14 +317,68 @@ func (k Keeper) iterateAliveChunks(ctx sdk.Context, cb func(aliveChunk types.Ali
 }
 
 func (k Keeper) GetAllAliveChunks(ctx sdk.Context) (ret types.AliveChunks) {
-	k.iterateAliveChunks(ctx, func(aliveChunk types.AliveChunk) (stop bool) {
+	k.IterateAliveChunks(ctx, func(aliveChunk types.AliveChunk) (stop bool) {
 		ret = append(ret, aliveChunk)
 		return false
 	})
 	return
 }
 
-func (k Keeper) iterateChunkBondRequests(ctx sdk.Context, cb func(req types.ChunkBondRequest) (stop bool)) {
+func (k Keeper) IterateAliveChunksByInsuranceProvider(ctx sdk.Context,
+	insuranceProviderAddr sdk.AccAddress,
+	cb func(aliveChunk types.AliveChunk) (stop bool),
+) {
+	store := ctx.KVStore(k.storeKey)
+	iter := sdk.KVStorePrefixIterator(store, types.GetAliveChunkIndexByInsuranceProviderPrefixKey(insuranceProviderAddr))
+	defer iter.Close()
+	for ; iter.Valid(); iter.Next() {
+		_, id := types.ParseAliveChunkIndexByInsuranceProviderKey(iter.Key())
+		aliveChunk, found := k.GetAliveChunk(ctx, id)
+		if !found {
+			panic("invalid scenario")
+		}
+		if cb(aliveChunk) {
+			break
+		}
+	}
+}
+
+func (k Keeper) IterateAliveChunksByValidator(ctx sdk.Context,
+	validatorAddr sdk.ValAddress,
+	cb func(aliveChunk types.AliveChunk) (stop bool),
+) {
+	store := ctx.KVStore(k.storeKey)
+	iter := sdk.KVStorePrefixIterator(store, types.GetAliveChunkIndexByValidatorPrefixKey(validatorAddr))
+	defer iter.Close()
+	for ; iter.Valid(); iter.Next() {
+		_, id := types.ParseAliveChunkIndexByValidatorKey(iter.Key())
+		aliveChunk, found := k.GetAliveChunk(ctx, id)
+		if !found {
+			panic("invalid scenario")
+		}
+		if cb(aliveChunk) {
+			break
+		}
+	}
+}
+
+func (k Keeper) GetAliveChunksByInsuranceProvider(ctx sdk.Context, insuranceProvider sdk.AccAddress) (aliveChunks types.AliveChunks) {
+	k.IterateAliveChunksByInsuranceProvider(ctx, insuranceProvider, func(aliveChunk types.AliveChunk) (stop bool) {
+		aliveChunks = append(aliveChunks, aliveChunk)
+		return false
+	})
+	return
+}
+
+func (k Keeper) GetAliveChunksByValidator(ctx sdk.Context, validatorAddr sdk.ValAddress) (aliveChunks types.AliveChunks) {
+	k.IterateAliveChunksByValidator(ctx, validatorAddr, func(aliveChunk types.AliveChunk) (stop bool) {
+		aliveChunks = append(aliveChunks, aliveChunk)
+		return false
+	})
+	return
+}
+
+func (k Keeper) IterateChunkBondRequests(ctx sdk.Context, cb func(req types.ChunkBondRequest) (stop bool)) {
 	store := ctx.KVStore(k.storeKey)
 	iter := sdk.KVStorePrefixIterator(store, types.KeyPrefixChunkBondRequest)
 	defer iter.Close()
@@ -247,14 +392,14 @@ func (k Keeper) iterateChunkBondRequests(ctx sdk.Context, cb func(req types.Chun
 }
 
 func (k Keeper) GetAllChunkBondRequests(ctx sdk.Context) (ret types.ChunkBondRequests) {
-	k.iterateChunkBondRequests(ctx, func(req types.ChunkBondRequest) (stop bool) {
+	k.IterateChunkBondRequests(ctx, func(req types.ChunkBondRequest) (stop bool) {
 		ret = append(ret, req)
 		return false
 	})
 	return
 }
 
-func (k Keeper) iterateChunkUnbondRequests(ctx sdk.Context, cb func(req types.ChunkUnbondRequest) (stop bool)) {
+func (k Keeper) IterateChunkUnbondRequests(ctx sdk.Context, cb func(req types.ChunkUnbondRequest) (stop bool)) {
 	store := ctx.KVStore(k.storeKey)
 	iter := sdk.KVStorePrefixIterator(store, types.KeyPrefixChunkUnbondRequest)
 	defer iter.Close()
@@ -268,14 +413,14 @@ func (k Keeper) iterateChunkUnbondRequests(ctx sdk.Context, cb func(req types.Ch
 }
 
 func (k Keeper) GetAllChunkUnbondRequests(ctx sdk.Context) (ret types.ChunkUnbondRequests) {
-	k.iterateChunkUnbondRequests(ctx, func(req types.ChunkUnbondRequest) (stop bool) {
+	k.IterateChunkUnbondRequests(ctx, func(req types.ChunkUnbondRequest) (stop bool) {
 		ret = append(ret, req)
 		return false
 	})
 	return
 }
 
-func (k Keeper) iterateInsuranceBids(ctx sdk.Context, cb func(req types.InsuranceBid) (stop bool)) {
+func (k Keeper) IterateInsuranceBids(ctx sdk.Context, cb func(req types.InsuranceBid) (stop bool)) {
 	store := ctx.KVStore(k.storeKey)
 	iter := sdk.KVStorePrefixIterator(store, types.KeyPrefixInsuranceBid)
 	defer iter.Close()
@@ -289,14 +434,68 @@ func (k Keeper) iterateInsuranceBids(ctx sdk.Context, cb func(req types.Insuranc
 }
 
 func (k Keeper) GetAllInsuranceBids(ctx sdk.Context) (ret types.InsuranceBids) {
-	k.iterateInsuranceBids(ctx, func(req types.InsuranceBid) (stop bool) {
+	k.IterateInsuranceBids(ctx, func(req types.InsuranceBid) (stop bool) {
 		ret = append(ret, req)
 		return false
 	})
 	return
 }
 
-func (k Keeper) iterateInsuranceUnbondRequests(ctx sdk.Context, cb func(req types.InsuranceUnbondRequest) (stop bool)) {
+func (k Keeper) IterateInsuranceBidsByInsuranceProvider(ctx sdk.Context,
+	insuranceProviderAddr sdk.AccAddress,
+	cb func(bid types.InsuranceBid) (stop bool),
+) {
+	store := ctx.KVStore(k.storeKey)
+	iter := sdk.KVStorePrefixIterator(store, types.GetInsuranceBidIndexByInsuranceProviderPrefixKey(insuranceProviderAddr))
+	defer iter.Close()
+	for ; iter.Valid(); iter.Next() {
+		_, id := types.ParseInsuranceBidIndexByInsuranceProviderKey(iter.Key())
+		bid, found := k.GetInsuranceBid(ctx, id)
+		if !found {
+			panic("invalid scenario")
+		}
+		if cb(bid) {
+			break
+		}
+	}
+}
+
+func (k Keeper) IterateInsuranceBidsByValidator(ctx sdk.Context,
+	validatorAddr sdk.ValAddress,
+	cb func(bid types.InsuranceBid) (stop bool),
+) {
+	store := ctx.KVStore(k.storeKey)
+	iter := sdk.KVStorePrefixIterator(store, types.GetInsuranceBidIndexByValidatorPrefixKey(validatorAddr))
+	defer iter.Close()
+	for ; iter.Valid(); iter.Next() {
+		_, id := types.ParseInsuranceBidIndexByValidatorKey(iter.Key())
+		bid, found := k.GetInsuranceBid(ctx, id)
+		if !found {
+			panic("invalid scenario")
+		}
+		if cb(bid) {
+			break
+		}
+	}
+}
+
+func (k Keeper) GetInsuranceBidsByInsuranceProvider(ctx sdk.Context, insuranceProvider sdk.AccAddress) (bids types.InsuranceBids) {
+	k.IterateInsuranceBidsByInsuranceProvider(ctx, insuranceProvider, func(bid types.InsuranceBid) (stop bool) {
+		bids = append(bids, bid)
+		return false
+	})
+	return
+}
+
+func (k Keeper) GetInsuranceBidsByValidator(ctx sdk.Context, validatorAddr sdk.ValAddress) (bids types.InsuranceBids) {
+	k.IterateInsuranceBidsByValidator(ctx, validatorAddr, func(bid types.InsuranceBid) (stop bool) {
+		bids = append(bids, bid)
+		return false
+	})
+	return
+}
+
+func (k Keeper) IterateInsuranceUnbondRequests(ctx sdk.Context, cb func(req types.InsuranceUnbondRequest) (stop bool)) {
 	store := ctx.KVStore(k.storeKey)
 	iter := sdk.KVStorePrefixIterator(store, types.KeyPrefixInsuranceUnbondRequest)
 	defer iter.Close()
@@ -310,9 +509,43 @@ func (k Keeper) iterateInsuranceUnbondRequests(ctx sdk.Context, cb func(req type
 }
 
 func (k Keeper) GetAllInsuranceUnbondRequests(ctx sdk.Context) (ret types.InsuranceUnbondRequests) {
-	k.iterateInsuranceUnbondRequests(ctx, func(req types.InsuranceUnbondRequest) (stop bool) {
+	k.IterateInsuranceUnbondRequests(ctx, func(req types.InsuranceUnbondRequest) (stop bool) {
 		ret = append(ret, req)
 		return false
 	})
+	return
+}
+
+func (k Keeper) IterateInsuranceUnbondRequestsByInsuranceProvider(ctx sdk.Context,
+	insuranceProviderAddr sdk.AccAddress,
+	cb func(req types.InsuranceUnbondRequest) (stop bool),
+) {
+	store := ctx.KVStore(k.storeKey)
+	iter := sdk.KVStorePrefixIterator(store,
+		types.GetInsuranceUnbondRequestIndexByInsuranceProviderPrefixKey(insuranceProviderAddr),
+	)
+	defer iter.Close()
+	for ; iter.Valid(); iter.Next() {
+		_, id := types.ParseInsuranceUnbondRequestIndexByInsuranceProviderKey(iter.Key())
+		req, found := k.GetInsuranceUnbondRequest(ctx, id)
+		if !found {
+			panic("invalid scenario")
+		}
+		if cb(req) {
+			break
+		}
+	}
+}
+
+func (k Keeper) GetInsuranceUnbondRequestsByInsuranceProvider(ctx sdk.Context,
+	insuranceProvider sdk.AccAddress,
+) (reqs types.InsuranceUnbondRequests) {
+	k.IterateInsuranceUnbondRequestsByInsuranceProvider(ctx,
+		insuranceProvider,
+		func(req types.InsuranceUnbondRequest) (stop bool) {
+			reqs = append(reqs, req)
+			return false
+		},
+	)
 	return
 }

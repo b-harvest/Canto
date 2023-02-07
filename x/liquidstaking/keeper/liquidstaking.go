@@ -156,6 +156,7 @@ func (k Keeper) BidInsurance(
 
 	k.SetLastInsuranceBidId(ctx, id)
 	k.SetInsuranceBid(ctx, bid)
+	k.SetInsuranceBidIndex(ctx, bid)
 
 	return id, nil
 }
@@ -191,6 +192,7 @@ func (k Keeper) UnbondInsurance(
 		AliveChunkId:             aliveChunkId,
 	}
 	k.SetInsuranceUnbondRequest(ctx, req)
+	k.SetInsuranceUnbondRequestIndex(ctx, req)
 
 	return aliveChunkId, nil
 }
