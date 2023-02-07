@@ -81,7 +81,7 @@ func (suite *KeeperTestSuite) randomizeCurrentState(
 	suite.Require().LessOrEqual(numState.insuranceUnbondRequest, numState.aliveChunks)
 	record = newStateBuildRecord()
 	bondDenom := suite.app.StakingKeeper.BondDenom(suite.ctx)
-	liquidBondDenom := suite.keeper.LiquidBondDenom(suite.ctx)
+	liquidStakingDenom := suite.keeper.LiquidStakingDenom(suite.ctx)
 	chunkSize := params.ChunkSize
 
 	for i := 0; i < numState.aliveChunks; i++ {
@@ -129,7 +129,7 @@ func (suite *KeeperTestSuite) randomizeCurrentState(
 		record.ChunkUnbondRequest[id] = chunkUnbondRequest
 		i += tmp
 
-		depositCoinsIntoModule(suite, sdk.NewCoin(liquidBondDenom, chunkSize.MulRaw(int64(tmp))))
+		depositCoinsIntoModule(suite, sdk.NewCoin(liquidStakingDenom, chunkSize.MulRaw(int64(tmp))))
 	}
 	for i := 0; i < numState.insuranceBid; i++ {
 		id := generateUniqueId(suite, record.InsuranceBid)

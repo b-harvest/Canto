@@ -9,22 +9,22 @@ import (
 )
 
 var (
-	ParamStoreKeyLiquidBondDenom        = []byte("ParamStoreKeyLiquidBondDenom")
+	ParamStoreKeyLiquidStakingDenom     = []byte("ParamStoreKeyLiquidStakingDenom")
 	ParamStoreKeyMinInsurancePercentage = []byte("ParamStoreKeyMinInsurancePercentage")
 	ParamStoreKeyChunkSize              = []byte("ParamStoreKeyChunkSize")
 	ParamStoreKeyMaxAliveChunk          = []byte("ParamStoreKeyMaxAliveChunk")
 
-	DefaultLiquidBondDenom        = "lsstake"
-	DefaultMinInsurancePercentage = sdk.NewDec(10)
-	DefaultChunkSize              = sdk.NewInt(500)
+	DefaultLiquidStakingDenom     = "lsToken"
+	DefaultMinInsurancePercentage = sdk.NewDecWithPrec(0, 1) // 0.1
+	DefaultChunkSize              = sdk.NewInt(5000000)
 	DefaultMaxAliveChunk          = sdk.NewInt(10)
 
 	LiquidStakingModuleAccount = DeriveAddress(ModuleName, "LiquidStakingAcc")
 )
 
-func NewParams(liquidBondDenom string, minInsurancePercentage sdk.Dec, chunkSize, maxAliveChunk sdk.Int) Params {
+func NewParams(liquidStakingDenom string, minInsurancePercentage sdk.Dec, chunkSize, maxAliveChunk sdk.Int) Params {
 	return Params{
-		LiquidBondDenom:        liquidBondDenom,
+		LiquidStakingDenom:     liquidStakingDenom,
 		MinInsurancePercentage: minInsurancePercentage,
 		ChunkSize:              chunkSize,
 		MaxAliveChunk:          maxAliveChunk,
@@ -32,10 +32,10 @@ func NewParams(liquidBondDenom string, minInsurancePercentage sdk.Dec, chunkSize
 }
 
 func DefaultParams() Params {
-	return NewParams(DefaultLiquidBondDenom, DefaultMinInsurancePercentage, DefaultChunkSize, DefaultMaxAliveChunk)
+	return NewParams(DefaultLiquidStakingDenom, DefaultMinInsurancePercentage, DefaultChunkSize, DefaultMaxAliveChunk)
 }
 
-func validateLiquidBondDenom(i interface{}) error {
+func validateLiquidStakingDenom(i interface{}) error {
 	v, ok := i.(string)
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", i)
@@ -106,7 +106,7 @@ func ParamKeyTable() paramtypes.KeyTable {
 
 func (params *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	return paramtypes.ParamSetPairs{
-		paramtypes.NewParamSetPair(ParamStoreKeyLiquidBondDenom, &params.LiquidBondDenom, validateLiquidBondDenom),
+		paramtypes.NewParamSetPair(ParamStoreKeyLiquidStakingDenom, &params.LiquidStakingDenom, validateLiquidStakingDenom),
 		paramtypes.NewParamSetPair(ParamStoreKeyMinInsurancePercentage, &params.MinInsurancePercentage, validateMinInsurancePercentage),
 		paramtypes.NewParamSetPair(ParamStoreKeyChunkSize, &params.ChunkSize, validateChunkSize),
 		paramtypes.NewParamSetPair(ParamStoreKeyMaxAliveChunk, &params.MaxAliveChunk, validateMaxAliveChunk),

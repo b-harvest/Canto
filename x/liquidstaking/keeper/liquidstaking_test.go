@@ -92,7 +92,7 @@ func (suite *KeeperTestSuite) TestKeeperLiquidUnstake() {
 	seed := tmrand.Int63n(10000)
 	tmrand.Seed(seed)
 	chunkSize := suite.keeper.GetParams(suite.ctx).ChunkSize
-	liquidBondDenom := suite.keeper.LiquidBondDenom(suite.ctx)
+	liquidStakingDenom := suite.keeper.LiquidStakingDenom(suite.ctx)
 	expected := make(map[string]types.ChunkUnbondRequest)
 
 	suite.Run("liquid unstaking negative: fails with empty account, seed:"+strconv.FormatInt(seed, 10), func() {
@@ -105,7 +105,7 @@ func (suite *KeeperTestSuite) TestKeeperLiquidUnstake() {
 	suite.Run("liquid unstaking negative: fails with not enough token amount", func() {
 		numChunkUnbond := tmrand.Int63n(math.MaxInt64)
 		liquidTokenAmount := chunkSize.MulRaw(numChunkUnbond)
-		liquidUnstaker := accountWithCoins(generateRandomAccount(), suite.app.BankKeeper, suite.ctx, sdk.NewCoins(sdk.NewCoin(liquidBondDenom, liquidTokenAmount.SubRaw(50))))
+		liquidUnstaker := accountWithCoins(generateRandomAccount(), suite.app.BankKeeper, suite.ctx, sdk.NewCoins(sdk.NewCoin(liquidStakingDenom, liquidTokenAmount.SubRaw(50))))
 
 		_, err := suite.keeper.LiquidUnstake(suite.ctx, liquidUnstaker, uint64(numChunkUnbond))
 		suite.Require().Error(err)
@@ -115,13 +115,13 @@ func (suite *KeeperTestSuite) TestKeeperLiquidUnstake() {
 		for i := 0; i < iteration; i++ {
 			numChunkUnbond := tmrand.Int63n(math.MaxInt64)
 			liquidTokenAmount := chunkSize.MulRaw(numChunkUnbond)
-			liquidUnstaker := accountWithCoins(generateRandomAccount(), suite.app.BankKeeper, suite.ctx, sdk.NewCoins(sdk.NewCoin(liquidBondDenom, liquidTokenAmount)))
+			liquidUnstaker := accountWithCoins(generateRandomAccount(), suite.app.BankKeeper, suite.ctx, sdk.NewCoins(sdk.NewCoin(liquidStakingDenom, liquidTokenAmount)))
 			reqId, err := suite.keeper.LiquidUnstake(suite.ctx, liquidUnstaker, uint64(numChunkUnbond))
 			suite.Require().NoError(err)
 			req, found := suite.keeper.GetChunkUnbondRequest(suite.ctx, reqId)
 			expected[liquidUnstaker.String()] = req
 			suite.Require().True(found)
-			suite.Require().True(sdk.ZeroInt().Equal(suite.app.BankKeeper.GetBalance(suite.ctx, liquidUnstaker, liquidBondDenom).Amount))
+			suite.Require().True(sdk.ZeroInt().Equal(suite.app.BankKeeper.GetBalance(suite.ctx, liquidUnstaker, liquidStakingDenom).Amount))
 		}
 		allReqs := suite.keeper.GetAllChunkUnbondRequests(suite.ctx)
 		suite.Require().Equal(len(expected), len(allReqs))
@@ -143,7 +143,7 @@ func (suite *KeeperTestSuite) TestKeeperLiquidUnstake() {
 	suite.Run("cancel liquid unstake negative: address mismatch", func() {
 		numChunkUnbond := tmrand.Int63n(math.MaxInt64)
 		liquidTokenAmount := chunkSize.MulRaw(numChunkUnbond)
-		liquidUnstaker := accountWithCoins(generateRandomAccount(), suite.app.BankKeeper, suite.ctx, sdk.NewCoins(sdk.NewCoin(liquidBondDenom, liquidTokenAmount)))
+		liquidUnstaker := accountWithCoins(generateRandomAccount(), suite.app.BankKeeper, suite.ctx, sdk.NewCoins(sdk.NewCoin(liquidStakingDenom, liquidTokenAmount)))
 		wrongStaker := sdk.AccAddress{}
 		for i := 0; i < 10; i++ {
 			wrongStaker = generateRandomAccount()

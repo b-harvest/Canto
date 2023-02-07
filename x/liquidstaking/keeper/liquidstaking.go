@@ -6,8 +6,8 @@ import (
 	"github.com/Canto-Network/Canto-Testnet-v2/v1/x/liquidstaking/types"
 )
 
-func (k Keeper) LiquidBondDenom(ctx sdk.Context) (res string) {
-	k.paramstore.Get(ctx, types.ParamStoreKeyLiquidBondDenom, &res)
+func (k Keeper) LiquidStakingDenom(ctx sdk.Context) (res string) {
+	k.paramstore.Get(ctx, types.ParamStoreKeyLiquidStakingDenom, &res)
 	return
 }
 
@@ -79,8 +79,8 @@ func (k Keeper) LiquidUnstake(ctx sdk.Context, liquidUnstaker sdk.AccAddress, nu
 	chunkSize := k.GetParams(ctx).ChunkSize
 
 	// TODO: check speculation. for now, just deposit liquid coins from liquidUnstaker into module
-	liquidBondDenom := k.LiquidBondDenom(ctx)
-	liquidStake := sdk.NewCoin(liquidBondDenom, chunkSize.Mul(sdk.NewIntFromUint64(numChunkUnbond)))
+	liquidStakingDenom := k.LiquidStakingDenom(ctx)
+	liquidStake := sdk.NewCoin(liquidStakingDenom, chunkSize.Mul(sdk.NewIntFromUint64(numChunkUnbond)))
 	if err := k.bk.SendCoinsFromAccountToModule(ctx, liquidUnstaker, types.ModuleName, sdk.NewCoins(liquidStake)); err != nil {
 		return 0, err
 	}
@@ -112,8 +112,8 @@ func (k Keeper) CancelLiquidUnstaking(
 	}
 	// TODO: check speculation. for now, just deposit liquid coins from liquidUnstaker into module
 	chunkSize := k.GetParams(ctx).ChunkSize
-	liquidBondDenom := k.LiquidBondDenom(ctx)
-	liquidStake := sdk.NewCoin(liquidBondDenom, chunkSize.Mul(sdk.NewIntFromUint64(req.NumChunkUnbond)))
+	liquidStakingDenom := k.LiquidStakingDenom(ctx)
+	liquidStake := sdk.NewCoin(liquidStakingDenom, chunkSize.Mul(sdk.NewIntFromUint64(req.NumChunkUnbond)))
 	if err := k.bk.SendCoinsFromModuleToAccount(ctx, types.ModuleName, liquidUnstaker, sdk.NewCoins(liquidStake)); err != nil {
 		return 0, err
 	}

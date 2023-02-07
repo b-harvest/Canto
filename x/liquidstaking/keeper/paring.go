@@ -49,7 +49,7 @@ func resolveChunkBondRequest(k *Keeper,
 	liquidStakingInfo types.LiquidStakingInfo,
 	chunkBondRequest types.ChunkBondRequest,
 ) error {
-	liquidBondDenom := k.LiquidBondDenom(*ctx)
+	liquidStakingDenom := k.LiquidStakingDenom(*ctx)
 	liquidStaker, err := sdk.AccAddressFromBech32(chunkBondRequest.RequesterAddress)
 	if err != nil {
 		return err
@@ -64,7 +64,7 @@ func resolveChunkBondRequest(k *Keeper,
 	// if mintAmount.LT(chunkSize) {
 	// 	return types.ErrInvalidTokenAmount
 	// }
-	mintCoins := sdk.NewCoins(sdk.NewCoin(liquidBondDenom, mintAmount))
+	mintCoins := sdk.NewCoins(sdk.NewCoin(liquidStakingDenom, mintAmount))
 	if err := k.bk.MintCoins(*ctx, types.ModuleName, mintCoins); err != nil {
 		return err
 	}
@@ -102,8 +102,8 @@ func resolveChunkUnbondRequest(k *Keeper,
 	}
 	chunkUnbondRequest.NumChunkUnbond -= numChunkBondRequest
 
-	liquidBondDenom := k.LiquidBondDenom(*ctx)
-	burnToken := sdk.NewCoin(liquidBondDenom, burnTokenAmount)
+	liquidStakingDenom := k.LiquidStakingDenom(*ctx)
+	burnToken := sdk.NewCoin(liquidStakingDenom, burnTokenAmount)
 	if err := k.bk.BurnCoins(*ctx, types.ModuleName, sdk.NewCoins(burnToken)); err != nil {
 		return err
 	}
