@@ -207,7 +207,8 @@ func generateRandomChunkUnbondRequest(id types.ChunkUnbondRequestId) types.Chunk
 
 func generateRandomInsuranceUnbondRequest(id types.AliveChunkId) types.InsuranceUnbondRequest {
 	return types.InsuranceUnbondRequest{
-		AliveChunkId: id,
+		InsuranceProviderAddress: generateRandomAccount().String(),
+		AliveChunkId:             id,
 	}
 }
 

@@ -281,7 +281,8 @@ func (suite *KeeperTestSuite) TestKeeperUnbondInsurance() {
 			insurer := generateRandomAccount()
 			id := generateUniqueId(suite, used)
 			used[id] = true
-			suite.keeper.SetAliveChunk(suite.ctx, types.AliveChunk{Id: id})
+			aliveChunk := generateRandomAliveChunk(suite, id)
+			suite.keeper.SetAliveChunk(suite.ctx, aliveChunk)
 
 			reqId, err := suite.keeper.UnbondInsurance(suite.ctx, insurer, id)
 			suite.Require().NoError(err)
@@ -312,7 +313,8 @@ func (suite *KeeperTestSuite) TestKeeperUnbondInsurance() {
 
 		id := generateUniqueId(suite, used)
 		used[id] = true
-		suite.keeper.SetAliveChunk(suite.ctx, types.AliveChunk{Id: id})
+		aliveChunk := generateRandomAliveChunk(suite, id)
+		suite.keeper.SetAliveChunk(suite.ctx, aliveChunk)
 		reqId, err := suite.keeper.UnbondInsurance(suite.ctx, insurer, id)
 		suite.Require().NoError(err)
 		_, found := suite.keeper.GetInsuranceUnbondRequest(suite.ctx, reqId)
