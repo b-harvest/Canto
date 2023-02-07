@@ -6,6 +6,7 @@ package types
 import (
 	context "context"
 	fmt "fmt"
+	query "github.com/cosmos/cosmos-sdk/types/query"
 	_ "github.com/gogo/protobuf/gogoproto"
 	grpc1 "github.com/gogo/protobuf/grpc"
 	proto "github.com/gogo/protobuf/proto"
@@ -261,14 +262,103 @@ func (m *QueryLiquidStakingStateResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QueryLiquidStakingStateResponse proto.InternalMessageInfo
 
+type QueryAliveChunkRequest struct {
+	Id uint64 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+}
+
+func (m *QueryAliveChunkRequest) Reset()         { *m = QueryAliveChunkRequest{} }
+func (m *QueryAliveChunkRequest) String() string { return proto.CompactTextString(m) }
+func (*QueryAliveChunkRequest) ProtoMessage()    {}
+func (*QueryAliveChunkRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a04856e9492a9fb6, []int{6}
+}
+func (m *QueryAliveChunkRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryAliveChunkRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryAliveChunkRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryAliveChunkRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryAliveChunkRequest.Merge(m, src)
+}
+func (m *QueryAliveChunkRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryAliveChunkRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryAliveChunkRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryAliveChunkRequest proto.InternalMessageInfo
+
+func (m *QueryAliveChunkRequest) GetId() uint64 {
+	if m != nil {
+		return m.Id
+	}
+	return 0
+}
+
+type QueryAliveChunkResponse struct {
+	AliveChunk AliveChunk `protobuf:"bytes,1,opt,name=alive_chunk,json=aliveChunk,proto3" json:"alive_chunk"`
+}
+
+func (m *QueryAliveChunkResponse) Reset()         { *m = QueryAliveChunkResponse{} }
+func (m *QueryAliveChunkResponse) String() string { return proto.CompactTextString(m) }
+func (*QueryAliveChunkResponse) ProtoMessage()    {}
+func (*QueryAliveChunkResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a04856e9492a9fb6, []int{7}
+}
+func (m *QueryAliveChunkResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryAliveChunkResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryAliveChunkResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryAliveChunkResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryAliveChunkResponse.Merge(m, src)
+}
+func (m *QueryAliveChunkResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryAliveChunkResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryAliveChunkResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryAliveChunkResponse proto.InternalMessageInfo
+
+func (m *QueryAliveChunkResponse) GetAliveChunk() AliveChunk {
+	if m != nil {
+		return m.AliveChunk
+	}
+	return AliveChunk{}
+}
+
 type QueryAliveChunksRequest struct {
+	Pagination *query.PageRequest `protobuf:"bytes,1,opt,name=pagination,proto3" json:"pagination,omitempty"`
 }
 
 func (m *QueryAliveChunksRequest) Reset()         { *m = QueryAliveChunksRequest{} }
 func (m *QueryAliveChunksRequest) String() string { return proto.CompactTextString(m) }
 func (*QueryAliveChunksRequest) ProtoMessage()    {}
 func (*QueryAliveChunksRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a04856e9492a9fb6, []int{6}
+	return fileDescriptor_a04856e9492a9fb6, []int{8}
 }
 func (m *QueryAliveChunksRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -297,14 +387,131 @@ func (m *QueryAliveChunksRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QueryAliveChunksRequest proto.InternalMessageInfo
 
+func (m *QueryAliveChunksRequest) GetPagination() *query.PageRequest {
+	if m != nil {
+		return m.Pagination
+	}
+	return nil
+}
+
+type QueryAliveChunksByInsuranceProviderRequest struct {
+	InsuranceProviderAddr string             `protobuf:"bytes,1,opt,name=insurance_provider_addr,json=insuranceProviderAddr,proto3" json:"insurance_provider_addr,omitempty"`
+	Pagination            *query.PageRequest `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
+}
+
+func (m *QueryAliveChunksByInsuranceProviderRequest) Reset() {
+	*m = QueryAliveChunksByInsuranceProviderRequest{}
+}
+func (m *QueryAliveChunksByInsuranceProviderRequest) String() string {
+	return proto.CompactTextString(m)
+}
+func (*QueryAliveChunksByInsuranceProviderRequest) ProtoMessage() {}
+func (*QueryAliveChunksByInsuranceProviderRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a04856e9492a9fb6, []int{9}
+}
+func (m *QueryAliveChunksByInsuranceProviderRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryAliveChunksByInsuranceProviderRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryAliveChunksByInsuranceProviderRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryAliveChunksByInsuranceProviderRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryAliveChunksByInsuranceProviderRequest.Merge(m, src)
+}
+func (m *QueryAliveChunksByInsuranceProviderRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryAliveChunksByInsuranceProviderRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryAliveChunksByInsuranceProviderRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryAliveChunksByInsuranceProviderRequest proto.InternalMessageInfo
+
+func (m *QueryAliveChunksByInsuranceProviderRequest) GetInsuranceProviderAddr() string {
+	if m != nil {
+		return m.InsuranceProviderAddr
+	}
+	return ""
+}
+
+func (m *QueryAliveChunksByInsuranceProviderRequest) GetPagination() *query.PageRequest {
+	if m != nil {
+		return m.Pagination
+	}
+	return nil
+}
+
+type QueryAliveChunksByValidatorRequest struct {
+	ValidatorAddr string             `protobuf:"bytes,1,opt,name=validator_addr,json=validatorAddr,proto3" json:"validator_addr,omitempty"`
+	Pagination    *query.PageRequest `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
+}
+
+func (m *QueryAliveChunksByValidatorRequest) Reset()         { *m = QueryAliveChunksByValidatorRequest{} }
+func (m *QueryAliveChunksByValidatorRequest) String() string { return proto.CompactTextString(m) }
+func (*QueryAliveChunksByValidatorRequest) ProtoMessage()    {}
+func (*QueryAliveChunksByValidatorRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a04856e9492a9fb6, []int{10}
+}
+func (m *QueryAliveChunksByValidatorRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryAliveChunksByValidatorRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryAliveChunksByValidatorRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryAliveChunksByValidatorRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryAliveChunksByValidatorRequest.Merge(m, src)
+}
+func (m *QueryAliveChunksByValidatorRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryAliveChunksByValidatorRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryAliveChunksByValidatorRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryAliveChunksByValidatorRequest proto.InternalMessageInfo
+
+func (m *QueryAliveChunksByValidatorRequest) GetValidatorAddr() string {
+	if m != nil {
+		return m.ValidatorAddr
+	}
+	return ""
+}
+
+func (m *QueryAliveChunksByValidatorRequest) GetPagination() *query.PageRequest {
+	if m != nil {
+		return m.Pagination
+	}
+	return nil
+}
+
 type QueryAliveChunksResponse struct {
+	AliveChunk []AliveChunk        `protobuf:"bytes,1,rep,name=alive_chunk,json=aliveChunk,proto3" json:"alive_chunk"`
+	Pagination *query.PageResponse `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
 }
 
 func (m *QueryAliveChunksResponse) Reset()         { *m = QueryAliveChunksResponse{} }
 func (m *QueryAliveChunksResponse) String() string { return proto.CompactTextString(m) }
 func (*QueryAliveChunksResponse) ProtoMessage()    {}
 func (*QueryAliveChunksResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a04856e9492a9fb6, []int{7}
+	return fileDescriptor_a04856e9492a9fb6, []int{11}
 }
 func (m *QueryAliveChunksResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -333,6 +540,20 @@ func (m *QueryAliveChunksResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QueryAliveChunksResponse proto.InternalMessageInfo
 
+func (m *QueryAliveChunksResponse) GetAliveChunk() []AliveChunk {
+	if m != nil {
+		return m.AliveChunk
+	}
+	return nil
+}
+
+func (m *QueryAliveChunksResponse) GetPagination() *query.PageResponse {
+	if m != nil {
+		return m.Pagination
+	}
+	return nil
+}
+
 type QueryUnbondingChunksRequest struct {
 }
 
@@ -340,7 +561,7 @@ func (m *QueryUnbondingChunksRequest) Reset()         { *m = QueryUnbondingChunk
 func (m *QueryUnbondingChunksRequest) String() string { return proto.CompactTextString(m) }
 func (*QueryUnbondingChunksRequest) ProtoMessage()    {}
 func (*QueryUnbondingChunksRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a04856e9492a9fb6, []int{8}
+	return fileDescriptor_a04856e9492a9fb6, []int{12}
 }
 func (m *QueryUnbondingChunksRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -376,7 +597,7 @@ func (m *QueryUnbondingChunksResponse) Reset()         { *m = QueryUnbondingChun
 func (m *QueryUnbondingChunksResponse) String() string { return proto.CompactTextString(m) }
 func (*QueryUnbondingChunksResponse) ProtoMessage()    {}
 func (*QueryUnbondingChunksResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a04856e9492a9fb6, []int{9}
+	return fileDescriptor_a04856e9492a9fb6, []int{13}
 }
 func (m *QueryUnbondingChunksResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -405,21 +626,22 @@ func (m *QueryUnbondingChunksResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QueryUnbondingChunksResponse proto.InternalMessageInfo
 
-type QueryChunkBondRequests struct {
+type QueryChunkBondRequestRequest struct {
+	Id uint64 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
 }
 
-func (m *QueryChunkBondRequests) Reset()         { *m = QueryChunkBondRequests{} }
-func (m *QueryChunkBondRequests) String() string { return proto.CompactTextString(m) }
-func (*QueryChunkBondRequests) ProtoMessage()    {}
-func (*QueryChunkBondRequests) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a04856e9492a9fb6, []int{10}
+func (m *QueryChunkBondRequestRequest) Reset()         { *m = QueryChunkBondRequestRequest{} }
+func (m *QueryChunkBondRequestRequest) String() string { return proto.CompactTextString(m) }
+func (*QueryChunkBondRequestRequest) ProtoMessage()    {}
+func (*QueryChunkBondRequestRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a04856e9492a9fb6, []int{14}
 }
-func (m *QueryChunkBondRequests) XXX_Unmarshal(b []byte) error {
+func (m *QueryChunkBondRequestRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *QueryChunkBondRequests) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *QueryChunkBondRequestRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_QueryChunkBondRequests.Marshal(b, m, deterministic)
+		return xxx_messageInfo_QueryChunkBondRequestRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -429,26 +651,177 @@ func (m *QueryChunkBondRequests) XXX_Marshal(b []byte, deterministic bool) ([]by
 		return b[:n], nil
 	}
 }
-func (m *QueryChunkBondRequests) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryChunkBondRequests.Merge(m, src)
+func (m *QueryChunkBondRequestRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryChunkBondRequestRequest.Merge(m, src)
 }
-func (m *QueryChunkBondRequests) XXX_Size() int {
+func (m *QueryChunkBondRequestRequest) XXX_Size() int {
 	return m.Size()
 }
-func (m *QueryChunkBondRequests) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryChunkBondRequests.DiscardUnknown(m)
+func (m *QueryChunkBondRequestRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryChunkBondRequestRequest.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_QueryChunkBondRequests proto.InternalMessageInfo
+var xxx_messageInfo_QueryChunkBondRequestRequest proto.InternalMessageInfo
+
+func (m *QueryChunkBondRequestRequest) GetId() uint64 {
+	if m != nil {
+		return m.Id
+	}
+	return 0
+}
+
+type QueryChunkBondRequestResponse struct {
+	ChunkBondRequests ChunkBondRequest `protobuf:"bytes,1,opt,name=chunkBondRequests,proto3" json:"chunkBondRequests"`
+}
+
+func (m *QueryChunkBondRequestResponse) Reset()         { *m = QueryChunkBondRequestResponse{} }
+func (m *QueryChunkBondRequestResponse) String() string { return proto.CompactTextString(m) }
+func (*QueryChunkBondRequestResponse) ProtoMessage()    {}
+func (*QueryChunkBondRequestResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a04856e9492a9fb6, []int{15}
+}
+func (m *QueryChunkBondRequestResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryChunkBondRequestResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryChunkBondRequestResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryChunkBondRequestResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryChunkBondRequestResponse.Merge(m, src)
+}
+func (m *QueryChunkBondRequestResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryChunkBondRequestResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryChunkBondRequestResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryChunkBondRequestResponse proto.InternalMessageInfo
+
+func (m *QueryChunkBondRequestResponse) GetChunkBondRequests() ChunkBondRequest {
+	if m != nil {
+		return m.ChunkBondRequests
+	}
+	return ChunkBondRequest{}
+}
+
+type QueryChunkBondRequestsRequest struct {
+	Pagination *query.PageRequest `protobuf:"bytes,1,opt,name=pagination,proto3" json:"pagination,omitempty"`
+}
+
+func (m *QueryChunkBondRequestsRequest) Reset()         { *m = QueryChunkBondRequestsRequest{} }
+func (m *QueryChunkBondRequestsRequest) String() string { return proto.CompactTextString(m) }
+func (*QueryChunkBondRequestsRequest) ProtoMessage()    {}
+func (*QueryChunkBondRequestsRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a04856e9492a9fb6, []int{16}
+}
+func (m *QueryChunkBondRequestsRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryChunkBondRequestsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryChunkBondRequestsRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryChunkBondRequestsRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryChunkBondRequestsRequest.Merge(m, src)
+}
+func (m *QueryChunkBondRequestsRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryChunkBondRequestsRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryChunkBondRequestsRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryChunkBondRequestsRequest proto.InternalMessageInfo
+
+func (m *QueryChunkBondRequestsRequest) GetPagination() *query.PageRequest {
+	if m != nil {
+		return m.Pagination
+	}
+	return nil
+}
+
+type QueryChunkBondRequestsByDelegatorRequest struct {
+	DelegatorAddr string             `protobuf:"bytes,1,opt,name=delegator_addr,json=delegatorAddr,proto3" json:"delegator_addr,omitempty"`
+	Pagination    *query.PageRequest `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
+}
+
+func (m *QueryChunkBondRequestsByDelegatorRequest) Reset() {
+	*m = QueryChunkBondRequestsByDelegatorRequest{}
+}
+func (m *QueryChunkBondRequestsByDelegatorRequest) String() string { return proto.CompactTextString(m) }
+func (*QueryChunkBondRequestsByDelegatorRequest) ProtoMessage()    {}
+func (*QueryChunkBondRequestsByDelegatorRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a04856e9492a9fb6, []int{17}
+}
+func (m *QueryChunkBondRequestsByDelegatorRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryChunkBondRequestsByDelegatorRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryChunkBondRequestsByDelegatorRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryChunkBondRequestsByDelegatorRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryChunkBondRequestsByDelegatorRequest.Merge(m, src)
+}
+func (m *QueryChunkBondRequestsByDelegatorRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryChunkBondRequestsByDelegatorRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryChunkBondRequestsByDelegatorRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryChunkBondRequestsByDelegatorRequest proto.InternalMessageInfo
+
+func (m *QueryChunkBondRequestsByDelegatorRequest) GetDelegatorAddr() string {
+	if m != nil {
+		return m.DelegatorAddr
+	}
+	return ""
+}
+
+func (m *QueryChunkBondRequestsByDelegatorRequest) GetPagination() *query.PageRequest {
+	if m != nil {
+		return m.Pagination
+	}
+	return nil
+}
 
 type QueryChunkBondRequestsResponse struct {
+	ChunkBondRequests []ChunkBondRequest  `protobuf:"bytes,1,rep,name=chunkBondRequests,proto3" json:"chunkBondRequests"`
+	Pagination        *query.PageResponse `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
 }
 
 func (m *QueryChunkBondRequestsResponse) Reset()         { *m = QueryChunkBondRequestsResponse{} }
 func (m *QueryChunkBondRequestsResponse) String() string { return proto.CompactTextString(m) }
 func (*QueryChunkBondRequestsResponse) ProtoMessage()    {}
 func (*QueryChunkBondRequestsResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a04856e9492a9fb6, []int{11}
+	return fileDescriptor_a04856e9492a9fb6, []int{18}
 }
 func (m *QueryChunkBondRequestsResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -477,21 +850,36 @@ func (m *QueryChunkBondRequestsResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QueryChunkBondRequestsResponse proto.InternalMessageInfo
 
-type QueryChunkUnbondRequests struct {
+func (m *QueryChunkBondRequestsResponse) GetChunkBondRequests() []ChunkBondRequest {
+	if m != nil {
+		return m.ChunkBondRequests
+	}
+	return nil
 }
 
-func (m *QueryChunkUnbondRequests) Reset()         { *m = QueryChunkUnbondRequests{} }
-func (m *QueryChunkUnbondRequests) String() string { return proto.CompactTextString(m) }
-func (*QueryChunkUnbondRequests) ProtoMessage()    {}
-func (*QueryChunkUnbondRequests) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a04856e9492a9fb6, []int{12}
+func (m *QueryChunkBondRequestsResponse) GetPagination() *query.PageResponse {
+	if m != nil {
+		return m.Pagination
+	}
+	return nil
 }
-func (m *QueryChunkUnbondRequests) XXX_Unmarshal(b []byte) error {
+
+type QueryChunkUnbondRequestRequest struct {
+	Id uint64 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+}
+
+func (m *QueryChunkUnbondRequestRequest) Reset()         { *m = QueryChunkUnbondRequestRequest{} }
+func (m *QueryChunkUnbondRequestRequest) String() string { return proto.CompactTextString(m) }
+func (*QueryChunkUnbondRequestRequest) ProtoMessage()    {}
+func (*QueryChunkUnbondRequestRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a04856e9492a9fb6, []int{19}
+}
+func (m *QueryChunkUnbondRequestRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *QueryChunkUnbondRequests) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *QueryChunkUnbondRequestRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_QueryChunkUnbondRequests.Marshal(b, m, deterministic)
+		return xxx_messageInfo_QueryChunkUnbondRequestRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -501,26 +889,187 @@ func (m *QueryChunkUnbondRequests) XXX_Marshal(b []byte, deterministic bool) ([]
 		return b[:n], nil
 	}
 }
-func (m *QueryChunkUnbondRequests) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryChunkUnbondRequests.Merge(m, src)
+func (m *QueryChunkUnbondRequestRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryChunkUnbondRequestRequest.Merge(m, src)
 }
-func (m *QueryChunkUnbondRequests) XXX_Size() int {
+func (m *QueryChunkUnbondRequestRequest) XXX_Size() int {
 	return m.Size()
 }
-func (m *QueryChunkUnbondRequests) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryChunkUnbondRequests.DiscardUnknown(m)
+func (m *QueryChunkUnbondRequestRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryChunkUnbondRequestRequest.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_QueryChunkUnbondRequests proto.InternalMessageInfo
+var xxx_messageInfo_QueryChunkUnbondRequestRequest proto.InternalMessageInfo
+
+func (m *QueryChunkUnbondRequestRequest) GetId() uint64 {
+	if m != nil {
+		return m.Id
+	}
+	return 0
+}
+
+type QueryChunkUnbondRequestResponse struct {
+	ChunkUnbondRequest *ChunkUnbondRequest `protobuf:"bytes,1,opt,name=chunk_unbond_request,json=chunkUnbondRequest,proto3" json:"chunk_unbond_request,omitempty"`
+	Pagination         *query.PageResponse `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
+}
+
+func (m *QueryChunkUnbondRequestResponse) Reset()         { *m = QueryChunkUnbondRequestResponse{} }
+func (m *QueryChunkUnbondRequestResponse) String() string { return proto.CompactTextString(m) }
+func (*QueryChunkUnbondRequestResponse) ProtoMessage()    {}
+func (*QueryChunkUnbondRequestResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a04856e9492a9fb6, []int{20}
+}
+func (m *QueryChunkUnbondRequestResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryChunkUnbondRequestResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryChunkUnbondRequestResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryChunkUnbondRequestResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryChunkUnbondRequestResponse.Merge(m, src)
+}
+func (m *QueryChunkUnbondRequestResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryChunkUnbondRequestResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryChunkUnbondRequestResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryChunkUnbondRequestResponse proto.InternalMessageInfo
+
+func (m *QueryChunkUnbondRequestResponse) GetChunkUnbondRequest() *ChunkUnbondRequest {
+	if m != nil {
+		return m.ChunkUnbondRequest
+	}
+	return nil
+}
+
+func (m *QueryChunkUnbondRequestResponse) GetPagination() *query.PageResponse {
+	if m != nil {
+		return m.Pagination
+	}
+	return nil
+}
+
+type QueryChunkUnbondRequestsRequest struct {
+	Pagination *query.PageRequest `protobuf:"bytes,1,opt,name=pagination,proto3" json:"pagination,omitempty"`
+}
+
+func (m *QueryChunkUnbondRequestsRequest) Reset()         { *m = QueryChunkUnbondRequestsRequest{} }
+func (m *QueryChunkUnbondRequestsRequest) String() string { return proto.CompactTextString(m) }
+func (*QueryChunkUnbondRequestsRequest) ProtoMessage()    {}
+func (*QueryChunkUnbondRequestsRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a04856e9492a9fb6, []int{21}
+}
+func (m *QueryChunkUnbondRequestsRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryChunkUnbondRequestsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryChunkUnbondRequestsRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryChunkUnbondRequestsRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryChunkUnbondRequestsRequest.Merge(m, src)
+}
+func (m *QueryChunkUnbondRequestsRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryChunkUnbondRequestsRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryChunkUnbondRequestsRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryChunkUnbondRequestsRequest proto.InternalMessageInfo
+
+func (m *QueryChunkUnbondRequestsRequest) GetPagination() *query.PageRequest {
+	if m != nil {
+		return m.Pagination
+	}
+	return nil
+}
+
+type QueryChunkUnbondRequestsByUndelegatorRequest struct {
+	UndelegatorAddr string             `protobuf:"bytes,1,opt,name=undelegator_addr,json=undelegatorAddr,proto3" json:"undelegator_addr,omitempty"`
+	Pagination      *query.PageRequest `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
+}
+
+func (m *QueryChunkUnbondRequestsByUndelegatorRequest) Reset() {
+	*m = QueryChunkUnbondRequestsByUndelegatorRequest{}
+}
+func (m *QueryChunkUnbondRequestsByUndelegatorRequest) String() string {
+	return proto.CompactTextString(m)
+}
+func (*QueryChunkUnbondRequestsByUndelegatorRequest) ProtoMessage() {}
+func (*QueryChunkUnbondRequestsByUndelegatorRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a04856e9492a9fb6, []int{22}
+}
+func (m *QueryChunkUnbondRequestsByUndelegatorRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryChunkUnbondRequestsByUndelegatorRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryChunkUnbondRequestsByUndelegatorRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryChunkUnbondRequestsByUndelegatorRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryChunkUnbondRequestsByUndelegatorRequest.Merge(m, src)
+}
+func (m *QueryChunkUnbondRequestsByUndelegatorRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryChunkUnbondRequestsByUndelegatorRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryChunkUnbondRequestsByUndelegatorRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryChunkUnbondRequestsByUndelegatorRequest proto.InternalMessageInfo
+
+func (m *QueryChunkUnbondRequestsByUndelegatorRequest) GetUndelegatorAddr() string {
+	if m != nil {
+		return m.UndelegatorAddr
+	}
+	return ""
+}
+
+func (m *QueryChunkUnbondRequestsByUndelegatorRequest) GetPagination() *query.PageRequest {
+	if m != nil {
+		return m.Pagination
+	}
+	return nil
+}
 
 type QueryChunkUnbondRequestsResponse struct {
+	ChunkUnbondRequests []ChunkUnbondRequest `protobuf:"bytes,1,rep,name=chunk_unbond_requests,json=chunkUnbondRequests,proto3" json:"chunk_unbond_requests"`
+	Pagination          *query.PageResponse  `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
 }
 
 func (m *QueryChunkUnbondRequestsResponse) Reset()         { *m = QueryChunkUnbondRequestsResponse{} }
 func (m *QueryChunkUnbondRequestsResponse) String() string { return proto.CompactTextString(m) }
 func (*QueryChunkUnbondRequestsResponse) ProtoMessage()    {}
 func (*QueryChunkUnbondRequestsResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a04856e9492a9fb6, []int{13}
+	return fileDescriptor_a04856e9492a9fb6, []int{23}
 }
 func (m *QueryChunkUnbondRequestsResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -549,14 +1098,29 @@ func (m *QueryChunkUnbondRequestsResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QueryChunkUnbondRequestsResponse proto.InternalMessageInfo
 
+func (m *QueryChunkUnbondRequestsResponse) GetChunkUnbondRequests() []ChunkUnbondRequest {
+	if m != nil {
+		return m.ChunkUnbondRequests
+	}
+	return nil
+}
+
+func (m *QueryChunkUnbondRequestsResponse) GetPagination() *query.PageResponse {
+	if m != nil {
+		return m.Pagination
+	}
+	return nil
+}
+
 type QueryInsuranceBidRequest struct {
+	Id uint64 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
 }
 
 func (m *QueryInsuranceBidRequest) Reset()         { *m = QueryInsuranceBidRequest{} }
 func (m *QueryInsuranceBidRequest) String() string { return proto.CompactTextString(m) }
 func (*QueryInsuranceBidRequest) ProtoMessage()    {}
 func (*QueryInsuranceBidRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a04856e9492a9fb6, []int{14}
+	return fileDescriptor_a04856e9492a9fb6, []int{24}
 }
 func (m *QueryInsuranceBidRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -585,14 +1149,22 @@ func (m *QueryInsuranceBidRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QueryInsuranceBidRequest proto.InternalMessageInfo
 
+func (m *QueryInsuranceBidRequest) GetId() uint64 {
+	if m != nil {
+		return m.Id
+	}
+	return 0
+}
+
 type QueryInsuranceBidResponse struct {
+	InsuranceBid InsuranceBid `protobuf:"bytes,1,opt,name=insurance_bid,json=insuranceBid,proto3" json:"insurance_bid"`
 }
 
 func (m *QueryInsuranceBidResponse) Reset()         { *m = QueryInsuranceBidResponse{} }
 func (m *QueryInsuranceBidResponse) String() string { return proto.CompactTextString(m) }
 func (*QueryInsuranceBidResponse) ProtoMessage()    {}
 func (*QueryInsuranceBidResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a04856e9492a9fb6, []int{15}
+	return fileDescriptor_a04856e9492a9fb6, []int{25}
 }
 func (m *QueryInsuranceBidResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -621,6 +1193,513 @@ func (m *QueryInsuranceBidResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QueryInsuranceBidResponse proto.InternalMessageInfo
 
+func (m *QueryInsuranceBidResponse) GetInsuranceBid() InsuranceBid {
+	if m != nil {
+		return m.InsuranceBid
+	}
+	return InsuranceBid{}
+}
+
+type QueryInsuranceBidsRequest struct {
+	Pagination *query.PageRequest `protobuf:"bytes,1,opt,name=pagination,proto3" json:"pagination,omitempty"`
+}
+
+func (m *QueryInsuranceBidsRequest) Reset()         { *m = QueryInsuranceBidsRequest{} }
+func (m *QueryInsuranceBidsRequest) String() string { return proto.CompactTextString(m) }
+func (*QueryInsuranceBidsRequest) ProtoMessage()    {}
+func (*QueryInsuranceBidsRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a04856e9492a9fb6, []int{26}
+}
+func (m *QueryInsuranceBidsRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryInsuranceBidsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryInsuranceBidsRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryInsuranceBidsRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryInsuranceBidsRequest.Merge(m, src)
+}
+func (m *QueryInsuranceBidsRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryInsuranceBidsRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryInsuranceBidsRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryInsuranceBidsRequest proto.InternalMessageInfo
+
+func (m *QueryInsuranceBidsRequest) GetPagination() *query.PageRequest {
+	if m != nil {
+		return m.Pagination
+	}
+	return nil
+}
+
+type QueryInsuranceBidsByInsuranceProviderRequest struct {
+	InsuranceProviderAddr string             `protobuf:"bytes,1,opt,name=insurance_provider_addr,json=insuranceProviderAddr,proto3" json:"insurance_provider_addr,omitempty"`
+	Pagination            *query.PageRequest `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
+}
+
+func (m *QueryInsuranceBidsByInsuranceProviderRequest) Reset() {
+	*m = QueryInsuranceBidsByInsuranceProviderRequest{}
+}
+func (m *QueryInsuranceBidsByInsuranceProviderRequest) String() string {
+	return proto.CompactTextString(m)
+}
+func (*QueryInsuranceBidsByInsuranceProviderRequest) ProtoMessage() {}
+func (*QueryInsuranceBidsByInsuranceProviderRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a04856e9492a9fb6, []int{27}
+}
+func (m *QueryInsuranceBidsByInsuranceProviderRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryInsuranceBidsByInsuranceProviderRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryInsuranceBidsByInsuranceProviderRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryInsuranceBidsByInsuranceProviderRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryInsuranceBidsByInsuranceProviderRequest.Merge(m, src)
+}
+func (m *QueryInsuranceBidsByInsuranceProviderRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryInsuranceBidsByInsuranceProviderRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryInsuranceBidsByInsuranceProviderRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryInsuranceBidsByInsuranceProviderRequest proto.InternalMessageInfo
+
+func (m *QueryInsuranceBidsByInsuranceProviderRequest) GetInsuranceProviderAddr() string {
+	if m != nil {
+		return m.InsuranceProviderAddr
+	}
+	return ""
+}
+
+func (m *QueryInsuranceBidsByInsuranceProviderRequest) GetPagination() *query.PageRequest {
+	if m != nil {
+		return m.Pagination
+	}
+	return nil
+}
+
+type QueryInsuranceBidsByValidatorRequest struct {
+	ValidatorAddr string             `protobuf:"bytes,1,opt,name=validator_addr,json=validatorAddr,proto3" json:"validator_addr,omitempty"`
+	Pagination    *query.PageRequest `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
+}
+
+func (m *QueryInsuranceBidsByValidatorRequest) Reset()         { *m = QueryInsuranceBidsByValidatorRequest{} }
+func (m *QueryInsuranceBidsByValidatorRequest) String() string { return proto.CompactTextString(m) }
+func (*QueryInsuranceBidsByValidatorRequest) ProtoMessage()    {}
+func (*QueryInsuranceBidsByValidatorRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a04856e9492a9fb6, []int{28}
+}
+func (m *QueryInsuranceBidsByValidatorRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryInsuranceBidsByValidatorRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryInsuranceBidsByValidatorRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryInsuranceBidsByValidatorRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryInsuranceBidsByValidatorRequest.Merge(m, src)
+}
+func (m *QueryInsuranceBidsByValidatorRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryInsuranceBidsByValidatorRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryInsuranceBidsByValidatorRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryInsuranceBidsByValidatorRequest proto.InternalMessageInfo
+
+func (m *QueryInsuranceBidsByValidatorRequest) GetValidatorAddr() string {
+	if m != nil {
+		return m.ValidatorAddr
+	}
+	return ""
+}
+
+func (m *QueryInsuranceBidsByValidatorRequest) GetPagination() *query.PageRequest {
+	if m != nil {
+		return m.Pagination
+	}
+	return nil
+}
+
+type QueryInsuranceBidsResponse struct {
+	InsuranceBids []InsuranceBid      `protobuf:"bytes,1,rep,name=insurance_bids,json=insuranceBids,proto3" json:"insurance_bids"`
+	Pagination    *query.PageResponse `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
+}
+
+func (m *QueryInsuranceBidsResponse) Reset()         { *m = QueryInsuranceBidsResponse{} }
+func (m *QueryInsuranceBidsResponse) String() string { return proto.CompactTextString(m) }
+func (*QueryInsuranceBidsResponse) ProtoMessage()    {}
+func (*QueryInsuranceBidsResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a04856e9492a9fb6, []int{29}
+}
+func (m *QueryInsuranceBidsResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryInsuranceBidsResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryInsuranceBidsResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryInsuranceBidsResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryInsuranceBidsResponse.Merge(m, src)
+}
+func (m *QueryInsuranceBidsResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryInsuranceBidsResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryInsuranceBidsResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryInsuranceBidsResponse proto.InternalMessageInfo
+
+func (m *QueryInsuranceBidsResponse) GetInsuranceBids() []InsuranceBid {
+	if m != nil {
+		return m.InsuranceBids
+	}
+	return nil
+}
+
+func (m *QueryInsuranceBidsResponse) GetPagination() *query.PageResponse {
+	if m != nil {
+		return m.Pagination
+	}
+	return nil
+}
+
+type QueryInsuranceUnbondRequestRequest struct {
+	Id uint64 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+}
+
+func (m *QueryInsuranceUnbondRequestRequest) Reset()         { *m = QueryInsuranceUnbondRequestRequest{} }
+func (m *QueryInsuranceUnbondRequestRequest) String() string { return proto.CompactTextString(m) }
+func (*QueryInsuranceUnbondRequestRequest) ProtoMessage()    {}
+func (*QueryInsuranceUnbondRequestRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a04856e9492a9fb6, []int{30}
+}
+func (m *QueryInsuranceUnbondRequestRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryInsuranceUnbondRequestRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryInsuranceUnbondRequestRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryInsuranceUnbondRequestRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryInsuranceUnbondRequestRequest.Merge(m, src)
+}
+func (m *QueryInsuranceUnbondRequestRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryInsuranceUnbondRequestRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryInsuranceUnbondRequestRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryInsuranceUnbondRequestRequest proto.InternalMessageInfo
+
+func (m *QueryInsuranceUnbondRequestRequest) GetId() uint64 {
+	if m != nil {
+		return m.Id
+	}
+	return 0
+}
+
+type QueryInsuranceUnbondRequestResponse struct {
+	InsuranceUnbondRequest InsuranceUnbondRequest `protobuf:"bytes,1,opt,name=insurance_unbond_request,json=insuranceUnbondRequest,proto3" json:"insurance_unbond_request"`
+}
+
+func (m *QueryInsuranceUnbondRequestResponse) Reset()         { *m = QueryInsuranceUnbondRequestResponse{} }
+func (m *QueryInsuranceUnbondRequestResponse) String() string { return proto.CompactTextString(m) }
+func (*QueryInsuranceUnbondRequestResponse) ProtoMessage()    {}
+func (*QueryInsuranceUnbondRequestResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a04856e9492a9fb6, []int{31}
+}
+func (m *QueryInsuranceUnbondRequestResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryInsuranceUnbondRequestResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryInsuranceUnbondRequestResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryInsuranceUnbondRequestResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryInsuranceUnbondRequestResponse.Merge(m, src)
+}
+func (m *QueryInsuranceUnbondRequestResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryInsuranceUnbondRequestResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryInsuranceUnbondRequestResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryInsuranceUnbondRequestResponse proto.InternalMessageInfo
+
+func (m *QueryInsuranceUnbondRequestResponse) GetInsuranceUnbondRequest() InsuranceUnbondRequest {
+	if m != nil {
+		return m.InsuranceUnbondRequest
+	}
+	return InsuranceUnbondRequest{}
+}
+
+type QueryInsuranceUnbondRequestsRequest struct {
+	Pagination *query.PageRequest `protobuf:"bytes,1,opt,name=pagination,proto3" json:"pagination,omitempty"`
+}
+
+func (m *QueryInsuranceUnbondRequestsRequest) Reset()         { *m = QueryInsuranceUnbondRequestsRequest{} }
+func (m *QueryInsuranceUnbondRequestsRequest) String() string { return proto.CompactTextString(m) }
+func (*QueryInsuranceUnbondRequestsRequest) ProtoMessage()    {}
+func (*QueryInsuranceUnbondRequestsRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a04856e9492a9fb6, []int{32}
+}
+func (m *QueryInsuranceUnbondRequestsRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryInsuranceUnbondRequestsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryInsuranceUnbondRequestsRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryInsuranceUnbondRequestsRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryInsuranceUnbondRequestsRequest.Merge(m, src)
+}
+func (m *QueryInsuranceUnbondRequestsRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryInsuranceUnbondRequestsRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryInsuranceUnbondRequestsRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryInsuranceUnbondRequestsRequest proto.InternalMessageInfo
+
+func (m *QueryInsuranceUnbondRequestsRequest) GetPagination() *query.PageRequest {
+	if m != nil {
+		return m.Pagination
+	}
+	return nil
+}
+
+type QueryInsuranceUnbondRequestsByInsuranceProviderRequest struct {
+	InsuranceProviderAddr string             `protobuf:"bytes,1,opt,name=insurance_provider_addr,json=insuranceProviderAddr,proto3" json:"insurance_provider_addr,omitempty"`
+	Pagination            *query.PageRequest `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
+}
+
+func (m *QueryInsuranceUnbondRequestsByInsuranceProviderRequest) Reset() {
+	*m = QueryInsuranceUnbondRequestsByInsuranceProviderRequest{}
+}
+func (m *QueryInsuranceUnbondRequestsByInsuranceProviderRequest) String() string {
+	return proto.CompactTextString(m)
+}
+func (*QueryInsuranceUnbondRequestsByInsuranceProviderRequest) ProtoMessage() {}
+func (*QueryInsuranceUnbondRequestsByInsuranceProviderRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a04856e9492a9fb6, []int{33}
+}
+func (m *QueryInsuranceUnbondRequestsByInsuranceProviderRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryInsuranceUnbondRequestsByInsuranceProviderRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryInsuranceUnbondRequestsByInsuranceProviderRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryInsuranceUnbondRequestsByInsuranceProviderRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryInsuranceUnbondRequestsByInsuranceProviderRequest.Merge(m, src)
+}
+func (m *QueryInsuranceUnbondRequestsByInsuranceProviderRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryInsuranceUnbondRequestsByInsuranceProviderRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryInsuranceUnbondRequestsByInsuranceProviderRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryInsuranceUnbondRequestsByInsuranceProviderRequest proto.InternalMessageInfo
+
+func (m *QueryInsuranceUnbondRequestsByInsuranceProviderRequest) GetInsuranceProviderAddr() string {
+	if m != nil {
+		return m.InsuranceProviderAddr
+	}
+	return ""
+}
+
+func (m *QueryInsuranceUnbondRequestsByInsuranceProviderRequest) GetPagination() *query.PageRequest {
+	if m != nil {
+		return m.Pagination
+	}
+	return nil
+}
+
+type QueryInsuranceUnbondRequestsByValidatorRequest struct {
+	ValidatorAddr string             `protobuf:"bytes,1,opt,name=validator_addr,json=validatorAddr,proto3" json:"validator_addr,omitempty"`
+	Pagination    *query.PageRequest `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
+}
+
+func (m *QueryInsuranceUnbondRequestsByValidatorRequest) Reset() {
+	*m = QueryInsuranceUnbondRequestsByValidatorRequest{}
+}
+func (m *QueryInsuranceUnbondRequestsByValidatorRequest) String() string {
+	return proto.CompactTextString(m)
+}
+func (*QueryInsuranceUnbondRequestsByValidatorRequest) ProtoMessage() {}
+func (*QueryInsuranceUnbondRequestsByValidatorRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a04856e9492a9fb6, []int{34}
+}
+func (m *QueryInsuranceUnbondRequestsByValidatorRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryInsuranceUnbondRequestsByValidatorRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryInsuranceUnbondRequestsByValidatorRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryInsuranceUnbondRequestsByValidatorRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryInsuranceUnbondRequestsByValidatorRequest.Merge(m, src)
+}
+func (m *QueryInsuranceUnbondRequestsByValidatorRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryInsuranceUnbondRequestsByValidatorRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryInsuranceUnbondRequestsByValidatorRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryInsuranceUnbondRequestsByValidatorRequest proto.InternalMessageInfo
+
+func (m *QueryInsuranceUnbondRequestsByValidatorRequest) GetValidatorAddr() string {
+	if m != nil {
+		return m.ValidatorAddr
+	}
+	return ""
+}
+
+func (m *QueryInsuranceUnbondRequestsByValidatorRequest) GetPagination() *query.PageRequest {
+	if m != nil {
+		return m.Pagination
+	}
+	return nil
+}
+
+type QueryInsuranceUnbondRequestsResponse struct {
+	InsuranceUnbondRequests []InsuranceUnbondRequest `protobuf:"bytes,1,rep,name=insurance_unbond_requests,json=insuranceUnbondRequests,proto3" json:"insurance_unbond_requests"`
+	Pagination              *query.PageResponse      `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
+}
+
+func (m *QueryInsuranceUnbondRequestsResponse) Reset()         { *m = QueryInsuranceUnbondRequestsResponse{} }
+func (m *QueryInsuranceUnbondRequestsResponse) String() string { return proto.CompactTextString(m) }
+func (*QueryInsuranceUnbondRequestsResponse) ProtoMessage()    {}
+func (*QueryInsuranceUnbondRequestsResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a04856e9492a9fb6, []int{35}
+}
+func (m *QueryInsuranceUnbondRequestsResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryInsuranceUnbondRequestsResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryInsuranceUnbondRequestsResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryInsuranceUnbondRequestsResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryInsuranceUnbondRequestsResponse.Merge(m, src)
+}
+func (m *QueryInsuranceUnbondRequestsResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryInsuranceUnbondRequestsResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryInsuranceUnbondRequestsResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryInsuranceUnbondRequestsResponse proto.InternalMessageInfo
+
+func (m *QueryInsuranceUnbondRequestsResponse) GetInsuranceUnbondRequests() []InsuranceUnbondRequest {
+	if m != nil {
+		return m.InsuranceUnbondRequests
+	}
+	return nil
+}
+
+func (m *QueryInsuranceUnbondRequestsResponse) GetPagination() *query.PageResponse {
+	if m != nil {
+		return m.Pagination
+	}
+	return nil
+}
+
 func init() {
 	proto.RegisterType((*QueryParamsRequest)(nil), "canto.liquidstaking.v1.QueryParamsRequest")
 	proto.RegisterType((*QueryParamsResponse)(nil), "canto.liquidstaking.v1.QueryParamsResponse")
@@ -628,16 +1707,36 @@ func init() {
 	proto.RegisterType((*QueryLiquidValidatorsResponse)(nil), "canto.liquidstaking.v1.QueryLiquidValidatorsResponse")
 	proto.RegisterType((*QueryLiquidStakingStateRequest)(nil), "canto.liquidstaking.v1.QueryLiquidStakingStateRequest")
 	proto.RegisterType((*QueryLiquidStakingStateResponse)(nil), "canto.liquidstaking.v1.QueryLiquidStakingStateResponse")
+	proto.RegisterType((*QueryAliveChunkRequest)(nil), "canto.liquidstaking.v1.QueryAliveChunkRequest")
+	proto.RegisterType((*QueryAliveChunkResponse)(nil), "canto.liquidstaking.v1.QueryAliveChunkResponse")
 	proto.RegisterType((*QueryAliveChunksRequest)(nil), "canto.liquidstaking.v1.QueryAliveChunksRequest")
+	proto.RegisterType((*QueryAliveChunksByInsuranceProviderRequest)(nil), "canto.liquidstaking.v1.QueryAliveChunksByInsuranceProviderRequest")
+	proto.RegisterType((*QueryAliveChunksByValidatorRequest)(nil), "canto.liquidstaking.v1.QueryAliveChunksByValidatorRequest")
 	proto.RegisterType((*QueryAliveChunksResponse)(nil), "canto.liquidstaking.v1.QueryAliveChunksResponse")
 	proto.RegisterType((*QueryUnbondingChunksRequest)(nil), "canto.liquidstaking.v1.QueryUnbondingChunksRequest")
 	proto.RegisterType((*QueryUnbondingChunksResponse)(nil), "canto.liquidstaking.v1.QueryUnbondingChunksResponse")
-	proto.RegisterType((*QueryChunkBondRequests)(nil), "canto.liquidstaking.v1.QueryChunkBondRequests")
+	proto.RegisterType((*QueryChunkBondRequestRequest)(nil), "canto.liquidstaking.v1.QueryChunkBondRequestRequest")
+	proto.RegisterType((*QueryChunkBondRequestResponse)(nil), "canto.liquidstaking.v1.QueryChunkBondRequestResponse")
+	proto.RegisterType((*QueryChunkBondRequestsRequest)(nil), "canto.liquidstaking.v1.QueryChunkBondRequestsRequest")
+	proto.RegisterType((*QueryChunkBondRequestsByDelegatorRequest)(nil), "canto.liquidstaking.v1.QueryChunkBondRequestsByDelegatorRequest")
 	proto.RegisterType((*QueryChunkBondRequestsResponse)(nil), "canto.liquidstaking.v1.QueryChunkBondRequestsResponse")
-	proto.RegisterType((*QueryChunkUnbondRequests)(nil), "canto.liquidstaking.v1.QueryChunkUnbondRequests")
+	proto.RegisterType((*QueryChunkUnbondRequestRequest)(nil), "canto.liquidstaking.v1.QueryChunkUnbondRequestRequest")
+	proto.RegisterType((*QueryChunkUnbondRequestResponse)(nil), "canto.liquidstaking.v1.QueryChunkUnbondRequestResponse")
+	proto.RegisterType((*QueryChunkUnbondRequestsRequest)(nil), "canto.liquidstaking.v1.QueryChunkUnbondRequestsRequest")
+	proto.RegisterType((*QueryChunkUnbondRequestsByUndelegatorRequest)(nil), "canto.liquidstaking.v1.QueryChunkUnbondRequestsByUndelegatorRequest")
 	proto.RegisterType((*QueryChunkUnbondRequestsResponse)(nil), "canto.liquidstaking.v1.QueryChunkUnbondRequestsResponse")
 	proto.RegisterType((*QueryInsuranceBidRequest)(nil), "canto.liquidstaking.v1.QueryInsuranceBidRequest")
 	proto.RegisterType((*QueryInsuranceBidResponse)(nil), "canto.liquidstaking.v1.QueryInsuranceBidResponse")
+	proto.RegisterType((*QueryInsuranceBidsRequest)(nil), "canto.liquidstaking.v1.QueryInsuranceBidsRequest")
+	proto.RegisterType((*QueryInsuranceBidsByInsuranceProviderRequest)(nil), "canto.liquidstaking.v1.QueryInsuranceBidsByInsuranceProviderRequest")
+	proto.RegisterType((*QueryInsuranceBidsByValidatorRequest)(nil), "canto.liquidstaking.v1.QueryInsuranceBidsByValidatorRequest")
+	proto.RegisterType((*QueryInsuranceBidsResponse)(nil), "canto.liquidstaking.v1.QueryInsuranceBidsResponse")
+	proto.RegisterType((*QueryInsuranceUnbondRequestRequest)(nil), "canto.liquidstaking.v1.QueryInsuranceUnbondRequestRequest")
+	proto.RegisterType((*QueryInsuranceUnbondRequestResponse)(nil), "canto.liquidstaking.v1.QueryInsuranceUnbondRequestResponse")
+	proto.RegisterType((*QueryInsuranceUnbondRequestsRequest)(nil), "canto.liquidstaking.v1.QueryInsuranceUnbondRequestsRequest")
+	proto.RegisterType((*QueryInsuranceUnbondRequestsByInsuranceProviderRequest)(nil), "canto.liquidstaking.v1.QueryInsuranceUnbondRequestsByInsuranceProviderRequest")
+	proto.RegisterType((*QueryInsuranceUnbondRequestsByValidatorRequest)(nil), "canto.liquidstaking.v1.QueryInsuranceUnbondRequestsByValidatorRequest")
+	proto.RegisterType((*QueryInsuranceUnbondRequestsResponse)(nil), "canto.liquidstaking.v1.QueryInsuranceUnbondRequestsResponse")
 }
 
 func init() {
@@ -645,52 +1744,106 @@ func init() {
 }
 
 var fileDescriptor_a04856e9492a9fb6 = []byte{
-	// 706 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x96, 0xbf, 0x6f, 0xd3, 0x40,
-	0x14, 0xc7, 0x73, 0xfc, 0xe8, 0xf0, 0x2a, 0x44, 0x7b, 0xad, 0x4a, 0xea, 0xb6, 0x6e, 0x30, 0x50,
-	0x4a, 0xdb, 0xd8, 0x4d, 0xfa, 0x03, 0x06, 0x16, 0xd2, 0x09, 0x09, 0x21, 0x68, 0x81, 0x01, 0x21,
-	0x45, 0x4e, 0x72, 0x72, 0xad, 0xa6, 0x77, 0xa9, 0x7d, 0x0e, 0x74, 0x43, 0x6c, 0x6c, 0x48, 0xec,
-	0x2c, 0xec, 0x08, 0x31, 0x21, 0xf1, 0x0f, 0x74, 0xac, 0xc4, 0xc2, 0x84, 0x50, 0xcb, 0xc8, 0x1f,
-	0x81, 0x7c, 0x3e, 0xbb, 0x49, 0x9c, 0x73, 0x93, 0x29, 0xce, 0xbd, 0xef, 0xf7, 0x7d, 0x3f, 0x76,
-	0xde, 0xb3, 0x02, 0x46, 0xdd, 0xa6, 0x9c, 0x59, 0x4d, 0xf7, 0x20, 0x70, 0x1b, 0x3e, 0xb7, 0xf7,
-	0x5c, 0xea, 0x58, 0xed, 0x92, 0x75, 0x10, 0x10, 0xef, 0xd0, 0x6c, 0x79, 0x8c, 0x33, 0x3c, 0x25,
-	0x34, 0x66, 0x97, 0xc6, 0x6c, 0x97, 0xb4, 0x59, 0x87, 0x31, 0xa7, 0x49, 0x2c, 0xbb, 0xe5, 0x5a,
-	0x36, 0xa5, 0x8c, 0xdb, 0xdc, 0x65, 0xd4, 0x8f, 0x5c, 0xda, 0xa4, 0xc3, 0x1c, 0x26, 0x2e, 0xad,
-	0xf0, 0x4a, 0x9e, 0xde, 0x50, 0xe4, 0xb5, 0x6c, 0xcf, 0xde, 0x8f, 0xad, 0x4b, 0x0a, 0x51, 0x37,
-	0x81, 0xd0, 0x1a, 0x93, 0x80, 0x9f, 0x86, 0xac, 0x4f, 0x44, 0x83, 0x6d, 0x72, 0x10, 0x10, 0x9f,
-	0x1b, 0x3b, 0x30, 0xd1, 0x75, 0xea, 0xb7, 0x18, 0xf5, 0x09, 0xbe, 0x0f, 0x23, 0x51, 0x50, 0x1e,
-	0x15, 0xd0, 0xe2, 0x68, 0x59, 0x37, 0xfb, 0xdf, 0x9a, 0x19, 0xf9, 0x2a, 0x97, 0x8e, 0x7e, 0xcf,
-	0xe7, 0xb6, 0xa5, 0xc7, 0xd0, 0x61, 0x56, 0x34, 0x7d, 0x24, 0xd4, 0x2f, 0xec, 0xa6, 0xdb, 0xb0,
-	0x39, 0xf3, 0x92, 0xd0, 0xb7, 0x08, 0xe6, 0x14, 0x02, 0x99, 0x5f, 0x85, 0xf1, 0x28, 0xaa, 0xda,
-	0x4e, 0x8a, 0x79, 0x54, 0xb8, 0xb8, 0x38, 0x5a, 0x5e, 0x51, 0xa1, 0xf4, 0x34, 0xdb, 0xe1, 0x36,
-	0x27, 0x12, 0x6c, 0xac, 0xd9, 0x13, 0x64, 0x14, 0x40, 0xef, 0x20, 0xd8, 0x89, 0xba, 0x08, 0x4b,
-	0x0c, 0x79, 0x1d, 0xe6, 0x95, 0x8a, 0x88, 0xd2, 0x98, 0x86, 0x6b, 0x42, 0xf2, 0xa0, 0xe9, 0xb6,
-	0xc9, 0xd6, 0x6e, 0x40, 0xf7, 0x92, 0x5b, 0xd4, 0x20, 0x9f, 0x2e, 0x49, 0xdb, 0x1c, 0xcc, 0x88,
-	0xda, 0x73, 0x5a, 0x63, 0xb4, 0xe1, 0x52, 0xa7, 0xdb, 0x1a, 0x3f, 0xbd, 0x54, 0x59, 0xda, 0xf3,
-	0x30, 0x25, 0xea, 0xe2, 0xb8, 0xc2, 0x68, 0x43, 0x1a, 0xcf, 0x6e, 0x2a, 0x55, 0x49, 0xbc, 0x31,
-	0x96, 0x50, 0x44, 0x01, 0x89, 0xdb, 0x80, 0x82, 0xaa, 0x96, 0xf2, 0x3f, 0xa4, 0x7e, 0xe0, 0xd9,
-	0xb4, 0x4e, 0x2a, 0x6e, 0x2c, 0x32, 0x66, 0x60, 0xba, 0x4f, 0x2d, 0x32, 0x96, 0xff, 0x01, 0x5c,
-	0x16, 0x55, 0xfc, 0x1e, 0xc1, 0x48, 0x34, 0x35, 0x78, 0x49, 0xf5, 0x53, 0xa6, 0x07, 0x55, 0x5b,
-	0x1e, 0x48, 0x2b, 0x31, 0x17, 0xde, 0xfd, 0xfc, 0xfb, 0xf1, 0x42, 0x01, 0xeb, 0x56, 0xe6, 0x16,
-	0xe1, 0x6f, 0x08, 0xc6, 0x7a, 0x67, 0x10, 0xaf, 0x67, 0x26, 0x29, 0x66, 0x5a, 0xdb, 0x18, 0xd2,
-	0x25, 0x49, 0x4b, 0x82, 0x74, 0x19, 0xdf, 0xb1, 0x32, 0x57, 0xb9, 0x63, 0x0d, 0xf0, 0x0f, 0x04,
-	0x38, 0x3d, 0x94, 0x78, 0x73, 0x00, 0x80, 0x3e, 0x73, 0xae, 0xdd, 0x1d, 0xda, 0x27, 0xd1, 0xd7,
-	0x05, 0xba, 0x89, 0x57, 0xce, 0x41, 0x97, 0x27, 0xe1, 0x27, 0x27, 0xf8, 0x13, 0x82, 0xd1, 0x8e,
-	0xa5, 0xc0, 0x56, 0x66, 0x7c, 0x7a, 0xb3, 0xb4, 0xd5, 0xc1, 0x0d, 0x12, 0x74, 0x45, 0x80, 0x2e,
-	0xe0, 0x9b, 0x2a, 0x50, 0x3b, 0x34, 0x55, 0xeb, 0x11, 0xd0, 0x17, 0x04, 0x57, 0x7b, 0x56, 0x0f,
-	0xaf, 0x65, 0x66, 0xf6, 0xdf, 0x63, 0x6d, 0x7d, 0x38, 0x93, 0x84, 0x5d, 0x15, 0xb0, 0x4b, 0x78,
-	0x51, 0x05, 0x1b, 0xc4, 0xc6, 0x18, 0xf8, 0x2b, 0x82, 0xf1, 0xd4, 0xc6, 0x63, 0x33, 0x33, 0x3d,
-	0xa5, 0xd7, 0x36, 0x87, 0xd3, 0x27, 0xbc, 0x6b, 0x82, 0xb7, 0x88, 0x97, 0x55, 0xbc, 0x82, 0xb2,
-	0x1a, 0x32, 0x57, 0xbd, 0x18, 0xee, 0x3b, 0x82, 0x89, 0x3e, 0xaf, 0x19, 0xbc, 0x7a, 0x3e, 0x44,
-	0xb7, 0x43, 0xbb, 0x37, 0xac, 0x23, 0x01, 0xdf, 0x10, 0xe0, 0x16, 0x2e, 0x66, 0x83, 0x47, 0x8f,
-	0xfb, 0x0c, 0xfd, 0x33, 0x82, 0x2b, 0x9d, 0x6f, 0xb8, 0xf3, 0xa0, 0xfb, 0xbc, 0x29, 0xb5, 0xd2,
-	0x10, 0x0e, 0x49, 0x5b, 0x14, 0xb4, 0xb7, 0xf1, 0x2d, 0x15, 0xad, 0x1b, 0xbb, 0xaa, 0x35, 0xb7,
-	0x51, 0x79, 0x75, 0x74, 0xa2, 0xa3, 0xe3, 0x13, 0x1d, 0xfd, 0x39, 0xd1, 0xd1, 0x87, 0x53, 0x3d,
-	0x77, 0x7c, 0xaa, 0xe7, 0x7e, 0x9d, 0xea, 0xb9, 0x97, 0x15, 0xc7, 0xe5, 0xbb, 0x41, 0xcd, 0xac,
-	0xb3, 0x7d, 0x6b, 0x2b, 0x6c, 0x55, 0x7c, 0x4c, 0xf8, 0x6b, 0xe6, 0xed, 0xc9, 0x6f, 0xcf, 0x88,
-	0xcf, 0x29, 0xe1, 0xc5, 0x76, 0x39, 0xec, 0xfa, 0xa6, 0x27, 0x88, 0x1f, 0xb6, 0x88, 0x5f, 0x1b,
-	0x11, 0xff, 0x28, 0xd6, 0xfe, 0x07, 0x00, 0x00, 0xff, 0xff, 0x57, 0x03, 0x49, 0x25, 0x14, 0x09,
-	0x00, 0x00,
+	// 1581 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xcc, 0x5a, 0x4f, 0x6c, 0x14, 0x55,
+	0x18, 0xef, 0x2b, 0x48, 0xe2, 0x57, 0x0a, 0xe5, 0x03, 0xda, 0xb2, 0xc2, 0xb2, 0x0c, 0x58, 0x97,
+	0xd2, 0xce, 0x74, 0xb7, 0xa5, 0x22, 0x12, 0x03, 0x0b, 0x11, 0x31, 0xca, 0x9f, 0xf2, 0xe7, 0x40,
+	0x48, 0x36, 0xd3, 0x9d, 0xc9, 0x32, 0x61, 0x3b, 0xb3, 0xec, 0xce, 0xae, 0x36, 0xa4, 0x89, 0xf1,
+	0xe6, 0xcd, 0x84, 0x70, 0xf0, 0x22, 0x1a, 0x13, 0xe3, 0xc1, 0x70, 0xf0, 0x22, 0xc6, 0x83, 0xf1,
+	0x24, 0x37, 0x21, 0x5e, 0x38, 0x19, 0x05, 0x2f, 0x5e, 0xbd, 0xe9, 0xc9, 0xec, 0x9b, 0x37, 0xd3,
+	0x9d, 0x99, 0xf7, 0x66, 0x67, 0x86, 0x49, 0xe0, 0xd4, 0xf6, 0xbd, 0xef, 0x9b, 0xef, 0xf7, 0xfb,
+	0xde, 0xef, 0x7b, 0x7f, 0xbe, 0x14, 0xa4, 0x9a, 0x6a, 0xda, 0x96, 0xd2, 0x30, 0x6e, 0x76, 0x0c,
+	0xad, 0x6d, 0xab, 0x37, 0x0c, 0xb3, 0xae, 0x74, 0x4b, 0xca, 0xcd, 0x8e, 0xde, 0x5a, 0x95, 0x9b,
+	0x2d, 0xcb, 0xb6, 0x70, 0x9c, 0xda, 0xc8, 0x3e, 0x1b, 0xb9, 0x5b, 0xca, 0xed, 0xa8, 0x5b, 0x75,
+	0x8b, 0x9a, 0x28, 0xbd, 0xdf, 0x1c, 0xeb, 0xdc, 0xee, 0xba, 0x65, 0xd5, 0x1b, 0xba, 0xa2, 0x36,
+	0x0d, 0x45, 0x35, 0x4d, 0xcb, 0x56, 0x6d, 0xc3, 0x32, 0xdb, 0x6c, 0x76, 0xba, 0x66, 0xb5, 0x57,
+	0xac, 0xb6, 0xb2, 0xac, 0xb6, 0x75, 0x27, 0x88, 0xd2, 0x2d, 0x2d, 0xeb, 0xb6, 0x5a, 0x52, 0x9a,
+	0x6a, 0xdd, 0x30, 0xa9, 0xb1, 0x67, 0xcb, 0xc7, 0xe6, 0x07, 0xe2, 0xd8, 0xee, 0x17, 0xd8, 0x36,
+	0xd5, 0x96, 0xba, 0xc2, 0x82, 0x4b, 0x3b, 0x00, 0x2f, 0xf4, 0x42, 0x9e, 0xa7, 0x83, 0x4b, 0xfa,
+	0xcd, 0x8e, 0xde, 0xb6, 0xa5, 0x8b, 0xb0, 0xdd, 0x37, 0xda, 0x6e, 0x5a, 0x66, 0x5b, 0xc7, 0x63,
+	0xb0, 0xc9, 0x71, 0x9e, 0x24, 0x05, 0x52, 0x1c, 0x29, 0xe7, 0x65, 0x7e, 0x1a, 0x64, 0xc7, 0xaf,
+	0xb2, 0xf1, 0xc1, 0xef, 0x7b, 0x87, 0x96, 0x98, 0x8f, 0x94, 0x87, 0xdd, 0xf4, 0xa3, 0xef, 0x51,
+	0xeb, 0x2b, 0x6a, 0xc3, 0xd0, 0x54, 0xdb, 0x6a, 0x79, 0x41, 0x3f, 0x22, 0xb0, 0x47, 0x60, 0xc0,
+	0xe2, 0x57, 0x61, 0x9b, 0x13, 0xaa, 0xda, 0xf5, 0x26, 0x27, 0x49, 0x61, 0x43, 0x71, 0xa4, 0x3c,
+	0x23, 0x82, 0x12, 0xf8, 0xd8, 0x45, 0x5b, 0xb5, 0x75, 0x06, 0x6c, 0xac, 0x11, 0x08, 0x24, 0x15,
+	0x20, 0xdf, 0x87, 0xe0, 0xa2, 0xf3, 0x15, 0xea, 0xe2, 0x82, 0xdc, 0x07, 0x7b, 0x85, 0x16, 0x0e,
+	0x4a, 0xa9, 0x08, 0xe3, 0xd4, 0xe4, 0x44, 0xc3, 0xe8, 0xea, 0x27, 0xaf, 0x77, 0xcc, 0x1b, 0xcc,
+	0x19, 0xb7, 0xc0, 0xb0, 0xa1, 0xd1, 0xdc, 0x6d, 0x5c, 0x1a, 0x36, 0x34, 0x49, 0x83, 0x89, 0x90,
+	0x25, 0xa3, 0x7a, 0x06, 0x46, 0xd4, 0xde, 0x68, 0xb5, 0xd6, 0x1b, 0x66, 0xf9, 0x96, 0x44, 0x24,
+	0xd7, 0x3f, 0xc0, 0xa8, 0x81, 0xea, 0x8d, 0x48, 0x6a, 0x28, 0x8a, 0x9b, 0x72, 0x7c, 0x1b, 0x60,
+	0x5d, 0x62, 0x2c, 0xc8, 0x94, 0xec, 0xe8, 0x51, 0xee, 0xe9, 0x51, 0x76, 0x44, 0xcf, 0xf4, 0x28,
+	0x9f, 0x57, 0xeb, 0x6e, 0x26, 0x96, 0xfa, 0x3c, 0xa5, 0x6f, 0x09, 0x4c, 0x07, 0x63, 0x54, 0x56,
+	0xcf, 0x98, 0xed, 0x4e, 0x4b, 0x35, 0x6b, 0xfa, 0xf9, 0x96, 0xd5, 0x35, 0x34, 0xbd, 0xe5, 0x86,
+	0x5d, 0x84, 0x09, 0xc3, 0x9d, 0xab, 0x36, 0xd9, 0x64, 0x55, 0xd5, 0xb4, 0x16, 0xc5, 0xf0, 0xf2,
+	0xd2, 0x4e, 0x23, 0xe8, 0x7a, 0x42, 0xd3, 0x5a, 0x01, 0xb8, 0xc3, 0xa9, 0xe1, 0xde, 0x26, 0x20,
+	0x85, 0xe1, 0x7a, 0x3a, 0x70, 0x61, 0xbe, 0x0a, 0x5b, 0x3c, 0x9d, 0xf5, 0xa3, 0x1b, 0xf5, 0x46,
+	0x33, 0x45, 0x75, 0x8f, 0xc0, 0x64, 0x78, 0xa1, 0x44, 0x7a, 0xd8, 0x90, 0x56, 0x0f, 0x78, 0x9a,
+	0x83, 0xf7, 0xb5, 0x81, 0x78, 0x1d, 0x1c, 0x3e, 0xc0, 0x7b, 0xe0, 0x15, 0x8a, 0xf7, 0xb2, 0xb9,
+	0x6c, 0x99, 0x9a, 0x61, 0xd6, 0x7d, 0xe2, 0xf2, 0xea, 0x3d, 0x34, 0xcd, 0xea, 0x44, 0x66, 0xf3,
+	0x0e, 0x4e, 0xcb, 0xd4, 0xdc, 0xa4, 0x08, 0xaa, 0x65, 0x8d, 0x6d, 0x0f, 0x61, 0x7b, 0x96, 0xa3,
+	0x6b, 0xb0, 0xad, 0x16, 0x98, 0x73, 0x77, 0xaa, 0xa2, 0x28, 0x53, 0xc1, 0x8f, 0xb1, 0x7c, 0x85,
+	0x3f, 0x24, 0xd5, 0x05, 0xe1, 0x33, 0x2f, 0xa6, 0xcf, 0x08, 0x14, 0xf9, 0x91, 0x2a, 0xab, 0xa7,
+	0xf4, 0x86, 0x5e, 0x0f, 0x68, 0x54, 0x73, 0xc7, 0x7c, 0x1a, 0xf5, 0x46, 0x33, 0xd5, 0xe8, 0x2f,
+	0x84, 0xed, 0x90, 0x9c, 0x2c, 0x44, 0xaf, 0xc2, 0x86, 0x4c, 0x56, 0x21, 0x3b, 0xf1, 0xce, 0xf5,
+	0x13, 0x71, 0x24, 0x3a, 0x40, 0x7f, 0x0f, 0x08, 0xdb, 0xfb, 0x79, 0x2e, 0x1e, 0xf9, 0x1d, 0x14,
+	0x73, 0xb5, 0x43, 0xa7, 0xab, 0x2d, 0x67, 0x9e, 0xa9, 0x61, 0x3a, 0x92, 0xbf, 0xff, 0x8b, 0x58,
+	0x0b, 0x8d, 0x65, 0x47, 0xde, 0x10, 0x32, 0xc9, 0x5c, 0xcd, 0x5f, 0x12, 0x98, 0x11, 0xc5, 0xaa,
+	0xac, 0x5e, 0x36, 0xb5, 0xa0, 0xa2, 0x0f, 0xc2, 0x58, 0xc7, 0xe4, 0x6a, 0x7a, 0x6b, 0xdf, 0x78,
+	0xa6, 0xaa, 0x7e, 0x44, 0xa0, 0x20, 0xce, 0x07, 0x5b, 0x5a, 0x0d, 0x76, 0xf2, 0x96, 0xd6, 0xd5,
+	0x76, 0x82, 0xb5, 0x65, 0xea, 0xde, 0x1e, 0x5e, 0xe1, 0x0c, 0xf5, 0x3d, 0xcd, 0x0e, 0x13, 0xef,
+	0x10, 0xae, 0x18, 0x9a, 0x48, 0xd9, 0x0d, 0xd8, 0xc5, 0xb1, 0x65, 0xbc, 0xcf, 0xc1, 0xe8, 0xfa,
+	0x61, 0xbd, 0xcc, 0xfc, 0x46, 0xca, 0x07, 0x44, 0x7c, 0xfb, 0x3f, 0xc2, 0x98, 0x6e, 0x36, 0xfa,
+	0xc6, 0xa4, 0x1a, 0x27, 0x5a, 0xe6, 0xb2, 0xbb, 0xe7, 0xca, 0xce, 0x17, 0xe5, 0x05, 0xbe, 0x93,
+	0xdc, 0x21, 0x70, 0x80, 0x07, 0xf8, 0x79, 0xdf, 0x4a, 0xee, 0x13, 0xc8, 0xf1, 0x96, 0x8b, 0xa9,
+	0xe3, 0x02, 0x6c, 0xf1, 0xa9, 0xc3, 0x2d, 0x87, 0x24, 0xf2, 0x18, 0xed, 0x97, 0x47, 0x86, 0x25,
+	0xb0, 0xc0, 0x6e, 0x79, 0x5e, 0xc8, 0x58, 0xdb, 0xfc, 0x1d, 0x02, 0xfb, 0x23, 0xdd, 0x18, 0x73,
+	0x13, 0x26, 0xd7, 0x99, 0x73, 0xb7, 0x7b, 0x79, 0x60, 0x0e, 0x78, 0xdb, 0xc2, 0xb8, 0xc1, 0x9d,
+	0x95, 0x56, 0x22, 0x61, 0x65, 0x5e, 0x40, 0xf7, 0x09, 0x2c, 0x46, 0xc5, 0x7b, 0x81, 0x4b, 0xe9,
+	0x2e, 0x01, 0x39, 0x1a, 0xfa, 0xf3, 0x2e, 0xaa, 0x3f, 0x43, 0xc5, 0x2e, 0x38, 0x74, 0x9a, 0xb0,
+	0x4b, 0x24, 0x32, 0xb7, 0xd2, 0xd2, 0xa9, 0x6c, 0x82, 0xaf, 0xb2, 0xec, 0xaa, 0xaf, 0x7c, 0x77,
+	0x1f, 0xbc, 0x44, 0x39, 0xe2, 0x27, 0x04, 0x36, 0x39, 0x1d, 0x01, 0x14, 0x9e, 0x92, 0xe1, 0x26,
+	0x44, 0xee, 0x50, 0x2c, 0x5b, 0xf6, 0x98, 0x98, 0xfa, 0xf8, 0xb7, 0xbf, 0x6e, 0x0f, 0x17, 0x30,
+	0xaf, 0x44, 0x76, 0x3d, 0xf0, 0x3b, 0x02, 0x63, 0xc1, 0xfe, 0x02, 0x2e, 0x44, 0x46, 0x12, 0xf4,
+	0x2b, 0x72, 0x87, 0x13, 0x7a, 0x31, 0xa4, 0x25, 0x8a, 0xf4, 0x10, 0x1e, 0x54, 0x22, 0x7b, 0x39,
+	0x7d, 0x2d, 0x0e, 0xfc, 0x91, 0x00, 0x86, 0x1b, 0x0e, 0xb8, 0x18, 0x03, 0x00, 0xa7, 0x87, 0x91,
+	0x7b, 0x3d, 0xb1, 0x1f, 0x83, 0xbe, 0x40, 0xa1, 0xcb, 0x38, 0x33, 0x00, 0x3a, 0x1b, 0xe9, 0xfd,
+	0xb4, 0x75, 0xfc, 0x82, 0x00, 0xac, 0x3f, 0x48, 0x51, 0x8e, 0x8c, 0x1e, 0x6a, 0x9a, 0xe4, 0x94,
+	0xd8, 0xf6, 0x71, 0x13, 0xdc, 0xf7, 0x90, 0x6e, 0x2b, 0xb7, 0x0c, 0x6d, 0x0d, 0x3f, 0x27, 0x30,
+	0xd2, 0xf7, 0xea, 0xc6, 0xb8, 0x31, 0x3d, 0x2d, 0xcc, 0xc5, 0x77, 0x60, 0x28, 0x67, 0x28, 0xca,
+	0x29, 0x3c, 0x10, 0x07, 0x25, 0xfe, 0x43, 0x20, 0x1f, 0xdd, 0x5b, 0xc1, 0x4a, 0x5c, 0x08, 0xe2,
+	0x9d, 0x3b, 0x05, 0x8d, 0xab, 0x94, 0xc6, 0x25, 0x5c, 0x12, 0xd1, 0x08, 0x9f, 0x04, 0xbd, 0x9c,
+	0xf3, 0x8f, 0x87, 0x35, 0x3f, 0xe9, 0x87, 0x04, 0xc6, 0xf9, 0x1d, 0x1a, 0x3c, 0x1a, 0x9f, 0x6c,
+	0x70, 0xaf, 0x4f, 0x41, 0xf2, 0x1d, 0x4a, 0xb2, 0x82, 0xc7, 0x45, 0x24, 0xd7, 0x6b, 0x55, 0xb9,
+	0xe5, 0x3f, 0x47, 0x02, 0x94, 0xee, 0x11, 0xd8, 0x1a, 0xe8, 0x87, 0xe0, 0x7c, 0x24, 0x1e, 0x7e,
+	0x73, 0x25, 0xb7, 0x90, 0xcc, 0x89, 0x11, 0x99, 0xa3, 0x44, 0xa6, 0xb1, 0x28, 0x22, 0xd2, 0x71,
+	0x1d, 0x5d, 0xc0, 0x3f, 0x10, 0x18, 0x0b, 0xbe, 0xce, 0x07, 0xec, 0x97, 0x82, 0x7e, 0xce, 0x80,
+	0xfd, 0x52, 0xd4, 0xd5, 0x91, 0x8e, 0x50, 0xcc, 0x65, 0x9c, 0x13, 0x61, 0x76, 0x5e, 0x65, 0xbe,
+	0xa3, 0xd1, 0xa9, 0xea, 0xef, 0x09, 0x6c, 0x0b, 0xf5, 0x29, 0x30, 0x19, 0x0c, 0x2f, 0xe1, 0x8b,
+	0x49, 0xdd, 0x18, 0xfc, 0x79, 0x0a, 0x7f, 0x16, 0x0f, 0x25, 0x80, 0x8f, 0x7f, 0x13, 0xd8, 0x1d,
+	0xd5, 0xfd, 0xc1, 0xe3, 0xc9, 0xd0, 0x84, 0x1b, 0x47, 0xa9, 0xf9, 0x9c, 0xa3, 0x7c, 0xce, 0xe0,
+	0x69, 0x11, 0x1f, 0xef, 0x89, 0xde, 0x56, 0x6e, 0xf9, 0x9f, 0xf1, 0x6b, 0x5c, 0xae, 0x3f, 0x13,
+	0xc0, 0xf0, 0x1b, 0x19, 0x63, 0xe0, 0xe3, 0x5d, 0xe7, 0x07, 0x1c, 0x6e, 0xe2, 0xd6, 0x8d, 0x74,
+	0x94, 0x12, 0x5b, 0xc0, 0x72, 0xf4, 0x42, 0x05, 0x2e, 0x61, 0x8e, 0xd2, 0x7e, 0x22, 0xb0, 0x9d,
+	0xd3, 0x3b, 0xc0, 0xa4, 0x60, 0x3c, 0xb5, 0x1d, 0x49, 0xee, 0xc8, 0x68, 0x1c, 0xa6, 0x34, 0x14,
+	0x9c, 0x4d, 0x44, 0x03, 0xff, 0x25, 0x50, 0x18, 0xd4, 0xa1, 0xc1, 0x53, 0x49, 0x51, 0xf1, 0x1a,
+	0x3c, 0xcf, 0xc0, 0xed, 0x32, 0xe5, 0x76, 0x0e, 0xdf, 0x17, 0x6f, 0x5f, 0xfd, 0xea, 0x0b, 0xb6,
+	0x91, 0xd6, 0x04, 0xdc, 0xbf, 0x21, 0xb0, 0xb9, 0xff, 0x59, 0x8a, 0xd1, 0x27, 0x04, 0xa7, 0xa3,
+	0x92, 0x2b, 0x25, 0xf0, 0x88, 0xbb, 0x31, 0xf8, 0xdf, 0xd5, 0x8e, 0xd0, 0xbe, 0x26, 0x30, 0xea,
+	0x7b, 0x88, 0x63, 0xfc, 0xc8, 0x9e, 0xb8, 0xca, 0x49, 0x5c, 0xdc, 0x66, 0x3d, 0x45, 0x5b, 0xc4,
+	0xa9, 0x78, 0x68, 0xf1, 0x3f, 0x02, 0x85, 0x41, 0xad, 0x97, 0x01, 0x7a, 0x8a, 0xd9, 0xb9, 0x49,
+	0x45, 0xe7, 0x1a, 0xa5, 0x73, 0x05, 0x2f, 0x65, 0x73, 0x6d, 0x09, 0x90, 0x7f, 0x4c, 0x60, 0x52,
+	0xd4, 0xc6, 0xc1, 0x63, 0x49, 0x48, 0x87, 0x2e, 0x2f, 0x69, 0xc8, 0xbe, 0x4b, 0xc9, 0x9e, 0xc2,
+	0x4a, 0x9a, 0xeb, 0x4b, 0x80, 0xda, 0x23, 0x02, 0xe3, 0xfc, 0x87, 0xe5, 0x80, 0x3b, 0x59, 0x64,
+	0x13, 0x26, 0xf7, 0x66, 0x2a, 0x5f, 0xc6, 0xef, 0x2d, 0xca, 0xef, 0x08, 0x2e, 0x0e, 0x5e, 0x4c,
+	0xee, 0xee, 0xfd, 0x2b, 0x81, 0x09, 0xc1, 0x43, 0x1c, 0xd3, 0x00, 0xf3, 0x0a, 0xed, 0x58, 0x3a,
+	0x67, 0x46, 0xeb, 0x0d, 0x4a, 0x6b, 0x1e, 0x4b, 0x89, 0x69, 0xe1, 0x57, 0xc3, 0x30, 0x1d, 0xbf,
+	0x6f, 0x83, 0x67, 0xd3, 0xe0, 0x8c, 0xa8, 0xc8, 0x67, 0xe3, 0x5d, 0xa7, 0xbc, 0x55, 0xac, 0x66,
+	0x5d, 0x9b, 0x81, 0x2c, 0x55, 0xae, 0x3d, 0x78, 0x92, 0x27, 0x0f, 0x9f, 0xe4, 0xc9, 0x1f, 0x4f,
+	0xf2, 0xe4, 0xd3, 0xa7, 0xf9, 0xa1, 0x87, 0x4f, 0xf3, 0x43, 0x8f, 0x9f, 0xe6, 0x87, 0xae, 0x56,
+	0xea, 0x86, 0x7d, 0xbd, 0xb3, 0x2c, 0xd7, 0xac, 0x15, 0xe5, 0x64, 0x0f, 0xc4, 0xec, 0x59, 0xdd,
+	0xfe, 0xc0, 0x6a, 0xdd, 0x60, 0x7f, 0x5d, 0xd2, 0xdb, 0xb6, 0xa9, 0xdb, 0xb3, 0xdd, 0x72, 0x0f,
+	0xcf, 0x87, 0x01, 0x88, 0xf6, 0x6a, 0x53, 0x6f, 0x2f, 0x6f, 0xa2, 0xff, 0x60, 0x31, 0xff, 0x7f,
+	0x00, 0x00, 0x00, 0xff, 0xff, 0x11, 0x49, 0x2d, 0x10, 0x4f, 0x22, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -712,15 +1865,41 @@ type QueryClient interface {
 	// TRD
 	LiquidStakingState(ctx context.Context, in *QueryLiquidStakingStateRequest, opts ...grpc.CallOption) (*QueryLiquidStakingStateResponse, error)
 	// TBD
+	AliveChunk(ctx context.Context, in *QueryAliveChunkRequest, opts ...grpc.CallOption) (*QueryAliveChunkResponse, error)
+	// TBD
 	AliveChunks(ctx context.Context, in *QueryAliveChunksRequest, opts ...grpc.CallOption) (*QueryAliveChunksResponse, error)
+	// TBD
+	AliveChunksByInsuranceProvider(ctx context.Context, in *QueryAliveChunksByInsuranceProviderRequest, opts ...grpc.CallOption) (*QueryAliveChunksResponse, error)
+	// TBD
+	AliveChunksByValidator(ctx context.Context, in *QueryAliveChunksByValidatorRequest, opts ...grpc.CallOption) (*QueryAliveChunksResponse, error)
 	// TBD
 	UnbondingChunks(ctx context.Context, in *QueryUnbondingChunksRequest, opts ...grpc.CallOption) (*QueryUnbondingChunksResponse, error)
 	// TBD
-	ChunkBondRequests(ctx context.Context, in *QueryChunkBondRequests, opts ...grpc.CallOption) (*QueryChunkBondRequestsResponse, error)
+	ChunkBondRequest(ctx context.Context, in *QueryChunkBondRequestRequest, opts ...grpc.CallOption) (*QueryChunkBondRequestResponse, error)
 	// TBD
-	ChunkUnbondRequests(ctx context.Context, in *QueryChunkUnbondRequests, opts ...grpc.CallOption) (*QueryChunkUnbondRequestsResponse, error)
+	ChunkBondRequests(ctx context.Context, in *QueryChunkBondRequestsRequest, opts ...grpc.CallOption) (*QueryChunkBondRequestsResponse, error)
 	// TBD
-	InsuranceBids(ctx context.Context, in *QueryInsuranceBidRequest, opts ...grpc.CallOption) (*QueryInsuranceBidResponse, error)
+	ChunkBondRequestsByDelegator(ctx context.Context, in *QueryChunkBondRequestsByDelegatorRequest, opts ...grpc.CallOption) (*QueryChunkBondRequestsResponse, error)
+	// TBD
+	ChunkUnbondRequest(ctx context.Context, in *QueryChunkUnbondRequestRequest, opts ...grpc.CallOption) (*QueryChunkUnbondRequestResponse, error)
+	// TBD
+	ChunkUnbondRequests(ctx context.Context, in *QueryChunkUnbondRequestsRequest, opts ...grpc.CallOption) (*QueryChunkUnbondRequestsResponse, error)
+	// TBD
+	ChunkUnbondRequestsByUndelegator(ctx context.Context, in *QueryChunkUnbondRequestsByUndelegatorRequest, opts ...grpc.CallOption) (*QueryChunkUnbondRequestsResponse, error)
+	// TBD
+	InsuranceBid(ctx context.Context, in *QueryInsuranceBidRequest, opts ...grpc.CallOption) (*QueryInsuranceBidResponse, error)
+	// TBD
+	InsuranceBids(ctx context.Context, in *QueryInsuranceBidsRequest, opts ...grpc.CallOption) (*QueryInsuranceBidsResponse, error)
+	// TBD
+	InsuranceBidsByInsuranceProvider(ctx context.Context, in *QueryInsuranceBidsByInsuranceProviderRequest, opts ...grpc.CallOption) (*QueryInsuranceBidsResponse, error)
+	// TBD
+	InsuranceBidsByValidator(ctx context.Context, in *QueryInsuranceBidsByValidatorRequest, opts ...grpc.CallOption) (*QueryInsuranceBidsResponse, error)
+	// TBD
+	InsuranceUnbondRequest(ctx context.Context, in *QueryInsuranceUnbondRequestRequest, opts ...grpc.CallOption) (*QueryInsuranceUnbondRequestResponse, error)
+	// TBD
+	InsuranceUnbondRequests(ctx context.Context, in *QueryInsuranceUnbondRequestsRequest, opts ...grpc.CallOption) (*QueryInsuranceUnbondRequestsResponse, error)
+	// TBD
+	InsuranceUnbondRequestsByInsuranceProvider(ctx context.Context, in *QueryInsuranceUnbondRequestsByInsuranceProviderRequest, opts ...grpc.CallOption) (*QueryInsuranceUnbondRequestsResponse, error)
 }
 
 type queryClient struct {
@@ -758,9 +1937,36 @@ func (c *queryClient) LiquidStakingState(ctx context.Context, in *QueryLiquidSta
 	return out, nil
 }
 
+func (c *queryClient) AliveChunk(ctx context.Context, in *QueryAliveChunkRequest, opts ...grpc.CallOption) (*QueryAliveChunkResponse, error) {
+	out := new(QueryAliveChunkResponse)
+	err := c.cc.Invoke(ctx, "/canto.liquidstaking.v1.Query/AliveChunk", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *queryClient) AliveChunks(ctx context.Context, in *QueryAliveChunksRequest, opts ...grpc.CallOption) (*QueryAliveChunksResponse, error) {
 	out := new(QueryAliveChunksResponse)
 	err := c.cc.Invoke(ctx, "/canto.liquidstaking.v1.Query/AliveChunks", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *queryClient) AliveChunksByInsuranceProvider(ctx context.Context, in *QueryAliveChunksByInsuranceProviderRequest, opts ...grpc.CallOption) (*QueryAliveChunksResponse, error) {
+	out := new(QueryAliveChunksResponse)
+	err := c.cc.Invoke(ctx, "/canto.liquidstaking.v1.Query/AliveChunksByInsuranceProvider", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *queryClient) AliveChunksByValidator(ctx context.Context, in *QueryAliveChunksByValidatorRequest, opts ...grpc.CallOption) (*QueryAliveChunksResponse, error) {
+	out := new(QueryAliveChunksResponse)
+	err := c.cc.Invoke(ctx, "/canto.liquidstaking.v1.Query/AliveChunksByValidator", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -776,7 +1982,16 @@ func (c *queryClient) UnbondingChunks(ctx context.Context, in *QueryUnbondingChu
 	return out, nil
 }
 
-func (c *queryClient) ChunkBondRequests(ctx context.Context, in *QueryChunkBondRequests, opts ...grpc.CallOption) (*QueryChunkBondRequestsResponse, error) {
+func (c *queryClient) ChunkBondRequest(ctx context.Context, in *QueryChunkBondRequestRequest, opts ...grpc.CallOption) (*QueryChunkBondRequestResponse, error) {
+	out := new(QueryChunkBondRequestResponse)
+	err := c.cc.Invoke(ctx, "/canto.liquidstaking.v1.Query/ChunkBondRequest", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *queryClient) ChunkBondRequests(ctx context.Context, in *QueryChunkBondRequestsRequest, opts ...grpc.CallOption) (*QueryChunkBondRequestsResponse, error) {
 	out := new(QueryChunkBondRequestsResponse)
 	err := c.cc.Invoke(ctx, "/canto.liquidstaking.v1.Query/ChunkBondRequests", in, out, opts...)
 	if err != nil {
@@ -785,7 +2000,25 @@ func (c *queryClient) ChunkBondRequests(ctx context.Context, in *QueryChunkBondR
 	return out, nil
 }
 
-func (c *queryClient) ChunkUnbondRequests(ctx context.Context, in *QueryChunkUnbondRequests, opts ...grpc.CallOption) (*QueryChunkUnbondRequestsResponse, error) {
+func (c *queryClient) ChunkBondRequestsByDelegator(ctx context.Context, in *QueryChunkBondRequestsByDelegatorRequest, opts ...grpc.CallOption) (*QueryChunkBondRequestsResponse, error) {
+	out := new(QueryChunkBondRequestsResponse)
+	err := c.cc.Invoke(ctx, "/canto.liquidstaking.v1.Query/ChunkBondRequestsByDelegator", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *queryClient) ChunkUnbondRequest(ctx context.Context, in *QueryChunkUnbondRequestRequest, opts ...grpc.CallOption) (*QueryChunkUnbondRequestResponse, error) {
+	out := new(QueryChunkUnbondRequestResponse)
+	err := c.cc.Invoke(ctx, "/canto.liquidstaking.v1.Query/ChunkUnbondRequest", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *queryClient) ChunkUnbondRequests(ctx context.Context, in *QueryChunkUnbondRequestsRequest, opts ...grpc.CallOption) (*QueryChunkUnbondRequestsResponse, error) {
 	out := new(QueryChunkUnbondRequestsResponse)
 	err := c.cc.Invoke(ctx, "/canto.liquidstaking.v1.Query/ChunkUnbondRequests", in, out, opts...)
 	if err != nil {
@@ -794,9 +2027,72 @@ func (c *queryClient) ChunkUnbondRequests(ctx context.Context, in *QueryChunkUnb
 	return out, nil
 }
 
-func (c *queryClient) InsuranceBids(ctx context.Context, in *QueryInsuranceBidRequest, opts ...grpc.CallOption) (*QueryInsuranceBidResponse, error) {
+func (c *queryClient) ChunkUnbondRequestsByUndelegator(ctx context.Context, in *QueryChunkUnbondRequestsByUndelegatorRequest, opts ...grpc.CallOption) (*QueryChunkUnbondRequestsResponse, error) {
+	out := new(QueryChunkUnbondRequestsResponse)
+	err := c.cc.Invoke(ctx, "/canto.liquidstaking.v1.Query/ChunkUnbondRequestsByUndelegator", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *queryClient) InsuranceBid(ctx context.Context, in *QueryInsuranceBidRequest, opts ...grpc.CallOption) (*QueryInsuranceBidResponse, error) {
 	out := new(QueryInsuranceBidResponse)
+	err := c.cc.Invoke(ctx, "/canto.liquidstaking.v1.Query/InsuranceBid", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *queryClient) InsuranceBids(ctx context.Context, in *QueryInsuranceBidsRequest, opts ...grpc.CallOption) (*QueryInsuranceBidsResponse, error) {
+	out := new(QueryInsuranceBidsResponse)
 	err := c.cc.Invoke(ctx, "/canto.liquidstaking.v1.Query/InsuranceBids", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *queryClient) InsuranceBidsByInsuranceProvider(ctx context.Context, in *QueryInsuranceBidsByInsuranceProviderRequest, opts ...grpc.CallOption) (*QueryInsuranceBidsResponse, error) {
+	out := new(QueryInsuranceBidsResponse)
+	err := c.cc.Invoke(ctx, "/canto.liquidstaking.v1.Query/InsuranceBidsByInsuranceProvider", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *queryClient) InsuranceBidsByValidator(ctx context.Context, in *QueryInsuranceBidsByValidatorRequest, opts ...grpc.CallOption) (*QueryInsuranceBidsResponse, error) {
+	out := new(QueryInsuranceBidsResponse)
+	err := c.cc.Invoke(ctx, "/canto.liquidstaking.v1.Query/InsuranceBidsByValidator", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *queryClient) InsuranceUnbondRequest(ctx context.Context, in *QueryInsuranceUnbondRequestRequest, opts ...grpc.CallOption) (*QueryInsuranceUnbondRequestResponse, error) {
+	out := new(QueryInsuranceUnbondRequestResponse)
+	err := c.cc.Invoke(ctx, "/canto.liquidstaking.v1.Query/InsuranceUnbondRequest", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *queryClient) InsuranceUnbondRequests(ctx context.Context, in *QueryInsuranceUnbondRequestsRequest, opts ...grpc.CallOption) (*QueryInsuranceUnbondRequestsResponse, error) {
+	out := new(QueryInsuranceUnbondRequestsResponse)
+	err := c.cc.Invoke(ctx, "/canto.liquidstaking.v1.Query/InsuranceUnbondRequests", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *queryClient) InsuranceUnbondRequestsByInsuranceProvider(ctx context.Context, in *QueryInsuranceUnbondRequestsByInsuranceProviderRequest, opts ...grpc.CallOption) (*QueryInsuranceUnbondRequestsResponse, error) {
+	out := new(QueryInsuranceUnbondRequestsResponse)
+	err := c.cc.Invoke(ctx, "/canto.liquidstaking.v1.Query/InsuranceUnbondRequestsByInsuranceProvider", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -812,15 +2108,41 @@ type QueryServer interface {
 	// TRD
 	LiquidStakingState(context.Context, *QueryLiquidStakingStateRequest) (*QueryLiquidStakingStateResponse, error)
 	// TBD
+	AliveChunk(context.Context, *QueryAliveChunkRequest) (*QueryAliveChunkResponse, error)
+	// TBD
 	AliveChunks(context.Context, *QueryAliveChunksRequest) (*QueryAliveChunksResponse, error)
+	// TBD
+	AliveChunksByInsuranceProvider(context.Context, *QueryAliveChunksByInsuranceProviderRequest) (*QueryAliveChunksResponse, error)
+	// TBD
+	AliveChunksByValidator(context.Context, *QueryAliveChunksByValidatorRequest) (*QueryAliveChunksResponse, error)
 	// TBD
 	UnbondingChunks(context.Context, *QueryUnbondingChunksRequest) (*QueryUnbondingChunksResponse, error)
 	// TBD
-	ChunkBondRequests(context.Context, *QueryChunkBondRequests) (*QueryChunkBondRequestsResponse, error)
+	ChunkBondRequest(context.Context, *QueryChunkBondRequestRequest) (*QueryChunkBondRequestResponse, error)
 	// TBD
-	ChunkUnbondRequests(context.Context, *QueryChunkUnbondRequests) (*QueryChunkUnbondRequestsResponse, error)
+	ChunkBondRequests(context.Context, *QueryChunkBondRequestsRequest) (*QueryChunkBondRequestsResponse, error)
 	// TBD
-	InsuranceBids(context.Context, *QueryInsuranceBidRequest) (*QueryInsuranceBidResponse, error)
+	ChunkBondRequestsByDelegator(context.Context, *QueryChunkBondRequestsByDelegatorRequest) (*QueryChunkBondRequestsResponse, error)
+	// TBD
+	ChunkUnbondRequest(context.Context, *QueryChunkUnbondRequestRequest) (*QueryChunkUnbondRequestResponse, error)
+	// TBD
+	ChunkUnbondRequests(context.Context, *QueryChunkUnbondRequestsRequest) (*QueryChunkUnbondRequestsResponse, error)
+	// TBD
+	ChunkUnbondRequestsByUndelegator(context.Context, *QueryChunkUnbondRequestsByUndelegatorRequest) (*QueryChunkUnbondRequestsResponse, error)
+	// TBD
+	InsuranceBid(context.Context, *QueryInsuranceBidRequest) (*QueryInsuranceBidResponse, error)
+	// TBD
+	InsuranceBids(context.Context, *QueryInsuranceBidsRequest) (*QueryInsuranceBidsResponse, error)
+	// TBD
+	InsuranceBidsByInsuranceProvider(context.Context, *QueryInsuranceBidsByInsuranceProviderRequest) (*QueryInsuranceBidsResponse, error)
+	// TBD
+	InsuranceBidsByValidator(context.Context, *QueryInsuranceBidsByValidatorRequest) (*QueryInsuranceBidsResponse, error)
+	// TBD
+	InsuranceUnbondRequest(context.Context, *QueryInsuranceUnbondRequestRequest) (*QueryInsuranceUnbondRequestResponse, error)
+	// TBD
+	InsuranceUnbondRequests(context.Context, *QueryInsuranceUnbondRequestsRequest) (*QueryInsuranceUnbondRequestsResponse, error)
+	// TBD
+	InsuranceUnbondRequestsByInsuranceProvider(context.Context, *QueryInsuranceUnbondRequestsByInsuranceProviderRequest) (*QueryInsuranceUnbondRequestsResponse, error)
 }
 
 // UnimplementedQueryServer can be embedded to have forward compatible implementations.
@@ -836,20 +2158,59 @@ func (*UnimplementedQueryServer) LiquidValidators(ctx context.Context, req *Quer
 func (*UnimplementedQueryServer) LiquidStakingState(ctx context.Context, req *QueryLiquidStakingStateRequest) (*QueryLiquidStakingStateResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method LiquidStakingState not implemented")
 }
+func (*UnimplementedQueryServer) AliveChunk(ctx context.Context, req *QueryAliveChunkRequest) (*QueryAliveChunkResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AliveChunk not implemented")
+}
 func (*UnimplementedQueryServer) AliveChunks(ctx context.Context, req *QueryAliveChunksRequest) (*QueryAliveChunksResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AliveChunks not implemented")
+}
+func (*UnimplementedQueryServer) AliveChunksByInsuranceProvider(ctx context.Context, req *QueryAliveChunksByInsuranceProviderRequest) (*QueryAliveChunksResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AliveChunksByInsuranceProvider not implemented")
+}
+func (*UnimplementedQueryServer) AliveChunksByValidator(ctx context.Context, req *QueryAliveChunksByValidatorRequest) (*QueryAliveChunksResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AliveChunksByValidator not implemented")
 }
 func (*UnimplementedQueryServer) UnbondingChunks(ctx context.Context, req *QueryUnbondingChunksRequest) (*QueryUnbondingChunksResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UnbondingChunks not implemented")
 }
-func (*UnimplementedQueryServer) ChunkBondRequests(ctx context.Context, req *QueryChunkBondRequests) (*QueryChunkBondRequestsResponse, error) {
+func (*UnimplementedQueryServer) ChunkBondRequest(ctx context.Context, req *QueryChunkBondRequestRequest) (*QueryChunkBondRequestResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ChunkBondRequest not implemented")
+}
+func (*UnimplementedQueryServer) ChunkBondRequests(ctx context.Context, req *QueryChunkBondRequestsRequest) (*QueryChunkBondRequestsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ChunkBondRequests not implemented")
 }
-func (*UnimplementedQueryServer) ChunkUnbondRequests(ctx context.Context, req *QueryChunkUnbondRequests) (*QueryChunkUnbondRequestsResponse, error) {
+func (*UnimplementedQueryServer) ChunkBondRequestsByDelegator(ctx context.Context, req *QueryChunkBondRequestsByDelegatorRequest) (*QueryChunkBondRequestsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ChunkBondRequestsByDelegator not implemented")
+}
+func (*UnimplementedQueryServer) ChunkUnbondRequest(ctx context.Context, req *QueryChunkUnbondRequestRequest) (*QueryChunkUnbondRequestResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ChunkUnbondRequest not implemented")
+}
+func (*UnimplementedQueryServer) ChunkUnbondRequests(ctx context.Context, req *QueryChunkUnbondRequestsRequest) (*QueryChunkUnbondRequestsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ChunkUnbondRequests not implemented")
 }
-func (*UnimplementedQueryServer) InsuranceBids(ctx context.Context, req *QueryInsuranceBidRequest) (*QueryInsuranceBidResponse, error) {
+func (*UnimplementedQueryServer) ChunkUnbondRequestsByUndelegator(ctx context.Context, req *QueryChunkUnbondRequestsByUndelegatorRequest) (*QueryChunkUnbondRequestsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ChunkUnbondRequestsByUndelegator not implemented")
+}
+func (*UnimplementedQueryServer) InsuranceBid(ctx context.Context, req *QueryInsuranceBidRequest) (*QueryInsuranceBidResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method InsuranceBid not implemented")
+}
+func (*UnimplementedQueryServer) InsuranceBids(ctx context.Context, req *QueryInsuranceBidsRequest) (*QueryInsuranceBidsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method InsuranceBids not implemented")
+}
+func (*UnimplementedQueryServer) InsuranceBidsByInsuranceProvider(ctx context.Context, req *QueryInsuranceBidsByInsuranceProviderRequest) (*QueryInsuranceBidsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method InsuranceBidsByInsuranceProvider not implemented")
+}
+func (*UnimplementedQueryServer) InsuranceBidsByValidator(ctx context.Context, req *QueryInsuranceBidsByValidatorRequest) (*QueryInsuranceBidsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method InsuranceBidsByValidator not implemented")
+}
+func (*UnimplementedQueryServer) InsuranceUnbondRequest(ctx context.Context, req *QueryInsuranceUnbondRequestRequest) (*QueryInsuranceUnbondRequestResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method InsuranceUnbondRequest not implemented")
+}
+func (*UnimplementedQueryServer) InsuranceUnbondRequests(ctx context.Context, req *QueryInsuranceUnbondRequestsRequest) (*QueryInsuranceUnbondRequestsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method InsuranceUnbondRequests not implemented")
+}
+func (*UnimplementedQueryServer) InsuranceUnbondRequestsByInsuranceProvider(ctx context.Context, req *QueryInsuranceUnbondRequestsByInsuranceProviderRequest) (*QueryInsuranceUnbondRequestsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method InsuranceUnbondRequestsByInsuranceProvider not implemented")
 }
 
 func RegisterQueryServer(s grpc1.Server, srv QueryServer) {
@@ -910,6 +2271,24 @@ func _Query_LiquidStakingState_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Query_AliveChunk_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryAliveChunkRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).AliveChunk(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/canto.liquidstaking.v1.Query/AliveChunk",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).AliveChunk(ctx, req.(*QueryAliveChunkRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Query_AliveChunks_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(QueryAliveChunksRequest)
 	if err := dec(in); err != nil {
@@ -924,6 +2303,42 @@ func _Query_AliveChunks_Handler(srv interface{}, ctx context.Context, dec func(i
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(QueryServer).AliveChunks(ctx, req.(*QueryAliveChunksRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Query_AliveChunksByInsuranceProvider_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryAliveChunksByInsuranceProviderRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).AliveChunksByInsuranceProvider(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/canto.liquidstaking.v1.Query/AliveChunksByInsuranceProvider",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).AliveChunksByInsuranceProvider(ctx, req.(*QueryAliveChunksByInsuranceProviderRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Query_AliveChunksByValidator_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryAliveChunksByValidatorRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).AliveChunksByValidator(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/canto.liquidstaking.v1.Query/AliveChunksByValidator",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).AliveChunksByValidator(ctx, req.(*QueryAliveChunksByValidatorRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -946,8 +2361,26 @@ func _Query_UnbondingChunks_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Query_ChunkBondRequest_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryChunkBondRequestRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).ChunkBondRequest(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/canto.liquidstaking.v1.Query/ChunkBondRequest",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).ChunkBondRequest(ctx, req.(*QueryChunkBondRequestRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Query_ChunkBondRequests_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(QueryChunkBondRequests)
+	in := new(QueryChunkBondRequestsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -959,13 +2392,49 @@ func _Query_ChunkBondRequests_Handler(srv interface{}, ctx context.Context, dec 
 		FullMethod: "/canto.liquidstaking.v1.Query/ChunkBondRequests",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).ChunkBondRequests(ctx, req.(*QueryChunkBondRequests))
+		return srv.(QueryServer).ChunkBondRequests(ctx, req.(*QueryChunkBondRequestsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Query_ChunkBondRequestsByDelegator_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryChunkBondRequestsByDelegatorRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).ChunkBondRequestsByDelegator(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/canto.liquidstaking.v1.Query/ChunkBondRequestsByDelegator",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).ChunkBondRequestsByDelegator(ctx, req.(*QueryChunkBondRequestsByDelegatorRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Query_ChunkUnbondRequest_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryChunkUnbondRequestRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).ChunkUnbondRequest(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/canto.liquidstaking.v1.Query/ChunkUnbondRequest",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).ChunkUnbondRequest(ctx, req.(*QueryChunkUnbondRequestRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _Query_ChunkUnbondRequests_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(QueryChunkUnbondRequests)
+	in := new(QueryChunkUnbondRequestsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -977,13 +2446,49 @@ func _Query_ChunkUnbondRequests_Handler(srv interface{}, ctx context.Context, de
 		FullMethod: "/canto.liquidstaking.v1.Query/ChunkUnbondRequests",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).ChunkUnbondRequests(ctx, req.(*QueryChunkUnbondRequests))
+		return srv.(QueryServer).ChunkUnbondRequests(ctx, req.(*QueryChunkUnbondRequestsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Query_ChunkUnbondRequestsByUndelegator_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryChunkUnbondRequestsByUndelegatorRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).ChunkUnbondRequestsByUndelegator(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/canto.liquidstaking.v1.Query/ChunkUnbondRequestsByUndelegator",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).ChunkUnbondRequestsByUndelegator(ctx, req.(*QueryChunkUnbondRequestsByUndelegatorRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Query_InsuranceBid_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryInsuranceBidRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).InsuranceBid(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/canto.liquidstaking.v1.Query/InsuranceBid",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).InsuranceBid(ctx, req.(*QueryInsuranceBidRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _Query_InsuranceBids_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(QueryInsuranceBidRequest)
+	in := new(QueryInsuranceBidsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -995,7 +2500,97 @@ func _Query_InsuranceBids_Handler(srv interface{}, ctx context.Context, dec func
 		FullMethod: "/canto.liquidstaking.v1.Query/InsuranceBids",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).InsuranceBids(ctx, req.(*QueryInsuranceBidRequest))
+		return srv.(QueryServer).InsuranceBids(ctx, req.(*QueryInsuranceBidsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Query_InsuranceBidsByInsuranceProvider_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryInsuranceBidsByInsuranceProviderRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).InsuranceBidsByInsuranceProvider(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/canto.liquidstaking.v1.Query/InsuranceBidsByInsuranceProvider",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).InsuranceBidsByInsuranceProvider(ctx, req.(*QueryInsuranceBidsByInsuranceProviderRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Query_InsuranceBidsByValidator_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryInsuranceBidsByValidatorRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).InsuranceBidsByValidator(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/canto.liquidstaking.v1.Query/InsuranceBidsByValidator",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).InsuranceBidsByValidator(ctx, req.(*QueryInsuranceBidsByValidatorRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Query_InsuranceUnbondRequest_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryInsuranceUnbondRequestRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).InsuranceUnbondRequest(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/canto.liquidstaking.v1.Query/InsuranceUnbondRequest",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).InsuranceUnbondRequest(ctx, req.(*QueryInsuranceUnbondRequestRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Query_InsuranceUnbondRequests_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryInsuranceUnbondRequestsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).InsuranceUnbondRequests(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/canto.liquidstaking.v1.Query/InsuranceUnbondRequests",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).InsuranceUnbondRequests(ctx, req.(*QueryInsuranceUnbondRequestsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Query_InsuranceUnbondRequestsByInsuranceProvider_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryInsuranceUnbondRequestsByInsuranceProviderRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).InsuranceUnbondRequestsByInsuranceProvider(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/canto.liquidstaking.v1.Query/InsuranceUnbondRequestsByInsuranceProvider",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).InsuranceUnbondRequestsByInsuranceProvider(ctx, req.(*QueryInsuranceUnbondRequestsByInsuranceProviderRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1017,24 +2612,76 @@ var _Query_serviceDesc = grpc.ServiceDesc{
 			Handler:    _Query_LiquidStakingState_Handler,
 		},
 		{
+			MethodName: "AliveChunk",
+			Handler:    _Query_AliveChunk_Handler,
+		},
+		{
 			MethodName: "AliveChunks",
 			Handler:    _Query_AliveChunks_Handler,
+		},
+		{
+			MethodName: "AliveChunksByInsuranceProvider",
+			Handler:    _Query_AliveChunksByInsuranceProvider_Handler,
+		},
+		{
+			MethodName: "AliveChunksByValidator",
+			Handler:    _Query_AliveChunksByValidator_Handler,
 		},
 		{
 			MethodName: "UnbondingChunks",
 			Handler:    _Query_UnbondingChunks_Handler,
 		},
 		{
+			MethodName: "ChunkBondRequest",
+			Handler:    _Query_ChunkBondRequest_Handler,
+		},
+		{
 			MethodName: "ChunkBondRequests",
 			Handler:    _Query_ChunkBondRequests_Handler,
+		},
+		{
+			MethodName: "ChunkBondRequestsByDelegator",
+			Handler:    _Query_ChunkBondRequestsByDelegator_Handler,
+		},
+		{
+			MethodName: "ChunkUnbondRequest",
+			Handler:    _Query_ChunkUnbondRequest_Handler,
 		},
 		{
 			MethodName: "ChunkUnbondRequests",
 			Handler:    _Query_ChunkUnbondRequests_Handler,
 		},
 		{
+			MethodName: "ChunkUnbondRequestsByUndelegator",
+			Handler:    _Query_ChunkUnbondRequestsByUndelegator_Handler,
+		},
+		{
+			MethodName: "InsuranceBid",
+			Handler:    _Query_InsuranceBid_Handler,
+		},
+		{
 			MethodName: "InsuranceBids",
 			Handler:    _Query_InsuranceBids_Handler,
+		},
+		{
+			MethodName: "InsuranceBidsByInsuranceProvider",
+			Handler:    _Query_InsuranceBidsByInsuranceProvider_Handler,
+		},
+		{
+			MethodName: "InsuranceBidsByValidator",
+			Handler:    _Query_InsuranceBidsByValidator_Handler,
+		},
+		{
+			MethodName: "InsuranceUnbondRequest",
+			Handler:    _Query_InsuranceUnbondRequest_Handler,
+		},
+		{
+			MethodName: "InsuranceUnbondRequests",
+			Handler:    _Query_InsuranceUnbondRequests_Handler,
+		},
+		{
+			MethodName: "InsuranceUnbondRequestsByInsuranceProvider",
+			Handler:    _Query_InsuranceUnbondRequestsByInsuranceProvider_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -1203,6 +2850,67 @@ func (m *QueryLiquidStakingStateResponse) MarshalToSizedBuffer(dAtA []byte) (int
 	return len(dAtA) - i, nil
 }
 
+func (m *QueryAliveChunkRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryAliveChunkRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryAliveChunkRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Id != 0 {
+		i = encodeVarintQuery(dAtA, i, uint64(m.Id))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryAliveChunkResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryAliveChunkResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryAliveChunkResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	{
+		size, err := m.AliveChunk.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintQuery(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0xa
+	return len(dAtA) - i, nil
+}
+
 func (m *QueryAliveChunksRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
@@ -1223,6 +2931,102 @@ func (m *QueryAliveChunksRequest) MarshalToSizedBuffer(dAtA []byte) (int, error)
 	_ = i
 	var l int
 	_ = l
+	if m.Pagination != nil {
+		{
+			size, err := m.Pagination.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintQuery(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryAliveChunksByInsuranceProviderRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryAliveChunksByInsuranceProviderRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryAliveChunksByInsuranceProviderRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Pagination != nil {
+		{
+			size, err := m.Pagination.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintQuery(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.InsuranceProviderAddr) > 0 {
+		i -= len(m.InsuranceProviderAddr)
+		copy(dAtA[i:], m.InsuranceProviderAddr)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.InsuranceProviderAddr)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryAliveChunksByValidatorRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryAliveChunksByValidatorRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryAliveChunksByValidatorRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Pagination != nil {
+		{
+			size, err := m.Pagination.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintQuery(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.ValidatorAddr) > 0 {
+		i -= len(m.ValidatorAddr)
+		copy(dAtA[i:], m.ValidatorAddr)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.ValidatorAddr)))
+		i--
+		dAtA[i] = 0xa
+	}
 	return len(dAtA) - i, nil
 }
 
@@ -1246,6 +3050,32 @@ func (m *QueryAliveChunksResponse) MarshalToSizedBuffer(dAtA []byte) (int, error
 	_ = i
 	var l int
 	_ = l
+	if m.Pagination != nil {
+		{
+			size, err := m.Pagination.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintQuery(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.AliveChunk) > 0 {
+		for iNdEx := len(m.AliveChunk) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.AliveChunk[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintQuery(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0xa
+		}
+	}
 	return len(dAtA) - i, nil
 }
 
@@ -1295,7 +3125,7 @@ func (m *QueryUnbondingChunksResponse) MarshalToSizedBuffer(dAtA []byte) (int, e
 	return len(dAtA) - i, nil
 }
 
-func (m *QueryChunkBondRequests) Marshal() (dAtA []byte, err error) {
+func (m *QueryChunkBondRequestRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -1305,16 +3135,131 @@ func (m *QueryChunkBondRequests) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *QueryChunkBondRequests) MarshalTo(dAtA []byte) (int, error) {
+func (m *QueryChunkBondRequestRequest) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *QueryChunkBondRequests) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *QueryChunkBondRequestRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
+	if m.Id != 0 {
+		i = encodeVarintQuery(dAtA, i, uint64(m.Id))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryChunkBondRequestResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryChunkBondRequestResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryChunkBondRequestResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	{
+		size, err := m.ChunkBondRequests.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintQuery(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0xa
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryChunkBondRequestsRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryChunkBondRequestsRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryChunkBondRequestsRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Pagination != nil {
+		{
+			size, err := m.Pagination.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintQuery(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryChunkBondRequestsByDelegatorRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryChunkBondRequestsByDelegatorRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryChunkBondRequestsByDelegatorRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Pagination != nil {
+		{
+			size, err := m.Pagination.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintQuery(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.DelegatorAddr) > 0 {
+		i -= len(m.DelegatorAddr)
+		copy(dAtA[i:], m.DelegatorAddr)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.DelegatorAddr)))
+		i--
+		dAtA[i] = 0xa
+	}
 	return len(dAtA) - i, nil
 }
 
@@ -1338,10 +3283,36 @@ func (m *QueryChunkBondRequestsResponse) MarshalToSizedBuffer(dAtA []byte) (int,
 	_ = i
 	var l int
 	_ = l
+	if m.Pagination != nil {
+		{
+			size, err := m.Pagination.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintQuery(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.ChunkBondRequests) > 0 {
+		for iNdEx := len(m.ChunkBondRequests) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.ChunkBondRequests[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintQuery(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0xa
+		}
+	}
 	return len(dAtA) - i, nil
 }
 
-func (m *QueryChunkUnbondRequests) Marshal() (dAtA []byte, err error) {
+func (m *QueryChunkUnbondRequestRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -1351,16 +3322,145 @@ func (m *QueryChunkUnbondRequests) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *QueryChunkUnbondRequests) MarshalTo(dAtA []byte) (int, error) {
+func (m *QueryChunkUnbondRequestRequest) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *QueryChunkUnbondRequests) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *QueryChunkUnbondRequestRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
+	if m.Id != 0 {
+		i = encodeVarintQuery(dAtA, i, uint64(m.Id))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryChunkUnbondRequestResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryChunkUnbondRequestResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryChunkUnbondRequestResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Pagination != nil {
+		{
+			size, err := m.Pagination.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintQuery(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	if m.ChunkUnbondRequest != nil {
+		{
+			size, err := m.ChunkUnbondRequest.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintQuery(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryChunkUnbondRequestsRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryChunkUnbondRequestsRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryChunkUnbondRequestsRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Pagination != nil {
+		{
+			size, err := m.Pagination.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintQuery(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryChunkUnbondRequestsByUndelegatorRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryChunkUnbondRequestsByUndelegatorRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryChunkUnbondRequestsByUndelegatorRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Pagination != nil {
+		{
+			size, err := m.Pagination.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintQuery(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.UndelegatorAddr) > 0 {
+		i -= len(m.UndelegatorAddr)
+		copy(dAtA[i:], m.UndelegatorAddr)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.UndelegatorAddr)))
+		i--
+		dAtA[i] = 0xa
+	}
 	return len(dAtA) - i, nil
 }
 
@@ -1384,6 +3484,32 @@ func (m *QueryChunkUnbondRequestsResponse) MarshalToSizedBuffer(dAtA []byte) (in
 	_ = i
 	var l int
 	_ = l
+	if m.Pagination != nil {
+		{
+			size, err := m.Pagination.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintQuery(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.ChunkUnbondRequests) > 0 {
+		for iNdEx := len(m.ChunkUnbondRequests) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.ChunkUnbondRequests[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintQuery(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0xa
+		}
+	}
 	return len(dAtA) - i, nil
 }
 
@@ -1407,6 +3533,11 @@ func (m *QueryInsuranceBidRequest) MarshalToSizedBuffer(dAtA []byte) (int, error
 	_ = i
 	var l int
 	_ = l
+	if m.Id != 0 {
+		i = encodeVarintQuery(dAtA, i, uint64(m.Id))
+		i--
+		dAtA[i] = 0x8
+	}
 	return len(dAtA) - i, nil
 }
 
@@ -1430,6 +3561,413 @@ func (m *QueryInsuranceBidResponse) MarshalToSizedBuffer(dAtA []byte) (int, erro
 	_ = i
 	var l int
 	_ = l
+	{
+		size, err := m.InsuranceBid.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintQuery(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0xa
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryInsuranceBidsRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryInsuranceBidsRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryInsuranceBidsRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Pagination != nil {
+		{
+			size, err := m.Pagination.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintQuery(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryInsuranceBidsByInsuranceProviderRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryInsuranceBidsByInsuranceProviderRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryInsuranceBidsByInsuranceProviderRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Pagination != nil {
+		{
+			size, err := m.Pagination.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintQuery(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.InsuranceProviderAddr) > 0 {
+		i -= len(m.InsuranceProviderAddr)
+		copy(dAtA[i:], m.InsuranceProviderAddr)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.InsuranceProviderAddr)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryInsuranceBidsByValidatorRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryInsuranceBidsByValidatorRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryInsuranceBidsByValidatorRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Pagination != nil {
+		{
+			size, err := m.Pagination.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintQuery(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.ValidatorAddr) > 0 {
+		i -= len(m.ValidatorAddr)
+		copy(dAtA[i:], m.ValidatorAddr)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.ValidatorAddr)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryInsuranceBidsResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryInsuranceBidsResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryInsuranceBidsResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Pagination != nil {
+		{
+			size, err := m.Pagination.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintQuery(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.InsuranceBids) > 0 {
+		for iNdEx := len(m.InsuranceBids) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.InsuranceBids[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintQuery(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryInsuranceUnbondRequestRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryInsuranceUnbondRequestRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryInsuranceUnbondRequestRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Id != 0 {
+		i = encodeVarintQuery(dAtA, i, uint64(m.Id))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryInsuranceUnbondRequestResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryInsuranceUnbondRequestResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryInsuranceUnbondRequestResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	{
+		size, err := m.InsuranceUnbondRequest.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintQuery(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0xa
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryInsuranceUnbondRequestsRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryInsuranceUnbondRequestsRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryInsuranceUnbondRequestsRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Pagination != nil {
+		{
+			size, err := m.Pagination.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintQuery(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryInsuranceUnbondRequestsByInsuranceProviderRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryInsuranceUnbondRequestsByInsuranceProviderRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryInsuranceUnbondRequestsByInsuranceProviderRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Pagination != nil {
+		{
+			size, err := m.Pagination.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintQuery(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.InsuranceProviderAddr) > 0 {
+		i -= len(m.InsuranceProviderAddr)
+		copy(dAtA[i:], m.InsuranceProviderAddr)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.InsuranceProviderAddr)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryInsuranceUnbondRequestsByValidatorRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryInsuranceUnbondRequestsByValidatorRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryInsuranceUnbondRequestsByValidatorRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Pagination != nil {
+		{
+			size, err := m.Pagination.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintQuery(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.ValidatorAddr) > 0 {
+		i -= len(m.ValidatorAddr)
+		copy(dAtA[i:], m.ValidatorAddr)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.ValidatorAddr)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryInsuranceUnbondRequestsResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryInsuranceUnbondRequestsResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryInsuranceUnbondRequestsResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Pagination != nil {
+		{
+			size, err := m.Pagination.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintQuery(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.InsuranceUnbondRequests) > 0 {
+		for iNdEx := len(m.InsuranceUnbondRequests) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.InsuranceUnbondRequests[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintQuery(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0xa
+		}
+	}
 	return len(dAtA) - i, nil
 }
 
@@ -1506,12 +4044,73 @@ func (m *QueryLiquidStakingStateResponse) Size() (n int) {
 	return n
 }
 
+func (m *QueryAliveChunkRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Id != 0 {
+		n += 1 + sovQuery(uint64(m.Id))
+	}
+	return n
+}
+
+func (m *QueryAliveChunkResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = m.AliveChunk.Size()
+	n += 1 + l + sovQuery(uint64(l))
+	return n
+}
+
 func (m *QueryAliveChunksRequest) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
+	if m.Pagination != nil {
+		l = m.Pagination.Size()
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	return n
+}
+
+func (m *QueryAliveChunksByInsuranceProviderRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.InsuranceProviderAddr)
+	if l > 0 {
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	if m.Pagination != nil {
+		l = m.Pagination.Size()
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	return n
+}
+
+func (m *QueryAliveChunksByValidatorRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.ValidatorAddr)
+	if l > 0 {
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	if m.Pagination != nil {
+		l = m.Pagination.Size()
+		n += 1 + l + sovQuery(uint64(l))
+	}
 	return n
 }
 
@@ -1521,6 +4120,16 @@ func (m *QueryAliveChunksResponse) Size() (n int) {
 	}
 	var l int
 	_ = l
+	if len(m.AliveChunk) > 0 {
+		for _, e := range m.AliveChunk {
+			l = e.Size()
+			n += 1 + l + sovQuery(uint64(l))
+		}
+	}
+	if m.Pagination != nil {
+		l = m.Pagination.Size()
+		n += 1 + l + sovQuery(uint64(l))
+	}
 	return n
 }
 
@@ -1542,12 +4151,56 @@ func (m *QueryUnbondingChunksResponse) Size() (n int) {
 	return n
 }
 
-func (m *QueryChunkBondRequests) Size() (n int) {
+func (m *QueryChunkBondRequestRequest) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
+	if m.Id != 0 {
+		n += 1 + sovQuery(uint64(m.Id))
+	}
+	return n
+}
+
+func (m *QueryChunkBondRequestResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = m.ChunkBondRequests.Size()
+	n += 1 + l + sovQuery(uint64(l))
+	return n
+}
+
+func (m *QueryChunkBondRequestsRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Pagination != nil {
+		l = m.Pagination.Size()
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	return n
+}
+
+func (m *QueryChunkBondRequestsByDelegatorRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.DelegatorAddr)
+	if l > 0 {
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	if m.Pagination != nil {
+		l = m.Pagination.Size()
+		n += 1 + l + sovQuery(uint64(l))
+	}
 	return n
 }
 
@@ -1557,15 +4210,75 @@ func (m *QueryChunkBondRequestsResponse) Size() (n int) {
 	}
 	var l int
 	_ = l
+	if len(m.ChunkBondRequests) > 0 {
+		for _, e := range m.ChunkBondRequests {
+			l = e.Size()
+			n += 1 + l + sovQuery(uint64(l))
+		}
+	}
+	if m.Pagination != nil {
+		l = m.Pagination.Size()
+		n += 1 + l + sovQuery(uint64(l))
+	}
 	return n
 }
 
-func (m *QueryChunkUnbondRequests) Size() (n int) {
+func (m *QueryChunkUnbondRequestRequest) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
+	if m.Id != 0 {
+		n += 1 + sovQuery(uint64(m.Id))
+	}
+	return n
+}
+
+func (m *QueryChunkUnbondRequestResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.ChunkUnbondRequest != nil {
+		l = m.ChunkUnbondRequest.Size()
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	if m.Pagination != nil {
+		l = m.Pagination.Size()
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	return n
+}
+
+func (m *QueryChunkUnbondRequestsRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Pagination != nil {
+		l = m.Pagination.Size()
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	return n
+}
+
+func (m *QueryChunkUnbondRequestsByUndelegatorRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.UndelegatorAddr)
+	if l > 0 {
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	if m.Pagination != nil {
+		l = m.Pagination.Size()
+		n += 1 + l + sovQuery(uint64(l))
+	}
 	return n
 }
 
@@ -1575,6 +4288,16 @@ func (m *QueryChunkUnbondRequestsResponse) Size() (n int) {
 	}
 	var l int
 	_ = l
+	if len(m.ChunkUnbondRequests) > 0 {
+		for _, e := range m.ChunkUnbondRequests {
+			l = e.Size()
+			n += 1 + l + sovQuery(uint64(l))
+		}
+	}
+	if m.Pagination != nil {
+		l = m.Pagination.Size()
+		n += 1 + l + sovQuery(uint64(l))
+	}
 	return n
 }
 
@@ -1584,6 +4307,9 @@ func (m *QueryInsuranceBidRequest) Size() (n int) {
 	}
 	var l int
 	_ = l
+	if m.Id != 0 {
+		n += 1 + sovQuery(uint64(m.Id))
+	}
 	return n
 }
 
@@ -1593,6 +4319,163 @@ func (m *QueryInsuranceBidResponse) Size() (n int) {
 	}
 	var l int
 	_ = l
+	l = m.InsuranceBid.Size()
+	n += 1 + l + sovQuery(uint64(l))
+	return n
+}
+
+func (m *QueryInsuranceBidsRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Pagination != nil {
+		l = m.Pagination.Size()
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	return n
+}
+
+func (m *QueryInsuranceBidsByInsuranceProviderRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.InsuranceProviderAddr)
+	if l > 0 {
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	if m.Pagination != nil {
+		l = m.Pagination.Size()
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	return n
+}
+
+func (m *QueryInsuranceBidsByValidatorRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.ValidatorAddr)
+	if l > 0 {
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	if m.Pagination != nil {
+		l = m.Pagination.Size()
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	return n
+}
+
+func (m *QueryInsuranceBidsResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if len(m.InsuranceBids) > 0 {
+		for _, e := range m.InsuranceBids {
+			l = e.Size()
+			n += 1 + l + sovQuery(uint64(l))
+		}
+	}
+	if m.Pagination != nil {
+		l = m.Pagination.Size()
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	return n
+}
+
+func (m *QueryInsuranceUnbondRequestRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Id != 0 {
+		n += 1 + sovQuery(uint64(m.Id))
+	}
+	return n
+}
+
+func (m *QueryInsuranceUnbondRequestResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = m.InsuranceUnbondRequest.Size()
+	n += 1 + l + sovQuery(uint64(l))
+	return n
+}
+
+func (m *QueryInsuranceUnbondRequestsRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Pagination != nil {
+		l = m.Pagination.Size()
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	return n
+}
+
+func (m *QueryInsuranceUnbondRequestsByInsuranceProviderRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.InsuranceProviderAddr)
+	if l > 0 {
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	if m.Pagination != nil {
+		l = m.Pagination.Size()
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	return n
+}
+
+func (m *QueryInsuranceUnbondRequestsByValidatorRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.ValidatorAddr)
+	if l > 0 {
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	if m.Pagination != nil {
+		l = m.Pagination.Size()
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	return n
+}
+
+func (m *QueryInsuranceUnbondRequestsResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if len(m.InsuranceUnbondRequests) > 0 {
+		for _, e := range m.InsuranceUnbondRequests {
+			l = e.Size()
+			n += 1 + l + sovQuery(uint64(l))
+		}
+	}
+	if m.Pagination != nil {
+		l = m.Pagination.Size()
+		n += 1 + l + sovQuery(uint64(l))
+	}
 	return n
 }
 
@@ -1969,6 +4852,158 @@ func (m *QueryLiquidStakingStateResponse) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
+func (m *QueryAliveChunkRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryAliveChunkRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryAliveChunkRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Id", wireType)
+			}
+			m.Id = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Id |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryAliveChunkResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryAliveChunkResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryAliveChunkResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AliveChunk", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.AliveChunk.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
 func (m *QueryAliveChunksRequest) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -1998,6 +5033,278 @@ func (m *QueryAliveChunksRequest) Unmarshal(dAtA []byte) error {
 			return fmt.Errorf("proto: QueryAliveChunksRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Pagination", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Pagination == nil {
+				m.Pagination = &query.PageRequest{}
+			}
+			if err := m.Pagination.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryAliveChunksByInsuranceProviderRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryAliveChunksByInsuranceProviderRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryAliveChunksByInsuranceProviderRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field InsuranceProviderAddr", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.InsuranceProviderAddr = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Pagination", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Pagination == nil {
+				m.Pagination = &query.PageRequest{}
+			}
+			if err := m.Pagination.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryAliveChunksByValidatorRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryAliveChunksByValidatorRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryAliveChunksByValidatorRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ValidatorAddr", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ValidatorAddr = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Pagination", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Pagination == nil {
+				m.Pagination = &query.PageRequest{}
+			}
+			if err := m.Pagination.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipQuery(dAtA[iNdEx:])
@@ -2048,6 +5355,76 @@ func (m *QueryAliveChunksResponse) Unmarshal(dAtA []byte) error {
 			return fmt.Errorf("proto: QueryAliveChunksResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AliveChunk", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.AliveChunk = append(m.AliveChunk, AliveChunk{})
+			if err := m.AliveChunk[len(m.AliveChunk)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Pagination", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Pagination == nil {
+				m.Pagination = &query.PageResponse{}
+			}
+			if err := m.Pagination.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipQuery(dAtA[iNdEx:])
@@ -2169,7 +5546,7 @@ func (m *QueryUnbondingChunksResponse) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *QueryChunkBondRequests) Unmarshal(dAtA []byte) error {
+func (m *QueryChunkBondRequestRequest) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -2192,12 +5569,318 @@ func (m *QueryChunkBondRequests) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: QueryChunkBondRequests: wiretype end group for non-group")
+			return fmt.Errorf("proto: QueryChunkBondRequestRequest: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryChunkBondRequests: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: QueryChunkBondRequestRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Id", wireType)
+			}
+			m.Id = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Id |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryChunkBondRequestResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryChunkBondRequestResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryChunkBondRequestResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ChunkBondRequests", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.ChunkBondRequests.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryChunkBondRequestsRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryChunkBondRequestsRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryChunkBondRequestsRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Pagination", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Pagination == nil {
+				m.Pagination = &query.PageRequest{}
+			}
+			if err := m.Pagination.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryChunkBondRequestsByDelegatorRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryChunkBondRequestsByDelegatorRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryChunkBondRequestsByDelegatorRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DelegatorAddr", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.DelegatorAddr = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Pagination", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Pagination == nil {
+				m.Pagination = &query.PageRequest{}
+			}
+			if err := m.Pagination.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipQuery(dAtA[iNdEx:])
@@ -2248,6 +5931,76 @@ func (m *QueryChunkBondRequestsResponse) Unmarshal(dAtA []byte) error {
 			return fmt.Errorf("proto: QueryChunkBondRequestsResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ChunkBondRequests", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ChunkBondRequests = append(m.ChunkBondRequests, ChunkBondRequest{})
+			if err := m.ChunkBondRequests[len(m.ChunkBondRequests)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Pagination", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Pagination == nil {
+				m.Pagination = &query.PageResponse{}
+			}
+			if err := m.Pagination.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipQuery(dAtA[iNdEx:])
@@ -2269,7 +6022,7 @@ func (m *QueryChunkBondRequestsResponse) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *QueryChunkUnbondRequests) Unmarshal(dAtA []byte) error {
+func (m *QueryChunkUnbondRequestRequest) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -2292,12 +6045,357 @@ func (m *QueryChunkUnbondRequests) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: QueryChunkUnbondRequests: wiretype end group for non-group")
+			return fmt.Errorf("proto: QueryChunkUnbondRequestRequest: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryChunkUnbondRequests: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: QueryChunkUnbondRequestRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Id", wireType)
+			}
+			m.Id = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Id |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryChunkUnbondRequestResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryChunkUnbondRequestResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryChunkUnbondRequestResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ChunkUnbondRequest", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.ChunkUnbondRequest == nil {
+				m.ChunkUnbondRequest = &ChunkUnbondRequest{}
+			}
+			if err := m.ChunkUnbondRequest.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Pagination", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Pagination == nil {
+				m.Pagination = &query.PageResponse{}
+			}
+			if err := m.Pagination.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryChunkUnbondRequestsRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryChunkUnbondRequestsRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryChunkUnbondRequestsRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Pagination", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Pagination == nil {
+				m.Pagination = &query.PageRequest{}
+			}
+			if err := m.Pagination.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryChunkUnbondRequestsByUndelegatorRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryChunkUnbondRequestsByUndelegatorRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryChunkUnbondRequestsByUndelegatorRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field UndelegatorAddr", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.UndelegatorAddr = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Pagination", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Pagination == nil {
+				m.Pagination = &query.PageRequest{}
+			}
+			if err := m.Pagination.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipQuery(dAtA[iNdEx:])
@@ -2348,6 +6446,76 @@ func (m *QueryChunkUnbondRequestsResponse) Unmarshal(dAtA []byte) error {
 			return fmt.Errorf("proto: QueryChunkUnbondRequestsResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ChunkUnbondRequests", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ChunkUnbondRequests = append(m.ChunkUnbondRequests, ChunkUnbondRequest{})
+			if err := m.ChunkUnbondRequests[len(m.ChunkUnbondRequests)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Pagination", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Pagination == nil {
+				m.Pagination = &query.PageResponse{}
+			}
+			if err := m.Pagination.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipQuery(dAtA[iNdEx:])
@@ -2398,6 +6566,25 @@ func (m *QueryInsuranceBidRequest) Unmarshal(dAtA []byte) error {
 			return fmt.Errorf("proto: QueryInsuranceBidRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Id", wireType)
+			}
+			m.Id = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Id |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := skipQuery(dAtA[iNdEx:])
@@ -2448,6 +6635,1075 @@ func (m *QueryInsuranceBidResponse) Unmarshal(dAtA []byte) error {
 			return fmt.Errorf("proto: QueryInsuranceBidResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field InsuranceBid", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.InsuranceBid.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryInsuranceBidsRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryInsuranceBidsRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryInsuranceBidsRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Pagination", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Pagination == nil {
+				m.Pagination = &query.PageRequest{}
+			}
+			if err := m.Pagination.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryInsuranceBidsByInsuranceProviderRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryInsuranceBidsByInsuranceProviderRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryInsuranceBidsByInsuranceProviderRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field InsuranceProviderAddr", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.InsuranceProviderAddr = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Pagination", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Pagination == nil {
+				m.Pagination = &query.PageRequest{}
+			}
+			if err := m.Pagination.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryInsuranceBidsByValidatorRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryInsuranceBidsByValidatorRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryInsuranceBidsByValidatorRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ValidatorAddr", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ValidatorAddr = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Pagination", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Pagination == nil {
+				m.Pagination = &query.PageRequest{}
+			}
+			if err := m.Pagination.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryInsuranceBidsResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryInsuranceBidsResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryInsuranceBidsResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field InsuranceBids", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.InsuranceBids = append(m.InsuranceBids, InsuranceBid{})
+			if err := m.InsuranceBids[len(m.InsuranceBids)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Pagination", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Pagination == nil {
+				m.Pagination = &query.PageResponse{}
+			}
+			if err := m.Pagination.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryInsuranceUnbondRequestRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryInsuranceUnbondRequestRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryInsuranceUnbondRequestRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Id", wireType)
+			}
+			m.Id = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Id |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryInsuranceUnbondRequestResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryInsuranceUnbondRequestResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryInsuranceUnbondRequestResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field InsuranceUnbondRequest", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.InsuranceUnbondRequest.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryInsuranceUnbondRequestsRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryInsuranceUnbondRequestsRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryInsuranceUnbondRequestsRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Pagination", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Pagination == nil {
+				m.Pagination = &query.PageRequest{}
+			}
+			if err := m.Pagination.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryInsuranceUnbondRequestsByInsuranceProviderRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryInsuranceUnbondRequestsByInsuranceProviderRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryInsuranceUnbondRequestsByInsuranceProviderRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field InsuranceProviderAddr", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.InsuranceProviderAddr = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Pagination", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Pagination == nil {
+				m.Pagination = &query.PageRequest{}
+			}
+			if err := m.Pagination.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryInsuranceUnbondRequestsByValidatorRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryInsuranceUnbondRequestsByValidatorRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryInsuranceUnbondRequestsByValidatorRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ValidatorAddr", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ValidatorAddr = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Pagination", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Pagination == nil {
+				m.Pagination = &query.PageRequest{}
+			}
+			if err := m.Pagination.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryInsuranceUnbondRequestsResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryInsuranceUnbondRequestsResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryInsuranceUnbondRequestsResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field InsuranceUnbondRequests", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.InsuranceUnbondRequests = append(m.InsuranceUnbondRequests, InsuranceUnbondRequest{})
+			if err := m.InsuranceUnbondRequests[len(m.InsuranceUnbondRequests)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Pagination", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Pagination == nil {
+				m.Pagination = &query.PageResponse{}
+			}
+			if err := m.Pagination.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipQuery(dAtA[iNdEx:])
