@@ -100,7 +100,7 @@ type MsgCancelLiquidStaking struct {
 The transaction that is triggered with `MsgCancelLiquidStaking` fails if:
 
 - The `ChunkBondRequestId` does not exist
-- The address of msg sender does not match with `ChunkBondRequest.RequestorAddress`
+- The address of msg sender does not match with `ChunkBondRequest.RequesterAddress`
 
 ## MsgLiquidUnstaking
 
@@ -131,4 +131,4 @@ type MsgCancelLiquidUnstaking struct {
 The transaction that is triggered with `MsgCancelLiquidUntaking` fails if:
 
 - The `ChunkUnbondRequestId` does not exist
-- The address of msg sender does not match with `ChunkUnbondRequest.RequestorAddress`
+- The address of msg sender does not match with `ChunkUnbondRequest.RequesterAddress`
