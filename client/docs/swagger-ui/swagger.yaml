@@ -32765,7 +32765,7 @@ paths:
           schema:
             type: object
             properties:
-              alive_chunk:
+              alive_chunks:
                 type: array
                 items:
                   type: object
@@ -32971,7 +32971,7 @@ paths:
           schema:
             type: object
             properties:
-              chunkBondRequests:
+              chunk_bond_requests:
                 type: array
                 items:
                   type: object
@@ -32979,7 +32979,7 @@ paths:
                     id:
                       type: string
                       format: uint64
-                    address:
+                    requester_address:
                       type: string
                     token_amount:
                       type: string
@@ -33103,13 +33103,13 @@ paths:
           schema:
             type: object
             properties:
-              chunkBondRequests:
+              chunk_bond_request:
                 type: object
                 properties:
                   id:
                     type: string
                     format: uint64
-                  address:
+                  requester_address:
                     type: string
                   token_amount:
                     type: string
@@ -33161,7 +33161,7 @@ paths:
                     id:
                       type: string
                       format: uint64
-                    address:
+                    requester_address:
                       type: string
                     num_chunk_unbond:
                       type: string
@@ -33292,7 +33292,7 @@ paths:
                   id:
                     type: string
                     format: uint64
-                  address:
+                  requester_address:
                     type: string
                   num_chunk_unbond:
                     type: string
@@ -33364,7 +33364,7 @@ paths:
           schema:
             type: object
             properties:
-              chunkBondRequests:
+              chunk_bond_requests:
                 type: array
                 items:
                   type: object
@@ -33372,10 +33372,147 @@ paths:
                     id:
                       type: string
                       format: uint64
-                    address:
+                    requester_address:
                       type: string
                     token_amount:
                       type: string
+              pagination:
+                type: object
+                properties:
+                  next_key:
+                    type: string
+                    format: byte
+                    title: |-
+                      next_key is the key to be passed to PageRequest.key to
+                      query the next page most efficiently
+                  total:
+                    type: string
+                    format: uint64
+                    title: >-
+                      total is total number of results available if
+                      PageRequest.count_total
+
+                      was set, its value is undefined otherwise
+                description: >-
+                  PageResponse is to be embedded in gRPC response messages where
+                  the
+
+                  corresponding request message has used PageRequest.
+
+                   message SomeResponse {
+                           repeated Bar results = 1;
+                           PageResponse page = 2;
+                   }
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    type_url:
+                      type: string
+                    value:
+                      type: string
+                      format: byte
+      parameters:
+        - name: delegator_addr
+          in: path
+          required: true
+          type: string
+        - name: pagination.key
+          description: |-
+            key is a value returned in PageResponse.next_key to begin
+            querying the next page most efficiently. Only one of offset or key
+            should be set.
+          in: query
+          required: false
+          type: string
+          format: byte
+        - name: pagination.offset
+          description: >-
+            offset is a numeric offset that can be used when key is unavailable.
+
+            It is less efficient than using key. Only one of offset or key
+            should
+
+            be set.
+          in: query
+          required: false
+          type: string
+          format: uint64
+        - name: pagination.limit
+          description: >-
+            limit is the total number of results to be returned in the result
+            page.
+
+            If left empty it will default to a value to be set by each app.
+          in: query
+          required: false
+          type: string
+          format: uint64
+        - name: pagination.count_total
+          description: >-
+            count_total is set to true  to indicate that the result set should
+            include
+
+            a count of the total number of items available for pagination in
+            UIs.
+
+            count_total is only respected when offset is used. It is ignored
+            when key
+
+            is set.
+          in: query
+          required: false
+          type: boolean
+        - name: pagination.reverse
+          description: >-
+            reverse is set to true if results are to be returned in the
+            descending
+
+            order.
+
+
+            Since: cosmos-sdk 0.43
+          in: query
+          required: false
+          type: boolean
+      tags:
+        - Query
+  /canto/liquidstaking/v1/delegators/{delegator_addr}/chunk_unbond_requests:
+    get:
+      summary: TBD
+      operationId: ChunkUnbondRequestsByUndelegator
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              chunk_unbond_requests:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      format: uint64
+                    requester_address:
+                      type: string
+                    num_chunk_unbond:
+                      type: string
+                      format: uint64
               pagination:
                 type: object
                 properties:
@@ -33690,7 +33827,7 @@ paths:
           schema:
             type: object
             properties:
-              alive_chunk:
+              alive_chunks:
                 type: array
                 items:
                   type: object
@@ -34392,8 +34529,11 @@ paths:
               params:
                 type: object
                 properties:
-                  liquid_bond_denom:
+                  liquid_staking_denom:
                     type: string
+                  max_alive_chunk:
+                    type: string
+                    title: maximum number of chunks to be alive
                   min_insurance_percentage:
                     type: string
                     title: >-
@@ -34404,9 +34544,6 @@ paths:
                   chunk_size:
                     type: string
                     title: size of one liquid staking chunk in CANTO
-                  max_alive_chunk:
-                    type: string
-                    title: maximum number of chunks to be alive
                 title: TBD
         default:
           description: An unexpected error response.
@@ -34465,143 +34602,6 @@ paths:
                       format: byte
       tags:
         - Query
-  /canto/liquidstaking/v1/undelegators/{undelegator_addr}/chunk_unbond_requests:
-    get:
-      summary: TBD
-      operationId: ChunkUnbondRequestsByUndelegator
-      responses:
-        '200':
-          description: A successful response.
-          schema:
-            type: object
-            properties:
-              chunk_unbond_requests:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    id:
-                      type: string
-                      format: uint64
-                    address:
-                      type: string
-                    num_chunk_unbond:
-                      type: string
-                      format: uint64
-              pagination:
-                type: object
-                properties:
-                  next_key:
-                    type: string
-                    format: byte
-                    title: |-
-                      next_key is the key to be passed to PageRequest.key to
-                      query the next page most efficiently
-                  total:
-                    type: string
-                    format: uint64
-                    title: >-
-                      total is total number of results available if
-                      PageRequest.count_total
-
-                      was set, its value is undefined otherwise
-                description: >-
-                  PageResponse is to be embedded in gRPC response messages where
-                  the
-
-                  corresponding request message has used PageRequest.
-
-                   message SomeResponse {
-                           repeated Bar results = 1;
-                           PageResponse page = 2;
-                   }
-        default:
-          description: An unexpected error response.
-          schema:
-            type: object
-            properties:
-              error:
-                type: string
-              code:
-                type: integer
-                format: int32
-              message:
-                type: string
-              details:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    type_url:
-                      type: string
-                    value:
-                      type: string
-                      format: byte
-      parameters:
-        - name: undelegator_addr
-          in: path
-          required: true
-          type: string
-        - name: pagination.key
-          description: |-
-            key is a value returned in PageResponse.next_key to begin
-            querying the next page most efficiently. Only one of offset or key
-            should be set.
-          in: query
-          required: false
-          type: string
-          format: byte
-        - name: pagination.offset
-          description: >-
-            offset is a numeric offset that can be used when key is unavailable.
-
-            It is less efficient than using key. Only one of offset or key
-            should
-
-            be set.
-          in: query
-          required: false
-          type: string
-          format: uint64
-        - name: pagination.limit
-          description: >-
-            limit is the total number of results to be returned in the result
-            page.
-
-            If left empty it will default to a value to be set by each app.
-          in: query
-          required: false
-          type: string
-          format: uint64
-        - name: pagination.count_total
-          description: >-
-            count_total is set to true  to indicate that the result set should
-            include
-
-            a count of the total number of items available for pagination in
-            UIs.
-
-            count_total is only respected when offset is used. It is ignored
-            when key
-
-            is set.
-          in: query
-          required: false
-          type: boolean
-        - name: pagination.reverse
-          description: >-
-            reverse is set to true if results are to be returned in the
-            descending
-
-            order.
-
-
-            Since: cosmos-sdk 0.43
-          in: query
-          required: false
-          type: boolean
-      tags:
-        - Query
   /canto/liquidstaking/v1/validators/{validator_addr}/alive_chunks:
     get:
       summary: TBD
@@ -34612,7 +34612,7 @@ paths:
           schema:
             type: object
             properties:
-              alive_chunk:
+              alive_chunks:
                 type: array
                 items:
                   type: object
@@ -56767,7 +56767,7 @@ definitions:
       id:
         type: string
         format: uint64
-      address:
+      requester_address:
         type: string
       token_amount:
         type: string
@@ -56777,7 +56777,7 @@ definitions:
       id:
         type: string
         format: uint64
-      address:
+      requester_address:
         type: string
       num_chunk_unbond:
         type: string
@@ -56850,8 +56850,11 @@ definitions:
   canto.liquidstaking.v1.Params:
     type: object
     properties:
-      liquid_bond_denom:
+      liquid_staking_denom:
         type: string
+      max_alive_chunk:
+        type: string
+        title: maximum number of chunks to be alive
       min_insurance_percentage:
         type: string
         title: |-
@@ -56860,9 +56863,6 @@ definitions:
       chunk_size:
         type: string
         title: size of one liquid staking chunk in CANTO
-      max_alive_chunk:
-        type: string
-        title: maximum number of chunks to be alive
     title: TBD
   canto.liquidstaking.v1.QueryAliveChunkResponse:
     type: object
@@ -56892,7 +56892,7 @@ definitions:
   canto.liquidstaking.v1.QueryAliveChunksResponse:
     type: object
     properties:
-      alive_chunk:
+      alive_chunks:
         type: array
         items:
           type: object
@@ -56944,20 +56944,20 @@ definitions:
   canto.liquidstaking.v1.QueryChunkBondRequestResponse:
     type: object
     properties:
-      chunkBondRequests:
+      chunk_bond_request:
         type: object
         properties:
           id:
             type: string
             format: uint64
-          address:
+          requester_address:
             type: string
           token_amount:
             type: string
   canto.liquidstaking.v1.QueryChunkBondRequestsResponse:
     type: object
     properties:
-      chunkBondRequests:
+      chunk_bond_requests:
         type: array
         items:
           type: object
@@ -56965,7 +56965,7 @@ definitions:
             id:
               type: string
               format: uint64
-            address:
+            requester_address:
               type: string
             token_amount:
               type: string
@@ -57003,7 +57003,7 @@ definitions:
           id:
             type: string
             format: uint64
-          address:
+          requester_address:
             type: string
           num_chunk_unbond:
             type: string
@@ -57044,7 +57044,7 @@ definitions:
             id:
               type: string
               format: uint64
-            address:
+            requester_address:
               type: string
             num_chunk_unbond:
               type: string
@@ -57226,8 +57226,11 @@ definitions:
       params:
         type: object
         properties:
-          liquid_bond_denom:
+          liquid_staking_denom:
             type: string
+          max_alive_chunk:
+            type: string
+            title: maximum number of chunks to be alive
           min_insurance_percentage:
             type: string
             title: |-
@@ -57236,9 +57239,6 @@ definitions:
           chunk_size:
             type: string
             title: size of one liquid staking chunk in CANTO
-          max_alive_chunk:
-            type: string
-            title: maximum number of chunks to be alive
         title: TBD
   canto.liquidstaking.v1.QueryUnbondingChunksResponse:
     type: object
