@@ -278,10 +278,10 @@ func (suite *KeeperTestSuite) TestKeeperUnbondInsurance() {
 	expected := make(map[string]types.InsuranceUnbondRequest)
 	suite.Run("unbond insurance multiple times", func() {
 		for i := 0; i < iteration; i++ {
-			insurer := generateRandomAccount()
 			id := generateUniqueId(suite, used)
 			used[id] = true
 			aliveChunk := generateRandomAliveChunk(suite, id)
+			insurer := sdk.MustAccAddressFromBech32(aliveChunk.InsuranceProviderAddress)
 			suite.keeper.SetAliveChunk(suite.ctx, aliveChunk)
 
 			reqId, err := suite.keeper.UnbondInsurance(suite.ctx, insurer, id)
@@ -309,11 +309,10 @@ func (suite *KeeperTestSuite) TestKeeperUnbondInsurance() {
 	})
 
 	suite.Run("cancel insurance unbond negative: address mismatch", func() {
-		insurer := generateRandomAccount()
-
 		id := generateUniqueId(suite, used)
 		used[id] = true
 		aliveChunk := generateRandomAliveChunk(suite, id)
+		insurer := sdk.MustAccAddressFromBech32(aliveChunk.InsuranceProviderAddress)
 		suite.keeper.SetAliveChunk(suite.ctx, aliveChunk)
 		reqId, err := suite.keeper.UnbondInsurance(suite.ctx, insurer, id)
 		suite.Require().NoError(err)

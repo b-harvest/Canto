@@ -168,6 +168,9 @@ func (msg MsgBidInsurance) ValidateBasic() error {
 	if _, err := sdk.AccAddressFromBech32(msg.RequesterAddress); err != nil {
 		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid requester address %q: %v", msg.RequesterAddress, err)
 	}
+	if _, err := sdk.ValAddressFromBech32(msg.ValidatorAddress); err != nil {
+		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid validator address %q: %v", msg.ValidatorAddress, err)
+	}
 	if msg.InsuranceAmount.IsZero() {
 		return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "staking insurance amount must not be zero")
 	}

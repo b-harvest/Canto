@@ -15,4 +15,5 @@ var (
 	ErrInvalidChunkUnbondRequestId = sdkerrors.Register(ModuleName, 8, "given chunk unbond request ID is invalid")
 	ErrInvalidInsuranceBidId       = sdkerrors.Register(ModuleName, 9, "given insurance bid ID is invalid")
 	ErrInvalidRequesterAddress     = sdkerrors.Register(ModuleName, 10, "given requester address is invalid")
+	ErrInvalidValidatorAddress     = sdkerrors.Register(ModuleName, 11, "given validator address is invalid")
 )

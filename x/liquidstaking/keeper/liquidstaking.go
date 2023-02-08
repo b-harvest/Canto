@@ -130,11 +130,16 @@ func (k Keeper) getMinimumInsuranceAmount(ctx *sdk.Context) sdk.Int {
 
 func (k Keeper) BidInsurance(
 	ctx sdk.Context,
-	insurer sdk.AccAddress,
-	val sdk.ValAddress,
+	insurerAddr sdk.AccAddress,
+	valAddr sdk.ValAddress,
 	amount sdk.Int,
 	insuranceFeeRate sdk.Dec,
 ) (types.InsuranceBidId, error) {
+	_, found := k.stk.GetValidator(ctx, valAddr)
+	if !found {
+		return 0, types.ErrInvalidValidatorAddress
+	}
+
 	minimumInsuranceAmount := k.getMinimumInsuranceAmount(&ctx)
 	if minimumInsuranceAmount.GT(amount) {
 		return 0, types.ErrInvalidTokenAmount
@@ -142,14 +147,14 @@ func (k Keeper) BidInsurance(
 
 	// TODO: check speculation. for now, just deposit coins from insurer into module
 	bondDenom := k.stk.BondDenom(ctx)
-	if err := k.bk.SendCoinsFromAccountToModule(ctx, insurer, types.ModuleName, sdk.NewCoins(sdk.NewCoin(bondDenom, amount))); err != nil {
+	if err := k.bk.SendCoinsFromAccountToModule(ctx, insurerAddr, types.ModuleName, sdk.NewCoins(sdk.NewCoin(bondDenom, amount))); err != nil {
 		return 0, err
 	}
 	id := k.GetLastInsuranceBidId(ctx) + 1
 	bid := types.InsuranceBid{
 		Id:                       id,
-		ValidatorAddress:         val.String(),
-		InsuranceProviderAddress: insurer.String(),
+		ValidatorAddress:         valAddr.String(),
+		InsuranceProviderAddress: insurerAddr.String(),
 		InsuranceAmount:          amount,
 		InsuranceFeeRate:         insuranceFeeRate,
 	}
@@ -181,14 +186,24 @@ func (k Keeper) CancelInsuranceBid(
 
 func (k Keeper) UnbondInsurance(
 	ctx sdk.Context,
-	insurer sdk.AccAddress,
+	insurerAddr sdk.AccAddress,
 	aliveChunkId types.AliveChunkId,
 ) (types.AliveChunkId, error) {
-	if _, found := k.GetAliveChunk(ctx, aliveChunkId); !found {
+	aliveChunk, found := k.GetAliveChunk(ctx, aliveChunkId)
+	if !found {
 		return 0, types.ErrInvalidAliveChunkId
 	}
+
+	insuranceProviderAddr, err := sdk.AccAddressFromBech32(aliveChunk.InsuranceProviderAddress)
+	if err != nil {
+		return 0, err
+	}
+	if !insurerAddr.Equals(insuranceProviderAddr) {
+		return 0, types.ErrInvalidRequesterAddress
+	}
+
 	req := types.InsuranceUnbondRequest{
-		InsuranceProviderAddress: insurer.String(),
+		InsuranceProviderAddress: insurerAddr.String(),
 		AliveChunkId:             aliveChunkId,
 	}
 	k.SetInsuranceUnbondRequest(ctx, req)
@@ -198,17 +213,17 @@ func (k Keeper) UnbondInsurance(
 }
 
 func (k Keeper) CancelInsuranceUnbond(
-	ctx sdk.Context, insurer sdk.AccAddress, id types.AliveChunkId) (interface{}, error) {
+	ctx sdk.Context, insurerAddr sdk.AccAddress, id types.AliveChunkId) (interface{}, error) {
 	req, found := k.GetInsuranceUnbondRequest(ctx, id)
 	if !found {
 		return nil, types.ErrInvalidAliveChunkId
 	}
 
-	requesterAddress, err := sdk.AccAddressFromBech32(req.InsuranceProviderAddress)
+	insuranceProviderAddr, err := sdk.AccAddressFromBech32(req.InsuranceProviderAddress)
 	if err != nil {
 		return nil, err
 	}
-	if !insurer.Equals(requesterAddress) {
+	if !insurerAddr.Equals(insuranceProviderAddr) {
 		return nil, types.ErrInvalidRequesterAddress
 	}
 	k.DeleteInsuranceUnbondRequest(ctx, req)
