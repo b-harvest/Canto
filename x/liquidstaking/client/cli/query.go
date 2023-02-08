@@ -503,7 +503,7 @@ func GetCmdQueryChunkUnbondRequestsByUndelegator() *cobra.Command {
 			}
 			queryClient := types.NewQueryClient(clientCtx)
 
-			undelegator, err := sdk.AccAddressFromBech32(args[0])
+			delegator, err := sdk.AccAddressFromBech32(args[0])
 			if err != nil {
 				return err
 			}
@@ -514,8 +514,8 @@ func GetCmdQueryChunkUnbondRequestsByUndelegator() *cobra.Command {
 			}
 
 			request := &types.QueryChunkUnbondRequestsByUndelegatorRequest{
-				UndelegatorAddr: undelegator.String(),
-				Pagination:      pageReq,
+				DelegatorAddr: delegator.String(),
+				Pagination:    pageReq,
 			}
 
 			res, err := queryClient.ChunkUnbondRequestsByUndelegator(context.Background(), request)

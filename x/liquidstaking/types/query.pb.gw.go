@@ -592,7 +592,7 @@ func local_request_Query_ChunkUnbondRequests_0(ctx context.Context, marshaler ru
 }
 
 var (
-	filter_Query_ChunkUnbondRequestsByUndelegator_0 = &utilities.DoubleArray{Encoding: map[string]int{"undelegator_addr": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
+	filter_Query_ChunkUnbondRequestsByUndelegator_0 = &utilities.DoubleArray{Encoding: map[string]int{"delegator_addr": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
 )
 
 func request_Query_ChunkUnbondRequestsByUndelegator_0(ctx context.Context, marshaler runtime.Marshaler, client QueryClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
@@ -606,15 +606,15 @@ func request_Query_ChunkUnbondRequestsByUndelegator_0(ctx context.Context, marsh
 		_   = err
 	)
 
-	val, ok = pathParams["undelegator_addr"]
+	val, ok = pathParams["delegator_addr"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "undelegator_addr")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "delegator_addr")
 	}
 
-	protoReq.UndelegatorAddr, err = runtime.String(val)
+	protoReq.DelegatorAddr, err = runtime.String(val)
 
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "undelegator_addr", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "delegator_addr", err)
 	}
 
 	if err := req.ParseForm(); err != nil {
@@ -640,15 +640,15 @@ func local_request_Query_ChunkUnbondRequestsByUndelegator_0(ctx context.Context,
 		_   = err
 	)
 
-	val, ok = pathParams["undelegator_addr"]
+	val, ok = pathParams["delegator_addr"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "undelegator_addr")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "delegator_addr")
 	}
 
-	protoReq.UndelegatorAddr, err = runtime.String(val)
+	protoReq.DelegatorAddr, err = runtime.String(val)
 
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "undelegator_addr", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "delegator_addr", err)
 	}
 
 	if err := req.ParseForm(); err != nil {
@@ -2039,7 +2039,7 @@ var (
 
 	pattern_Query_ChunkUnbondRequests_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"canto", "liquidstaking", "v1", "chunk_unbond_requests"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_Query_ChunkUnbondRequestsByUndelegator_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4, 2, 5}, []string{"canto", "liquidstaking", "v1", "undelegators", "undelegator_addr", "chunk_unbond_requests"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_ChunkUnbondRequestsByUndelegator_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4, 2, 5}, []string{"canto", "liquidstaking", "v1", "delegators", "delegator_addr", "chunk_unbond_requests"}, "", runtime.AssumeColonVerbOpt(true)))
 
 	pattern_Query_InsuranceBid_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"canto", "liquidstaking", "v1", "insurance_bids", "id"}, "", runtime.AssumeColonVerbOpt(true)))
 

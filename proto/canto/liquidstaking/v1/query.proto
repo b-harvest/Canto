@@ -101,8 +101,8 @@ service Query {
   rpc ChunkUnbondRequestsByUndelegator(
       QueryChunkUnbondRequestsByUndelegatorRequest)
       returns (QueryChunkUnbondRequestsResponse) {
-    option (google.api.http).get = "/canto/liquidstaking/v1/undelegators/"
-                                   "{undelegator_addr}/chunk_unbond_requests";
+    option (google.api.http).get = "/canto/liquidstaking/v1/delegators/"
+                                   "{delegator_addr}/chunk_unbond_requests";
   }
 
   // TBD
@@ -196,7 +196,7 @@ message QueryAliveChunksByValidatorRequest {
 }
 
 message QueryAliveChunksResponse {
-  repeated AliveChunk alive_chunk = 1 [ (gogoproto.nullable) = false ];
+  repeated AliveChunk alive_chunks = 1 [ (gogoproto.nullable) = false ];
 
   cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
@@ -208,7 +208,7 @@ message QueryUnbondingChunksResponse {}
 message QueryChunkBondRequestRequest { uint64 id = 1; }
 
 message QueryChunkBondRequestResponse {
-  ChunkBondRequest chunk_bond_requests = 1 [ (gogoproto.nullable) = false ];
+  ChunkBondRequest chunk_bond_request = 1 [ (gogoproto.nullable) = false ];
 }
 
 message QueryChunkBondRequestsRequest {
@@ -240,7 +240,7 @@ message QueryChunkUnbondRequestsRequest {
 }
 
 message QueryChunkUnbondRequestsByUndelegatorRequest {
-  string undelegator_addr = 1;
+  string delegator_addr = 1;
   cosmos.base.query.v1beta1.PageRequest pagination = 2;
 }
 
