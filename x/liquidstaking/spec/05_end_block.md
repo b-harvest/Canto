@@ -27,3 +27,15 @@ If there are `{*action}Request` and `InsuranceBid` that have not yet matched,
     1. If the number of alive chunks remains unchanged before and after the new ranking decision, bond relocation can only be done through redelegation
     2. Bonding or unbonding is necessary only when there is a difference in the number of alive chunks, and the remainder can be adjusted by redelegation
     3. Unbonding or redelegating chunks and insurance are managed by `UnbondingChunk` until the unbonding period elapses, and slashing risk is also insured
+
+**☆ Actual Bond/Unbond/Redelegation determination**
+
+1. Create two lists of chunk-validator pairs before and after bond relocation. In other words, the two lists mean the list of existing chunk-validator bond and the proposed chunk-validator bond considering all requests submitted up to the current block
+2. By comparing the two lists, we can know exactly how many chunks each validator needs to receive or give (if both inputs and outputs of chunk need to occur in one validator, the amount will be offset)
+3. Iterate the matching until all validators’ chunks equal to their target (proposed state)
+
+    matching logic : the validator with the most to give matches the validator with the most to receive
+
+    moving amount of chunk : min(surplus of validator with the most to give, deficit of validator with the most to receive)
+
+4. If the last remaining validator is the receiver after the above process, the quantity in the bond chunk request is newly staked to the validator. If the last remaining validator is the giver, the amount is unstaked
