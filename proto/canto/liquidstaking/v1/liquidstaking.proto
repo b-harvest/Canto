@@ -1,0 +1,163 @@
+syntax = "proto3";
+package canto.liquidstaking.v1;
+
+import "cosmos/base/v1beta1/coin.proto";
+import "cosmos_proto/cosmos.proto";
+import "gogoproto/gogo.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/Canto-Network/Canto-Testnet-v2/v1/x/liquidstaking/types";
+
+message Epoch {
+  string identifier = 1;
+  google.protobuf.Timestamp start_time = 2
+      [ (gogoproto.stdtime) = true, (gogoproto.nullable) = false ];
+  google.protobuf.Duration duration = 3
+      [ (gogoproto.stdduration) = true, (gogoproto.nullable) = false ];
+  int64 current_epoch = 4;
+  google.protobuf.Timestamp current_epoch_start_time = 5
+      [ (gogoproto.stdtime) = true, (gogoproto.nullable) = false ];
+  bool epoch_counting_started = 6;
+  int64 current_epoch_start_height = 7;
+}
+
+// TBD
+enum LiquidValidatorStatus {
+  option (gogoproto.goproto_enum_prefix) = false;
+  // TBD
+  LIQUID_VALIDATOR_STATUS_UNSPECIFIED = 0;
+  // TBD
+  LIQUID_VALIDATOR_STATUS_ACTIVE = 1;
+  // TBD
+  LIQUID_VALIDATOR_STATUS_INACTIVE = 2;
+}
+
+message LiquidValidator {
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = false;
+
+  string operator_address = 1;
+}
+
+// LiquidValidatorState is type LiquidValidator with state added to return to
+// query results.
+message LiquidValidatorState {
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = false;
+
+  LiquidValidator val = 1 [ (gogoproto.nullable) = false ];
+
+  string commission_fee_rate = 2 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable) = false
+  ];
+
+  LiquidValidatorStatus status = 3;
+}
+
+message LiquidStakingInfo {
+  string mint_rate = 1 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable) = false
+  ];
+  string ls_token_total_supply = 2 [
+    (gogoproto.customname) = "LSTokenTotalSupply",
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+  string net_amount = 3 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+  string token_amount = 4 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+  string total_remaining_rewards = 5 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable) = false
+  ];
+  string total_unbonding_balance = 6 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+}
+
+message ChunkBondRequest {
+  uint64 id = 1;
+  string requester_address = 2;
+  string token_amount = 3 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+}
+
+message ChunkUnbondRequest {
+  uint64 id = 1;
+  string requester_address = 2;
+  uint64 num_chunk_unbond = 3;
+}
+
+message InsuranceBid {
+  uint64 id = 1;
+  string validator_address = 2;
+  string insurance_provider_address = 3;
+  string insurance_amount = 4 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+  string insurance_fee_rate = 5 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable) = false
+  ];
+}
+
+message InsuranceUnbondRequest {
+  // address of the insurance provider for the chunk
+  string insurance_provider_address = 1;
+  uint64 alive_chunk_id = 2;
+}
+
+message AliveChunk {
+  // id of alive chunk
+  uint64 id = 1;
+  // address of the validator that the chunk is staked to
+  string validator_address = 2;
+  // address of the insurance provider for the chunk
+  string insurance_provider_address = 3;
+  // amount of the native token in the chunk
+  string token_amount = 4 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+  // amount of the native tokne for insurance
+  string insurance_amount = 5 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+  // insurance fee rate of the chunk
+  string insurance_fee_rate = 6 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable) = false
+  ];
+}
+
+message UnbondingChunk {
+  // id of unbonding chunk
+  uint64 id = 1;
+  // address of the validator that the chunk is staked to
+  string validator_address = 2;
+  // address of the insurance provider for the chunk
+  string insurance_provider_address = 3;
+  // amount of the native token in the chunk
+  string token_amount = 4 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+  // amount of the native tokne for insurance
+  string insurance_amount = 5 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+}

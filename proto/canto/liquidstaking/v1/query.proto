@@ -1,0 +1,306 @@
+syntax = "proto3";
+package canto.liquidstaking.v1;
+
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+
+import "cosmos/base/query/v1beta1/pagination.proto";
+
+import "canto/liquidstaking/v1/liquidstaking.proto";
+import "canto/liquidstaking/v1/params.proto";
+
+option go_package = "github.com/Canto-Network/Canto-Testnet-v2/v1/x/liquidstaking/types";
+
+// TBD
+service Query {
+  // TBD
+  rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
+    option (google.api.http).get = "/canto/liquidstaking/v1/params";
+  }
+
+  // TBD
+  rpc LiquidValidators(QueryLiquidValidatorsRequest)
+      returns (QueryLiquidValidatorsResponse) {
+    option (google.api.http).get = "/canto/liquidstaking/v1/liquid_validators";
+  }
+
+  // TRD
+  rpc LiquidStakingState(QueryLiquidStakingStateRequest)
+      returns (QueryLiquidStakingStateResponse) {
+    option (google.api.http).get =
+        "/canto/liquidstaking/v1/liquid_staking_state";
+  }
+
+  // TBD
+  rpc AliveChunk(QueryAliveChunkRequest) returns (QueryAliveChunkResponse) {
+    option (google.api.http).get = "/canto/liquidstaking/v1/alive_chunks/{id}";
+  }
+
+  // TBD
+  rpc AliveChunks(QueryAliveChunksRequest) returns (QueryAliveChunksResponse) {
+    option (google.api.http).get = "/canto/liquidstaking/v1/alive_chunks";
+  }
+
+  // TBD
+  rpc AliveChunksByInsuranceProvider(QueryAliveChunksByInsuranceProviderRequest)
+      returns (QueryAliveChunksResponse) {
+    option (google.api.http).get =
+        "/canto/liquidstaking/v1/insurance_providers/"
+        "{insurance_provider_addr}/alive_chunks";
+  }
+
+  // TBD
+  rpc AliveChunksByValidator(QueryAliveChunksByValidatorRequest)
+      returns (QueryAliveChunksResponse) {
+    option (google.api.http).get =
+        "/canto/liquidstaking/v1/validators/{validator_addr}/alive_chunks";
+  }
+
+  // TBD
+  rpc UnbondingChunks(QueryUnbondingChunksRequest)
+      returns (QueryUnbondingChunksResponse) {
+    option (google.api.http).get = "/canto/liquidstaking/v1/unbonding_chunks";
+  }
+
+  // TBD
+  rpc ChunkBondRequest(QueryChunkBondRequestRequest)
+      returns (QueryChunkBondRequestResponse) {
+    option (google.api.http).get =
+        "/canto/liquidstaking/v1/chunk_bond_requests/{id}";
+  }
+
+  // TBD
+  rpc ChunkBondRequests(QueryChunkBondRequestsRequest)
+      returns (QueryChunkBondRequestsResponse) {
+    option (google.api.http).get =
+        "/canto/liquidstaking/v1/chunk_bond_requests";
+  }
+
+  // TBD
+  rpc ChunkBondRequestsByDelegator(QueryChunkBondRequestsByDelegatorRequest)
+      returns (QueryChunkBondRequestsResponse) {
+    option (google.api.http).get = "/canto/liquidstaking/v1/delegators/"
+                                   "{delegator_addr}/chunk_bond_requests";
+  }
+
+  // TBD
+  rpc ChunkUnbondRequest(QueryChunkUnbondRequestRequest)
+      returns (QueryChunkUnbondRequestResponse) {
+    option (google.api.http).get =
+        "/canto/liquidstaking/v1/chunk_unbond_requests/{id}";
+  }
+
+  // TBD
+  rpc ChunkUnbondRequests(QueryChunkUnbondRequestsRequest)
+      returns (QueryChunkUnbondRequestsResponse) {
+    option (google.api.http).get =
+        "/canto/liquidstaking/v1/chunk_unbond_requests";
+  }
+
+  // TBD
+  rpc ChunkUnbondRequestsByUndelegator(
+      QueryChunkUnbondRequestsByUndelegatorRequest)
+      returns (QueryChunkUnbondRequestsResponse) {
+    option (google.api.http).get = "/canto/liquidstaking/v1/delegators/"
+                                   "{delegator_addr}/chunk_unbond_requests";
+  }
+
+  // TBD
+  rpc InsuranceBid(QueryInsuranceBidRequest)
+      returns (QueryInsuranceBidResponse) {
+    option (google.api.http).get =
+        "/canto/liquidstaking/v1/insurance_bids/{id}";
+  }
+
+  // TBD
+  rpc InsuranceBids(QueryInsuranceBidsRequest)
+      returns (QueryInsuranceBidsResponse) {
+    option (google.api.http).get = "/canto/liquidstaking/v1/insurance_bids";
+  }
+
+  // TBD
+  rpc InsuranceBidsByInsuranceProvider(
+      QueryInsuranceBidsByInsuranceProviderRequest)
+      returns (QueryInsuranceBidsResponse) {
+    option (google.api.http).get =
+        "/canto/liquidstaking/v1/insurance_providers/"
+        "{insurance_provider_addr}/insurance_bids";
+  }
+
+  // TBD
+  rpc InsuranceBidsByValidator(QueryInsuranceBidsByValidatorRequest)
+      returns (QueryInsuranceBidsResponse) {
+    option (google.api.http).get =
+        "/canto/liquidstaking/v1/validators/{validator_addr}/insurance_bids";
+  }
+
+  // TBD
+  rpc InsuranceUnbondRequest(QueryInsuranceUnbondRequestRequest)
+      returns (QueryInsuranceUnbondRequestResponse) {
+    option (google.api.http).get =
+        "/canto/liquidstaking/v1/insurance_unbond_requests/{id}";
+  }
+
+  // TBD
+  rpc InsuranceUnbondRequests(QueryInsuranceUnbondRequestsRequest)
+      returns (QueryInsuranceUnbondRequestsResponse) {
+    option (google.api.http).get =
+        "/canto/liquidstaking/v1/insurance_unbond_requests";
+  }
+
+  // TBD
+  rpc InsuranceUnbondRequestsByInsuranceProvider(
+      QueryInsuranceUnbondRequestsByInsuranceProviderRequest)
+      returns (QueryInsuranceUnbondRequestsResponse) {
+    option (google.api.http).get =
+        "/canto/liquidstaking/v1/insurance_providers/{insurance_provider_addr}/"
+        "insurance_unbond_requests";
+  }
+}
+
+message QueryParamsRequest {}
+
+message QueryParamsResponse {
+  Params params = 1 [ (gogoproto.nullable) = false ];
+}
+
+message QueryLiquidValidatorsRequest {}
+
+message QueryLiquidValidatorsResponse {
+  repeated LiquidValidatorState liquid_validators = 1
+      [ (gogoproto.nullable) = false ];
+}
+
+message QueryLiquidStakingStateRequest {}
+
+message QueryLiquidStakingStateResponse {}
+
+message QueryAliveChunkRequest { uint64 id = 1; }
+
+message QueryAliveChunkResponse {
+  AliveChunk alive_chunk = 1 [ (gogoproto.nullable) = false ];
+}
+
+message QueryAliveChunksRequest {
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+message QueryAliveChunksByInsuranceProviderRequest {
+  string insurance_provider_addr = 1;
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
+}
+
+message QueryAliveChunksByValidatorRequest {
+  string validator_addr = 1;
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
+}
+
+message QueryAliveChunksResponse {
+  repeated AliveChunk alive_chunks = 1 [ (gogoproto.nullable) = false ];
+
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+message QueryUnbondingChunksRequest {}
+
+message QueryUnbondingChunksResponse {}
+
+message QueryChunkBondRequestRequest { uint64 id = 1; }
+
+message QueryChunkBondRequestResponse {
+  ChunkBondRequest chunk_bond_request = 1 [ (gogoproto.nullable) = false ];
+}
+
+message QueryChunkBondRequestsRequest {
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+message QueryChunkBondRequestsByDelegatorRequest {
+  string delegator_addr = 1;
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
+}
+
+message QueryChunkBondRequestsResponse {
+  repeated ChunkBondRequest chunk_bond_requests = 1
+      [ (gogoproto.nullable) = false ];
+
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+message QueryChunkUnbondRequestRequest { uint64 id = 1; }
+
+message QueryChunkUnbondRequestResponse {
+  ChunkUnbondRequest chunk_unbond_request = 1;
+
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+message QueryChunkUnbondRequestsRequest {
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+message QueryChunkUnbondRequestsByUndelegatorRequest {
+  string delegator_addr = 1;
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
+}
+
+message QueryChunkUnbondRequestsResponse {
+  repeated ChunkUnbondRequest chunk_unbond_requests = 1
+      [ (gogoproto.nullable) = false ];
+
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+message QueryInsuranceBidRequest { uint64 id = 1; }
+
+message QueryInsuranceBidResponse {
+  InsuranceBid insurance_bid = 1 [ (gogoproto.nullable) = false ];
+}
+
+message QueryInsuranceBidsRequest {
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+message QueryInsuranceBidsByInsuranceProviderRequest {
+  string insurance_provider_addr = 1;
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
+}
+
+message QueryInsuranceBidsByValidatorRequest {
+  string validator_addr = 1;
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
+}
+
+message QueryInsuranceBidsResponse {
+  repeated InsuranceBid insurance_bids = 1 [ (gogoproto.nullable) = false ];
+
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+message QueryInsuranceUnbondRequestRequest { uint64 id = 1; }
+
+message QueryInsuranceUnbondRequestResponse {
+  InsuranceUnbondRequest insurance_unbond_request = 1
+      [ (gogoproto.nullable) = false ];
+}
+
+message QueryInsuranceUnbondRequestsRequest {
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+message QueryInsuranceUnbondRequestsByInsuranceProviderRequest {
+  string insurance_provider_addr = 1;
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
+}
+
+message QueryInsuranceUnbondRequestsByValidatorRequest {
+  string validator_addr = 1;
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
+}
+
+message QueryInsuranceUnbondRequestsResponse {
+  repeated InsuranceUnbondRequest insurance_unbond_requests = 1
+      [ (gogoproto.nullable) = false ];
+
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
