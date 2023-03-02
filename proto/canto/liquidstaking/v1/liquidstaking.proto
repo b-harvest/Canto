@@ -1,0 +1,94 @@
+syntax = "proto3";
+package canto.liquidstaking.v1;
+
+import "gogoproto/gogo.proto";
+import "cosmos_proto/cosmos.proto";
+
+option go_package = "github.com/Canto-Network/Canto/v6/x/liquidstaking/types";
+
+// Params defines the parameters for the module.
+message Params {
+  option (gogoproto.goproto_stringer) = false;
+
+  // next_epoch_chunk_size is the size of chunk.
+  // This param is managed by gov module, but the change
+  // will always applied in the next epoch for safety.
+  uint64 next_epoch_chunk_size = 1;
+
+  // max_paired_chunk is the maximum number of chunks that can be paired with an insurance.
+  uint64 max_paired_chunk = 2;
+}
+
+enum ChunkState {
+  option (gogoproto.goproto_enum_prefix) = false;
+
+  // Default state of a chunk when a msgServer receives MsgLiquidStake.
+  // This state indicates that the chunk is ready to be paired with an insurance.
+  CHUNK_STATE_PAIRING = 0;
+  // This state indicates that the chunk is paired with an insurance which has the lowest fee rate.
+  CHUNK_STATE_PAIRED = 1;
+  // For various reasons, the insurance paired to Chunk can be un-paired.
+  // At this time, if there is no insurance candidate, a chunk enters this state.
+  CHUNK_STATE_UNPAIRINGFORREPAIRING= 2;
+  // When a liquid staker sends a MsgLiquidUnstake, the last ranked paired chunk enters this state
+  // and waits until the un-bonding period times out.
+  CHUNK_STATE_UNPAIRINGFORUNSTAKE = 3;
+}
+
+message Chunk {
+  // Id of the chunk
+  uint64 id = 1;
+  // Amount of native token to be liquid staked
+  string token_amount = 2 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+  // Id of Paired insurance, 0 means no insurance
+  uint64 insurance_id = 3;
+  // State of the chunk
+  ChunkState state = 4;
+}
+
+enum InsuranceState {
+  option (gogoproto.goproto_enum_prefix) = false;
+
+  // Default state of an insurance when a msgServer receives MsgInsuranceProvide.
+  // This state indicates that the insurance is ready to be paired with a chunk.
+  INSURANCE_STATE_PAIRING = 0;
+  // This state indicates that the insurance is paired with a chunk.
+  // While the insurance is in this state, it serves as a form of protection for the chunk by
+  // insuring it against unexpected loss that may occur due to validator slashing.
+  INSURANCE_STATE_PAIRED = 1;
+  // For various reasons, the insurance paired to Chunk can enters this state.
+  // The insurance in this state wait until the paired chunk's un-bonding period times out.
+  INSURANCE_STATE_UNPAIRINGFORREPAIRING= 2;
+  // Insurance enters this state when msgServer receives MsgWithdrawInsurance.
+  // The insurance waits until the paired chunk's un-bonding period times out.
+  INSURANCE_STATE_UNPAIRINGFORWITHDRAW = 3;
+  // Every begin block, the module checks all insurances have enough balance to cover slash.
+  // If not, the insurance enters this state.
+  // Insurance provider can re-fill token amount of the insurance by sending MsgRefillInsurance or
+  // cancel the insurance by sending MsgCancelInsuranceProvide.
+  INSURANCE_STATE_VULNERABLEINSURANCE = 4;
+}
+
+
+message Insurance {
+  // Id of the insurance
+  uint64 id = 1;
+  // Address of the validator
+  string validator_address = 2;
+  // Address of the insurance provider
+  string provider_address = 3;
+  // Amount of native token to guard slashing
+  string token_amount = 4 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+  // Fee rate of the insurance
+  string fee_rate = 5 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable) = false
+  ];
+  InsuranceState state = 6;
+}
