@@ -118,18 +118,6 @@ message MsgWithdrawInsurance {
 
 message MsgWithdrawInsuranceResponse {}
 
-message MsgRefillInsuranceFee {
-  // id is the id of the insurance to be refilled.
-  uint64 id = 1;
-  // token_amount is the amount of native token to be re-filled to insurance.
-  string token_amount = 2 [
-    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
-    (gogoproto.nullable) = false
-  ];
-}
-
-message MsgRefillInsuranceFeeResponse {}
-
 message MsgWithdrawInsuranceFee {
   // id is the id of the insurance that accumulated fees to be withdrawn.
   uint64 id = 1;
