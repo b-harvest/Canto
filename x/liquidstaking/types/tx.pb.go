@@ -31,11 +31,11 @@ var _ = math.Inf
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type MsgLiquidStake struct {
-	// token_amount is the amount of native token to be liquid staked.
-	TokenAmount github_com_cosmos_cosmos_sdk_types.Coin `protobuf:"bytes,1,opt,name=token_amount,json=tokenAmount,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Coin" json:"token_amount"`
-	// requester_address is the address of the user who requests the liquid
+	// delegator_address is the address of the user who requests the liquid
 	// staking.
-	RequesterAddress string `protobuf:"bytes,2,opt,name=requester_address,json=requesterAddress,proto3" json:"requester_address,omitempty"`
+	DelegatorAddress string `protobuf:"bytes,1,opt,name=delegator_address,json=delegatorAddress,proto3" json:"delegator_address,omitempty"`
+	// amount is the amount of native token to be liquid staked.
+	Amount github_com_cosmos_cosmos_sdk_types.Coin `protobuf:"bytes,2,opt,name=amount,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Coin" json:"amount"`
 }
 
 func (m *MsgLiquidStake) Reset()         { *m = MsgLiquidStake{} }
@@ -71,9 +71,9 @@ func (m *MsgLiquidStake) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgLiquidStake proto.InternalMessageInfo
 
-func (m *MsgLiquidStake) GetRequesterAddress() string {
+func (m *MsgLiquidStake) GetDelegatorAddress() string {
 	if m != nil {
-		return m.RequesterAddress
+		return m.DelegatorAddress
 	}
 	return ""
 }
@@ -114,101 +114,19 @@ func (m *MsgLiquidStakeResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgLiquidStakeResponse proto.InternalMessageInfo
 
-type MsgCancelLiquidStake struct {
-	// requester_address is the address of the user who want to cancel the liquid
-	// staking. If the chunk is already paired, it cannot be canceled.
-	RequesterAddress string `protobuf:"bytes,1,opt,name=requester_address,json=requesterAddress,proto3" json:"requester_address,omitempty"`
-}
-
-func (m *MsgCancelLiquidStake) Reset()         { *m = MsgCancelLiquidStake{} }
-func (m *MsgCancelLiquidStake) String() string { return proto.CompactTextString(m) }
-func (*MsgCancelLiquidStake) ProtoMessage()    {}
-func (*MsgCancelLiquidStake) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a8b50b1abccb5854, []int{2}
-}
-func (m *MsgCancelLiquidStake) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *MsgCancelLiquidStake) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_MsgCancelLiquidStake.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *MsgCancelLiquidStake) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_MsgCancelLiquidStake.Merge(m, src)
-}
-func (m *MsgCancelLiquidStake) XXX_Size() int {
-	return m.Size()
-}
-func (m *MsgCancelLiquidStake) XXX_DiscardUnknown() {
-	xxx_messageInfo_MsgCancelLiquidStake.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_MsgCancelLiquidStake proto.InternalMessageInfo
-
-func (m *MsgCancelLiquidStake) GetRequesterAddress() string {
-	if m != nil {
-		return m.RequesterAddress
-	}
-	return ""
-}
-
-type MsgCancelLiquidStakeResponse struct {
-}
-
-func (m *MsgCancelLiquidStakeResponse) Reset()         { *m = MsgCancelLiquidStakeResponse{} }
-func (m *MsgCancelLiquidStakeResponse) String() string { return proto.CompactTextString(m) }
-func (*MsgCancelLiquidStakeResponse) ProtoMessage()    {}
-func (*MsgCancelLiquidStakeResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a8b50b1abccb5854, []int{3}
-}
-func (m *MsgCancelLiquidStakeResponse) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *MsgCancelLiquidStakeResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_MsgCancelLiquidStakeResponse.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *MsgCancelLiquidStakeResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_MsgCancelLiquidStakeResponse.Merge(m, src)
-}
-func (m *MsgCancelLiquidStakeResponse) XXX_Size() int {
-	return m.Size()
-}
-func (m *MsgCancelLiquidStakeResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_MsgCancelLiquidStakeResponse.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_MsgCancelLiquidStakeResponse proto.InternalMessageInfo
-
 type MsgLiquidUnstake struct {
-	// number_of_chunks is the number of chunks to be unstaked.
-	// The requester must have corresponding ls tokens to unstake.
-	NumberOfChunks uint64 `protobuf:"varint,1,opt,name=number_of_chunks,json=numberOfChunks,proto3" json:"number_of_chunks,omitempty"`
-	// requester_address is the address of the user who want to liquid unstaking.
-	RequesterAddress string `protobuf:"bytes,2,opt,name=requester_address,json=requesterAddress,proto3" json:"requester_address,omitempty"`
+	// delegator_address is the address of the user who want to liquid unstaking.
+	DelegatorAddress string `protobuf:"bytes,1,opt,name=delegator_address,json=delegatorAddress,proto3" json:"delegator_address,omitempty"`
+	// amount is the number calculated by (number of chunks want to unstake) *
+	// chunk.size. The delegator must have corresponding ls tokens to unstake.
+	Amount github_com_cosmos_cosmos_sdk_types.Coin `protobuf:"bytes,2,opt,name=amount,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Coin" json:"amount"`
 }
 
 func (m *MsgLiquidUnstake) Reset()         { *m = MsgLiquidUnstake{} }
 func (m *MsgLiquidUnstake) String() string { return proto.CompactTextString(m) }
 func (*MsgLiquidUnstake) ProtoMessage()    {}
 func (*MsgLiquidUnstake) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a8b50b1abccb5854, []int{4}
+	return fileDescriptor_a8b50b1abccb5854, []int{2}
 }
 func (m *MsgLiquidUnstake) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -237,16 +155,9 @@ func (m *MsgLiquidUnstake) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgLiquidUnstake proto.InternalMessageInfo
 
-func (m *MsgLiquidUnstake) GetNumberOfChunks() uint64 {
+func (m *MsgLiquidUnstake) GetDelegatorAddress() string {
 	if m != nil {
-		return m.NumberOfChunks
-	}
-	return 0
-}
-
-func (m *MsgLiquidUnstake) GetRequesterAddress() string {
-	if m != nil {
-		return m.RequesterAddress
+		return m.DelegatorAddress
 	}
 	return ""
 }
@@ -258,7 +169,7 @@ func (m *MsgLiquidUnstakeResponse) Reset()         { *m = MsgLiquidUnstakeRespon
 func (m *MsgLiquidUnstakeResponse) String() string { return proto.CompactTextString(m) }
 func (*MsgLiquidUnstakeResponse) ProtoMessage()    {}
 func (*MsgLiquidUnstakeResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a8b50b1abccb5854, []int{5}
+	return fileDescriptor_a8b50b1abccb5854, []int{3}
 }
 func (m *MsgLiquidUnstakeResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -288,12 +199,12 @@ func (m *MsgLiquidUnstakeResponse) XXX_DiscardUnknown() {
 var xxx_messageInfo_MsgLiquidUnstakeResponse proto.InternalMessageInfo
 
 type MsgInsuranceProvide struct {
+	// provider_address is the address of the user who want to provide insurance.
+	ProviderAddress string `protobuf:"bytes,1,opt,name=provider_address,json=providerAddress,proto3" json:"provider_address,omitempty"`
 	// validator_address is the address of the validator to provide insurance.
-	ValidatorAddress string `protobuf:"bytes,1,opt,name=validator_address,json=validatorAddress,proto3" json:"validator_address,omitempty"`
-	// requester_address is the address of the user who want to provide insurance.
-	RequesterAddress string `protobuf:"bytes,2,opt,name=requester_address,json=requesterAddress,proto3" json:"requester_address,omitempty"`
+	ValidatorAddress string `protobuf:"bytes,2,opt,name=validator_address,json=validatorAddress,proto3" json:"validator_address,omitempty"`
 	// token_amount is the amount of native token to be provided as insurance.
-	TokenAmount github_com_cosmos_cosmos_sdk_types.Coin `protobuf:"bytes,3,opt,name=token_amount,json=tokenAmount,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Coin" json:"token_amount"`
+	Amount github_com_cosmos_cosmos_sdk_types.Coin `protobuf:"bytes,3,opt,name=amount,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Coin" json:"amount"`
 	// fee_rate is the fee rate of the insurance.
 	FeeRate github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,4,opt,name=fee_rate,json=feeRate,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"fee_rate"`
 }
@@ -302,7 +213,7 @@ func (m *MsgInsuranceProvide) Reset()         { *m = MsgInsuranceProvide{} }
 func (m *MsgInsuranceProvide) String() string { return proto.CompactTextString(m) }
 func (*MsgInsuranceProvide) ProtoMessage()    {}
 func (*MsgInsuranceProvide) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a8b50b1abccb5854, []int{6}
+	return fileDescriptor_a8b50b1abccb5854, []int{4}
 }
 func (m *MsgInsuranceProvide) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -331,16 +242,16 @@ func (m *MsgInsuranceProvide) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgInsuranceProvide proto.InternalMessageInfo
 
-func (m *MsgInsuranceProvide) GetValidatorAddress() string {
+func (m *MsgInsuranceProvide) GetProviderAddress() string {
 	if m != nil {
-		return m.ValidatorAddress
+		return m.ProviderAddress
 	}
 	return ""
 }
 
-func (m *MsgInsuranceProvide) GetRequesterAddress() string {
+func (m *MsgInsuranceProvide) GetValidatorAddress() string {
 	if m != nil {
-		return m.RequesterAddress
+		return m.ValidatorAddress
 	}
 	return ""
 }
@@ -352,7 +263,7 @@ func (m *MsgInsuranceProvideResponse) Reset()         { *m = MsgInsuranceProvide
 func (m *MsgInsuranceProvideResponse) String() string { return proto.CompactTextString(m) }
 func (*MsgInsuranceProvideResponse) ProtoMessage()    {}
 func (*MsgInsuranceProvideResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a8b50b1abccb5854, []int{7}
+	return fileDescriptor_a8b50b1abccb5854, []int{5}
 }
 func (m *MsgInsuranceProvideResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -382,19 +293,19 @@ func (m *MsgInsuranceProvideResponse) XXX_DiscardUnknown() {
 var xxx_messageInfo_MsgInsuranceProvideResponse proto.InternalMessageInfo
 
 type MsgCancelInsuranceProvide struct {
+	// provider_address is the address of the user who want to cancel the
+	// insurance.
+	ProviderAddress string `protobuf:"bytes,1,opt,name=provider_address,json=providerAddress,proto3" json:"provider_address,omitempty"`
 	// id is the id of the insurance to be canceled.
 	// Only pairing insurance can be canceled.
-	Id uint64 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
-	// requester_address is the address of the user who want to cancel the
-	// insurance.
-	RequesterAddress string `protobuf:"bytes,2,opt,name=requester_address,json=requesterAddress,proto3" json:"requester_address,omitempty"`
+	Id uint64 `protobuf:"varint,2,opt,name=id,proto3" json:"id,omitempty"`
 }
 
 func (m *MsgCancelInsuranceProvide) Reset()         { *m = MsgCancelInsuranceProvide{} }
 func (m *MsgCancelInsuranceProvide) String() string { return proto.CompactTextString(m) }
 func (*MsgCancelInsuranceProvide) ProtoMessage()    {}
 func (*MsgCancelInsuranceProvide) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a8b50b1abccb5854, []int{8}
+	return fileDescriptor_a8b50b1abccb5854, []int{6}
 }
 func (m *MsgCancelInsuranceProvide) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -423,18 +334,18 @@ func (m *MsgCancelInsuranceProvide) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgCancelInsuranceProvide proto.InternalMessageInfo
 
+func (m *MsgCancelInsuranceProvide) GetProviderAddress() string {
+	if m != nil {
+		return m.ProviderAddress
+	}
+	return ""
+}
+
 func (m *MsgCancelInsuranceProvide) GetId() uint64 {
 	if m != nil {
 		return m.Id
 	}
 	return 0
-}
-
-func (m *MsgCancelInsuranceProvide) GetRequesterAddress() string {
-	if m != nil {
-		return m.RequesterAddress
-	}
-	return ""
 }
 
 type MsgCancelInsuranceProvideResponse struct {
@@ -444,7 +355,7 @@ func (m *MsgCancelInsuranceProvideResponse) Reset()         { *m = MsgCancelInsu
 func (m *MsgCancelInsuranceProvideResponse) String() string { return proto.CompactTextString(m) }
 func (*MsgCancelInsuranceProvideResponse) ProtoMessage()    {}
 func (*MsgCancelInsuranceProvideResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a8b50b1abccb5854, []int{9}
+	return fileDescriptor_a8b50b1abccb5854, []int{7}
 }
 func (m *MsgCancelInsuranceProvideResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -474,20 +385,20 @@ func (m *MsgCancelInsuranceProvideResponse) XXX_DiscardUnknown() {
 var xxx_messageInfo_MsgCancelInsuranceProvideResponse proto.InternalMessageInfo
 
 type MsgDepositInsurance struct {
-	// id is the id of the insurance to be refilled.
-	Id uint64 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
-	// requester_address is the address of the user who
+	// provider_address is the address of the user who
 	// want to deposit(= refill) the insurance.
-	RequesterAddress string `protobuf:"bytes,2,opt,name=requester_address,json=requesterAddress,proto3" json:"requester_address,omitempty"`
-	// token_amount is the amount of native token to be provided as insurance.
-	TokenAmount github_com_cosmos_cosmos_sdk_types.Coin `protobuf:"bytes,3,opt,name=token_amount,json=tokenAmount,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Coin" json:"token_amount"`
+	ProviderAddress string `protobuf:"bytes,1,opt,name=provider_address,json=providerAddress,proto3" json:"provider_address,omitempty"`
+	// id is the id of the insurance to be refilled.
+	Id uint64 `protobuf:"varint,2,opt,name=id,proto3" json:"id,omitempty"`
+	// amount is the amount of native token to be provided as insurance.
+	Amount github_com_cosmos_cosmos_sdk_types.Coin `protobuf:"bytes,3,opt,name=amount,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Coin" json:"amount"`
 }
 
 func (m *MsgDepositInsurance) Reset()         { *m = MsgDepositInsurance{} }
 func (m *MsgDepositInsurance) String() string { return proto.CompactTextString(m) }
 func (*MsgDepositInsurance) ProtoMessage()    {}
 func (*MsgDepositInsurance) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a8b50b1abccb5854, []int{10}
+	return fileDescriptor_a8b50b1abccb5854, []int{8}
 }
 func (m *MsgDepositInsurance) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -516,18 +427,18 @@ func (m *MsgDepositInsurance) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgDepositInsurance proto.InternalMessageInfo
 
+func (m *MsgDepositInsurance) GetProviderAddress() string {
+	if m != nil {
+		return m.ProviderAddress
+	}
+	return ""
+}
+
 func (m *MsgDepositInsurance) GetId() uint64 {
 	if m != nil {
 		return m.Id
 	}
 	return 0
-}
-
-func (m *MsgDepositInsurance) GetRequesterAddress() string {
-	if m != nil {
-		return m.RequesterAddress
-	}
-	return ""
 }
 
 type MsgDepositInsuranceResponse struct {
@@ -537,7 +448,7 @@ func (m *MsgDepositInsuranceResponse) Reset()         { *m = MsgDepositInsurance
 func (m *MsgDepositInsuranceResponse) String() string { return proto.CompactTextString(m) }
 func (*MsgDepositInsuranceResponse) ProtoMessage()    {}
 func (*MsgDepositInsuranceResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a8b50b1abccb5854, []int{11}
+	return fileDescriptor_a8b50b1abccb5854, []int{9}
 }
 func (m *MsgDepositInsuranceResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -567,18 +478,18 @@ func (m *MsgDepositInsuranceResponse) XXX_DiscardUnknown() {
 var xxx_messageInfo_MsgDepositInsuranceResponse proto.InternalMessageInfo
 
 type MsgWithdrawInsurance struct {
-	// id is the id of the insurance to be withdrawn.
-	Id uint64 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
-	// requester_address is the address of the user who want to
+	// provider_address is the address of the user who want to
 	// withdraw the insurance.
-	RequesterAddress string `protobuf:"bytes,2,opt,name=requester_address,json=requesterAddress,proto3" json:"requester_address,omitempty"`
+	ProviderAddress string `protobuf:"bytes,1,opt,name=provider_address,json=providerAddress,proto3" json:"provider_address,omitempty"`
+	// id is the id of the insurance to be withdrawn.
+	Id uint64 `protobuf:"varint,2,opt,name=id,proto3" json:"id,omitempty"`
 }
 
 func (m *MsgWithdrawInsurance) Reset()         { *m = MsgWithdrawInsurance{} }
 func (m *MsgWithdrawInsurance) String() string { return proto.CompactTextString(m) }
 func (*MsgWithdrawInsurance) ProtoMessage()    {}
 func (*MsgWithdrawInsurance) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a8b50b1abccb5854, []int{12}
+	return fileDescriptor_a8b50b1abccb5854, []int{10}
 }
 func (m *MsgWithdrawInsurance) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -607,18 +518,18 @@ func (m *MsgWithdrawInsurance) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgWithdrawInsurance proto.InternalMessageInfo
 
+func (m *MsgWithdrawInsurance) GetProviderAddress() string {
+	if m != nil {
+		return m.ProviderAddress
+	}
+	return ""
+}
+
 func (m *MsgWithdrawInsurance) GetId() uint64 {
 	if m != nil {
 		return m.Id
 	}
 	return 0
-}
-
-func (m *MsgWithdrawInsurance) GetRequesterAddress() string {
-	if m != nil {
-		return m.RequesterAddress
-	}
-	return ""
 }
 
 type MsgWithdrawInsuranceResponse struct {
@@ -628,7 +539,7 @@ func (m *MsgWithdrawInsuranceResponse) Reset()         { *m = MsgWithdrawInsuran
 func (m *MsgWithdrawInsuranceResponse) String() string { return proto.CompactTextString(m) }
 func (*MsgWithdrawInsuranceResponse) ProtoMessage()    {}
 func (*MsgWithdrawInsuranceResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a8b50b1abccb5854, []int{13}
+	return fileDescriptor_a8b50b1abccb5854, []int{11}
 }
 func (m *MsgWithdrawInsuranceResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -658,18 +569,18 @@ func (m *MsgWithdrawInsuranceResponse) XXX_DiscardUnknown() {
 var xxx_messageInfo_MsgWithdrawInsuranceResponse proto.InternalMessageInfo
 
 type MsgWithdrawInsuranceFee struct {
+	// provider_address is the address of the user who want to withdraw the
+	// accumulated insurance fee.
+	ProviderAddress string `protobuf:"bytes,2,opt,name=provider_address,json=providerAddress,proto3" json:"provider_address,omitempty"`
 	// id is the id of the insurance that accumulated fees to be withdrawn.
 	Id uint64 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
-	// requester_address is the address of the user who want to withdraw the
-	// accumulated insurance fee.
-	RequesterAddress string `protobuf:"bytes,2,opt,name=requester_address,json=requesterAddress,proto3" json:"requester_address,omitempty"`
 }
 
 func (m *MsgWithdrawInsuranceFee) Reset()         { *m = MsgWithdrawInsuranceFee{} }
 func (m *MsgWithdrawInsuranceFee) String() string { return proto.CompactTextString(m) }
 func (*MsgWithdrawInsuranceFee) ProtoMessage()    {}
 func (*MsgWithdrawInsuranceFee) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a8b50b1abccb5854, []int{14}
+	return fileDescriptor_a8b50b1abccb5854, []int{12}
 }
 func (m *MsgWithdrawInsuranceFee) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -698,18 +609,18 @@ func (m *MsgWithdrawInsuranceFee) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgWithdrawInsuranceFee proto.InternalMessageInfo
 
+func (m *MsgWithdrawInsuranceFee) GetProviderAddress() string {
+	if m != nil {
+		return m.ProviderAddress
+	}
+	return ""
+}
+
 func (m *MsgWithdrawInsuranceFee) GetId() uint64 {
 	if m != nil {
 		return m.Id
 	}
 	return 0
-}
-
-func (m *MsgWithdrawInsuranceFee) GetRequesterAddress() string {
-	if m != nil {
-		return m.RequesterAddress
-	}
-	return ""
 }
 
 type MsgWithdrawInsuranceFeeResponse struct {
@@ -719,7 +630,7 @@ func (m *MsgWithdrawInsuranceFeeResponse) Reset()         { *m = MsgWithdrawInsu
 func (m *MsgWithdrawInsuranceFeeResponse) String() string { return proto.CompactTextString(m) }
 func (*MsgWithdrawInsuranceFeeResponse) ProtoMessage()    {}
 func (*MsgWithdrawInsuranceFeeResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a8b50b1abccb5854, []int{15}
+	return fileDescriptor_a8b50b1abccb5854, []int{13}
 }
 func (m *MsgWithdrawInsuranceFeeResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -751,8 +662,6 @@ var xxx_messageInfo_MsgWithdrawInsuranceFeeResponse proto.InternalMessageInfo
 func init() {
 	proto.RegisterType((*MsgLiquidStake)(nil), "canto.liquidstaking.v1.MsgLiquidStake")
 	proto.RegisterType((*MsgLiquidStakeResponse)(nil), "canto.liquidstaking.v1.MsgLiquidStakeResponse")
-	proto.RegisterType((*MsgCancelLiquidStake)(nil), "canto.liquidstaking.v1.MsgCancelLiquidStake")
-	proto.RegisterType((*MsgCancelLiquidStakeResponse)(nil), "canto.liquidstaking.v1.MsgCancelLiquidStakeResponse")
 	proto.RegisterType((*MsgLiquidUnstake)(nil), "canto.liquidstaking.v1.MsgLiquidUnstake")
 	proto.RegisterType((*MsgLiquidUnstakeResponse)(nil), "canto.liquidstaking.v1.MsgLiquidUnstakeResponse")
 	proto.RegisterType((*MsgInsuranceProvide)(nil), "canto.liquidstaking.v1.MsgInsuranceProvide")
@@ -770,57 +679,54 @@ func init() {
 func init() { proto.RegisterFile("canto/liquidstaking/v1/tx.proto", fileDescriptor_a8b50b1abccb5854) }
 
 var fileDescriptor_a8b50b1abccb5854 = []byte{
-	// 796 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xb4, 0x96, 0x4b, 0x4f, 0xdb, 0x4a,
-	0x14, 0xc7, 0x33, 0x01, 0xdd, 0xc7, 0x70, 0x2f, 0x0a, 0xb9, 0x88, 0x9b, 0xeb, 0xcb, 0x4d, 0x2e,
-	0xae, 0xc4, 0x43, 0x80, 0x87, 0x34, 0x3c, 0x84, 0xba, 0x82, 0x20, 0x24, 0xa4, 0xa6, 0x8f, 0xa0,
-	0x3e, 0xd4, 0x8d, 0x65, 0xe2, 0x89, 0x19, 0x25, 0xf1, 0x04, 0xcf, 0x38, 0xd0, 0x5d, 0xd5, 0x0f,
-	0x50, 0xb5, 0xaa, 0xd4, 0x65, 0x97, 0x5d, 0x74, 0xd1, 0x7e, 0x80, 0x2e, 0xbb, 0x61, 0x89, 0xd4,
-	0x4d, 0xd5, 0x05, 0xaa, 0xa0, 0x1f, 0xa4, 0xca, 0xd8, 0x4c, 0x93, 0x38, 0x71, 0x62, 0x41, 0x57,
-	0x98, 0xf1, 0x39, 0xff, 0xf3, 0x3b, 0xe7, 0x30, 0x7f, 0x03, 0x33, 0x25, 0xc3, 0xe6, 0x14, 0x55,
-	0xc9, 0x81, 0x4b, 0x4c, 0xc6, 0x8d, 0x0a, 0xb1, 0x2d, 0xd4, 0xc8, 0x22, 0x7e, 0xa4, 0xd5, 0x1d,
-	0xca, 0x69, 0x72, 0x42, 0x04, 0x68, 0x6d, 0x01, 0x5a, 0x23, 0xab, 0x4c, 0x5a, 0x94, 0x5a, 0x55,
-	0x8c, 0x8c, 0x3a, 0x41, 0x86, 0x6d, 0x53, 0x6e, 0x70, 0x42, 0x6d, 0xe6, 0x65, 0x29, 0xe3, 0x16,
-	0xb5, 0xa8, 0x78, 0x44, 0xcd, 0x27, 0xef, 0x54, 0x7d, 0x01, 0xe0, 0x68, 0x81, 0x59, 0x37, 0x85,
-	0xd6, 0x2e, 0x37, 0x2a, 0x38, 0x59, 0x84, 0x7f, 0x70, 0x5a, 0xc1, 0xb6, 0x6e, 0xd4, 0xa8, 0x6b,
-	0xf3, 0x14, 0xf8, 0x1f, 0xcc, 0xfe, 0xbe, 0x89, 0x8e, 0x4f, 0x33, 0xb1, 0x2f, 0xa7, 0x99, 0x19,
-	0x8b, 0xf0, 0x7d, 0x77, 0x4f, 0x2b, 0xd1, 0x1a, 0x2a, 0x51, 0x56, 0xa3, 0xcc, 0xff, 0xb1, 0xc8,
-	0xcc, 0x0a, 0xe2, 0x8f, 0xeb, 0x98, 0x69, 0x79, 0x4a, 0xec, 0xe2, 0x88, 0x10, 0xd9, 0x10, 0x1a,
-	0xc9, 0x79, 0x38, 0xe6, 0xe0, 0x03, 0x17, 0x33, 0x8e, 0x1d, 0xdd, 0x30, 0x4d, 0x07, 0x33, 0x96,
-	0x8a, 0x37, 0x85, 0x8b, 0x09, 0xf9, 0x62, 0xc3, 0x3b, 0x57, 0x53, 0x70, 0xa2, 0x1d, 0xa9, 0x88,
-	0x59, 0x9d, 0xda, 0x0c, 0xab, 0x79, 0x38, 0x5e, 0x60, 0x56, 0xde, 0xb0, 0x4b, 0xb8, 0xda, 0x8a,
-	0xdc, 0x55, 0x1e, 0xf4, 0x90, 0x4f, 0xc3, 0xc9, 0x6e, 0x22, 0xb2, 0x08, 0x81, 0x09, 0x59, 0xfe,
-	0x9e, 0xcd, 0x44, 0x81, 0x59, 0x98, 0xb0, 0xdd, 0xda, 0x1e, 0x76, 0x74, 0x5a, 0xd6, 0x4b, 0xfb,
-	0xae, 0x5d, 0xf1, 0xf4, 0x87, 0x8b, 0xa3, 0xde, 0xf9, 0xed, 0x72, 0x5e, 0x9c, 0x46, 0xeb, 0x54,
-	0x81, 0xa9, 0xce, 0x52, 0x12, 0xe3, 0x59, 0x1c, 0xfe, 0x55, 0x60, 0xd6, 0x8e, 0xcd, 0x5c, 0xa7,
-	0xc9, 0x7a, 0xc7, 0xa1, 0x0d, 0x62, 0x8a, 0x5e, 0x1b, 0x46, 0x95, 0x98, 0x06, 0xa7, 0x81, 0x5e,
-	0xe5, 0x0b, 0xbf, 0x40, 0x24, 0x9a, 0xc0, 0xe2, 0x87, 0xae, 0x60, 0xf1, 0x3b, 0xf0, 0xb7, 0x32,
-	0xc6, 0xba, 0x63, 0x70, 0x9c, 0x1a, 0x16, 0x7a, 0x9a, 0xaf, 0x37, 0x3d, 0x80, 0xde, 0x16, 0x2e,
-	0x15, 0x7f, 0x2d, 0x63, 0x5c, 0x34, 0x38, 0x56, 0xff, 0x83, 0xff, 0x76, 0x99, 0x87, 0x9c, 0xd7,
-	0x43, 0xf8, 0x8f, 0x5c, 0x6b, 0x60, 0x68, 0xa3, 0x30, 0x4e, 0x4c, 0x7f, 0x63, 0x71, 0x62, 0x46,
-	0xdb, 0xd2, 0x35, 0x38, 0xd5, 0x53, 0x59, 0x96, 0x7f, 0x03, 0xc4, 0xba, 0xb6, 0x70, 0x9d, 0x32,
-	0xc2, 0x65, 0xd8, 0xa5, 0x2a, 0xff, 0x8c, 0x8d, 0xf8, 0x63, 0xec, 0xe4, 0x94, 0x7d, 0xec, 0x8a,
-	0x2b, 0xf6, 0x80, 0xf0, 0x7d, 0xd3, 0x31, 0x0e, 0xaf, 0xa6, 0x0f, 0xff, 0xca, 0x05, 0x44, 0x65,
-	0xd1, 0xfb, 0xf0, 0xef, 0x6e, 0xef, 0xb7, 0xf1, 0x25, 0xeb, 0x4e, 0xc1, 0x4c, 0x0f, 0xdd, 0x8b,
-	0xd2, 0xd7, 0x9f, 0x8c, 0xc0, 0xa1, 0x02, 0xb3, 0x92, 0xaf, 0x00, 0x1c, 0x69, 0xb5, 0x94, 0x69,
-	0xad, 0xbb, 0xcb, 0x6a, 0xed, 0xd6, 0xa4, 0x68, 0x83, 0xc5, 0xc9, 0x56, 0xd1, 0xd3, 0x4f, 0xdf,
-	0x5e, 0xc6, 0xe7, 0xd4, 0x19, 0xd4, 0xd3, 0xe6, 0xfd, 0x33, 0xdd, 0xb3, 0x9e, 0xf7, 0x00, 0x8e,
-	0x05, 0x1d, 0x6f, 0x21, 0xa4, 0x6c, 0x20, 0x5a, 0x59, 0x8e, 0x12, 0x2d, 0x51, 0x57, 0x05, 0xea,
-	0x92, 0xaa, 0x85, 0xa0, 0x96, 0x44, 0xb6, 0xde, 0x46, 0xfc, 0x1a, 0xc0, 0x3f, 0x3b, 0xec, 0xb3,
-	0xef, 0x90, 0xfc, 0x48, 0x65, 0x69, 0xd0, 0x48, 0x49, 0x99, 0x15, 0x94, 0xf3, 0xea, 0x5c, 0xff,
-	0x81, 0xba, 0x3e, 0xce, 0x5b, 0x00, 0x13, 0x41, 0x5f, 0x0d, 0xa9, 0xdc, 0x19, 0xac, 0xe4, 0x22,
-	0x04, 0x4b, 0xd2, 0x65, 0x41, 0xaa, 0xa9, 0x0b, 0x21, 0xa4, 0xe4, 0x22, 0x59, 0xaf, 0xfb, 0x5c,
-	0x1f, 0x01, 0x9c, 0xe8, 0xe1, 0x6a, 0xd9, 0xbe, 0x6b, 0x0d, 0x80, 0xaf, 0x47, 0x4e, 0x91, 0xf8,
-	0x37, 0x04, 0xfe, 0x8a, 0x9a, 0xeb, 0xff, 0xe7, 0x10, 0xec, 0xa2, 0x39, 0xf2, 0x80, 0x37, 0x86,
-	0x8d, 0xbc, 0x33, 0x38, 0x74, 0xe4, 0x3d, 0xdd, 0x6c, 0x90, 0x91, 0x9b, 0x5e, 0xf2, 0x0f, 0xe8,
-	0xe4, 0x3b, 0x00, 0xc7, 0x82, 0x0e, 0x18, 0x76, 0xe5, 0x02, 0xd1, 0xa1, 0x57, 0xae, 0xb7, 0x11,
-	0xae, 0x08, 0x5e, 0xa4, 0x2e, 0x86, 0xf0, 0x1e, 0xfa, 0xd9, 0x2d, 0xc0, 0x1f, 0x00, 0x1c, 0xef,
-	0xea, 0x9e, 0x28, 0x0a, 0xc5, 0x36, 0xc6, 0xca, 0x5a, 0xc4, 0x04, 0x49, 0xbe, 0x2e, 0xc8, 0x73,
-	0x6a, 0x36, 0x12, 0xb9, 0x5e, 0xc6, 0x78, 0xf3, 0xee, 0xf1, 0x59, 0x1a, 0x9c, 0x9c, 0xa5, 0xc1,
-	0xd7, 0xb3, 0x34, 0x78, 0x7e, 0x9e, 0x8e, 0x9d, 0x9c, 0xa7, 0x63, 0x9f, 0xcf, 0xd3, 0xb1, 0x47,
-	0x6b, 0x2d, 0x5f, 0xb8, 0x7c, 0x53, 0x76, 0xf1, 0x16, 0xe6, 0x87, 0xd4, 0xa9, 0x78, 0xbf, 0xa1,
-	0xc6, 0x2a, 0x3a, 0xea, 0xa8, 0x24, 0x3e, 0x7b, 0x7b, 0xbf, 0x88, 0xff, 0x6e, 0x73, 0xdf, 0x03,
-	0x00, 0x00, 0xff, 0xff, 0xa1, 0xc1, 0xea, 0x71, 0x4c, 0x0b, 0x00, 0x00,
+	// 737 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xc4, 0x96, 0x4f, 0x4f, 0x13, 0x4f,
+	0x18, 0xc7, 0x3b, 0x85, 0xf0, 0xfb, 0x31, 0x46, 0x2c, 0x2b, 0xc1, 0xba, 0xe2, 0x56, 0xd6, 0x84,
+	0x3f, 0x29, 0xec, 0x58, 0x0b, 0x12, 0xe2, 0x49, 0x20, 0x18, 0x12, 0x6b, 0xa4, 0xfe, 0x4b, 0xbc,
+	0x34, 0x43, 0x77, 0x58, 0x26, 0x2d, 0x3b, 0x75, 0x67, 0x5a, 0xf0, 0xa8, 0x07, 0xe3, 0xd1, 0xc4,
+	0xc4, 0xc4, 0x8b, 0x2f, 0xc0, 0x83, 0x6f, 0xc0, 0xa3, 0x17, 0x4e, 0x86, 0xc4, 0x8b, 0xf1, 0x40,
+	0x0c, 0xf8, 0x42, 0x4c, 0x67, 0xb7, 0x23, 0x6d, 0xb7, 0x4b, 0x1b, 0x48, 0x3c, 0x31, 0xcc, 0xf3,
+	0x7d, 0x9e, 0xe7, 0xf3, 0x3c, 0xdb, 0x7e, 0xb7, 0x30, 0x55, 0xc4, 0xae, 0x60, 0xa8, 0x4c, 0x9f,
+	0x57, 0xa9, 0xcd, 0x05, 0x2e, 0x51, 0xd7, 0x41, 0xb5, 0x0c, 0x12, 0xbb, 0x56, 0xc5, 0x63, 0x82,
+	0x69, 0xa3, 0x52, 0x60, 0x35, 0x09, 0xac, 0x5a, 0x46, 0x1f, 0x73, 0x18, 0x73, 0xca, 0x04, 0xe1,
+	0x0a, 0x45, 0xd8, 0x75, 0x99, 0xc0, 0x82, 0x32, 0x97, 0xfb, 0x59, 0xfa, 0x88, 0xc3, 0x1c, 0x26,
+	0x8f, 0xa8, 0x7e, 0xf2, 0x6f, 0xcd, 0xd7, 0x00, 0x0e, 0xe5, 0xb8, 0x73, 0x4f, 0xd6, 0x7a, 0x28,
+	0x70, 0x89, 0x68, 0x69, 0x38, 0x6c, 0x93, 0x32, 0x71, 0xb0, 0x60, 0x5e, 0x01, 0xdb, 0xb6, 0x47,
+	0x38, 0x4f, 0x82, 0x6b, 0x60, 0x6a, 0x30, 0x9f, 0x50, 0x81, 0x3b, 0xfe, 0xbd, 0x76, 0x17, 0x0e,
+	0xe0, 0x6d, 0x56, 0x75, 0x45, 0x32, 0x5e, 0x57, 0x2c, 0xa1, 0xbd, 0x83, 0x54, 0xec, 0xe7, 0x41,
+	0x6a, 0xd2, 0xa1, 0x62, 0xab, 0xba, 0x61, 0x15, 0xd9, 0x36, 0x2a, 0x32, 0xbe, 0xcd, 0x78, 0xf0,
+	0x67, 0x96, 0xdb, 0x25, 0x24, 0x5e, 0x54, 0x08, 0xb7, 0x96, 0x19, 0x75, 0xf3, 0x41, 0xba, 0x99,
+	0x84, 0xa3, 0xcd, 0x1c, 0x79, 0xc2, 0x2b, 0xcc, 0xe5, 0xc4, 0x7c, 0x03, 0x60, 0x42, 0x85, 0x1e,
+	0xbb, 0xfc, 0x1f, 0x42, 0xea, 0x30, 0xd9, 0x4a, 0xa2, 0x30, 0x5f, 0xc6, 0xe1, 0xc5, 0x1c, 0x77,
+	0xd6, 0x5c, 0x5e, 0xf5, 0xb0, 0x5b, 0x24, 0x0f, 0x3c, 0x56, 0xa3, 0x36, 0xd1, 0xa6, 0x61, 0xa2,
+	0xe2, 0x1f, 0x5b, 0x41, 0x2f, 0x34, 0xee, 0x1b, 0x9c, 0x69, 0x38, 0x5c, 0xc3, 0x65, 0x6a, 0x37,
+	0x0d, 0x15, 0xf7, 0x87, 0x52, 0x81, 0xf6, 0xa1, 0xfa, 0x4e, 0x35, 0x94, 0xb6, 0x06, 0xff, 0xdf,
+	0x24, 0xa4, 0xe0, 0x61, 0x41, 0x92, 0xfd, 0xb2, 0x94, 0x15, 0x94, 0x9a, 0xe8, 0xa2, 0xd4, 0x0a,
+	0x29, 0xe6, 0xff, 0xdb, 0x24, 0x24, 0x8f, 0x05, 0x31, 0xaf, 0xc2, 0x2b, 0x21, 0x2b, 0x50, 0x2b,
+	0x7a, 0x02, 0x2f, 0xe7, 0xb8, 0xb3, 0x5c, 0x0f, 0x95, 0x4f, 0xb3, 0xa7, 0x21, 0x18, 0xa7, 0xb6,
+	0x5c, 0x4c, 0x7f, 0x3e, 0x4e, 0x6d, 0xf3, 0x3a, 0x1c, 0xef, 0x58, 0x57, 0x35, 0xff, 0x00, 0xe4,
+	0xf3, 0x59, 0x21, 0x15, 0xc6, 0xa9, 0x50, 0xb2, 0x53, 0xf4, 0x3d, 0xb3, 0x47, 0x10, 0xec, 0xad,
+	0x15, 0x4d, 0xa1, 0xaf, 0xc3, 0x91, 0x1c, 0x77, 0x9e, 0x52, 0xb1, 0x65, 0x7b, 0x78, 0xe7, 0x2c,
+	0xd0, 0x4d, 0x03, 0x8e, 0x85, 0x95, 0x54, 0x2d, 0x1f, 0xc1, 0x4b, 0x61, 0xf1, 0x55, 0x12, 0xde,
+	0x35, 0x1e, 0xd5, 0x15, 0xa8, 0xae, 0xe3, 0x30, 0xd5, 0xa1, 0x6a, 0xa3, 0xf1, 0xcd, 0x6f, 0x83,
+	0xb0, 0x2f, 0xc7, 0x1d, 0xed, 0x3d, 0x80, 0xe7, 0x8e, 0xbb, 0xd2, 0x84, 0x15, 0xee, 0x7a, 0x56,
+	0xb3, 0x6b, 0xe8, 0x56, 0x77, 0x3a, 0x35, 0x28, 0x7a, 0xf5, 0xfd, 0xf7, 0xbb, 0xf8, 0xb4, 0x39,
+	0x89, 0x3a, 0xda, 0x6e, 0x70, 0x57, 0xf0, 0x9d, 0xe7, 0x23, 0x80, 0xe7, 0x9b, 0xbd, 0x68, 0xea,
+	0xc4, 0x96, 0x81, 0x52, 0xbf, 0xd1, 0xad, 0x52, 0xe1, 0x65, 0x24, 0x5e, 0xda, 0x9c, 0x3e, 0x19,
+	0xaf, 0x1a, 0xe0, 0x7c, 0x02, 0x30, 0xd1, 0xf6, 0xed, 0x4a, 0x47, 0x74, 0x6e, 0x15, 0xeb, 0xd9,
+	0x1e, 0xc4, 0x8a, 0x74, 0x4e, 0x92, 0x5a, 0xe6, 0x4c, 0x04, 0x29, 0x6d, 0x24, 0x17, 0x82, 0x4f,
+	0x8a, 0xf6, 0x15, 0xc0, 0xd1, 0x0e, 0x86, 0x90, 0x89, 0xa0, 0x08, 0x4f, 0xd1, 0x17, 0x7b, 0x4e,
+	0x51, 0xf8, 0xb7, 0x25, 0xfe, 0xbc, 0x99, 0x8d, 0xc0, 0x2f, 0xca, 0x12, 0x85, 0xf6, 0x29, 0xea,
+	0x2b, 0x6f, 0x33, 0x96, 0xa8, 0x95, 0xb7, 0x8a, 0x23, 0x57, 0xde, 0xd1, 0x17, 0xba, 0x59, 0xb9,
+	0xed, 0x27, 0xff, 0x85, 0xd6, 0x3e, 0x03, 0x38, 0xdc, 0xee, 0x25, 0x33, 0x11, 0x00, 0x6d, 0x6a,
+	0x7d, 0xae, 0x17, 0xb5, 0xe2, 0x9d, 0x97, 0xbc, 0xc8, 0x9c, 0x8d, 0xe0, 0xdd, 0x09, 0xb2, 0x8f,
+	0x01, 0x7f, 0x01, 0x70, 0x24, 0xd4, 0x89, 0x50, 0x2f, 0x14, 0xab, 0x84, 0xe8, 0x0b, 0x3d, 0x26,
+	0x28, 0xf2, 0x45, 0x49, 0x9e, 0x35, 0x33, 0x3d, 0x91, 0x17, 0x36, 0x09, 0x59, 0x5a, 0xdf, 0x3b,
+	0x34, 0xc0, 0xfe, 0xa1, 0x01, 0x7e, 0x1d, 0x1a, 0xe0, 0xed, 0x91, 0x11, 0xdb, 0x3f, 0x32, 0x62,
+	0x3f, 0x8e, 0x8c, 0xd8, 0xb3, 0x85, 0x63, 0xaf, 0x89, 0xe5, 0x7a, 0xd9, 0xd9, 0xfb, 0x44, 0xec,
+	0x30, 0xaf, 0xe4, 0xff, 0x87, 0x6a, 0xb7, 0xd0, 0x6e, 0x4b, 0x27, 0xf9, 0xee, 0xd8, 0x18, 0x90,
+	0xbf, 0xdd, 0xb2, 0x7f, 0x02, 0x00, 0x00, 0xff, 0xff, 0x6d, 0x31, 0xdd, 0xe6, 0x2a, 0x0a, 0x00,
+	0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -836,7 +742,6 @@ const _ = grpc.SupportPackageIsVersion4
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type MsgClient interface {
 	LiquidStake(ctx context.Context, in *MsgLiquidStake, opts ...grpc.CallOption) (*MsgLiquidStakeResponse, error)
-	CancelLiquidStake(ctx context.Context, in *MsgCancelLiquidStake, opts ...grpc.CallOption) (*MsgCancelLiquidStakeResponse, error)
 	LiquidUnstake(ctx context.Context, in *MsgLiquidUnstake, opts ...grpc.CallOption) (*MsgLiquidUnstakeResponse, error)
 	InsuranceProvide(ctx context.Context, in *MsgInsuranceProvide, opts ...grpc.CallOption) (*MsgInsuranceProvideResponse, error)
 	CancelInsuranceProvide(ctx context.Context, in *MsgCancelInsuranceProvide, opts ...grpc.CallOption) (*MsgCancelInsuranceProvideResponse, error)
@@ -857,15 +762,6 @@ func NewMsgClient(cc grpc1.ClientConn) MsgClient {
 func (c *msgClient) LiquidStake(ctx context.Context, in *MsgLiquidStake, opts ...grpc.CallOption) (*MsgLiquidStakeResponse, error) {
 	out := new(MsgLiquidStakeResponse)
 	err := c.cc.Invoke(ctx, "/canto.liquidstaking.v1.Msg/LiquidStake", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *msgClient) CancelLiquidStake(ctx context.Context, in *MsgCancelLiquidStake, opts ...grpc.CallOption) (*MsgCancelLiquidStakeResponse, error) {
-	out := new(MsgCancelLiquidStakeResponse)
-	err := c.cc.Invoke(ctx, "/canto.liquidstaking.v1.Msg/CancelLiquidStake", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -929,7 +825,6 @@ func (c *msgClient) WithdrawInsuranceFee(ctx context.Context, in *MsgWithdrawIns
 // MsgServer is the server API for Msg service.
 type MsgServer interface {
 	LiquidStake(context.Context, *MsgLiquidStake) (*MsgLiquidStakeResponse, error)
-	CancelLiquidStake(context.Context, *MsgCancelLiquidStake) (*MsgCancelLiquidStakeResponse, error)
 	LiquidUnstake(context.Context, *MsgLiquidUnstake) (*MsgLiquidUnstakeResponse, error)
 	InsuranceProvide(context.Context, *MsgInsuranceProvide) (*MsgInsuranceProvideResponse, error)
 	CancelInsuranceProvide(context.Context, *MsgCancelInsuranceProvide) (*MsgCancelInsuranceProvideResponse, error)
@@ -945,9 +840,6 @@ type UnimplementedMsgServer struct {
 
 func (*UnimplementedMsgServer) LiquidStake(ctx context.Context, req *MsgLiquidStake) (*MsgLiquidStakeResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method LiquidStake not implemented")
-}
-func (*UnimplementedMsgServer) CancelLiquidStake(ctx context.Context, req *MsgCancelLiquidStake) (*MsgCancelLiquidStakeResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method CancelLiquidStake not implemented")
 }
 func (*UnimplementedMsgServer) LiquidUnstake(ctx context.Context, req *MsgLiquidUnstake) (*MsgLiquidUnstakeResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method LiquidUnstake not implemented")
@@ -986,24 +878,6 @@ func _Msg_LiquidStake_Handler(srv interface{}, ctx context.Context, dec func(int
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(MsgServer).LiquidStake(ctx, req.(*MsgLiquidStake))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Msg_CancelLiquidStake_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(MsgCancelLiquidStake)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(MsgServer).CancelLiquidStake(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/canto.liquidstaking.v1.Msg/CancelLiquidStake",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MsgServer).CancelLiquidStake(ctx, req.(*MsgCancelLiquidStake))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1125,10 +999,6 @@ var _Msg_serviceDesc = grpc.ServiceDesc{
 			Handler:    _Msg_LiquidStake_Handler,
 		},
 		{
-			MethodName: "CancelLiquidStake",
-			Handler:    _Msg_CancelLiquidStake_Handler,
-		},
-		{
 			MethodName: "LiquidUnstake",
 			Handler:    _Msg_LiquidUnstake_Handler,
 		},
@@ -1177,23 +1047,23 @@ func (m *MsgLiquidStake) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if len(m.RequesterAddress) > 0 {
-		i -= len(m.RequesterAddress)
-		copy(dAtA[i:], m.RequesterAddress)
-		i = encodeVarintTx(dAtA, i, uint64(len(m.RequesterAddress)))
-		i--
-		dAtA[i] = 0x12
-	}
 	{
-		size := m.TokenAmount.Size()
+		size := m.Amount.Size()
 		i -= size
-		if _, err := m.TokenAmount.MarshalTo(dAtA[i:]); err != nil {
+		if _, err := m.Amount.MarshalTo(dAtA[i:]); err != nil {
 			return 0, err
 		}
 		i = encodeVarintTx(dAtA, i, uint64(size))
 	}
 	i--
-	dAtA[i] = 0xa
+	dAtA[i] = 0x12
+	if len(m.DelegatorAddress) > 0 {
+		i -= len(m.DelegatorAddress)
+		copy(dAtA[i:], m.DelegatorAddress)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.DelegatorAddress)))
+		i--
+		dAtA[i] = 0xa
+	}
 	return len(dAtA) - i, nil
 }
 
@@ -1213,59 +1083,6 @@ func (m *MsgLiquidStakeResponse) MarshalTo(dAtA []byte) (int, error) {
 }
 
 func (m *MsgLiquidStakeResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	return len(dAtA) - i, nil
-}
-
-func (m *MsgCancelLiquidStake) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *MsgCancelLiquidStake) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *MsgCancelLiquidStake) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if len(m.RequesterAddress) > 0 {
-		i -= len(m.RequesterAddress)
-		copy(dAtA[i:], m.RequesterAddress)
-		i = encodeVarintTx(dAtA, i, uint64(len(m.RequesterAddress)))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *MsgCancelLiquidStakeResponse) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *MsgCancelLiquidStakeResponse) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *MsgCancelLiquidStakeResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -1293,17 +1110,22 @@ func (m *MsgLiquidUnstake) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if len(m.RequesterAddress) > 0 {
-		i -= len(m.RequesterAddress)
-		copy(dAtA[i:], m.RequesterAddress)
-		i = encodeVarintTx(dAtA, i, uint64(len(m.RequesterAddress)))
-		i--
-		dAtA[i] = 0x12
+	{
+		size := m.Amount.Size()
+		i -= size
+		if _, err := m.Amount.MarshalTo(dAtA[i:]); err != nil {
+			return 0, err
+		}
+		i = encodeVarintTx(dAtA, i, uint64(size))
 	}
-	if m.NumberOfChunks != 0 {
-		i = encodeVarintTx(dAtA, i, uint64(m.NumberOfChunks))
+	i--
+	dAtA[i] = 0x12
+	if len(m.DelegatorAddress) > 0 {
+		i -= len(m.DelegatorAddress)
+		copy(dAtA[i:], m.DelegatorAddress)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.DelegatorAddress)))
 		i--
-		dAtA[i] = 0x8
+		dAtA[i] = 0xa
 	}
 	return len(dAtA) - i, nil
 }
@@ -1362,26 +1184,26 @@ func (m *MsgInsuranceProvide) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i--
 	dAtA[i] = 0x22
 	{
-		size := m.TokenAmount.Size()
+		size := m.Amount.Size()
 		i -= size
-		if _, err := m.TokenAmount.MarshalTo(dAtA[i:]); err != nil {
+		if _, err := m.Amount.MarshalTo(dAtA[i:]); err != nil {
 			return 0, err
 		}
 		i = encodeVarintTx(dAtA, i, uint64(size))
 	}
 	i--
 	dAtA[i] = 0x1a
-	if len(m.RequesterAddress) > 0 {
-		i -= len(m.RequesterAddress)
-		copy(dAtA[i:], m.RequesterAddress)
-		i = encodeVarintTx(dAtA, i, uint64(len(m.RequesterAddress)))
-		i--
-		dAtA[i] = 0x12
-	}
 	if len(m.ValidatorAddress) > 0 {
 		i -= len(m.ValidatorAddress)
 		copy(dAtA[i:], m.ValidatorAddress)
 		i = encodeVarintTx(dAtA, i, uint64(len(m.ValidatorAddress)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.ProviderAddress) > 0 {
+		i -= len(m.ProviderAddress)
+		copy(dAtA[i:], m.ProviderAddress)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.ProviderAddress)))
 		i--
 		dAtA[i] = 0xa
 	}
@@ -1431,17 +1253,17 @@ func (m *MsgCancelInsuranceProvide) MarshalToSizedBuffer(dAtA []byte) (int, erro
 	_ = i
 	var l int
 	_ = l
-	if len(m.RequesterAddress) > 0 {
-		i -= len(m.RequesterAddress)
-		copy(dAtA[i:], m.RequesterAddress)
-		i = encodeVarintTx(dAtA, i, uint64(len(m.RequesterAddress)))
-		i--
-		dAtA[i] = 0x12
-	}
 	if m.Id != 0 {
 		i = encodeVarintTx(dAtA, i, uint64(m.Id))
 		i--
-		dAtA[i] = 0x8
+		dAtA[i] = 0x10
+	}
+	if len(m.ProviderAddress) > 0 {
+		i -= len(m.ProviderAddress)
+		copy(dAtA[i:], m.ProviderAddress)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.ProviderAddress)))
+		i--
+		dAtA[i] = 0xa
 	}
 	return len(dAtA) - i, nil
 }
@@ -1490,26 +1312,26 @@ func (m *MsgDepositInsurance) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	var l int
 	_ = l
 	{
-		size := m.TokenAmount.Size()
+		size := m.Amount.Size()
 		i -= size
-		if _, err := m.TokenAmount.MarshalTo(dAtA[i:]); err != nil {
+		if _, err := m.Amount.MarshalTo(dAtA[i:]); err != nil {
 			return 0, err
 		}
 		i = encodeVarintTx(dAtA, i, uint64(size))
 	}
 	i--
 	dAtA[i] = 0x1a
-	if len(m.RequesterAddress) > 0 {
-		i -= len(m.RequesterAddress)
-		copy(dAtA[i:], m.RequesterAddress)
-		i = encodeVarintTx(dAtA, i, uint64(len(m.RequesterAddress)))
-		i--
-		dAtA[i] = 0x12
-	}
 	if m.Id != 0 {
 		i = encodeVarintTx(dAtA, i, uint64(m.Id))
 		i--
-		dAtA[i] = 0x8
+		dAtA[i] = 0x10
+	}
+	if len(m.ProviderAddress) > 0 {
+		i -= len(m.ProviderAddress)
+		copy(dAtA[i:], m.ProviderAddress)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.ProviderAddress)))
+		i--
+		dAtA[i] = 0xa
 	}
 	return len(dAtA) - i, nil
 }
@@ -1557,17 +1379,17 @@ func (m *MsgWithdrawInsurance) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if len(m.RequesterAddress) > 0 {
-		i -= len(m.RequesterAddress)
-		copy(dAtA[i:], m.RequesterAddress)
-		i = encodeVarintTx(dAtA, i, uint64(len(m.RequesterAddress)))
-		i--
-		dAtA[i] = 0x12
-	}
 	if m.Id != 0 {
 		i = encodeVarintTx(dAtA, i, uint64(m.Id))
 		i--
-		dAtA[i] = 0x8
+		dAtA[i] = 0x10
+	}
+	if len(m.ProviderAddress) > 0 {
+		i -= len(m.ProviderAddress)
+		copy(dAtA[i:], m.ProviderAddress)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.ProviderAddress)))
+		i--
+		dAtA[i] = 0xa
 	}
 	return len(dAtA) - i, nil
 }
@@ -1615,10 +1437,10 @@ func (m *MsgWithdrawInsuranceFee) MarshalToSizedBuffer(dAtA []byte) (int, error)
 	_ = i
 	var l int
 	_ = l
-	if len(m.RequesterAddress) > 0 {
-		i -= len(m.RequesterAddress)
-		copy(dAtA[i:], m.RequesterAddress)
-		i = encodeVarintTx(dAtA, i, uint64(len(m.RequesterAddress)))
+	if len(m.ProviderAddress) > 0 {
+		i -= len(m.ProviderAddress)
+		copy(dAtA[i:], m.ProviderAddress)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.ProviderAddress)))
 		i--
 		dAtA[i] = 0x12
 	}
@@ -1670,38 +1492,16 @@ func (m *MsgLiquidStake) Size() (n int) {
 	}
 	var l int
 	_ = l
-	l = m.TokenAmount.Size()
-	n += 1 + l + sovTx(uint64(l))
-	l = len(m.RequesterAddress)
+	l = len(m.DelegatorAddress)
 	if l > 0 {
 		n += 1 + l + sovTx(uint64(l))
 	}
+	l = m.Amount.Size()
+	n += 1 + l + sovTx(uint64(l))
 	return n
 }
 
 func (m *MsgLiquidStakeResponse) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	return n
-}
-
-func (m *MsgCancelLiquidStake) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	l = len(m.RequesterAddress)
-	if l > 0 {
-		n += 1 + l + sovTx(uint64(l))
-	}
-	return n
-}
-
-func (m *MsgCancelLiquidStakeResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -1716,13 +1516,12 @@ func (m *MsgLiquidUnstake) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.NumberOfChunks != 0 {
-		n += 1 + sovTx(uint64(m.NumberOfChunks))
-	}
-	l = len(m.RequesterAddress)
+	l = len(m.DelegatorAddress)
 	if l > 0 {
 		n += 1 + l + sovTx(uint64(l))
 	}
+	l = m.Amount.Size()
+	n += 1 + l + sovTx(uint64(l))
 	return n
 }
 
@@ -1741,15 +1540,15 @@ func (m *MsgInsuranceProvide) Size() (n int) {
 	}
 	var l int
 	_ = l
+	l = len(m.ProviderAddress)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
 	l = len(m.ValidatorAddress)
 	if l > 0 {
 		n += 1 + l + sovTx(uint64(l))
 	}
-	l = len(m.RequesterAddress)
-	if l > 0 {
-		n += 1 + l + sovTx(uint64(l))
-	}
-	l = m.TokenAmount.Size()
+	l = m.Amount.Size()
 	n += 1 + l + sovTx(uint64(l))
 	l = m.FeeRate.Size()
 	n += 1 + l + sovTx(uint64(l))
@@ -1771,12 +1570,12 @@ func (m *MsgCancelInsuranceProvide) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.Id != 0 {
-		n += 1 + sovTx(uint64(m.Id))
-	}
-	l = len(m.RequesterAddress)
+	l = len(m.ProviderAddress)
 	if l > 0 {
 		n += 1 + l + sovTx(uint64(l))
+	}
+	if m.Id != 0 {
+		n += 1 + sovTx(uint64(m.Id))
 	}
 	return n
 }
@@ -1796,14 +1595,14 @@ func (m *MsgDepositInsurance) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.Id != 0 {
-		n += 1 + sovTx(uint64(m.Id))
-	}
-	l = len(m.RequesterAddress)
+	l = len(m.ProviderAddress)
 	if l > 0 {
 		n += 1 + l + sovTx(uint64(l))
 	}
-	l = m.TokenAmount.Size()
+	if m.Id != 0 {
+		n += 1 + sovTx(uint64(m.Id))
+	}
+	l = m.Amount.Size()
 	n += 1 + l + sovTx(uint64(l))
 	return n
 }
@@ -1823,12 +1622,12 @@ func (m *MsgWithdrawInsurance) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.Id != 0 {
-		n += 1 + sovTx(uint64(m.Id))
-	}
-	l = len(m.RequesterAddress)
+	l = len(m.ProviderAddress)
 	if l > 0 {
 		n += 1 + l + sovTx(uint64(l))
+	}
+	if m.Id != 0 {
+		n += 1 + sovTx(uint64(m.Id))
 	}
 	return n
 }
@@ -1851,7 +1650,7 @@ func (m *MsgWithdrawInsuranceFee) Size() (n int) {
 	if m.Id != 0 {
 		n += 1 + sovTx(uint64(m.Id))
 	}
-	l = len(m.RequesterAddress)
+	l = len(m.ProviderAddress)
 	if l > 0 {
 		n += 1 + l + sovTx(uint64(l))
 	}
@@ -1904,7 +1703,7 @@ func (m *MsgLiquidStake) Unmarshal(dAtA []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field TokenAmount", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field DelegatorAddress", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -1932,13 +1731,11 @@ func (m *MsgLiquidStake) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if err := m.TokenAmount.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
+			m.DelegatorAddress = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field RequesterAddress", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Amount", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -1966,7 +1763,9 @@ func (m *MsgLiquidStake) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.RequesterAddress = string(dAtA[iNdEx:postIndex])
+			if err := m.Amount.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -2039,138 +1838,6 @@ func (m *MsgLiquidStakeResponse) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *MsgCancelLiquidStake) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowTx
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: MsgCancelLiquidStake: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: MsgCancelLiquidStake: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field RequesterAddress", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowTx
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthTx
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthTx
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.RequesterAddress = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipTx(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthTx
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *MsgCancelLiquidStakeResponse) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowTx
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: MsgCancelLiquidStakeResponse: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: MsgCancelLiquidStakeResponse: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		default:
-			iNdEx = preIndex
-			skippy, err := skipTx(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthTx
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
 func (m *MsgLiquidUnstake) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -2201,27 +1868,8 @@ func (m *MsgLiquidUnstake) Unmarshal(dAtA []byte) error {
 		}
 		switch fieldNum {
 		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field NumberOfChunks", wireType)
-			}
-			m.NumberOfChunks = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowTx
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.NumberOfChunks |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 2:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field RequesterAddress", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field DelegatorAddress", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -2249,7 +1897,41 @@ func (m *MsgLiquidUnstake) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.RequesterAddress = string(dAtA[iNdEx:postIndex])
+			m.DelegatorAddress = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Amount", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Amount.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -2353,6 +2035,38 @@ func (m *MsgInsuranceProvide) Unmarshal(dAtA []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ProviderAddress", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ProviderAddress = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field ValidatorAddress", wireType)
 			}
 			var stringLen uint64
@@ -2383,41 +2097,9 @@ func (m *MsgInsuranceProvide) Unmarshal(dAtA []byte) error {
 			}
 			m.ValidatorAddress = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field RequesterAddress", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowTx
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthTx
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthTx
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.RequesterAddress = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field TokenAmount", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Amount", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -2445,7 +2127,7 @@ func (m *MsgInsuranceProvide) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if err := m.TokenAmount.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			if err := m.Amount.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -2584,27 +2266,8 @@ func (m *MsgCancelInsuranceProvide) Unmarshal(dAtA []byte) error {
 		}
 		switch fieldNum {
 		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Id", wireType)
-			}
-			m.Id = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowTx
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.Id |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 2:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field RequesterAddress", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field ProviderAddress", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -2632,8 +2295,27 @@ func (m *MsgCancelInsuranceProvide) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.RequesterAddress = string(dAtA[iNdEx:postIndex])
+			m.ProviderAddress = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Id", wireType)
+			}
+			m.Id = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Id |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := skipTx(dAtA[iNdEx:])
@@ -2735,6 +2417,38 @@ func (m *MsgDepositInsurance) Unmarshal(dAtA []byte) error {
 		}
 		switch fieldNum {
 		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ProviderAddress", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ProviderAddress = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Id", wireType)
 			}
@@ -2753,41 +2467,9 @@ func (m *MsgDepositInsurance) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field RequesterAddress", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowTx
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthTx
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthTx
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.RequesterAddress = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field TokenAmount", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Amount", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -2815,7 +2497,7 @@ func (m *MsgDepositInsurance) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if err := m.TokenAmount.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			if err := m.Amount.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -2920,27 +2602,8 @@ func (m *MsgWithdrawInsurance) Unmarshal(dAtA []byte) error {
 		}
 		switch fieldNum {
 		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Id", wireType)
-			}
-			m.Id = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowTx
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.Id |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 2:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field RequesterAddress", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field ProviderAddress", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -2968,8 +2631,27 @@ func (m *MsgWithdrawInsurance) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.RequesterAddress = string(dAtA[iNdEx:postIndex])
+			m.ProviderAddress = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Id", wireType)
+			}
+			m.Id = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Id |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := skipTx(dAtA[iNdEx:])
@@ -3091,7 +2773,7 @@ func (m *MsgWithdrawInsuranceFee) Unmarshal(dAtA []byte) error {
 			}
 		case 2:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field RequesterAddress", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field ProviderAddress", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -3119,7 +2801,7 @@ func (m *MsgWithdrawInsuranceFee) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.RequesterAddress = string(dAtA[iNdEx:postIndex])
+			m.ProviderAddress = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

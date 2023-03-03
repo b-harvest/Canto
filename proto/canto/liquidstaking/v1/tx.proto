@@ -11,11 +11,6 @@ service Msg {
   rpc LiquidStake(MsgLiquidStake) returns (MsgLiquidStakeResponse) {
     option (google.api.http).post = "/canto/liquidstaking/v1/tx/liquid_stake";
   };
-  rpc CancelLiquidStake(MsgCancelLiquidStake)
-      returns (MsgCancelLiquidStakeResponse) {
-    option (google.api.http).post =
-        "/canto/liquidstaking/v1/tx/cancel_liquid_stake";
-  };
   rpc LiquidUnstake(MsgLiquidUnstake) returns (MsgLiquidUnstakeResponse) {
     option (google.api.http).post = "/canto/liquidstaking/v1/tx/liquid_unstake";
   };
@@ -49,43 +44,38 @@ service Msg {
 }
 
 message MsgLiquidStake {
-  // token_amount is the amount of native token to be liquid staked.
-  string token_amount = 1 [
+  // delegator_address is the address of the user who requests the liquid
+  // staking.
+  string delegator_address = 1;
+  // amount is the amount of native token to be liquid staked.
+  string amount = 2 [
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Coin",
     (gogoproto.nullable) = false
   ];
-  // requester_address is the address of the user who requests the liquid
-  // staking.
-  string requester_address = 2;
 }
 
 message MsgLiquidStakeResponse {}
 
-message MsgCancelLiquidStake {
-  // requester_address is the address of the user who want to cancel the liquid
-  // staking. If the chunk is already paired, it cannot be canceled.
-  string requester_address = 1;
-}
-
-message MsgCancelLiquidStakeResponse {}
-
 message MsgLiquidUnstake {
-  // number_of_chunks is the number of chunks to be unstaked.
-  // The requester must have corresponding ls tokens to unstake.
-  uint64 number_of_chunks = 1;
-  // requester_address is the address of the user who want to liquid unstaking.
-  string requester_address = 2;
+  // delegator_address is the address of the user who want to liquid unstaking.
+  string delegator_address = 1;
+  // amount is the number calculated by (number of chunks want to unstake) *
+  // chunk.size. The delegator must have corresponding ls tokens to unstake.
+  string amount = 2 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Coin",
+    (gogoproto.nullable) = false
+  ];
 }
 
 message MsgLiquidUnstakeResponse {}
 
 message MsgInsuranceProvide {
+  // provider_address is the address of the user who want to provide insurance.
+  string provider_address = 1;
   // validator_address is the address of the validator to provide insurance.
-  string validator_address = 1;
-  // requester_address is the address of the user who want to provide insurance.
-  string requester_address = 2;
+  string validator_address = 2;
   // token_amount is the amount of native token to be provided as insurance.
-  string token_amount = 3 [
+  string amount = 3 [
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Coin",
     (gogoproto.nullable) = false
   ];
@@ -99,24 +89,24 @@ message MsgInsuranceProvide {
 message MsgInsuranceProvideResponse {}
 
 message MsgCancelInsuranceProvide {
+  // provider_address is the address of the user who want to cancel the
+  // insurance.
+  string provider_address = 1;
   // id is the id of the insurance to be canceled.
   // Only pairing insurance can be canceled.
-  uint64 id = 1;
-  // requester_address is the address of the user who want to cancel the
-  // insurance.
-  string requester_address = 2;
+  uint64 id = 2;
 }
 
 message MsgCancelInsuranceProvideResponse {}
 
 message MsgDepositInsurance {
-  // id is the id of the insurance to be refilled.
-  uint64 id = 1;
-  // requester_address is the address of the user who
+  // provider_address is the address of the user who
   // want to deposit(= refill) the insurance.
-  string requester_address = 2;
-  // token_amount is the amount of native token to be provided as insurance.
-  string token_amount = 3 [
+  string provider_address = 1;
+  // id is the id of the insurance to be refilled.
+  uint64 id = 2;
+  // amount is the amount of native token to be provided as insurance.
+  string amount = 3 [
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Coin",
     (gogoproto.nullable) = false
   ];
@@ -125,21 +115,21 @@ message MsgDepositInsurance {
 message MsgDepositInsuranceResponse {}
 
 message MsgWithdrawInsurance {
-  // id is the id of the insurance to be withdrawn.
-  uint64 id = 1;
-  // requester_address is the address of the user who want to
+  // provider_address is the address of the user who want to
   // withdraw the insurance.
-  string requester_address = 2;
+  string provider_address = 1;
+  // id is the id of the insurance to be withdrawn.
+  uint64 id = 2;
 }
 
 message MsgWithdrawInsuranceResponse {}
 
 message MsgWithdrawInsuranceFee {
+  // provider_address is the address of the user who want to withdraw the
+  // accumulated insurance fee.
+  string provider_address = 2;
   // id is the id of the insurance that accumulated fees to be withdrawn.
   uint64 id = 1;
-  // requester_address is the address of the user who want to withdraw the
-  // accumulated insurance fee.
-  string requester_address = 2;
 }
 
 message MsgWithdrawInsuranceFeeResponse {}

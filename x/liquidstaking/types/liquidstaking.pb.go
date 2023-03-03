@@ -8,17 +8,21 @@ import (
 	github_com_cosmos_cosmos_sdk_types "github.com/cosmos/cosmos-sdk/types"
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
+	github_com_gogo_protobuf_types "github.com/gogo/protobuf/types"
 	_ "github.com/regen-network/cosmos-proto"
-	"gopkg.in/yaml.v2"
+	_ "google.golang.org/protobuf/types/known/durationpb"
+	_ "google.golang.org/protobuf/types/known/timestamppb"
 	io "io"
 	math "math"
 	math_bits "math/bits"
+	time "time"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
+var _ = time.Kitchen
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the proto package it is being compiled against.
@@ -26,95 +30,189 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-type ChunkState int32
+// ChunkStatus defines the status of the chunk.
+type ChunkStatus int32
 
 const (
-	// Default state of a chunk when a msgServer receives MsgLiquidStake.
-	// This state indicates that the chunk is ready to be paired
+	CHUNK_STATUS_UNSPECIFIED ChunkStatus = 0
+	// Default status of a chunk when a msgServer receives MsgLiquidStake.
+	// This status indicates that the chunk is ready to be paired
 	// with an insurance.
-	CHUNK_STATE_PAIRING ChunkState = 0
-	// This state indicates that the chunk is paired with an insurance
+	CHUNK_STATUS_PAIRING ChunkStatus = 1
+	// This status indicates that the chunk is paired with an insurance
 	// which has the lowest fee rate.
-	CHUNK_STATE_PAIRED ChunkState = 1
+	CHUNK_STATUS_PAIRED ChunkStatus = 2
 	// For various reasons, the insurance paired to Chunk can be un-paired.
 	// At this time, if there is no insurance candidate,
-	// a chunk enters this state.
-	CHUNK_STATE_UNPAIRING_FOR_REPAIRING ChunkState = 2
-	// When a liquid staker sends a MsgLiquidUnstake, the last ranked paired chunk
-	// enters this state and waits until the un-bonding period times out.
-	CHUNK_STATE_UNPAIRING_FOR_UNSTAKE ChunkState = 3
+	// a chunk enters this status.
+	CHUNK_STATUS_UNPAIRING_FOR_REPAIRING ChunkStatus = 3
+	// When a delegator(= liquid staker) sends a MsgLiquidUnstake, the last ranked
+	// paired chunk enters this status and waits until the un-bonding period times
+	// out.
+	CHUNK_STATUS_UNPAIRING_FOR_UNSTAKE ChunkStatus = 4
 )
 
-var ChunkState_name = map[int32]string{
-	0: "CHUNK_STATE_PAIRING",
-	1: "CHUNK_STATE_PAIRED",
-	2: "CHUNK_STATE_UNPAIRING_FOR_REPAIRING",
-	3: "CHUNK_STATE_UNPAIRING_FOR_UNSTAKE",
+var ChunkStatus_name = map[int32]string{
+	0: "CHUNK_STATUS_UNSPECIFIED",
+	1: "CHUNK_STATUS_PAIRING",
+	2: "CHUNK_STATUS_PAIRED",
+	3: "CHUNK_STATUS_UNPAIRING_FOR_REPAIRING",
+	4: "CHUNK_STATUS_UNPAIRING_FOR_UNSTAKE",
 }
 
-var ChunkState_value = map[string]int32{
-	"CHUNK_STATE_PAIRING":                 0,
-	"CHUNK_STATE_PAIRED":                  1,
-	"CHUNK_STATE_UNPAIRING_FOR_REPAIRING": 2,
-	"CHUNK_STATE_UNPAIRING_FOR_UNSTAKE":   3,
+var ChunkStatus_value = map[string]int32{
+	"CHUNK_STATUS_UNSPECIFIED":             0,
+	"CHUNK_STATUS_PAIRING":                 1,
+	"CHUNK_STATUS_PAIRED":                  2,
+	"CHUNK_STATUS_UNPAIRING_FOR_REPAIRING": 3,
+	"CHUNK_STATUS_UNPAIRING_FOR_UNSTAKE":   4,
 }
 
-func (x ChunkState) String() string {
-	return proto.EnumName(ChunkState_name, int32(x))
+func (x ChunkStatus) String() string {
+	return proto.EnumName(ChunkStatus_name, int32(x))
 }
 
-func (ChunkState) EnumDescriptor() ([]byte, []int) {
+func (ChunkStatus) EnumDescriptor() ([]byte, []int) {
 	return fileDescriptor_d5ab11aad71f7b33, []int{0}
 }
 
-type InsuranceState int32
+// InsuranceStatus defines the status of the insurance.
+type InsuranceStatus int32
 
 const (
-	// Default state of an insurance when a msgServer receives
-	// MsgInsuranceProvide. This state indicates that
+	INSURANCE_STATUS_UNSPECIFIED InsuranceStatus = 0
+	// Default status of an insurance when a msgServer receives
+	// MsgInsuranceProvide. This status indicates that
 	// the insurance is ready to be paired with a chunk.
-	INSURANCE_STATE_PAIRING InsuranceState = 0
-	// This state indicates that the insurance is paired with a chunk.
-	// While the insurance is in this state, it serves as a form of protection for
-	// the chunk by insuring it against unexpected loss that may occur due to
+	INSURANCE_STATUS_PAIRING InsuranceStatus = 1
+	// This status indicates that the insurance is paired with a chunk.
+	// While the insurance is in this status, it serves as a form of protection
+	// for the chunk by insuring it against unexpected loss that may occur due to
 	// validator slashing.
-	INSURANCE_STATE_PAIRED InsuranceState = 1
-	// For various reasons, the insurance paired to Chunk can enters this state.
-	// The insurance in this state wait until
+	INSURANCE_STATUS_PAIRED InsuranceStatus = 2
+	// For various reasons, the insurance paired to Chunk can enters this status.
+	// The insurance in this status wait until
 	// the paired chunk's un-bonding period times out.
-	INSURANCE_STATE_UNPAIRING_FOR_REPAIRING InsuranceState = 2
-	// Insurance enters this state when msgServer receives MsgWithdrawInsurance.
+	INSURANCE_STATUS_UNPAIRING_FOR_REPAIRING InsuranceStatus = 3
+	// Insurance enters this status when msgServer receives MsgWithdrawInsurance.
 	// The insurance waits until the paired chunk's un-bonding period times out.
-	INSURANCE_STATE_UNPAIRING_FOR_WITHDRAW InsuranceState = 3
+	INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAW InsuranceStatus = 4
 	// Every begin block, the module checks all insurances have enough balance to
-	// cover slash. If not, the insurance enters this state. Insurance provider
+	// cover slash. If not, the insurance enters this status. Insurance provider
 	// can re-fill token amount of the insurance by sending MsgRefillInsurance or
 	// cancel the insurance by sending MsgCancelInsuranceProvide.
-	INSURANCE_STATE_VULNERABLE InsuranceState = 4
+	INSURANCE_STATUS_VULNERABLE InsuranceStatus = 5
 )
 
-var InsuranceState_name = map[int32]string{
-	0: "INSURANCE_STATE_PAIRING",
-	1: "INSURANCE_STATE_PAIRED",
-	2: "INSURANCE_STATE_UNPAIRING_FOR_REPAIRING",
-	3: "INSURANCE_STATE_UNPAIRING_FOR_WITHDRAW",
-	4: "INSURANCE_STATE_VULNERABLE",
+var InsuranceStatus_name = map[int32]string{
+	0: "INSURANCE_STATUS_UNSPECIFIED",
+	1: "INSURANCE_STATUS_PAIRING",
+	2: "INSURANCE_STATUS_PAIRED",
+	3: "INSURANCE_STATUS_UNPAIRING_FOR_REPAIRING",
+	4: "INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAW",
+	5: "INSURANCE_STATUS_VULNERABLE",
 }
 
-var InsuranceState_value = map[string]int32{
-	"INSURANCE_STATE_PAIRING":                 0,
-	"INSURANCE_STATE_PAIRED":                  1,
-	"INSURANCE_STATE_UNPAIRING_FOR_REPAIRING": 2,
-	"INSURANCE_STATE_UNPAIRING_FOR_WITHDRAW":  3,
-	"INSURANCE_STATE_VULNERABLE":              4,
+var InsuranceStatus_value = map[string]int32{
+	"INSURANCE_STATUS_UNSPECIFIED":             0,
+	"INSURANCE_STATUS_PAIRING":                 1,
+	"INSURANCE_STATUS_PAIRED":                  2,
+	"INSURANCE_STATUS_UNPAIRING_FOR_REPAIRING": 3,
+	"INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAW":  4,
+	"INSURANCE_STATUS_VULNERABLE":              5,
 }
 
-func (x InsuranceState) String() string {
-	return proto.EnumName(InsuranceState_name, int32(x))
+func (x InsuranceStatus) String() string {
+	return proto.EnumName(InsuranceStatus_name, int32(x))
 }
 
-func (InsuranceState) EnumDescriptor() ([]byte, []int) {
+func (InsuranceStatus) EnumDescriptor() ([]byte, []int) {
 	return fileDescriptor_d5ab11aad71f7b33, []int{1}
+}
+
+// Epoch defines the epoch of the module.
+type Epoch struct {
+	CurrentNumber       uint64        `protobuf:"varint,1,opt,name=current_number,json=currentNumber,proto3" json:"current_number,omitempty"`
+	EpochStartTime      time.Time     `protobuf:"bytes,2,opt,name=epoch_start_time,json=epochStartTime,proto3,stdtime" json:"epoch_start_time"`
+	EpochDuration       time.Duration `protobuf:"bytes,3,opt,name=epoch_duration,json=epochDuration,proto3,stdduration" json:"epoch_duration"`
+	EpochStartHeight    int64         `protobuf:"varint,4,opt,name=epoch_start_height,json=epochStartHeight,proto3" json:"epoch_start_height,omitempty"`
+	EpochChunkSize      uint64        `protobuf:"varint,5,opt,name=epoch_chunk_size,json=epochChunkSize,proto3" json:"epoch_chunk_size,omitempty"`
+	EpochMaxPairedChunk uint64        `protobuf:"varint,6,opt,name=epoch_max_paired_chunk,json=epochMaxPairedChunk,proto3" json:"epoch_max_paired_chunk,omitempty"`
+}
+
+func (m *Epoch) Reset()         { *m = Epoch{} }
+func (m *Epoch) String() string { return proto.CompactTextString(m) }
+func (*Epoch) ProtoMessage()    {}
+func (*Epoch) Descriptor() ([]byte, []int) {
+	return fileDescriptor_d5ab11aad71f7b33, []int{0}
+}
+func (m *Epoch) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *Epoch) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_Epoch.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *Epoch) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Epoch.Merge(m, src)
+}
+func (m *Epoch) XXX_Size() int {
+	return m.Size()
+}
+func (m *Epoch) XXX_DiscardUnknown() {
+	xxx_messageInfo_Epoch.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Epoch proto.InternalMessageInfo
+
+func (m *Epoch) GetCurrentNumber() uint64 {
+	if m != nil {
+		return m.CurrentNumber
+	}
+	return 0
+}
+
+func (m *Epoch) GetEpochStartTime() time.Time {
+	if m != nil {
+		return m.EpochStartTime
+	}
+	return time.Time{}
+}
+
+func (m *Epoch) GetEpochDuration() time.Duration {
+	if m != nil {
+		return m.EpochDuration
+	}
+	return 0
+}
+
+func (m *Epoch) GetEpochStartHeight() int64 {
+	if m != nil {
+		return m.EpochStartHeight
+	}
+	return 0
+}
+
+func (m *Epoch) GetEpochChunkSize() uint64 {
+	if m != nil {
+		return m.EpochChunkSize
+	}
+	return 0
+}
+
+func (m *Epoch) GetEpochMaxPairedChunk() uint64 {
+	if m != nil {
+		return m.EpochMaxPairedChunk
+	}
+	return 0
 }
 
 // Params defines the parameters for the module.
@@ -123,21 +221,15 @@ type Params struct {
 	// This param is managed by gov module, but the change
 	// will always applied in the next epoch for safety.
 	NextEpochChunkSize uint64 `protobuf:"varint,1,opt,name=next_epoch_chunk_size,json=nextEpochChunkSize,proto3" json:"next_epoch_chunk_size,omitempty"`
-	// max_paired_chunk is the maximum number of chunks
+	// next_epoch_max_paired_chunk is the maximum number of chunks
 	// that can be paired with an insurance.
-	MaxPairedChunk uint64 `protobuf:"varint,2,opt,name=max_paired_chunk,json=maxPairedChunk,proto3" json:"max_paired_chunk,omitempty"`
-}
-
-// String returns a human-readable string representation of the parameters.
-func (m *Params) String() string {
-	out, _ := yaml.Marshal(m)
-	return string(out)
+	NextEpochMaxPairedChunk uint64 `protobuf:"varint,2,opt,name=next_epoch_max_paired_chunk,json=nextEpochMaxPairedChunk,proto3" json:"next_epoch_max_paired_chunk,omitempty"`
 }
 
 func (m *Params) Reset()      { *m = Params{} }
 func (*Params) ProtoMessage() {}
 func (*Params) Descriptor() ([]byte, []int) {
-	return fileDescriptor_d5ab11aad71f7b33, []int{0}
+	return fileDescriptor_d5ab11aad71f7b33, []int{1}
 }
 func (m *Params) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -173,34 +265,27 @@ func (m *Params) GetNextEpochChunkSize() uint64 {
 	return 0
 }
 
-func (m *Params) GetMaxPairedChunk() uint64 {
+func (m *Params) GetNextEpochMaxPairedChunk() uint64 {
 	if m != nil {
-		return m.MaxPairedChunk
+		return m.NextEpochMaxPairedChunk
 	}
 	return 0
 }
 
+// Chunk defines the chunk of the module.
 type Chunk struct {
 	// Id of the chunk
 	Id uint64 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
-	// Amount of native token to be liquid staked
-	TokenAmount github_com_cosmos_cosmos_sdk_types.Coin `protobuf:"bytes,2,opt,name=token_amount,json=tokenAmount,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Coin" json:"token_amount"`
 	// Id of Paired insurance, 0 means no insurance
-	InsuranceId uint64 `protobuf:"varint,3,opt,name=insurance_id,json=insuranceId,proto3" json:"insurance_id,omitempty"`
-	// State of the chunk
-	State ChunkState `protobuf:"varint,4,opt,name=state,proto3,enum=canto.liquidstaking.v1.ChunkState" json:"state,omitempty"`
-}
-
-// String returns a human-readable string representation of the parameters.
-func (m *Chunk) String() string {
-	out, _ := yaml.Marshal(m)
-	return string(out)
+	InsuranceId uint64 `protobuf:"varint,2,opt,name=insurance_id,json=insuranceId,proto3" json:"insurance_id,omitempty"`
+	// Status of the chunk
+	Status ChunkStatus `protobuf:"varint,3,opt,name=status,proto3,enum=canto.liquidstaking.v1.ChunkStatus" json:"status,omitempty"`
 }
 
 func (m *Chunk) Reset()      { *m = Chunk{} }
 func (*Chunk) ProtoMessage() {}
 func (*Chunk) Descriptor() ([]byte, []int) {
-	return fileDescriptor_d5ab11aad71f7b33, []int{1}
+	return fileDescriptor_d5ab11aad71f7b33, []int{2}
 }
 func (m *Chunk) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -229,6 +314,7 @@ func (m *Chunk) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_Chunk proto.InternalMessageInfo
 
+// Insurance defines the insurance of the module.
 type Insurance struct {
 	// Id of the insurance
 	Id uint64 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -236,23 +322,15 @@ type Insurance struct {
 	ValidatorAddress string `protobuf:"bytes,2,opt,name=validator_address,json=validatorAddress,proto3" json:"validator_address,omitempty"`
 	// Address of the insurance provider
 	ProviderAddress string `protobuf:"bytes,3,opt,name=provider_address,json=providerAddress,proto3" json:"provider_address,omitempty"`
-	// Amount of native token to guard slashing
-	TokenAmount github_com_cosmos_cosmos_sdk_types.Coin `protobuf:"bytes,4,opt,name=token_amount,json=tokenAmount,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Coin" json:"token_amount"`
 	// Fee rate of the insurance
-	FeeRate github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,5,opt,name=fee_rate,json=feeRate,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"fee_rate"`
-	State   InsuranceState                         `protobuf:"varint,6,opt,name=state,proto3,enum=canto.liquidstaking.v1.InsuranceState" json:"state,omitempty"`
-}
-
-// String returns a human-readable string representation of the parameters.
-func (m *Insurance) String() string {
-	out, _ := yaml.Marshal(m)
-	return string(out)
+	FeeRate github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,4,opt,name=fee_rate,json=feeRate,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"fee_rate"`
+	Status  InsuranceStatus                        `protobuf:"varint,5,opt,name=status,proto3,enum=canto.liquidstaking.v1.InsuranceStatus" json:"status,omitempty"`
 }
 
 func (m *Insurance) Reset()      { *m = Insurance{} }
 func (*Insurance) ProtoMessage() {}
 func (*Insurance) Descriptor() ([]byte, []int) {
-	return fileDescriptor_d5ab11aad71f7b33, []int{2}
+	return fileDescriptor_d5ab11aad71f7b33, []int{3}
 }
 func (m *Insurance) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -282,8 +360,9 @@ func (m *Insurance) XXX_DiscardUnknown() {
 var xxx_messageInfo_Insurance proto.InternalMessageInfo
 
 func init() {
-	proto.RegisterEnum("canto.liquidstaking.v1.ChunkState", ChunkState_name, ChunkState_value)
-	proto.RegisterEnum("canto.liquidstaking.v1.InsuranceState", InsuranceState_name, InsuranceState_value)
+	proto.RegisterEnum("canto.liquidstaking.v1.ChunkStatus", ChunkStatus_name, ChunkStatus_value)
+	proto.RegisterEnum("canto.liquidstaking.v1.InsuranceStatus", InsuranceStatus_name, InsuranceStatus_value)
+	proto.RegisterType((*Epoch)(nil), "canto.liquidstaking.v1.Epoch")
 	proto.RegisterType((*Params)(nil), "canto.liquidstaking.v1.Params")
 	proto.RegisterType((*Chunk)(nil), "canto.liquidstaking.v1.Chunk")
 	proto.RegisterType((*Insurance)(nil), "canto.liquidstaking.v1.Insurance")
@@ -294,47 +373,117 @@ func init() {
 }
 
 var fileDescriptor_d5ab11aad71f7b33 = []byte{
-	// 635 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x94, 0x4f, 0x4f, 0x13, 0x4f,
-	0x18, 0xc7, 0x77, 0xdb, 0xc2, 0x0f, 0x06, 0xd2, 0xdf, 0x3a, 0x2a, 0xd4, 0x9a, 0x6c, 0x01, 0x23,
-	0x60, 0x09, 0xbb, 0x41, 0x13, 0x35, 0xc4, 0xcb, 0x52, 0x56, 0xd9, 0x40, 0x56, 0x9c, 0xb6, 0x92,
-	0x78, 0x99, 0x0c, 0xbb, 0x43, 0x99, 0x94, 0xee, 0xd4, 0xdd, 0x69, 0xad, 0xbc, 0x02, 0x8e, 0x26,
-	0x5e, 0x3c, 0x92, 0xf8, 0x66, 0x38, 0x12, 0x4f, 0x86, 0x03, 0x31, 0xf0, 0x46, 0xcc, 0xce, 0xb6,
-	0xfc, 0x29, 0xd4, 0x78, 0xf0, 0xb4, 0x3b, 0xcf, 0xf7, 0x33, 0xdf, 0x7d, 0x9e, 0xef, 0x6c, 0x06,
-	0x14, 0x3d, 0x12, 0x08, 0x6e, 0xee, 0xb1, 0x8f, 0x2d, 0xe6, 0x47, 0x82, 0xd4, 0x59, 0x50, 0x33,
-	0xdb, 0x4b, 0xd7, 0x0b, 0x46, 0x33, 0xe4, 0x82, 0xc3, 0x09, 0xc9, 0x1a, 0xd7, 0xa5, 0xf6, 0x52,
-	0xfe, 0x5e, 0x8d, 0xd7, 0xb8, 0x44, 0xcc, 0xf8, 0x2d, 0xa1, 0xf3, 0x0f, 0x3c, 0x1e, 0x35, 0x78,
-	0x84, 0x13, 0x21, 0x59, 0x24, 0xd2, 0x4c, 0x1d, 0x0c, 0x6f, 0x92, 0x90, 0x34, 0x22, 0xb8, 0x04,
-	0xee, 0x07, 0xb4, 0x23, 0x30, 0x6d, 0x72, 0x6f, 0x17, 0x7b, 0xbb, 0xad, 0xa0, 0x8e, 0x23, 0xb6,
-	0x4f, 0x73, 0xea, 0x94, 0x3a, 0x9f, 0x41, 0x30, 0x16, 0xed, 0x58, 0x2b, 0xc5, 0x52, 0x99, 0xed,
-	0x53, 0x38, 0x0f, 0xb4, 0x06, 0xe9, 0xe0, 0x26, 0x61, 0x21, 0xf5, 0x93, 0x2d, 0xb9, 0x94, 0xa4,
-	0xb3, 0x0d, 0xd2, 0xd9, 0x94, 0x65, 0x49, 0x2f, 0x67, 0xbe, 0x1d, 0x16, 0x94, 0x99, 0x1f, 0x2a,
-	0x18, 0x92, 0x6b, 0x98, 0x05, 0x29, 0xe6, 0x77, 0x9d, 0x53, 0xcc, 0x87, 0x08, 0x8c, 0x0b, 0x5e,
-	0xa7, 0x01, 0x26, 0x0d, 0xde, 0x0a, 0x84, 0x74, 0x19, 0x5d, 0x31, 0x8f, 0x4e, 0x0b, 0xca, 0xc9,
-	0x69, 0x61, 0xae, 0xc6, 0xc4, 0x6e, 0x6b, 0xdb, 0xf0, 0x78, 0xa3, 0xdb, 0x7d, 0xf7, 0xb1, 0x18,
-	0xf9, 0x75, 0x53, 0x7c, 0x6e, 0xd2, 0xc8, 0x28, 0x71, 0x16, 0xa0, 0x31, 0x69, 0x62, 0x49, 0x0f,
-	0x38, 0x0d, 0xc6, 0x59, 0x10, 0xb5, 0x42, 0x12, 0x78, 0x14, 0x33, 0x3f, 0x97, 0x96, 0x5f, 0x1b,
-	0xbb, 0xa8, 0x39, 0x3e, 0x7c, 0x09, 0x86, 0x22, 0x41, 0x04, 0xcd, 0x65, 0xa6, 0xd4, 0xf9, 0xec,
-	0xd3, 0x19, 0xe3, 0xf6, 0x58, 0x8d, 0x64, 0xe4, 0x98, 0x44, 0xc9, 0x86, 0xe5, 0x91, 0x83, 0xc3,
-	0x82, 0x22, 0x87, 0x3a, 0x49, 0x81, 0x51, 0xa7, 0xe7, 0x79, 0x63, 0xb0, 0x05, 0x70, 0xa7, 0x4d,
-	0xf6, 0x98, 0x4f, 0x04, 0x0f, 0x31, 0xf1, 0xfd, 0x90, 0x46, 0x51, 0x32, 0x1d, 0xd2, 0x2e, 0x04,
-	0x2b, 0xa9, 0xc3, 0x27, 0x40, 0x6b, 0x86, 0xbc, 0xcd, 0x7c, 0x7a, 0xc9, 0xa6, 0x25, 0xfb, 0x7f,
-	0xaf, 0xde, 0x43, 0xfb, 0x03, 0xcb, 0xfc, 0x83, 0xc0, 0x1c, 0x30, 0xb2, 0x43, 0x29, 0x0e, 0xe3,
-	0x40, 0x86, 0xa4, 0x9f, 0xd1, 0xf5, 0x9b, 0xfd, 0x0b, 0xbf, 0x55, 0xea, 0xa1, 0xff, 0x76, 0x28,
-	0x45, 0x44, 0x50, 0xf8, 0xaa, 0x17, 0xec, 0xb0, 0x0c, 0x76, 0x76, 0x50, 0xb0, 0x17, 0xc1, 0xdd,
-	0x1e, 0x6e, 0xf1, 0xab, 0x0a, 0xc0, 0x65, 0xf8, 0x70, 0x12, 0xdc, 0x2d, 0xad, 0x55, 0xdd, 0x75,
-	0x5c, 0xae, 0x58, 0x15, 0x1b, 0x6f, 0x5a, 0x0e, 0x72, 0xdc, 0x37, 0x9a, 0x02, 0x27, 0x00, 0xec,
-	0x17, 0xec, 0x55, 0x4d, 0x85, 0x73, 0xe0, 0xd1, 0xd5, 0x7a, 0xd5, 0xed, 0x6e, 0xc1, 0xaf, 0xdf,
-	0x22, 0x8c, 0xec, 0x9e, 0x41, 0x0a, 0x3e, 0x06, 0xd3, 0x83, 0xc1, 0xaa, 0x5b, 0xae, 0x58, 0xeb,
-	0xb6, 0x96, 0xce, 0x67, 0x0e, 0xbe, 0xeb, 0x4a, 0xf1, 0x48, 0x05, 0xd9, 0xeb, 0x9d, 0xc3, 0x87,
-	0x60, 0xd2, 0x71, 0xcb, 0x55, 0x64, 0xb9, 0x25, 0xfb, 0x46, 0x77, 0x79, 0x30, 0x71, 0x9b, 0x28,
-	0x3b, 0x5c, 0x00, 0x73, 0xfd, 0xda, 0xe0, 0x2e, 0x8b, 0x60, 0xf6, 0xcf, 0xf0, 0x96, 0x53, 0x59,
-	0x5b, 0x45, 0xd6, 0x96, 0x96, 0x86, 0x3a, 0xc8, 0xf7, 0xb3, 0xef, 0xab, 0x1b, 0xae, 0x8d, 0xac,
-	0x95, 0x0d, 0x5b, 0xcb, 0x24, 0xa3, 0xac, 0xbc, 0x3b, 0x3a, 0xd3, 0xd5, 0xe3, 0x33, 0x5d, 0xfd,
-	0x75, 0xa6, 0xab, 0x5f, 0xce, 0x75, 0xe5, 0xf8, 0x5c, 0x57, 0x7e, 0x9e, 0xeb, 0xca, 0x87, 0x17,
-	0x57, 0xce, 0xbc, 0x14, 0x9f, 0xde, 0xa2, 0x4b, 0xc5, 0x27, 0x1e, 0xd6, 0x93, 0x95, 0xd9, 0x7e,
-	0x6e, 0x76, 0xfa, 0x2e, 0x2b, 0xf9, 0x23, 0x6c, 0x0f, 0xcb, 0x9b, 0xe5, 0xd9, 0xef, 0x00, 0x00,
-	0x00, 0xff, 0xff, 0x11, 0x67, 0x4a, 0xcb, 0xd0, 0x04, 0x00, 0x00,
+	// 805 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x84, 0x55, 0x4d, 0x6f, 0xe3, 0x44,
+	0x18, 0xb6, 0xf3, 0x45, 0x3b, 0x65, 0xb3, 0x66, 0x76, 0xd9, 0x7a, 0xd3, 0xca, 0x09, 0x01, 0x76,
+	0x43, 0x77, 0xd7, 0x56, 0x77, 0x25, 0x90, 0x16, 0x24, 0x94, 0x0f, 0x2f, 0x35, 0xbb, 0x98, 0xe0,
+	0x24, 0x54, 0xe2, 0x62, 0x4d, 0xec, 0x69, 0x32, 0x4a, 0x63, 0x07, 0x7b, 0x1c, 0x42, 0x2f, 0x88,
+	0x5b, 0xb9, 0xf5, 0xd8, 0x63, 0x25, 0xfe, 0x03, 0xbf, 0xa1, 0xc7, 0xde, 0x40, 0x1c, 0x0a, 0x6a,
+	0xff, 0x00, 0x3f, 0x01, 0x79, 0x6c, 0xa7, 0xf9, 0x2a, 0x9c, 0x92, 0x79, 0x9f, 0x8f, 0xf7, 0x7d,
+	0x5e, 0x4f, 0x62, 0xb0, 0x63, 0x21, 0x87, 0xba, 0xca, 0x21, 0xf9, 0x3e, 0x20, 0xb6, 0x4f, 0xd1,
+	0x80, 0x38, 0x3d, 0x65, 0xbc, 0x3b, 0x5f, 0x90, 0x47, 0x9e, 0x4b, 0x5d, 0xf8, 0x80, 0x71, 0xe5,
+	0x79, 0x68, 0xbc, 0x5b, 0xb8, 0xdf, 0x73, 0x7b, 0x2e, 0xa3, 0x28, 0xe1, 0xb7, 0x88, 0x5d, 0x90,
+	0x7a, 0xae, 0xdb, 0x3b, 0xc4, 0x0a, 0x3b, 0x75, 0x83, 0x03, 0xc5, 0x0e, 0x3c, 0x44, 0x89, 0xeb,
+	0xc4, 0x78, 0x71, 0x11, 0xa7, 0x64, 0x88, 0x7d, 0x8a, 0x86, 0xa3, 0x98, 0xf0, 0xd0, 0x72, 0xfd,
+	0xa1, 0xeb, 0x9b, 0x91, 0x73, 0x74, 0x88, 0xa0, 0xf2, 0xef, 0x29, 0x90, 0x55, 0x47, 0xae, 0xd5,
+	0x87, 0x1f, 0x82, 0xbc, 0x15, 0x78, 0x1e, 0x76, 0xa8, 0xe9, 0x04, 0xc3, 0x2e, 0xf6, 0x44, 0xbe,
+	0xc4, 0x57, 0x32, 0xc6, 0x9d, 0xb8, 0xaa, 0xb3, 0x22, 0xd4, 0x81, 0x80, 0x43, 0xbe, 0xe9, 0x53,
+	0xe4, 0x51, 0x33, 0x6c, 0x25, 0xa6, 0x4a, 0x7c, 0x65, 0xe3, 0x79, 0x41, 0x8e, 0xe6, 0x90, 0x93,
+	0x39, 0xe4, 0x76, 0x32, 0x47, 0x6d, 0xed, 0xfc, 0xb2, 0xc8, 0x9d, 0xfc, 0x55, 0xe4, 0x8d, 0x3c,
+	0x53, 0xb7, 0x42, 0x71, 0x08, 0xc3, 0x2f, 0x41, 0x54, 0x31, 0x93, 0x50, 0x62, 0x9a, 0xb9, 0x3d,
+	0x5c, 0x72, 0x6b, 0xc4, 0x84, 0xc8, 0xec, 0x34, 0x34, 0xbb, 0xc3, 0xa4, 0x09, 0x00, 0x9f, 0x02,
+	0x38, 0x3b, 0x5b, 0x1f, 0x93, 0x5e, 0x9f, 0x8a, 0x99, 0x12, 0x5f, 0x49, 0x1b, 0xc2, 0x4d, 0xdf,
+	0x3d, 0x56, 0x87, 0x95, 0x24, 0x89, 0xd5, 0x0f, 0x9c, 0x81, 0xe9, 0x93, 0x23, 0x2c, 0x66, 0x59,
+	0xe4, 0x68, 0xa2, 0x7a, 0x58, 0x6e, 0x91, 0x23, 0x0c, 0x5f, 0x80, 0x07, 0x11, 0x73, 0x88, 0x26,
+	0xe6, 0x08, 0x11, 0x0f, 0xdb, 0x91, 0x48, 0xcc, 0x31, 0xfe, 0x3d, 0x86, 0x7e, 0x85, 0x26, 0x4d,
+	0x86, 0x31, 0x61, 0xf9, 0x27, 0x90, 0x6b, 0x22, 0x0f, 0x0d, 0x7d, 0xb8, 0x0b, 0xde, 0x75, 0xf0,
+	0x84, 0x9a, 0x4b, 0xdd, 0xa2, 0x05, 0xc3, 0x10, 0x54, 0xe7, 0x3b, 0x7e, 0x06, 0xb6, 0x66, 0x24,
+	0x4b, 0x6d, 0x53, 0x4c, 0xb8, 0x39, 0x15, 0xce, 0xb7, 0x7e, 0x99, 0x39, 0x3d, 0x2b, 0x72, 0xe5,
+	0x9f, 0x79, 0x90, 0x65, 0x67, 0x98, 0x07, 0x29, 0x62, 0xc7, 0xdd, 0x52, 0xc4, 0x86, 0xef, 0x81,
+	0xb7, 0x89, 0xe3, 0x07, 0x1e, 0x72, 0x2c, 0x6c, 0x12, 0x3b, 0xb6, 0xdb, 0x98, 0xd6, 0x34, 0x1b,
+	0x7e, 0x0a, 0x72, 0x3e, 0x45, 0x34, 0xf0, 0xd9, 0xe3, 0xc8, 0x3f, 0x7f, 0x5f, 0x5e, 0x7d, 0x65,
+	0xe5, 0x68, 0x66, 0x46, 0x35, 0x62, 0xc9, 0xcb, 0xb5, 0xe3, 0xb3, 0x22, 0xc7, 0x66, 0xf8, 0x25,
+	0x05, 0xd6, 0xb5, 0xc4, 0x76, 0x69, 0x8e, 0x27, 0xe0, 0x9d, 0x31, 0x3a, 0x24, 0x36, 0xa2, 0xae,
+	0x67, 0x22, 0xdb, 0xf6, 0xb0, 0xef, 0xb3, 0x61, 0xd6, 0x0d, 0x61, 0x0a, 0x54, 0xa3, 0x3a, 0xfc,
+	0x08, 0x08, 0x23, 0xcf, 0x1d, 0x13, 0x1b, 0xdf, 0x70, 0xd3, 0x8c, 0x7b, 0x37, 0xa9, 0x27, 0x54,
+	0x0d, 0xac, 0x1d, 0x60, 0x6c, 0x7a, 0x88, 0x62, 0xf6, 0xf4, 0xd7, 0x6b, 0x72, 0x78, 0x65, 0xfe,
+	0xbc, 0x2c, 0x3e, 0xea, 0x11, 0xda, 0x0f, 0xba, 0xb2, 0xe5, 0x0e, 0xe3, 0xdf, 0x41, 0xfc, 0xf1,
+	0xcc, 0xb7, 0x07, 0x0a, 0xfd, 0x71, 0x84, 0x7d, 0xb9, 0x81, 0x2d, 0xe3, 0xad, 0x03, 0x8c, 0x0d,
+	0x44, 0x31, 0xfc, 0x7c, 0xba, 0x87, 0x2c, 0xdb, 0xc3, 0xe3, 0xdb, 0xf6, 0x30, 0x4d, 0x79, 0xdb,
+	0x2e, 0x76, 0x7e, 0xe3, 0xc1, 0xc6, 0xcc, 0xb6, 0xe0, 0x36, 0x10, 0xeb, 0x7b, 0x1d, 0xfd, 0xb5,
+	0xd9, 0x6a, 0x57, 0xdb, 0x9d, 0x96, 0xd9, 0xd1, 0x5b, 0x4d, 0xb5, 0xae, 0xbd, 0xd2, 0xd4, 0x86,
+	0xc0, 0x41, 0x11, 0xdc, 0x9f, 0x43, 0x9b, 0x55, 0xcd, 0xd0, 0xf4, 0x2f, 0x04, 0x1e, 0x6e, 0x82,
+	0x7b, 0x4b, 0x88, 0xda, 0x10, 0x52, 0xb0, 0x02, 0x3e, 0x58, 0x30, 0x8c, 0x45, 0xe6, 0xab, 0xaf,
+	0x0d, 0xd3, 0x50, 0x13, 0x8b, 0x34, 0x7c, 0x04, 0xca, 0xff, 0xc1, 0xec, 0xe8, 0xad, 0x76, 0xf5,
+	0xb5, 0x2a, 0x64, 0x0a, 0x99, 0xe3, 0x5f, 0x25, 0x6e, 0xe7, 0x1f, 0x1e, 0xdc, 0x5d, 0x88, 0x07,
+	0x4b, 0x60, 0x5b, 0xd3, 0x5b, 0x1d, 0xa3, 0xaa, 0xd7, 0xd5, 0xd5, 0x01, 0xb6, 0x81, 0xb8, 0xc4,
+	0xb8, 0x09, 0xb1, 0x05, 0x36, 0x57, 0xa2, 0x2c, 0xc8, 0x53, 0x50, 0x59, 0x61, 0x7e, 0x5b, 0x98,
+	0x27, 0xe0, 0xf1, 0xff, 0xb0, 0xf7, 0xb5, 0xf6, 0x5e, 0xc3, 0xa8, 0xee, 0x0b, 0x19, 0x58, 0x04,
+	0x5b, 0x4b, 0xe4, 0x6f, 0x3b, 0x6f, 0x74, 0xd5, 0xa8, 0xd6, 0xde, 0xa8, 0x42, 0x36, 0x8a, 0x5c,
+	0xfb, 0xe6, 0xfc, 0x4a, 0xe2, 0x2f, 0xae, 0x24, 0xfe, 0xef, 0x2b, 0x89, 0x3f, 0xb9, 0x96, 0xb8,
+	0x8b, 0x6b, 0x89, 0xfb, 0xe3, 0x5a, 0xe2, 0xbe, 0xfb, 0x64, 0xe6, 0x06, 0xd5, 0xc3, 0xab, 0xf0,
+	0x4c, 0xc7, 0xf4, 0x07, 0xd7, 0x1b, 0x44, 0x27, 0x65, 0xfc, 0xb1, 0x32, 0x59, 0x78, 0x09, 0xb0,
+	0x6b, 0xd5, 0xcd, 0xb1, 0x3f, 0xb2, 0x17, 0xff, 0x06, 0x00, 0x00, 0xff, 0xff, 0x1b, 0x41, 0x82,
+	0x60, 0x28, 0x06, 0x00, 0x00,
+}
+
+func (m *Epoch) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *Epoch) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Epoch) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.EpochMaxPairedChunk != 0 {
+		i = encodeVarintLiquidstaking(dAtA, i, uint64(m.EpochMaxPairedChunk))
+		i--
+		dAtA[i] = 0x30
+	}
+	if m.EpochChunkSize != 0 {
+		i = encodeVarintLiquidstaking(dAtA, i, uint64(m.EpochChunkSize))
+		i--
+		dAtA[i] = 0x28
+	}
+	if m.EpochStartHeight != 0 {
+		i = encodeVarintLiquidstaking(dAtA, i, uint64(m.EpochStartHeight))
+		i--
+		dAtA[i] = 0x20
+	}
+	n1, err1 := github_com_gogo_protobuf_types.StdDurationMarshalTo(m.EpochDuration, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdDuration(m.EpochDuration):])
+	if err1 != nil {
+		return 0, err1
+	}
+	i -= n1
+	i = encodeVarintLiquidstaking(dAtA, i, uint64(n1))
+	i--
+	dAtA[i] = 0x1a
+	n2, err2 := github_com_gogo_protobuf_types.StdTimeMarshalTo(m.EpochStartTime, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdTime(m.EpochStartTime):])
+	if err2 != nil {
+		return 0, err2
+	}
+	i -= n2
+	i = encodeVarintLiquidstaking(dAtA, i, uint64(n2))
+	i--
+	dAtA[i] = 0x12
+	if m.CurrentNumber != 0 {
+		i = encodeVarintLiquidstaking(dAtA, i, uint64(m.CurrentNumber))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *Params) Marshal() (dAtA []byte, err error) {
@@ -357,8 +506,8 @@ func (m *Params) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.MaxPairedChunk != 0 {
-		i = encodeVarintLiquidstaking(dAtA, i, uint64(m.MaxPairedChunk))
+	if m.NextEpochMaxPairedChunk != 0 {
+		i = encodeVarintLiquidstaking(dAtA, i, uint64(m.NextEpochMaxPairedChunk))
 		i--
 		dAtA[i] = 0x10
 	}
@@ -390,26 +539,16 @@ func (m *Chunk) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.State != 0 {
-		i = encodeVarintLiquidstaking(dAtA, i, uint64(m.State))
+	if m.Status != 0 {
+		i = encodeVarintLiquidstaking(dAtA, i, uint64(m.Status))
 		i--
-		dAtA[i] = 0x20
+		dAtA[i] = 0x18
 	}
 	if m.InsuranceId != 0 {
 		i = encodeVarintLiquidstaking(dAtA, i, uint64(m.InsuranceId))
 		i--
-		dAtA[i] = 0x18
+		dAtA[i] = 0x10
 	}
-	{
-		size := m.TokenAmount.Size()
-		i -= size
-		if _, err := m.TokenAmount.MarshalTo(dAtA[i:]); err != nil {
-			return 0, err
-		}
-		i = encodeVarintLiquidstaking(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0x12
 	if m.Id != 0 {
 		i = encodeVarintLiquidstaking(dAtA, i, uint64(m.Id))
 		i--
@@ -438,25 +577,15 @@ func (m *Insurance) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.State != 0 {
-		i = encodeVarintLiquidstaking(dAtA, i, uint64(m.State))
+	if m.Status != 0 {
+		i = encodeVarintLiquidstaking(dAtA, i, uint64(m.Status))
 		i--
-		dAtA[i] = 0x30
+		dAtA[i] = 0x28
 	}
 	{
 		size := m.FeeRate.Size()
 		i -= size
 		if _, err := m.FeeRate.MarshalTo(dAtA[i:]); err != nil {
-			return 0, err
-		}
-		i = encodeVarintLiquidstaking(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0x2a
-	{
-		size := m.TokenAmount.Size()
-		i -= size
-		if _, err := m.TokenAmount.MarshalTo(dAtA[i:]); err != nil {
 			return 0, err
 		}
 		i = encodeVarintLiquidstaking(dAtA, i, uint64(size))
@@ -496,6 +625,31 @@ func encodeVarintLiquidstaking(dAtA []byte, offset int, v uint64) int {
 	dAtA[offset] = uint8(v)
 	return base
 }
+func (m *Epoch) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.CurrentNumber != 0 {
+		n += 1 + sovLiquidstaking(uint64(m.CurrentNumber))
+	}
+	l = github_com_gogo_protobuf_types.SizeOfStdTime(m.EpochStartTime)
+	n += 1 + l + sovLiquidstaking(uint64(l))
+	l = github_com_gogo_protobuf_types.SizeOfStdDuration(m.EpochDuration)
+	n += 1 + l + sovLiquidstaking(uint64(l))
+	if m.EpochStartHeight != 0 {
+		n += 1 + sovLiquidstaking(uint64(m.EpochStartHeight))
+	}
+	if m.EpochChunkSize != 0 {
+		n += 1 + sovLiquidstaking(uint64(m.EpochChunkSize))
+	}
+	if m.EpochMaxPairedChunk != 0 {
+		n += 1 + sovLiquidstaking(uint64(m.EpochMaxPairedChunk))
+	}
+	return n
+}
+
 func (m *Params) Size() (n int) {
 	if m == nil {
 		return 0
@@ -505,8 +659,8 @@ func (m *Params) Size() (n int) {
 	if m.NextEpochChunkSize != 0 {
 		n += 1 + sovLiquidstaking(uint64(m.NextEpochChunkSize))
 	}
-	if m.MaxPairedChunk != 0 {
-		n += 1 + sovLiquidstaking(uint64(m.MaxPairedChunk))
+	if m.NextEpochMaxPairedChunk != 0 {
+		n += 1 + sovLiquidstaking(uint64(m.NextEpochMaxPairedChunk))
 	}
 	return n
 }
@@ -520,13 +674,11 @@ func (m *Chunk) Size() (n int) {
 	if m.Id != 0 {
 		n += 1 + sovLiquidstaking(uint64(m.Id))
 	}
-	l = m.TokenAmount.Size()
-	n += 1 + l + sovLiquidstaking(uint64(l))
 	if m.InsuranceId != 0 {
 		n += 1 + sovLiquidstaking(uint64(m.InsuranceId))
 	}
-	if m.State != 0 {
-		n += 1 + sovLiquidstaking(uint64(m.State))
+	if m.Status != 0 {
+		n += 1 + sovLiquidstaking(uint64(m.Status))
 	}
 	return n
 }
@@ -548,12 +700,10 @@ func (m *Insurance) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovLiquidstaking(uint64(l))
 	}
-	l = m.TokenAmount.Size()
-	n += 1 + l + sovLiquidstaking(uint64(l))
 	l = m.FeeRate.Size()
 	n += 1 + l + sovLiquidstaking(uint64(l))
-	if m.State != 0 {
-		n += 1 + sovLiquidstaking(uint64(m.State))
+	if m.Status != 0 {
+		n += 1 + sovLiquidstaking(uint64(m.Status))
 	}
 	return n
 }
@@ -563,6 +713,198 @@ func sovLiquidstaking(x uint64) (n int) {
 }
 func sozLiquidstaking(x uint64) (n int) {
 	return sovLiquidstaking(uint64((x << 1) ^ uint64((int64(x) >> 63))))
+}
+func (m *Epoch) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowLiquidstaking
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Epoch: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Epoch: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CurrentNumber", wireType)
+			}
+			m.CurrentNumber = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowLiquidstaking
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.CurrentNumber |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field EpochStartTime", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowLiquidstaking
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthLiquidstaking
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthLiquidstaking
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := github_com_gogo_protobuf_types.StdTimeUnmarshal(&m.EpochStartTime, dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field EpochDuration", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowLiquidstaking
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthLiquidstaking
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthLiquidstaking
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := github_com_gogo_protobuf_types.StdDurationUnmarshal(&m.EpochDuration, dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field EpochStartHeight", wireType)
+			}
+			m.EpochStartHeight = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowLiquidstaking
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.EpochStartHeight |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 5:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field EpochChunkSize", wireType)
+			}
+			m.EpochChunkSize = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowLiquidstaking
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.EpochChunkSize |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 6:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field EpochMaxPairedChunk", wireType)
+			}
+			m.EpochMaxPairedChunk = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowLiquidstaking
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.EpochMaxPairedChunk |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipLiquidstaking(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthLiquidstaking
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
 }
 func (m *Params) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
@@ -614,9 +956,9 @@ func (m *Params) Unmarshal(dAtA []byte) error {
 			}
 		case 2:
 			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field MaxPairedChunk", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field NextEpochMaxPairedChunk", wireType)
 			}
-			m.MaxPairedChunk = 0
+			m.NextEpochMaxPairedChunk = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowLiquidstaking
@@ -626,7 +968,7 @@ func (m *Params) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.MaxPairedChunk |= uint64(b&0x7F) << shift
+				m.NextEpochMaxPairedChunk |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -701,40 +1043,6 @@ func (m *Chunk) Unmarshal(dAtA []byte) error {
 				}
 			}
 		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field TokenAmount", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowLiquidstaking
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthLiquidstaking
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthLiquidstaking
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.TokenAmount.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 3:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field InsuranceId", wireType)
 			}
@@ -753,11 +1061,11 @@ func (m *Chunk) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
-		case 4:
+		case 3:
 			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field State", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Status", wireType)
 			}
-			m.State = 0
+			m.Status = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowLiquidstaking
@@ -767,7 +1075,7 @@ func (m *Chunk) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.State |= ChunkState(b&0x7F) << shift
+				m.Status |= ChunkStatus(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -907,40 +1215,6 @@ func (m *Insurance) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 4:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field TokenAmount", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowLiquidstaking
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthLiquidstaking
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthLiquidstaking
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.TokenAmount.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 5:
-			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field FeeRate", wireType)
 			}
 			var stringLen uint64
@@ -973,11 +1247,11 @@ func (m *Insurance) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
-		case 6:
+		case 5:
 			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field State", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Status", wireType)
 			}
-			m.State = 0
+			m.Status = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowLiquidstaking
@@ -987,7 +1261,7 @@ func (m *Insurance) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.State |= InsuranceState(b&0x7F) << shift
+				m.Status |= InsuranceStatus(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}

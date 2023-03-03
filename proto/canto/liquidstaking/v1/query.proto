@@ -8,6 +8,11 @@ import "canto/liquidstaking/v1/liquidstaking.proto";
 
 option go_package = "github.com/Canto-Network/Canto/v6/x/liquidstaking/types";
 
+// TODO: Imagine what queries would be useful on client and frontend side and
+// design query endpoints from them.
+// TODO: Index keys and values will be determined after the query endpoints are
+// designed.
+
 // Query provides defines the gRPC querier service.
 service Query {
   // Params retrieves the total set of minting parameters.
