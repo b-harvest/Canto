@@ -9,6 +9,7 @@ import (
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
 	_ "github.com/regen-network/cosmos-proto"
+	"gopkg.in/yaml.v2"
 	io "io"
 	math "math"
 	math_bits "math/bits"
@@ -127,6 +128,12 @@ type Params struct {
 	MaxPairedChunk uint64 `protobuf:"varint,2,opt,name=max_paired_chunk,json=maxPairedChunk,proto3" json:"max_paired_chunk,omitempty"`
 }
 
+// String returns a human-readable string representation of the parameters.
+func (m *Params) String() string {
+	out, _ := yaml.Marshal(m)
+	return string(out)
+}
+
 func (m *Params) Reset()      { *m = Params{} }
 func (*Params) ProtoMessage() {}
 func (*Params) Descriptor() ([]byte, []int) {
@@ -184,6 +191,12 @@ type Chunk struct {
 	State ChunkState `protobuf:"varint,4,opt,name=state,proto3,enum=canto.liquidstaking.v1.ChunkState" json:"state,omitempty"`
 }
 
+// String returns a human-readable string representation of the parameters.
+func (m *Chunk) String() string {
+	out, _ := yaml.Marshal(m)
+	return string(out)
+}
+
 func (m *Chunk) Reset()      { *m = Chunk{} }
 func (*Chunk) ProtoMessage() {}
 func (*Chunk) Descriptor() ([]byte, []int) {
@@ -228,6 +241,12 @@ type Insurance struct {
 	// Fee rate of the insurance
 	FeeRate github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,5,opt,name=fee_rate,json=feeRate,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"fee_rate"`
 	State   InsuranceState                         `protobuf:"varint,6,opt,name=state,proto3,enum=canto.liquidstaking.v1.InsuranceState" json:"state,omitempty"`
+}
+
+// String returns a human-readable string representation of the parameters.
+func (m *Insurance) String() string {
+	out, _ := yaml.Marshal(m)
+	return string(out)
 }
 
 func (m *Insurance) Reset()      { *m = Insurance{} }
