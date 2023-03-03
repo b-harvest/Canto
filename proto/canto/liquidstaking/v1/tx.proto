@@ -11,46 +11,59 @@ service Msg {
   rpc LiquidStake(MsgLiquidStake) returns (MsgLiquidStakeResponse) {
     option (google.api.http).post = "/canto/liquidstaking/v1/tx/liquid_stake";
   };
-  rpc CancelLiquidStake(MsgCancelLiquidStake) returns (MsgCancelLiquidStakeResponse) {
-    option (google.api.http).post = "/canto/liquidstaking/v1/tx/cancel_liquid_stake";
+  rpc CancelLiquidStake(MsgCancelLiquidStake)
+      returns (MsgCancelLiquidStakeResponse) {
+    option (google.api.http).post =
+        "/canto/liquidstaking/v1/tx/cancel_liquid_stake";
   };
   rpc LiquidUnstake(MsgLiquidUnstake) returns (MsgLiquidUnstakeResponse) {
     option (google.api.http).post = "/canto/liquidstaking/v1/tx/liquid_unstake";
   };
 
-  rpc InsuranceProvide(MsgInsuranceProvide) returns (MsgInsuranceProvideResponse) {
-    option (google.api.http).post = "/canto/liquidstaking/v1/tx/insurance_provide";
+  rpc InsuranceProvide(MsgInsuranceProvide)
+      returns (MsgInsuranceProvideResponse) {
+    option (google.api.http).post =
+        "/canto/liquidstaking/v1/tx/insurance_provide";
   };
-  rpc CancelInsuranceProvide(MsgCancelInsuranceProvide) returns (MsgCancelInsuranceProvideResponse) {
-    option (google.api.http).post = "/canto/liquidstaking/v1/tx/cancel_insurance_provide";
+  rpc CancelInsuranceProvide(MsgCancelInsuranceProvide)
+      returns (MsgCancelInsuranceProvideResponse) {
+    option (google.api.http).post =
+        "/canto/liquidstaking/v1/tx/cancel_insurance_provide";
   };
-  rpc RefillInsurance(MsgRefillInsurance) returns (MsgRefillInsuranceResponse) {
-    option (google.api.http).post = "/canto/liquidstaking/v1/tx/refill_insurance";
+  rpc DepositInsurance(MsgDepositInsurance)
+      returns (MsgDepositInsuranceResponse) {
+    option (google.api.http).post =
+        "/canto/liquidstaking/v1/tx/deposit_insurance";
   };
-  rpc WithdrawInsurance(MsgWithdrawInsurance) returns (MsgWithdrawInsuranceResponse) {
-    option (google.api.http).post = "/canto/liquidstaking/v1/tx/withdraw_insurance";
+  rpc WithdrawInsurance(MsgWithdrawInsurance)
+      returns (MsgWithdrawInsuranceResponse) {
+    option (google.api.http).post =
+        "/canto/liquidstaking/v1/tx/withdraw_insurance";
   };
   // WithdrawInsuranceFee is used to withdraw the cumulated insurance fee.
-  rpc WithdrawInsuranceFee(MsgWithdrawInsuranceFee) returns (MsgWithdrawInsuranceFeeResponse) {
-    option (google.api.http).post = "/canto/liquidstaking/v1/tx/withdraw_insurance_fee";
+  rpc WithdrawInsuranceFee(MsgWithdrawInsuranceFee)
+      returns (MsgWithdrawInsuranceFeeResponse) {
+    option (google.api.http).post =
+        "/canto/liquidstaking/v1/tx/withdraw_insurance_fee";
   };
 }
 
 message MsgLiquidStake {
   // token_amount is the amount of native token to be liquid staked.
   string token_amount = 1 [
-    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Coin",
     (gogoproto.nullable) = false
   ];
-  // requester_address is the address of the user who requests the liquid staking.
+  // requester_address is the address of the user who requests the liquid
+  // staking.
   string requester_address = 2;
 }
 
 message MsgLiquidStakeResponse {}
 
 message MsgCancelLiquidStake {
-  // requester_address is the address of the user who want to cancel the liquid staking.
-  // If the chunk is already paired, it cannot be canceled.
+  // requester_address is the address of the user who want to cancel the liquid
+  // staking. If the chunk is already paired, it cannot be canceled.
   string requester_address = 1;
 }
 
@@ -73,7 +86,7 @@ message MsgInsuranceProvide {
   string requester_address = 2;
   // token_amount is the amount of native token to be provided as insurance.
   string token_amount = 3 [
-    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Coin",
     (gogoproto.nullable) = false
   ];
   // fee_rate is the fee rate of the insurance.
@@ -89,30 +102,33 @@ message MsgCancelInsuranceProvide {
   // id is the id of the insurance to be canceled.
   // Only pairing insurance can be canceled.
   uint64 id = 1;
-  // requester_address is the address of the user who want to cancel the insurance.
+  // requester_address is the address of the user who want to cancel the
+  // insurance.
   string requester_address = 2;
 }
 
 message MsgCancelInsuranceProvideResponse {}
 
-message MsgRefillInsurance {
+message MsgDepositInsurance {
   // id is the id of the insurance to be refilled.
   uint64 id = 1;
-  // requester_address is the address of the user who want to refill the insurance.
+  // requester_address is the address of the user who
+  // want to deposit(= refill) the insurance.
   string requester_address = 2;
   // token_amount is the amount of native token to be provided as insurance.
   string token_amount = 3 [
-    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Coin",
     (gogoproto.nullable) = false
   ];
 }
 
-message MsgRefillInsuranceResponse {}
+message MsgDepositInsuranceResponse {}
 
 message MsgWithdrawInsurance {
   // id is the id of the insurance to be withdrawn.
   uint64 id = 1;
-  // requester_address is the address of the user who want to withdraw the insurance.
+  // requester_address is the address of the user who want to
+  // withdraw the insurance.
   string requester_address = 2;
 }
 
@@ -121,7 +137,8 @@ message MsgWithdrawInsuranceResponse {}
 message MsgWithdrawInsuranceFee {
   // id is the id of the insurance that accumulated fees to be withdrawn.
   uint64 id = 1;
-  // requester_address is the address of the user who want to withdraw the accumulated insurance fee.
+  // requester_address is the address of the user who want to withdraw the
+  // accumulated insurance fee.
   string requester_address = 2;
 }
 

@@ -23,7 +23,8 @@ service Query {
     option (google.api.http).get = "/canto/liquidstaking/v1/chunks/{id}";
   }
 
-  rpc Insurances(QueryAllInsurancesRequest) returns (QueryAllInsurancesResponse) {
+  rpc Insurances(QueryAllInsurancesRequest)
+      returns (QueryAllInsurancesResponse) {
     option (google.api.http).get = "/canto/liquidstaking/v1/insurances";
   }
 
@@ -43,28 +44,16 @@ message QueryParamsResponse {
 
 message QueryAllChunksRequest {}
 
-message QueryAllChunksResponse {
-  repeated Chunk chunks = 1;
-}
+message QueryAllChunksResponse { repeated Chunk chunks = 1; }
 
-message QueryChunkRequest {
-  uint64 id = 1;
-}
+message QueryChunkRequest { uint64 id = 1; }
 
-message QueryChunkResponse {
-  Chunk chunk = 1;
-}
+message QueryChunkResponse { Chunk chunk = 1; }
 
 message QueryAllInsurancesRequest {}
 
-message QueryAllInsurancesResponse {
-  repeated Insurance insurances = 1;
-}
+message QueryAllInsurancesResponse { repeated Insurance insurances = 1; }
 
-message QueryInsuranceRequest {
-  uint64 id = 1;
-}
+message QueryInsuranceRequest { uint64 id = 1; }
 
-message QueryInsuranceResponse {
-  Insurance insurance = 1;
-}
+message QueryInsuranceResponse { Insurance insurance = 1; }
