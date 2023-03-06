@@ -814,11 +814,18 @@ const _ = grpc.SupportPackageIsVersion4
 type QueryClient interface {
 	// Params retrieves the total set of minting parameters.
 	Params(ctx context.Context, in *QueryParamsRequest, opts ...grpc.CallOption) (*QueryParamsResponse, error)
+	// Chunk returns all chunks on the module.
 	Chunks(ctx context.Context, in *QueryAllChunksRequest, opts ...grpc.CallOption) (*QueryChunksResponse, error)
+	// ChunksByProviderAddress returns all paired chunks by provider address.
+	// Only paired chunk can have insurance.
 	ChunksByProviderAddress(ctx context.Context, in *QueryChunksByProviderAddressRequest, opts ...grpc.CallOption) (*QueryChunksResponse, error)
+	// Chunk returns a chunk by id.
 	Chunk(ctx context.Context, in *QueryChunkRequest, opts ...grpc.CallOption) (*QueryChunkResponse, error)
+	// Insurances returns all insurances on the module.
 	Insurances(ctx context.Context, in *QueryAllInsurancesRequest, opts ...grpc.CallOption) (*QueryInsurancesResponse, error)
+	// InsurancesByProviderAddress returns all insurances by provider address.
 	InsurancesByProviderAddress(ctx context.Context, in *QueryInsurancesByProviderAddressRequest, opts ...grpc.CallOption) (*QueryInsurancesResponse, error)
+	// Insurance returns an insurance by id.
 	Insurance(ctx context.Context, in *QueryInsuranceRequest, opts ...grpc.CallOption) (*QueryInsuranceResponse, error)
 }
 
@@ -897,11 +904,18 @@ func (c *queryClient) Insurance(ctx context.Context, in *QueryInsuranceRequest, 
 type QueryServer interface {
 	// Params retrieves the total set of minting parameters.
 	Params(context.Context, *QueryParamsRequest) (*QueryParamsResponse, error)
+	// Chunk returns all chunks on the module.
 	Chunks(context.Context, *QueryAllChunksRequest) (*QueryChunksResponse, error)
+	// ChunksByProviderAddress returns all paired chunks by provider address.
+	// Only paired chunk can have insurance.
 	ChunksByProviderAddress(context.Context, *QueryChunksByProviderAddressRequest) (*QueryChunksResponse, error)
+	// Chunk returns a chunk by id.
 	Chunk(context.Context, *QueryChunkRequest) (*QueryChunkResponse, error)
+	// Insurances returns all insurances on the module.
 	Insurances(context.Context, *QueryAllInsurancesRequest) (*QueryInsurancesResponse, error)
+	// InsurancesByProviderAddress returns all insurances by provider address.
 	InsurancesByProviderAddress(context.Context, *QueryInsurancesByProviderAddressRequest) (*QueryInsurancesResponse, error)
+	// Insurance returns an insurance by id.
 	Insurance(context.Context, *QueryInsuranceRequest) (*QueryInsuranceResponse, error)
 }
 

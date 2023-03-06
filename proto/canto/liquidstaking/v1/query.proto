@@ -20,30 +20,37 @@ service Query {
     option (google.api.http).get = "/canto/liquidstaking/v1/params";
   }
 
+  // Chunk returns all chunks on the module.
   rpc Chunks(QueryAllChunksRequest) returns (QueryChunksResponse) {
     option (google.api.http).get = "/canto/liquidstaking/v1/chunks";
   }
 
+  // ChunksByProviderAddress returns all paired chunks by provider address.
+  // Only paired chunk can have insurance.
   rpc ChunksByProviderAddress(QueryChunksByProviderAddressRequest)
       returns (QueryChunksResponse) {
     option (google.api.http).get =
         "/canto/liquidstaking/v1/chunks/provider/{provider_address}";
   }
 
+  // Chunk returns a chunk by id.
   rpc Chunk(QueryChunkRequest) returns (QueryChunkResponse) {
     option (google.api.http).get = "/canto/liquidstaking/v1/chunks/{id}";
   }
 
+  // Insurances returns all insurances on the module.
   rpc Insurances(QueryAllInsurancesRequest) returns (QueryInsurancesResponse) {
     option (google.api.http).get = "/canto/liquidstaking/v1/insurances";
   }
 
+  // InsurancesByProviderAddress returns all insurances by provider address.
   rpc InsurancesByProviderAddress(QueryInsurancesByProviderAddressRequest)
       returns (QueryInsurancesResponse) {
     option (google.api.http).get =
         "/canto/liquidstaking/v1/insurances/provider/{provider_address}";
   }
 
+  // Insurance returns an insurance by id.
   rpc Insurance(QueryInsuranceRequest) returns (QueryInsuranceResponse) {
     option (google.api.http).get = "/canto/liquidstaking/v1/insurances/{id}";
   }
