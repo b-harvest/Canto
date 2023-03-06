@@ -149,22 +149,22 @@ func (m *QueryAllChunksRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QueryAllChunksRequest proto.InternalMessageInfo
 
-type QueryAllChunksResponse struct {
-	Chunks []*ChunkResponse `protobuf:"bytes,1,rep,name=chunks,proto3" json:"chunks,omitempty"`
+type QueryChunksByProviderAddress struct {
+	ProviderAddress string `protobuf:"bytes,1,opt,name=provider_address,json=providerAddress,proto3" json:"provider_address,omitempty"`
 }
 
-func (m *QueryAllChunksResponse) Reset()         { *m = QueryAllChunksResponse{} }
-func (m *QueryAllChunksResponse) String() string { return proto.CompactTextString(m) }
-func (*QueryAllChunksResponse) ProtoMessage()    {}
-func (*QueryAllChunksResponse) Descriptor() ([]byte, []int) {
+func (m *QueryChunksByProviderAddress) Reset()         { *m = QueryChunksByProviderAddress{} }
+func (m *QueryChunksByProviderAddress) String() string { return proto.CompactTextString(m) }
+func (*QueryChunksByProviderAddress) ProtoMessage()    {}
+func (*QueryChunksByProviderAddress) Descriptor() ([]byte, []int) {
 	return fileDescriptor_a04856e9492a9fb6, []int{3}
 }
-func (m *QueryAllChunksResponse) XXX_Unmarshal(b []byte) error {
+func (m *QueryChunksByProviderAddress) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *QueryAllChunksResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *QueryChunksByProviderAddress) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_QueryAllChunksResponse.Marshal(b, m, deterministic)
+		return xxx_messageInfo_QueryChunksByProviderAddress.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -174,19 +174,63 @@ func (m *QueryAllChunksResponse) XXX_Marshal(b []byte, deterministic bool) ([]by
 		return b[:n], nil
 	}
 }
-func (m *QueryAllChunksResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryAllChunksResponse.Merge(m, src)
+func (m *QueryChunksByProviderAddress) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryChunksByProviderAddress.Merge(m, src)
 }
-func (m *QueryAllChunksResponse) XXX_Size() int {
+func (m *QueryChunksByProviderAddress) XXX_Size() int {
 	return m.Size()
 }
-func (m *QueryAllChunksResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryAllChunksResponse.DiscardUnknown(m)
+func (m *QueryChunksByProviderAddress) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryChunksByProviderAddress.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_QueryAllChunksResponse proto.InternalMessageInfo
+var xxx_messageInfo_QueryChunksByProviderAddress proto.InternalMessageInfo
 
-func (m *QueryAllChunksResponse) GetChunks() []*ChunkResponse {
+func (m *QueryChunksByProviderAddress) GetProviderAddress() string {
+	if m != nil {
+		return m.ProviderAddress
+	}
+	return ""
+}
+
+type QueryChunksResponse struct {
+	Chunks []*ChunkResponse `protobuf:"bytes,1,rep,name=chunks,proto3" json:"chunks,omitempty"`
+}
+
+func (m *QueryChunksResponse) Reset()         { *m = QueryChunksResponse{} }
+func (m *QueryChunksResponse) String() string { return proto.CompactTextString(m) }
+func (*QueryChunksResponse) ProtoMessage()    {}
+func (*QueryChunksResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a04856e9492a9fb6, []int{4}
+}
+func (m *QueryChunksResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryChunksResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryChunksResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryChunksResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryChunksResponse.Merge(m, src)
+}
+func (m *QueryChunksResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryChunksResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryChunksResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryChunksResponse proto.InternalMessageInfo
+
+func (m *QueryChunksResponse) GetChunks() []*ChunkResponse {
 	if m != nil {
 		return m.Chunks
 	}
@@ -201,7 +245,7 @@ func (m *QueryChunkRequest) Reset()         { *m = QueryChunkRequest{} }
 func (m *QueryChunkRequest) String() string { return proto.CompactTextString(m) }
 func (*QueryChunkRequest) ProtoMessage()    {}
 func (*QueryChunkRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a04856e9492a9fb6, []int{4}
+	return fileDescriptor_a04856e9492a9fb6, []int{5}
 }
 func (m *QueryChunkRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -245,7 +289,7 @@ func (m *QueryChunkResponse) Reset()         { *m = QueryChunkResponse{} }
 func (m *QueryChunkResponse) String() string { return proto.CompactTextString(m) }
 func (*QueryChunkResponse) ProtoMessage()    {}
 func (*QueryChunkResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a04856e9492a9fb6, []int{5}
+	return fileDescriptor_a04856e9492a9fb6, []int{6}
 }
 func (m *QueryChunkResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -288,7 +332,7 @@ func (m *QueryAllInsurancesRequest) Reset()         { *m = QueryAllInsurancesReq
 func (m *QueryAllInsurancesRequest) String() string { return proto.CompactTextString(m) }
 func (*QueryAllInsurancesRequest) ProtoMessage()    {}
 func (*QueryAllInsurancesRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a04856e9492a9fb6, []int{6}
+	return fileDescriptor_a04856e9492a9fb6, []int{7}
 }
 func (m *QueryAllInsurancesRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -317,22 +361,22 @@ func (m *QueryAllInsurancesRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QueryAllInsurancesRequest proto.InternalMessageInfo
 
-type QueryAllInsurancesResponse struct {
-	Insurances []*InsuranceResponse `protobuf:"bytes,1,rep,name=insurances,proto3" json:"insurances,omitempty"`
+type QueryInsurancesByProviderAddress struct {
+	ProviderAddress string `protobuf:"bytes,1,opt,name=provider_address,json=providerAddress,proto3" json:"provider_address,omitempty"`
 }
 
-func (m *QueryAllInsurancesResponse) Reset()         { *m = QueryAllInsurancesResponse{} }
-func (m *QueryAllInsurancesResponse) String() string { return proto.CompactTextString(m) }
-func (*QueryAllInsurancesResponse) ProtoMessage()    {}
-func (*QueryAllInsurancesResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a04856e9492a9fb6, []int{7}
+func (m *QueryInsurancesByProviderAddress) Reset()         { *m = QueryInsurancesByProviderAddress{} }
+func (m *QueryInsurancesByProviderAddress) String() string { return proto.CompactTextString(m) }
+func (*QueryInsurancesByProviderAddress) ProtoMessage()    {}
+func (*QueryInsurancesByProviderAddress) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a04856e9492a9fb6, []int{8}
 }
-func (m *QueryAllInsurancesResponse) XXX_Unmarshal(b []byte) error {
+func (m *QueryInsurancesByProviderAddress) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *QueryAllInsurancesResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *QueryInsurancesByProviderAddress) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_QueryAllInsurancesResponse.Marshal(b, m, deterministic)
+		return xxx_messageInfo_QueryInsurancesByProviderAddress.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -342,19 +386,63 @@ func (m *QueryAllInsurancesResponse) XXX_Marshal(b []byte, deterministic bool) (
 		return b[:n], nil
 	}
 }
-func (m *QueryAllInsurancesResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryAllInsurancesResponse.Merge(m, src)
+func (m *QueryInsurancesByProviderAddress) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryInsurancesByProviderAddress.Merge(m, src)
 }
-func (m *QueryAllInsurancesResponse) XXX_Size() int {
+func (m *QueryInsurancesByProviderAddress) XXX_Size() int {
 	return m.Size()
 }
-func (m *QueryAllInsurancesResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryAllInsurancesResponse.DiscardUnknown(m)
+func (m *QueryInsurancesByProviderAddress) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryInsurancesByProviderAddress.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_QueryAllInsurancesResponse proto.InternalMessageInfo
+var xxx_messageInfo_QueryInsurancesByProviderAddress proto.InternalMessageInfo
 
-func (m *QueryAllInsurancesResponse) GetInsurances() []*InsuranceResponse {
+func (m *QueryInsurancesByProviderAddress) GetProviderAddress() string {
+	if m != nil {
+		return m.ProviderAddress
+	}
+	return ""
+}
+
+type QueryInsurancesResponse struct {
+	Insurances []*InsuranceResponse `protobuf:"bytes,1,rep,name=insurances,proto3" json:"insurances,omitempty"`
+}
+
+func (m *QueryInsurancesResponse) Reset()         { *m = QueryInsurancesResponse{} }
+func (m *QueryInsurancesResponse) String() string { return proto.CompactTextString(m) }
+func (*QueryInsurancesResponse) ProtoMessage()    {}
+func (*QueryInsurancesResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a04856e9492a9fb6, []int{9}
+}
+func (m *QueryInsurancesResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryInsurancesResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryInsurancesResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryInsurancesResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryInsurancesResponse.Merge(m, src)
+}
+func (m *QueryInsurancesResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryInsurancesResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryInsurancesResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryInsurancesResponse proto.InternalMessageInfo
+
+func (m *QueryInsurancesResponse) GetInsurances() []*InsuranceResponse {
 	if m != nil {
 		return m.Insurances
 	}
@@ -369,7 +457,7 @@ func (m *QueryInsuranceRequest) Reset()         { *m = QueryInsuranceRequest{} }
 func (m *QueryInsuranceRequest) String() string { return proto.CompactTextString(m) }
 func (*QueryInsuranceRequest) ProtoMessage()    {}
 func (*QueryInsuranceRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a04856e9492a9fb6, []int{8}
+	return fileDescriptor_a04856e9492a9fb6, []int{10}
 }
 func (m *QueryInsuranceRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -413,7 +501,7 @@ func (m *QueryInsuranceResponse) Reset()         { *m = QueryInsuranceResponse{}
 func (m *QueryInsuranceResponse) String() string { return proto.CompactTextString(m) }
 func (*QueryInsuranceResponse) ProtoMessage()    {}
 func (*QueryInsuranceResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a04856e9492a9fb6, []int{9}
+	return fileDescriptor_a04856e9492a9fb6, []int{11}
 }
 func (m *QueryInsuranceResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -466,7 +554,7 @@ func (m *ChunkResponse) Reset()         { *m = ChunkResponse{} }
 func (m *ChunkResponse) String() string { return proto.CompactTextString(m) }
 func (*ChunkResponse) ProtoMessage()    {}
 func (*ChunkResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a04856e9492a9fb6, []int{10}
+	return fileDescriptor_a04856e9492a9fb6, []int{12}
 }
 func (m *ChunkResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -551,7 +639,7 @@ func (m *InsuranceResponse) Reset()         { *m = InsuranceResponse{} }
 func (m *InsuranceResponse) String() string { return proto.CompactTextString(m) }
 func (*InsuranceResponse) ProtoMessage()    {}
 func (*InsuranceResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a04856e9492a9fb6, []int{11}
+	return fileDescriptor_a04856e9492a9fb6, []int{13}
 }
 func (m *InsuranceResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -633,11 +721,13 @@ func init() {
 	proto.RegisterType((*QueryParamsRequest)(nil), "canto.liquidstaking.v1.QueryParamsRequest")
 	proto.RegisterType((*QueryParamsResponse)(nil), "canto.liquidstaking.v1.QueryParamsResponse")
 	proto.RegisterType((*QueryAllChunksRequest)(nil), "canto.liquidstaking.v1.QueryAllChunksRequest")
-	proto.RegisterType((*QueryAllChunksResponse)(nil), "canto.liquidstaking.v1.QueryAllChunksResponse")
+	proto.RegisterType((*QueryChunksByProviderAddress)(nil), "canto.liquidstaking.v1.QueryChunksByProviderAddress")
+	proto.RegisterType((*QueryChunksResponse)(nil), "canto.liquidstaking.v1.QueryChunksResponse")
 	proto.RegisterType((*QueryChunkRequest)(nil), "canto.liquidstaking.v1.QueryChunkRequest")
 	proto.RegisterType((*QueryChunkResponse)(nil), "canto.liquidstaking.v1.QueryChunkResponse")
 	proto.RegisterType((*QueryAllInsurancesRequest)(nil), "canto.liquidstaking.v1.QueryAllInsurancesRequest")
-	proto.RegisterType((*QueryAllInsurancesResponse)(nil), "canto.liquidstaking.v1.QueryAllInsurancesResponse")
+	proto.RegisterType((*QueryInsurancesByProviderAddress)(nil), "canto.liquidstaking.v1.QueryInsurancesByProviderAddress")
+	proto.RegisterType((*QueryInsurancesResponse)(nil), "canto.liquidstaking.v1.QueryInsurancesResponse")
 	proto.RegisterType((*QueryInsuranceRequest)(nil), "canto.liquidstaking.v1.QueryInsuranceRequest")
 	proto.RegisterType((*QueryInsuranceResponse)(nil), "canto.liquidstaking.v1.QueryInsuranceResponse")
 	proto.RegisterType((*ChunkResponse)(nil), "canto.liquidstaking.v1.ChunkResponse")
@@ -649,57 +739,62 @@ func init() {
 }
 
 var fileDescriptor_a04856e9492a9fb6 = []byte{
-	// 788 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x56, 0xcf, 0x4f, 0x13, 0x4d,
-	0x18, 0xee, 0x96, 0x76, 0xf9, 0xfa, 0x92, 0x8f, 0x8f, 0xce, 0xc7, 0xc7, 0x57, 0xaa, 0xae, 0x75,
-	0x11, 0xa1, 0x25, 0xec, 0xa6, 0x25, 0x91, 0x83, 0x1a, 0x02, 0x1c, 0x94, 0x8b, 0x91, 0xe5, 0x60,
-	0xe2, 0x85, 0x4c, 0x77, 0x87, 0xb2, 0xa1, 0xdd, 0x29, 0x3b, 0xb3, 0x45, 0x62, 0xbc, 0x78, 0x33,
-	0x1e, 0x34, 0xf1, 0xe8, 0x41, 0xff, 0x19, 0x13, 0x8e, 0x24, 0x5e, 0x3c, 0x19, 0x03, 0xfe, 0x07,
-	0xfe, 0x03, 0xa6, 0xb3, 0xd3, 0xed, 0x2f, 0xfa, 0x83, 0x1b, 0xcc, 0x3c, 0xcf, 0xf3, 0x3e, 0xef,
-	0x33, 0xef, 0xbe, 0x29, 0xe8, 0x36, 0xf6, 0x38, 0x35, 0xab, 0xee, 0x71, 0xe0, 0x3a, 0x8c, 0xe3,
-	0x23, 0xd7, 0xab, 0x98, 0x8d, 0xa2, 0x79, 0x1c, 0x10, 0xff, 0xd4, 0xa8, 0xfb, 0x94, 0x53, 0x34,
-	0x27, 0x30, 0x46, 0x17, 0xc6, 0x68, 0x14, 0xb3, 0xb3, 0x15, 0x5a, 0xa1, 0x02, 0x62, 0x36, 0xff,
-	0x0a, 0xd1, 0xd9, 0x9b, 0x15, 0x4a, 0x2b, 0x55, 0x62, 0xe2, 0xba, 0x6b, 0x62, 0xcf, 0xa3, 0x1c,
-	0x73, 0x97, 0x7a, 0x4c, 0xde, 0x6a, 0x36, 0x65, 0x35, 0xca, 0xcc, 0x32, 0x66, 0xc4, 0x6c, 0x14,
-	0xcb, 0x84, 0xe3, 0xa2, 0x69, 0x53, 0xd7, 0x93, 0xf7, 0x85, 0x01, 0x7e, 0xba, 0x8b, 0x0b, 0xac,
-	0x3e, 0x0b, 0x68, 0xb7, 0x69, 0xf3, 0x19, 0xf6, 0x71, 0x8d, 0x59, 0xe4, 0x38, 0x20, 0x8c, 0xeb,
-	0x7b, 0xf0, 0x6f, 0xd7, 0x29, 0xab, 0x53, 0x8f, 0x11, 0xf4, 0x10, 0xd4, 0xba, 0x38, 0xc9, 0x28,
-	0x39, 0x65, 0x79, 0xaa, 0xa4, 0x19, 0x57, 0x77, 0x65, 0x84, 0xbc, 0xad, 0xc4, 0xd9, 0x8f, 0xdb,
-	0x31, 0x4b, 0x72, 0xf4, 0xff, 0xe1, 0x3f, 0x21, 0xba, 0x59, 0xad, 0x6e, 0x1f, 0x06, 0xde, 0x51,
-	0x54, 0xed, 0x39, 0xcc, 0xf5, 0x5e, 0xc8, 0x82, 0x8f, 0x40, 0xb5, 0xc5, 0x49, 0x46, 0xc9, 0x4d,
-	0x2c, 0x4f, 0x95, 0x16, 0x07, 0x15, 0x14, 0xbc, 0x16, 0xcd, 0x92, 0x24, 0x7d, 0x01, 0xd2, 0x42,
-	0x58, 0xde, 0x8a, 0x6a, 0x68, 0x1a, 0xe2, 0xae, 0x23, 0x1a, 0x48, 0x58, 0x71, 0xd7, 0xd1, 0x77,
-	0x64, 0x02, 0x5d, 0x12, 0x68, 0x0d, 0x92, 0x42, 0x44, 0x76, 0x7a, 0x6b, 0x78, 0xe1, 0x10, 0xab,
-	0xdf, 0x80, 0xf9, 0x56, 0x23, 0x3b, 0x1e, 0x0b, 0x7c, 0xec, 0xd9, 0x24, 0xea, 0xb2, 0x02, 0xd9,
-	0xab, 0x2e, 0x65, 0xbd, 0x1d, 0x00, 0x37, 0x3a, 0x95, 0xdd, 0xe6, 0x07, 0x15, 0x8d, 0xf8, 0x51,
-	0xc7, 0x1d, 0x64, 0x7d, 0x49, 0xe6, 0xdc, 0x81, 0xba, 0xba, 0x73, 0x2c, 0x73, 0xef, 0x93, 0x43,
-	0x8f, 0x21, 0x15, 0x09, 0xca, 0x04, 0xae, 0x61, 0xa6, 0xcd, 0xd5, 0xbf, 0xc4, 0xe1, 0xef, 0xee,
-	0x60, 0x7b, 0x4c, 0xa0, 0x75, 0x50, 0x71, 0x8d, 0x06, 0x1e, 0xcf, 0xc4, 0x45, 0x9d, 0x79, 0x23,
-	0x9c, 0x6e, 0xa3, 0x39, 0xdd, 0x86, 0x9c, 0x6e, 0x63, 0x9b, 0xba, 0x5e, 0x6b, 0x9c, 0x42, 0x38,
-	0x7a, 0x02, 0x08, 0xdb, 0x76, 0x50, 0x0b, 0xaa, 0x98, 0x13, 0x67, 0xdf, 0x27, 0x27, 0xd8, 0x77,
-	0x32, 0x13, 0x23, 0x44, 0xac, 0x74, 0x07, 0xc9, 0x12, 0x1c, 0xb4, 0xd1, 0xd9, 0x6d, 0x42, 0x08,
-	0xdc, 0x19, 0xdd, 0x6d, 0x9b, 0x83, 0x1e, 0x80, 0xca, 0x38, 0xe6, 0x01, 0xcb, 0x24, 0x73, 0xca,
-	0xf2, 0x74, 0x69, 0x61, 0xe8, 0xb4, 0xec, 0x09, 0xa8, 0x25, 0x29, 0xfa, 0xd7, 0x38, 0xa4, 0xfb,
-	0x5f, 0xa0, 0x37, 0xa6, 0x15, 0x48, 0x37, 0x70, 0xd5, 0x75, 0x30, 0xa7, 0xfe, 0x3e, 0x76, 0x1c,
-	0x9f, 0x30, 0x26, 0x12, 0x4b, 0x59, 0x33, 0xd1, 0xc5, 0x66, 0x78, 0x8e, 0xf2, 0x30, 0x53, 0xf7,
-	0x69, 0xc3, 0x75, 0x48, 0x1b, 0x3b, 0x21, 0xb0, 0xff, 0xb4, 0xce, 0x5b, 0xd0, 0x76, 0xfc, 0x89,
-	0xeb, 0xc5, 0x3f, 0x0f, 0x7f, 0x1d, 0x10, 0xb2, 0xef, 0x63, 0x4e, 0x44, 0xd7, 0x29, 0x6b, 0xf2,
-	0x80, 0x10, 0x0b, 0xf3, 0x8e, 0x6f, 0x47, 0x1d, 0xff, 0xdb, 0x41, 0x1b, 0x51, 0x86, 0x93, 0x22,
-	0xc3, 0xa5, 0x91, 0x2f, 0xd0, 0x9d, 0x63, 0xe9, 0x77, 0x12, 0x92, 0x62, 0x9c, 0xd1, 0x5b, 0x05,
-	0xd4, 0x70, 0x03, 0xa1, 0xc2, 0x20, 0x95, 0xfe, 0xa5, 0x97, 0x5d, 0x19, 0x0b, 0x1b, 0xbe, 0x8f,
-	0x7e, 0xef, 0xcd, 0xb7, 0x5f, 0x1f, 0xe3, 0x39, 0xa4, 0x99, 0x03, 0x96, 0x6d, 0xb8, 0xf4, 0xd0,
-	0x7b, 0x05, 0xd4, 0x70, 0xa9, 0xa1, 0xd5, 0xa1, 0xfa, 0xbd, 0x5b, 0x31, 0x6b, 0x8c, 0x0b, 0x1f,
-	0xd7, 0x51, 0xb8, 0x14, 0xd1, 0x3b, 0x05, 0x92, 0x82, 0x8a, 0xf2, 0x43, 0x2b, 0x74, 0x2e, 0xcd,
-	0x6c, 0x61, 0x1c, 0xa8, 0x34, 0xb2, 0x22, 0x8c, 0x2c, 0xa2, 0x85, 0xe1, 0x46, 0xcc, 0x57, 0xae,
-	0xf3, 0x1a, 0x7d, 0x56, 0x00, 0xda, 0xeb, 0x10, 0x15, 0x47, 0x35, 0xdd, 0xb7, 0x57, 0xb3, 0xa5,
-	0xeb, 0x50, 0xa4, 0xc5, 0x82, 0xb0, 0x78, 0x17, 0xe9, 0x83, 0x2c, 0xb6, 0xd7, 0x29, 0xfa, 0xa4,
-	0x40, 0x2a, 0x92, 0x18, 0xf1, 0x88, 0xbd, 0x2b, 0x77, 0xc4, 0x23, 0xf6, 0x7d, 0xf6, 0xba, 0x29,
-	0x8c, 0xe5, 0xd1, 0xd2, 0x68, 0x63, 0x22, 0xbf, 0xad, 0xdd, 0xb3, 0x0b, 0x4d, 0x39, 0xbf, 0xd0,
-	0x94, 0x9f, 0x17, 0x9a, 0xf2, 0xe1, 0x52, 0x8b, 0x9d, 0x5f, 0x6a, 0xb1, 0xef, 0x97, 0x5a, 0xec,
-	0xc5, 0x7a, 0xc5, 0xe5, 0x87, 0x41, 0xd9, 0xb0, 0x69, 0xcd, 0xdc, 0x6e, 0x8a, 0xad, 0x3e, 0x25,
-	0xfc, 0x84, 0xfa, 0x47, 0xe1, 0x7f, 0x66, 0xe3, 0xbe, 0xf9, 0xb2, 0x47, 0x9f, 0x9f, 0xd6, 0x09,
-	0x2b, 0xab, 0xe2, 0x97, 0xc1, 0xda, 0x9f, 0x00, 0x00, 0x00, 0xff, 0xff, 0x59, 0xeb, 0x5d, 0xf4,
-	0xd7, 0x08, 0x00, 0x00,
+	// 878 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xa4, 0x96, 0xcf, 0x6f, 0x1b, 0x45,
+	0x14, 0xc7, 0xbd, 0x8e, 0xbd, 0xc5, 0xaf, 0xa2, 0xd4, 0x43, 0x69, 0x1c, 0xb7, 0x2c, 0x66, 0x43,
+	0x49, 0xec, 0xa8, 0x3b, 0xb2, 0x8b, 0x28, 0x82, 0x42, 0xa9, 0x23, 0x01, 0x3e, 0x80, 0xda, 0x2d,
+	0x27, 0x2e, 0xd1, 0x78, 0x77, 0xea, 0xac, 0x62, 0xef, 0x38, 0xbb, 0xb3, 0x0e, 0x51, 0x94, 0x0b,
+	0x9c, 0x10, 0x1c, 0x90, 0x38, 0xc2, 0x81, 0x3f, 0x85, 0x0b, 0x52, 0x8e, 0x91, 0xb8, 0x70, 0x42,
+	0x28, 0xe1, 0x0f, 0x41, 0x9e, 0x1d, 0xaf, 0xbd, 0xeb, 0x78, 0xd7, 0x56, 0x6f, 0xf6, 0xcc, 0xfb,
+	0xf1, 0x99, 0xef, 0x7b, 0xf3, 0x66, 0x41, 0xb7, 0x88, 0xcb, 0x19, 0xee, 0x3b, 0x87, 0x81, 0x63,
+	0xfb, 0x9c, 0x1c, 0x38, 0x6e, 0x0f, 0x8f, 0x9a, 0xf8, 0x30, 0xa0, 0xde, 0xb1, 0x31, 0xf4, 0x18,
+	0x67, 0xe8, 0xb6, 0xb0, 0x31, 0x62, 0x36, 0xc6, 0xa8, 0x59, 0xbd, 0xd5, 0x63, 0x3d, 0x26, 0x4c,
+	0xf0, 0xf8, 0x57, 0x68, 0x5d, 0xbd, 0xdb, 0x63, 0xac, 0xd7, 0xa7, 0x98, 0x0c, 0x1d, 0x4c, 0x5c,
+	0x97, 0x71, 0xc2, 0x1d, 0xe6, 0xfa, 0x72, 0x57, 0xb3, 0x98, 0x3f, 0x60, 0x3e, 0xee, 0x12, 0x9f,
+	0xe2, 0x51, 0xb3, 0x4b, 0x39, 0x69, 0x62, 0x8b, 0x39, 0xae, 0xdc, 0x6f, 0x2c, 0xe0, 0x89, 0x27,
+	0x17, 0xb6, 0xfa, 0x2d, 0x40, 0xcf, 0xc6, 0x98, 0x4f, 0x89, 0x47, 0x06, 0xbe, 0x49, 0x0f, 0x03,
+	0xea, 0x73, 0xfd, 0x39, 0xbc, 0x1e, 0x5b, 0xf5, 0x87, 0xcc, 0xf5, 0x29, 0x7a, 0x04, 0xea, 0x50,
+	0xac, 0x54, 0x94, 0x9a, 0xb2, 0x7d, 0xbd, 0xa5, 0x19, 0x57, 0x9f, 0xca, 0x08, 0xfd, 0xda, 0x85,
+	0xb3, 0x7f, 0xde, 0xca, 0x99, 0xd2, 0x47, 0x5f, 0x87, 0x37, 0x44, 0xd0, 0x27, 0xfd, 0xfe, 0xee,
+	0x7e, 0xe0, 0x1e, 0x44, 0xd9, 0x3a, 0x70, 0x57, 0x6c, 0x84, 0xab, 0xed, 0xe3, 0xa7, 0x1e, 0x1b,
+	0x39, 0x36, 0xf5, 0x9e, 0xd8, 0xb6, 0x47, 0x7d, 0x1f, 0xd5, 0xe1, 0xe6, 0x50, 0x2e, 0xed, 0x91,
+	0x70, 0x4d, 0x00, 0x94, 0xcc, 0xd7, 0x86, 0x71, 0x53, 0xfd, 0x6b, 0x09, 0x3e, 0x49, 0x20, 0xc1,
+	0x3f, 0x06, 0xd5, 0x12, 0x2b, 0x15, 0xa5, 0xb6, 0xb6, 0x7d, 0xbd, 0x75, 0x6f, 0x11, 0xb8, 0xf0,
+	0x9b, 0xb8, 0x99, 0xd2, 0x49, 0xdf, 0x84, 0xf2, 0x34, 0xaa, 0xa4, 0x46, 0x37, 0x20, 0xef, 0xd8,
+	0x82, 0xa3, 0x60, 0xe6, 0x1d, 0x5b, 0xef, 0x48, 0x25, 0x63, 0x21, 0xd0, 0x03, 0x28, 0x8a, 0x20,
+	0x52, 0xb1, 0x37, 0xd3, 0x13, 0x87, 0xb6, 0xfa, 0x1d, 0xd8, 0x98, 0x28, 0xd5, 0x71, 0xfd, 0xc0,
+	0x23, 0xae, 0x45, 0x23, 0xb5, 0xbe, 0x84, 0x9a, 0xd8, 0x9c, 0xee, 0xbc, 0x94, 0x62, 0x36, 0xac,
+	0x27, 0xc2, 0x45, 0xec, 0x1d, 0x00, 0x27, 0x5a, 0x95, 0xca, 0xd5, 0x17, 0x1d, 0x20, 0xf2, 0x8f,
+	0xd4, 0x9b, 0x71, 0xd6, 0xb7, 0x64, 0xed, 0x67, 0xac, 0xae, 0x56, 0x91, 0xc0, 0xed, 0xa4, 0xa1,
+	0xa4, 0xf9, 0x1c, 0x4a, 0x51, 0x40, 0xa9, 0xe6, 0x0a, 0x30, 0x53, 0x5f, 0xfd, 0xf7, 0x3c, 0xbc,
+	0x1a, 0x2f, 0x52, 0x02, 0x02, 0x3d, 0x04, 0x95, 0x0c, 0x58, 0xe0, 0xf2, 0x4a, 0x5e, 0xe4, 0xd9,
+	0x30, 0xc2, 0x1b, 0x67, 0x8c, 0x6f, 0x9c, 0x21, 0x6f, 0x9c, 0xb1, 0xcb, 0x1c, 0x77, 0xd2, 0xe2,
+	0xa1, 0x39, 0xfa, 0x02, 0x10, 0xb1, 0xac, 0x60, 0x10, 0xf4, 0x09, 0xa7, 0xf6, 0x9e, 0x47, 0x8f,
+	0x88, 0x67, 0x57, 0xd6, 0x32, 0x82, 0x98, 0xe5, 0x19, 0x27, 0x53, 0xf8, 0xa0, 0xc7, 0xb3, 0xa7,
+	0x2d, 0x88, 0x00, 0x6f, 0x67, 0x9f, 0x76, 0xea, 0x83, 0x3e, 0x02, 0xd5, 0xe7, 0x84, 0x07, 0x7e,
+	0xa5, 0x58, 0x53, 0xb6, 0x6f, 0xb4, 0x36, 0x53, 0x3b, 0xef, 0xb9, 0x30, 0x35, 0xa5, 0x8b, 0xfe,
+	0x67, 0x1e, 0xca, 0xf3, 0x15, 0x48, 0xca, 0xb4, 0x03, 0xe5, 0x11, 0xe9, 0x3b, 0x36, 0xe1, 0x6c,
+	0xda, 0x66, 0x79, 0xd1, 0x66, 0x37, 0xa3, 0x8d, 0xb4, 0x96, 0x5c, 0xbb, 0xb2, 0x25, 0x67, 0xe4,
+	0x2f, 0xac, 0x26, 0xff, 0x06, 0xbc, 0xf2, 0x82, 0xd2, 0x3d, 0x8f, 0x70, 0x2a, 0x4e, 0x5d, 0x32,
+	0xaf, 0xbd, 0xa0, 0xd4, 0x24, 0x7c, 0xe6, 0x1e, 0xaa, 0xcb, 0xdf, 0x43, 0xf4, 0x38, 0xd2, 0xf0,
+	0x9a, 0xd0, 0x70, 0x2b, 0xb3, 0x02, 0x71, 0x1d, 0x5b, 0xdf, 0x97, 0xa0, 0x28, 0xda, 0x19, 0xfd,
+	0xa0, 0x80, 0x1a, 0x4e, 0x45, 0xd4, 0x58, 0x14, 0x65, 0x7e, 0x10, 0x57, 0x77, 0x96, 0xb2, 0x0d,
+	0xeb, 0xa3, 0xbf, 0xfb, 0xdd, 0x5f, 0xff, 0xfd, 0x92, 0xaf, 0x21, 0x0d, 0x2f, 0x78, 0x00, 0xc2,
+	0x41, 0x8c, 0x7e, 0x52, 0x40, 0x0d, 0x07, 0x24, 0xba, 0x9f, 0x1a, 0x3f, 0x39, 0xa9, 0x33, 0x70,
+	0xe2, 0x43, 0x37, 0x1b, 0x27, 0x9c, 0xae, 0xe8, 0x0f, 0x05, 0xd6, 0x17, 0x8d, 0xfe, 0xf7, 0x96,
+	0x48, 0x38, 0xe7, 0xb5, 0x1a, 0x66, 0x5b, 0x60, 0x3e, 0x42, 0x1f, 0xa6, 0x63, 0xe2, 0x49, 0x97,
+	0xe2, 0x93, 0x64, 0x1f, 0x9f, 0xa2, 0x1f, 0x15, 0x28, 0x8a, 0xb0, 0xa8, 0x9e, 0x9d, 0x7a, 0x22,
+	0x66, 0x63, 0x19, 0x53, 0x09, 0xb9, 0x23, 0x20, 0xef, 0xa1, 0xcd, 0x0c, 0xc8, 0x13, 0xc7, 0x3e,
+	0x45, 0xbf, 0x29, 0x00, 0xd3, 0x71, 0x8e, 0x9a, 0x59, 0x35, 0x9e, 0x7b, 0x63, 0xaa, 0x38, 0xd5,
+	0x65, 0xfe, 0xa9, 0xd0, 0x1b, 0x82, 0xef, 0x1d, 0xa4, 0x2f, 0xe2, 0x9b, 0xbe, 0x05, 0xe8, 0x5c,
+	0x81, 0x3b, 0x69, 0x8f, 0xd7, 0x07, 0x4b, 0x26, 0x9f, 0xaf, 0xfb, 0xca, 0xd8, 0x9f, 0x09, 0xec,
+	0x4f, 0xd1, 0x27, 0xd9, 0xd8, 0xa9, 0xf5, 0xff, 0x55, 0x81, 0x52, 0x14, 0x3e, 0xe3, 0x52, 0x25,
+	0x9f, 0xc0, 0xaa, 0xb1, 0xac, 0xb9, 0x84, 0xc6, 0x02, 0xba, 0x8e, 0xb6, 0x96, 0x80, 0x1e, 0xf7,
+	0x43, 0xfb, 0xd9, 0xd9, 0x85, 0xa6, 0x9c, 0x5f, 0x68, 0xca, 0xbf, 0x17, 0x9a, 0xf2, 0xf3, 0xa5,
+	0x96, 0x3b, 0xbf, 0xd4, 0x72, 0x7f, 0x5f, 0x6a, 0xb9, 0x6f, 0x1e, 0xf6, 0x1c, 0xbe, 0x1f, 0x74,
+	0x0d, 0x8b, 0x0d, 0xf0, 0xee, 0x38, 0xd8, 0xfd, 0xaf, 0x28, 0x3f, 0x62, 0xde, 0x41, 0xf8, 0x0f,
+	0x8f, 0xde, 0xc7, 0xdf, 0x26, 0xe2, 0xf3, 0xe3, 0x21, 0xf5, 0xbb, 0xaa, 0xf8, 0x7a, 0x7c, 0xf0,
+	0x7f, 0x00, 0x00, 0x00, 0xff, 0xff, 0x53, 0x60, 0xac, 0xdb, 0xfb, 0x0a, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -716,9 +811,11 @@ const _ = grpc.SupportPackageIsVersion4
 type QueryClient interface {
 	// Params retrieves the total set of minting parameters.
 	Params(ctx context.Context, in *QueryParamsRequest, opts ...grpc.CallOption) (*QueryParamsResponse, error)
-	Chunks(ctx context.Context, in *QueryAllChunksRequest, opts ...grpc.CallOption) (*QueryAllChunksResponse, error)
+	Chunks(ctx context.Context, in *QueryAllChunksRequest, opts ...grpc.CallOption) (*QueryChunksResponse, error)
+	ChunksByProviderAddress(ctx context.Context, in *QueryChunksByProviderAddress, opts ...grpc.CallOption) (*QueryChunksResponse, error)
 	Chunk(ctx context.Context, in *QueryChunkRequest, opts ...grpc.CallOption) (*QueryChunkResponse, error)
-	Insurances(ctx context.Context, in *QueryAllInsurancesRequest, opts ...grpc.CallOption) (*QueryAllInsurancesResponse, error)
+	Insurances(ctx context.Context, in *QueryAllInsurancesRequest, opts ...grpc.CallOption) (*QueryInsurancesResponse, error)
+	InsurancesByProviderAddress(ctx context.Context, in *QueryInsurancesByProviderAddress, opts ...grpc.CallOption) (*QueryInsurancesResponse, error)
 	Insurance(ctx context.Context, in *QueryInsuranceRequest, opts ...grpc.CallOption) (*QueryInsuranceResponse, error)
 }
 
@@ -739,9 +836,18 @@ func (c *queryClient) Params(ctx context.Context, in *QueryParamsRequest, opts .
 	return out, nil
 }
 
-func (c *queryClient) Chunks(ctx context.Context, in *QueryAllChunksRequest, opts ...grpc.CallOption) (*QueryAllChunksResponse, error) {
-	out := new(QueryAllChunksResponse)
+func (c *queryClient) Chunks(ctx context.Context, in *QueryAllChunksRequest, opts ...grpc.CallOption) (*QueryChunksResponse, error) {
+	out := new(QueryChunksResponse)
 	err := c.cc.Invoke(ctx, "/canto.liquidstaking.v1.Query/Chunks", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *queryClient) ChunksByProviderAddress(ctx context.Context, in *QueryChunksByProviderAddress, opts ...grpc.CallOption) (*QueryChunksResponse, error) {
+	out := new(QueryChunksResponse)
+	err := c.cc.Invoke(ctx, "/canto.liquidstaking.v1.Query/ChunksByProviderAddress", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -757,9 +863,18 @@ func (c *queryClient) Chunk(ctx context.Context, in *QueryChunkRequest, opts ...
 	return out, nil
 }
 
-func (c *queryClient) Insurances(ctx context.Context, in *QueryAllInsurancesRequest, opts ...grpc.CallOption) (*QueryAllInsurancesResponse, error) {
-	out := new(QueryAllInsurancesResponse)
+func (c *queryClient) Insurances(ctx context.Context, in *QueryAllInsurancesRequest, opts ...grpc.CallOption) (*QueryInsurancesResponse, error) {
+	out := new(QueryInsurancesResponse)
 	err := c.cc.Invoke(ctx, "/canto.liquidstaking.v1.Query/Insurances", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *queryClient) InsurancesByProviderAddress(ctx context.Context, in *QueryInsurancesByProviderAddress, opts ...grpc.CallOption) (*QueryInsurancesResponse, error) {
+	out := new(QueryInsurancesResponse)
+	err := c.cc.Invoke(ctx, "/canto.liquidstaking.v1.Query/InsurancesByProviderAddress", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -779,9 +894,11 @@ func (c *queryClient) Insurance(ctx context.Context, in *QueryInsuranceRequest, 
 type QueryServer interface {
 	// Params retrieves the total set of minting parameters.
 	Params(context.Context, *QueryParamsRequest) (*QueryParamsResponse, error)
-	Chunks(context.Context, *QueryAllChunksRequest) (*QueryAllChunksResponse, error)
+	Chunks(context.Context, *QueryAllChunksRequest) (*QueryChunksResponse, error)
+	ChunksByProviderAddress(context.Context, *QueryChunksByProviderAddress) (*QueryChunksResponse, error)
 	Chunk(context.Context, *QueryChunkRequest) (*QueryChunkResponse, error)
-	Insurances(context.Context, *QueryAllInsurancesRequest) (*QueryAllInsurancesResponse, error)
+	Insurances(context.Context, *QueryAllInsurancesRequest) (*QueryInsurancesResponse, error)
+	InsurancesByProviderAddress(context.Context, *QueryInsurancesByProviderAddress) (*QueryInsurancesResponse, error)
 	Insurance(context.Context, *QueryInsuranceRequest) (*QueryInsuranceResponse, error)
 }
 
@@ -792,14 +909,20 @@ type UnimplementedQueryServer struct {
 func (*UnimplementedQueryServer) Params(ctx context.Context, req *QueryParamsRequest) (*QueryParamsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Params not implemented")
 }
-func (*UnimplementedQueryServer) Chunks(ctx context.Context, req *QueryAllChunksRequest) (*QueryAllChunksResponse, error) {
+func (*UnimplementedQueryServer) Chunks(ctx context.Context, req *QueryAllChunksRequest) (*QueryChunksResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Chunks not implemented")
+}
+func (*UnimplementedQueryServer) ChunksByProviderAddress(ctx context.Context, req *QueryChunksByProviderAddress) (*QueryChunksResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ChunksByProviderAddress not implemented")
 }
 func (*UnimplementedQueryServer) Chunk(ctx context.Context, req *QueryChunkRequest) (*QueryChunkResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Chunk not implemented")
 }
-func (*UnimplementedQueryServer) Insurances(ctx context.Context, req *QueryAllInsurancesRequest) (*QueryAllInsurancesResponse, error) {
+func (*UnimplementedQueryServer) Insurances(ctx context.Context, req *QueryAllInsurancesRequest) (*QueryInsurancesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Insurances not implemented")
+}
+func (*UnimplementedQueryServer) InsurancesByProviderAddress(ctx context.Context, req *QueryInsurancesByProviderAddress) (*QueryInsurancesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method InsurancesByProviderAddress not implemented")
 }
 func (*UnimplementedQueryServer) Insurance(ctx context.Context, req *QueryInsuranceRequest) (*QueryInsuranceResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Insurance not implemented")
@@ -845,6 +968,24 @@ func _Query_Chunks_Handler(srv interface{}, ctx context.Context, dec func(interf
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Query_ChunksByProviderAddress_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryChunksByProviderAddress)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).ChunksByProviderAddress(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/canto.liquidstaking.v1.Query/ChunksByProviderAddress",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).ChunksByProviderAddress(ctx, req.(*QueryChunksByProviderAddress))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Query_Chunk_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(QueryChunkRequest)
 	if err := dec(in); err != nil {
@@ -881,6 +1022,24 @@ func _Query_Insurances_Handler(srv interface{}, ctx context.Context, dec func(in
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Query_InsurancesByProviderAddress_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryInsurancesByProviderAddress)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).InsurancesByProviderAddress(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/canto.liquidstaking.v1.Query/InsurancesByProviderAddress",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).InsurancesByProviderAddress(ctx, req.(*QueryInsurancesByProviderAddress))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Query_Insurance_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(QueryInsuranceRequest)
 	if err := dec(in); err != nil {
@@ -912,12 +1071,20 @@ var _Query_serviceDesc = grpc.ServiceDesc{
 			Handler:    _Query_Chunks_Handler,
 		},
 		{
+			MethodName: "ChunksByProviderAddress",
+			Handler:    _Query_ChunksByProviderAddress_Handler,
+		},
+		{
 			MethodName: "Chunk",
 			Handler:    _Query_Chunk_Handler,
 		},
 		{
 			MethodName: "Insurances",
 			Handler:    _Query_Insurances_Handler,
+		},
+		{
+			MethodName: "InsurancesByProviderAddress",
+			Handler:    _Query_InsurancesByProviderAddress_Handler,
 		},
 		{
 			MethodName: "Insurance",
@@ -1007,7 +1174,7 @@ func (m *QueryAllChunksRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *QueryAllChunksResponse) Marshal() (dAtA []byte, err error) {
+func (m *QueryChunksByProviderAddress) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -1017,12 +1184,42 @@ func (m *QueryAllChunksResponse) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *QueryAllChunksResponse) MarshalTo(dAtA []byte) (int, error) {
+func (m *QueryChunksByProviderAddress) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *QueryAllChunksResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *QueryChunksByProviderAddress) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.ProviderAddress) > 0 {
+		i -= len(m.ProviderAddress)
+		copy(dAtA[i:], m.ProviderAddress)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.ProviderAddress)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryChunksResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryChunksResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryChunksResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -1130,7 +1327,7 @@ func (m *QueryAllInsurancesRequest) MarshalToSizedBuffer(dAtA []byte) (int, erro
 	return len(dAtA) - i, nil
 }
 
-func (m *QueryAllInsurancesResponse) Marshal() (dAtA []byte, err error) {
+func (m *QueryInsurancesByProviderAddress) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -1140,12 +1337,42 @@ func (m *QueryAllInsurancesResponse) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *QueryAllInsurancesResponse) MarshalTo(dAtA []byte) (int, error) {
+func (m *QueryInsurancesByProviderAddress) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *QueryAllInsurancesResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *QueryInsurancesByProviderAddress) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.ProviderAddress) > 0 {
+		i -= len(m.ProviderAddress)
+		copy(dAtA[i:], m.ProviderAddress)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.ProviderAddress)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryInsurancesResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryInsurancesResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryInsurancesResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -1413,7 +1640,20 @@ func (m *QueryAllChunksRequest) Size() (n int) {
 	return n
 }
 
-func (m *QueryAllChunksResponse) Size() (n int) {
+func (m *QueryChunksByProviderAddress) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.ProviderAddress)
+	if l > 0 {
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	return n
+}
+
+func (m *QueryChunksResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -1462,7 +1702,20 @@ func (m *QueryAllInsurancesRequest) Size() (n int) {
 	return n
 }
 
-func (m *QueryAllInsurancesResponse) Size() (n int) {
+func (m *QueryInsurancesByProviderAddress) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.ProviderAddress)
+	if l > 0 {
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	return n
+}
+
+func (m *QueryInsurancesResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -1749,7 +2002,7 @@ func (m *QueryAllChunksRequest) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *QueryAllChunksResponse) Unmarshal(dAtA []byte) error {
+func (m *QueryChunksByProviderAddress) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1772,10 +2025,92 @@ func (m *QueryAllChunksResponse) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: QueryAllChunksResponse: wiretype end group for non-group")
+			return fmt.Errorf("proto: QueryChunksByProviderAddress: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryAllChunksResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: QueryChunksByProviderAddress: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ProviderAddress", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ProviderAddress = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryChunksResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryChunksResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryChunksResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -2038,7 +2373,7 @@ func (m *QueryAllInsurancesRequest) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *QueryAllInsurancesResponse) Unmarshal(dAtA []byte) error {
+func (m *QueryInsurancesByProviderAddress) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -2061,10 +2396,92 @@ func (m *QueryAllInsurancesResponse) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: QueryAllInsurancesResponse: wiretype end group for non-group")
+			return fmt.Errorf("proto: QueryInsurancesByProviderAddress: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryAllInsurancesResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: QueryInsurancesByProviderAddress: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ProviderAddress", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ProviderAddress = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryInsurancesResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryInsurancesResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryInsurancesResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
