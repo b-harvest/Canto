@@ -108,12 +108,17 @@ message Insurance {
   string validator_address = 2;
   // Address of the insurance provider
   string provider_address = 3;
+  // Amount of native token to guard slashing
+  string amount = 4 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Coin",
+    (gogoproto.nullable) = false
+  ];
   // Fee rate of the insurance
-  string fee_rate = 4 [
+  string fee_rate = 5 [
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
     (gogoproto.nullable) = false
   ];
-  InsuranceStatus status = 5;
+  InsuranceStatus status = 6;
 }
 
 // TODO: Need to message for querying or for internal logic like NetAmountState
