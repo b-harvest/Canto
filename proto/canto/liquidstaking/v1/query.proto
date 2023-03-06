@@ -24,7 +24,7 @@ service Query {
     option (google.api.http).get = "/canto/liquidstaking/v1/chunks";
   }
 
-  rpc ChunksByProviderAddress(QueryChunksByProviderAddress)
+  rpc ChunksByProviderAddress(QueryChunksByProviderAddressRequest)
       returns (QueryChunksResponse) {
     option (google.api.http).get =
         "/canto/liquidstaking/v1/chunks/provider/{provider_address}";
@@ -38,7 +38,7 @@ service Query {
     option (google.api.http).get = "/canto/liquidstaking/v1/insurances";
   }
 
-  rpc InsurancesByProviderAddress(QueryInsurancesByProviderAddress)
+  rpc InsurancesByProviderAddress(QueryInsurancesByProviderAddressRequest)
       returns (QueryInsurancesResponse) {
     option (google.api.http).get =
         "/canto/liquidstaking/v1/insurances/provider/{provider_address}";
@@ -60,7 +60,7 @@ message QueryParamsResponse {
 
 message QueryAllChunksRequest {}
 
-message QueryChunksByProviderAddress { string provider_address = 1; }
+message QueryChunksByProviderAddressRequest { string provider_address = 1; }
 
 message QueryChunksResponse { repeated ChunkResponse chunks = 1; }
 
@@ -70,7 +70,7 @@ message QueryChunkResponse { Chunk chunk = 1; }
 
 message QueryAllInsurancesRequest {}
 
-message QueryInsurancesByProviderAddress { string provider_address = 1; }
+message QueryInsurancesByProviderAddressRequest { string provider_address = 1; }
 
 message QueryInsurancesResponse { repeated InsuranceResponse insurances = 1; }
 
