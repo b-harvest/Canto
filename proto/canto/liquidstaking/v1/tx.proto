@@ -14,7 +14,6 @@ service Msg {
   rpc LiquidUnstake(MsgLiquidUnstake) returns (MsgLiquidUnstakeResponse) {
     option (google.api.http).post = "/canto/liquidstaking/v1/tx/liquid_unstake";
   };
-
   rpc InsuranceProvide(MsgInsuranceProvide)
       returns (MsgInsuranceProvideResponse) {
     option (google.api.http).post =
@@ -35,11 +34,12 @@ service Msg {
     option (google.api.http).post =
         "/canto/liquidstaking/v1/tx/withdraw_insurance";
   };
-  // WithdrawInsuranceFee is used to withdraw the cumulated insurance fee.
-  rpc WithdrawInsuranceFee(MsgWithdrawInsuranceFee)
-      returns (MsgWithdrawInsuranceFeeResponse) {
+  // WithdrawInsuranceCommission is used to withdraw the cumulated insurance
+  // commission.
+  rpc WithdrawInsuranceCommission(MsgWithdrawInsuranceCommission)
+      returns (MsgWithdrawInsuranceCommissionResponse) {
     option (google.api.http).post =
-        "/canto/liquidstaking/v1/tx/withdraw_insurance_fee";
+        "/canto/liquidstaking/v1/tx/withdraw_insurance_commission";
   };
 }
 
@@ -124,12 +124,12 @@ message MsgWithdrawInsurance {
 
 message MsgWithdrawInsuranceResponse {}
 
-message MsgWithdrawInsuranceFee {
+message MsgWithdrawInsuranceCommission {
   // provider_address is the address of the user who want to withdraw the
   // accumulated insurance fee.
-  string provider_address = 2;
+  string provider_address = 1;
   // id is the id of the insurance that accumulated fees to be withdrawn.
-  uint64 id = 1;
+  uint64 id = 2;
 }
 
-message MsgWithdrawInsuranceFeeResponse {}
+message MsgWithdrawInsuranceCommissionResponse {}

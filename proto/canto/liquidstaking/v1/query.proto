@@ -8,8 +8,6 @@ import "canto/liquidstaking/v1/liquidstaking.proto";
 
 option go_package = "github.com/Canto-Network/Canto/v6/x/liquidstaking/types";
 
-// TODO: Imagine what queries would be useful on client and frontend side and
-// design query endpoints from them.
 // TODO: Index keys and values will be determined after the query endpoints are
 // designed.
 
@@ -59,7 +57,10 @@ service Query {
         "/canto/liquidstaking/v1/insurances/{id}/commission";
   }
 
-  // TODO: NetAmount rpc
+  // States returns the states of the module.
+  rpc States(QueryStatesRequest) returns (QueryStatesResponse) {
+    option (google.api.http).get = "/canto/liquidstaking/v1/states";
+  }
 }
 
 // QueryParamsRequest is the request type for the Query/Params RPC method.
@@ -72,7 +73,7 @@ message QueryParamsResponse {
 }
 
 message QueryAllChunksRequest {
-  // query all chunks in a specific status
+  // Query all chunks in a specific status
   ChunkStatus status = 1;
 }
 
@@ -85,18 +86,17 @@ message QueryChunkRequest { uint64 id = 1; }
 message QueryChunkResponse { Chunk chunk = 1; }
 
 message QueryAllInsurancesRequest {
-  // query all insurances pointing to a specific validator
+  // Query all insurances pointing to a specific validator
   string validator_address = 1;
   // query all insurances in a specific status
   InsuranceStatus status = 2;
 }
 
 message QueryInsurancesByProviderAddressRequest {
-  // query all insurances created by specific provider
+  // Query all insurances created by specific provider
   string provider_address = 1;
-  // query all insurances in a specific status
+  // Query all insurances in a specific status
   InsuranceStatus status = 2;
-  // TODO: add status as query param
 }
 
 message QueryInsurancesResponse { repeated InsuranceResponse insurances = 1; }
@@ -109,6 +109,12 @@ message QueryInsuranceCommissionRequest { uint64 id = 1; }
 
 message QueryInsuranceCommissionResponse {
   cosmos.base.v1beta1.Coin commission = 1;
+}
+
+message QueryStatesRequest {}
+
+message QueryStatesResponse {
+  NetAmountState net_amount_state = 1 [ (gogoproto.nullable) = false ];
 }
 
 message ChunkResponse {
