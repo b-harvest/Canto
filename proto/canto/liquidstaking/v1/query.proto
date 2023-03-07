@@ -25,14 +25,6 @@ service Query {
     option (google.api.http).get = "/canto/liquidstaking/v1/chunks";
   }
 
-  // ChunksByProviderAddress returns all paired chunks by provider address.
-  // Only paired chunk can have insurance.
-  rpc ChunksByProviderAddress(QueryChunksByProviderAddressRequest)
-      returns (QueryChunksResponse) {
-    option (google.api.http).get =
-        "/canto/liquidstaking/v1/chunks/provider/{provider_address}";
-  }
-
   // Chunk returns a chunk by id.
   rpc Chunk(QueryChunkRequest) returns (QueryChunkResponse) {
     option (google.api.http).get = "/canto/liquidstaking/v1/chunks/{id}";
@@ -54,6 +46,20 @@ service Query {
   rpc Insurance(QueryInsuranceRequest) returns (QueryInsuranceResponse) {
     option (google.api.http).get = "/canto/liquidstaking/v1/insurances/{id}";
   }
+
+  // Get cumulative commission from last Epoch.
+  // Calculated by:
+  // Insurance.FeeRate *
+  // (Cumulative reward of Chunk from last epoch +
+  // DerivedAddress(Chunk.Id).Balance) +
+  // DerivedAddress(Insurance.Id).Balance - Insurance.Amount
+  rpc InsuranceCommission(QueryInsuranceCommissionRequest)
+      returns (QueryInsuranceCommissionResponse) {
+    option (google.api.http).get =
+        "/canto/liquidstaking/v1/insurances/{id}/commission";
+  }
+
+  // TODO: NetAmount rpc
 }
 
 // QueryParamsRequest is the request type for the Query/Params RPC method.
@@ -65,7 +71,10 @@ message QueryParamsResponse {
   Params params = 1 [ (gogoproto.nullable) = false ];
 }
 
-message QueryAllChunksRequest {}
+message QueryAllChunksRequest {
+  // query all chunks in a specific status
+  ChunkStatus status = 1;
+}
 
 message QueryChunksByProviderAddressRequest { string provider_address = 1; }
 
@@ -75,9 +84,20 @@ message QueryChunkRequest { uint64 id = 1; }
 
 message QueryChunkResponse { Chunk chunk = 1; }
 
-message QueryAllInsurancesRequest {}
+message QueryAllInsurancesRequest {
+  // query all insurances pointing to a specific validator
+  string validator_address = 1;
+  // query all insurances in a specific status
+  InsuranceStatus status = 2;
+}
 
-message QueryInsurancesByProviderAddressRequest { string provider_address = 1; }
+message QueryInsurancesByProviderAddressRequest {
+  // query all insurances created by specific provider
+  string provider_address = 1;
+  // query all insurances in a specific status
+  InsuranceStatus status = 2;
+  // TODO: add status as query param
+}
 
 message QueryInsurancesResponse { repeated InsuranceResponse insurances = 1; }
 
@@ -85,17 +105,30 @@ message QueryInsuranceRequest { uint64 id = 1; }
 
 message QueryInsuranceResponse { InsuranceResponse insurance = 1; }
 
+message QueryInsuranceCommissionRequest { uint64 id = 1; }
+
+message QueryInsuranceCommissionResponse {
+  cosmos.base.v1beta1.Coin commission = 1;
+}
+
 message ChunkResponse {
   // Chunk id
   uint64 id = 1;
-  // Amount of the chunk
-  cosmos.base.v1beta1.Coin amount = 2 [ (gogoproto.nullable) = false ];
+  // Amount of native tokens delegated by Chunk.
+  // If got slashed, the amount will be reduced.
+  // This value can be nil in Pairing status.
+  string tokens = 2
+      [ (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int" ];
+  // Amount of shares delegated by Chunk.
+  // This value can be nil in Pairing status.
+  string shares = 3
+      [ (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec" ];
   // Accumulated reward of the chunk which will be reset at Epoch
-  cosmos.base.v1beta1.Coin accumulated_reward = 3;
+  cosmos.base.v1beta1.Coin accumulated_reward = 4;
   // Paired insurance
-  Insurance insurance = 4;
+  Insurance insurance = 5;
   // Status of the chunk
-  ChunkStatus status = 5;
+  ChunkStatus status = 6;
 }
 
 message InsuranceResponse {

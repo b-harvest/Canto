@@ -118,8 +118,8 @@ message Insurance {
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
     (gogoproto.nullable) = false
   ];
-  InsuranceStatus status = 6;
+  // Id of Paired chunk, 0 means no chunk
+  uint64 chunk_id = 6;
+  // Status of the insurance
+  InsuranceStatus status = 7;
 }
-
-// TODO: Need to message for querying or for internal logic like NetAmountState
-// in crescent.
