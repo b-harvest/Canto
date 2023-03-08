@@ -163,29 +163,44 @@ message NetAmountState {
     (gogoproto.nullable) = false
   ];
 
+  // The cumulative reward of all chunks delegations from the last epoch
+  string total_remaining_rewards = 5 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable) = false
+  ];
+
+  // Sum of the balances of all chunks.
+  // Note: Paired chunks can be pairing status for various reasons (such as lack
+  // of insurance). In such cases, the delegated native tokens returns to the
+  // balance of DerivedAddress(Chunk.Id) after un-bonding period is finished.
+  string total_chunks_balance = 6 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+
   // The token amount worth of all delegation shares of all paired chunks
   // (slashing applied amount)
-  string total_liquid_tokens = 5 [
+  string total_liquid_tokens = 7 [
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
     (gogoproto.nullable) = false
   ];
 
   // The sum of all paired insurances' amount (=
   // DerivedAddress(Insurance.Id).Balance)
-  string total_insurance_tokens = 6 [
+  string total_insurance_tokens = 8 [
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
     (gogoproto.nullable) = false
   ];
 
   // The sum of unbonding balance of all chunks in UnpairingForRepairing and
   // UnpairingForUnstake
-  string total_unbonding_balance = 7 [
+  string total_unbonding_balance = 9 [
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
     (gogoproto.nullable) = false
   ];
 
   // Balance of reward module account
-  string reward_module_acc_balance = 8 [
+  string reward_module_acc_balance = 10 [
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
     (gogoproto.nullable) = false
   ];
