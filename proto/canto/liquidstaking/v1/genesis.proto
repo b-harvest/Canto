@@ -17,6 +17,7 @@ message GenesisState {
   uint64 last_insurance_id = 4;
   repeated Chunk chunks = 5;
   repeated Insurance insurances = 6;
+  repeated WithdrawingInsurance withdrawing_insurances = 7;
   repeated LiquidUnstakeUnbondingDelegationInfo
-      liquid_unstake_unbonding_delegations = 7;
+      liquid_unstake_unbonding_delegations = 8;
 }

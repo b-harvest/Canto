@@ -227,3 +227,16 @@ message LiquidUnstakeUnbondingDelegationInfo {
   // The id of chunk in UnpairingForUnstake status.
   uint64 chunk_id = 5;
 }
+
+// WithdrawalInsurance is created when insurance provider requests a
+// MsgWithdrawInsurance. Actual withdrawal is done after completion_time.
+message WithdrawingInsurance {
+  // Id of the insurance
+  uint64 id = 1;
+  // Id of the chunk
+  uint64 chunk_id = 2;
+  // The unix time for unbonding completion
+  // Insurance is withdrawn after completion_time
+  google.protobuf.Timestamp completion_time = 3
+      [ (gogoproto.nullable) = false, (gogoproto.stdtime) = true ];
+}
