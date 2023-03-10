@@ -123,6 +123,9 @@ import (
 	"github.com/Canto-Network/Canto/v6/x/inflation"
 	inflationkeeper "github.com/Canto-Network/Canto/v6/x/inflation/keeper"
 	inflationtypes "github.com/Canto-Network/Canto/v6/x/inflation/types"
+	"github.com/Canto-Network/Canto/v6/x/onboarding"
+	onboardingkeeper "github.com/Canto-Network/Canto/v6/x/onboarding/keeper"
+	onboardingtypes "github.com/Canto-Network/Canto/v6/x/onboarding/types"
 	"github.com/Canto-Network/Canto/v6/x/recovery"
 	recoverykeeper "github.com/Canto-Network/Canto/v6/x/recovery/keeper"
 	recoverytypes "github.com/Canto-Network/Canto/v6/x/recovery/types"
@@ -204,6 +207,7 @@ var (
 		csr.AppModuleBasic{},
 		epochs.AppModuleBasic{},
 		recovery.AppModuleBasic{},
+		onboarding.AppModuleBasic{},
 		fees.AppModuleBasic{},
 	)
 
@@ -283,6 +287,7 @@ type Canto struct {
 	EpochsKeeper     epochskeeper.Keeper
 	VestingKeeper    vestingkeeper.Keeper
 	RecoveryKeeper   *recoverykeeper.Keeper
+	OnboardingKeeper *onboardingkeeper.Keeper
 	FeesKeeper       feeskeeper.Keeper
 	GovshuttleKeeper govshuttlekeeper.Keeper
 	CSRKeeper        csrkeeper.Keeper
@@ -341,7 +346,7 @@ func NewCanto(
 		evmtypes.StoreKey, feemarkettypes.StoreKey,
 		// Canto keys
 		inflationtypes.StoreKey, erc20types.StoreKey,
-		epochstypes.StoreKey, vestingtypes.StoreKey, recoverytypes.StoreKey, //recoverytypes.StoreKe
+		epochstypes.StoreKey, vestingtypes.StoreKey, recoverytypes.StoreKey, onboardingtypes.StoreKey,
 		feestypes.StoreKey,
 		csrtypes.StoreKey,
 		govshuttletypes.StoreKey,
@@ -505,10 +510,10 @@ func NewCanto(
 	// Create Transfer Stack
 
 	// SendPacket, since it is originating from the application to core IBC:
-	// transferKeeper.SendPacket -> claim.SendPacket -> recovery.SendPacket -> channel.SendPacket
+	// transferKeeper.SendPacket -> onboarding.SendPacket -> recovery.SendPacket -> channel.SendPacket
 
 	// RecvPacket, message that originates from core IBC and goes down to app, the flow is the otherway
-	// channel.RecvPacket -> recovery.OnRecvPacket -> claim.OnRecvPacket -> transfer.OnRecvPacket
+	// channel.RecvPacket -> recovery.OnRecvPacket -> onboarding.OnRecvPacket -> transfer.OnRecvPacket
 
 	// app.TransferKeeper = ibctransferkeeper.NewKeeper(
 	// 	appCodec, keys[ibctransfertypes.StoreKey], app.GetSubspace(ibctransfertypes.ModuleName), app.RecoveryKeeper,
@@ -527,13 +532,23 @@ func NewCanto(
 		app.TransferKeeper,
 	)
 
+	app.OnboardingKeeper = onboardingkeeper.NewKeeper(
+		app.GetSubspace(onboardingtypes.ModuleName),
+		app.AccountKeeper,
+		app.BankKeeper,
+		app.IBCKeeper.ChannelKeeper,
+		app.TransferKeeper,
+	)
+
 	app.TransferKeeper = ibctransferkeeper.NewKeeper(
-		appCodec, keys[ibctransfertypes.StoreKey], app.GetSubspace(ibctransfertypes.ModuleName), app.RecoveryKeeper,
+		// TODO: need to check didn't necessary onboarding keeper, ICS4Wrapper for recv
+		appCodec, keys[ibctransfertypes.StoreKey], app.GetSubspace(ibctransfertypes.ModuleName), app.OnboardingKeeper,
 		//nil, // ICS4 Wrapper: claims IBC middleware
 		app.IBCKeeper.ChannelKeeper, &app.IBCKeeper.PortKeeper,
 		app.AccountKeeper, app.BankKeeper, scopedTransferKeeper,
 	)
 
+	app.OnboardingKeeper.SetTransferKeeper(app.TransferKeeper)
 	app.RecoveryKeeper.SetTransferKeeper(app.TransferKeeper)
 
 	// app.TransferKeeper = ibctransferkeeper.NewKeeper(
@@ -544,6 +559,7 @@ func NewCanto(
 	// )
 	// Set the ICS4 wrappers for claims and recovery middlewares
 	app.RecoveryKeeper.SetICS4Wrapper(app.IBCKeeper.ChannelKeeper)
+	app.OnboardingKeeper.SetICS4Wrapper(app.RecoveryKeeper)
 	// NOTE: ICS4 wrapper for Transfer Keeper already set
 
 	// set Recovery Module as the ICS4Wrapper
@@ -558,13 +574,17 @@ func NewCanto(
 
 	// transfer stack contains (from top to bottom):
 	// - Recovery Middleware
+	// - Onboarding
 	// - Transfer
+	// TODO: need to check priority for onboarding
 
 	// create IBC module from bottom to top of stack
 	var transferStack porttypes.IBCModule
 
 	transferStack = transfer.NewIBCModule(app.TransferKeeper)
+	transferStack = onboarding.NewIBCMiddleware(*app.OnboardingKeeper, transferStack)
 	transferStack = recovery.NewIBCMiddleware(*app.RecoveryKeeper, transferStack)
+	// TODO: add other middleware
 
 	// Create static IBC router, add transfer route, then set and seal it
 	ibcRouter := porttypes.NewRouter()
