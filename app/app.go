@@ -224,6 +224,8 @@ var (
 		erc20types.ModuleName:          {authtypes.Minter, authtypes.Burner},
 		csrtypes.ModuleName:            {authtypes.Minter, authtypes.Burner},
 		govshuttletypes.ModuleName:     {authtypes.Minter, authtypes.Burner},
+		// TODO: testing, need to revert
+		onboardingtypes.ModuleName: {authtypes.Minter, authtypes.Burner},
 	}
 
 	// module accounts that are allowed to receive tokens
@@ -574,7 +576,7 @@ func NewCanto(
 
 	// transfer stack contains (from top to bottom):
 	// - Recovery Middleware
-	// - Onboarding
+	// - Onboarding Middleware
 	// - Transfer
 	// TODO: need to check priority for onboarding
 
@@ -638,6 +640,7 @@ func NewCanto(
 		epochs.NewAppModule(appCodec, app.EpochsKeeper),
 		vesting.NewAppModule(app.VestingKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper),
 		recovery.NewAppModule(*app.RecoveryKeeper),
+		onboarding.NewAppModule(*app.OnboardingKeeper),
 		fees.NewAppModule(app.FeesKeeper, app.AccountKeeper),
 		govshuttle.NewAppModule(app.GovshuttleKeeper, app.AccountKeeper),
 		csr.NewAppModule(app.CSRKeeper, app.AccountKeeper),
@@ -675,6 +678,7 @@ func NewCanto(
 		inflationtypes.ModuleName,
 		erc20types.ModuleName,
 		recoverytypes.ModuleName,
+		onboardingtypes.ModuleName,
 		feestypes.ModuleName,
 		govshuttletypes.ModuleName,
 		csrtypes.ModuleName,
@@ -690,6 +694,7 @@ func NewCanto(
 		// Note: epochs' endblock should be "real" end of epochs, we keep epochs endblock at the end
 		epochstypes.ModuleName,
 		recoverytypes.ModuleName,
+		onboardingtypes.ModuleName,
 		// no-op modules
 		ibchost.ModuleName,
 		ibctransfertypes.ModuleName,
@@ -749,6 +754,7 @@ func NewCanto(
 		erc20types.ModuleName,
 		epochstypes.ModuleName,
 		recoverytypes.ModuleName,
+		onboardingtypes.ModuleName,
 		feestypes.ModuleName,
 		govshuttletypes.ModuleName,
 		csrtypes.ModuleName,
@@ -1067,6 +1073,7 @@ func initParamsKeeper(
 	paramsKeeper.Subspace(inflationtypes.ModuleName)
 	paramsKeeper.Subspace(erc20types.ModuleName)
 	paramsKeeper.Subspace(recoverytypes.ModuleName)
+	paramsKeeper.Subspace(onboardingtypes.ModuleName)
 	paramsKeeper.Subspace(feestypes.ModuleName)
 	paramsKeeper.Subspace(govshuttletypes.ModuleName)
 	paramsKeeper.Subspace(csrtypes.ModuleName)

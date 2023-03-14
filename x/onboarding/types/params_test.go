@@ -2,7 +2,6 @@ package types
 
 import (
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 )
@@ -32,12 +31,12 @@ func TestParamsValidate(t *testing.T) {
 		},
 		{
 			"custom params",
-			NewParams(true, time.Hour),
+			NewParams(true),
 			false,
 		},
 		{
 			"invalid duration",
-			NewParams(true, -1),
+			NewParams(true),
 			true,
 		},
 	}
@@ -55,7 +54,4 @@ func TestParamsValidate(t *testing.T) {
 func TestValidate(t *testing.T) {
 	require.Error(t, validateBool(""))
 	require.NoError(t, validateBool(true))
-
-	require.Error(t, validateDuration(true))
-	require.NoError(t, validateDuration(time.Hour))
 }

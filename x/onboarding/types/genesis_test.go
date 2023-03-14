@@ -2,7 +2,6 @@ package types
 
 import (
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 )
@@ -25,7 +24,7 @@ func TestGenesisValidate(t *testing.T) {
 		},
 		{
 			"custom genesis",
-			NewGenesisState(NewParams(true, time.Hour)),
+			NewGenesisState(NewParams(true)),
 			false,
 		},
 	}

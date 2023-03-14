@@ -1,6 +1,8 @@
 package onboarding
 
 import (
+	"fmt"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
@@ -36,6 +38,7 @@ func (im IBCMiddleware) OnRecvPacket(
 	packet channeltypes.Packet,
 	relayer sdk.AccAddress,
 ) exported.Acknowledgement {
+	fmt.Println("[onboarding start]")
 	ack := im.Module.OnRecvPacket(ctx, packet, relayer)
 
 	// TODO: need to check the packet is for ibc-transfer

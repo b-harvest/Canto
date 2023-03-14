@@ -81,8 +81,7 @@ func (suite *GenesisTestSuite) TestOnboardingInitGenesis() {
 			"custom genesis - onboarding disabled",
 			types.GenesisState{
 				Params: types.Params{
-					EnableOnboarding:      false,
-					PacketTimeoutDuration: time.Hour * 10,
+					EnableOnboarding: false,
 				},
 			},
 			false,

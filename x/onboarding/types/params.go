@@ -9,8 +9,7 @@ import (
 
 // Parameter store key
 var (
-	ParamStoreKeyEnableOnboarding      = []byte("EnableOnboarding")
-	ParamStoreKeyPacketTimeoutDuration = []byte("PacketTimeoutDuration")
+	ParamStoreKeyEnableOnboarding = []byte("EnableOnboarding")
 )
 
 // DefaultPacketTimeoutDuration defines the default packet timeout for outgoing
@@ -26,19 +25,17 @@ func ParamKeyTable() paramtypes.KeyTable {
 
 // NewParams creates a new Params instance
 func NewParams(
-	enableOnboarding bool, timeoutDuration time.Duration,
+	enableOnboarding bool,
 ) Params {
 	return Params{
-		EnableOnboarding:      enableOnboarding,
-		PacketTimeoutDuration: timeoutDuration,
+		EnableOnboarding: enableOnboarding,
 	}
 }
 
 // DefaultParams defines the default params for the onboarding module
 func DefaultParams() Params {
 	return Params{
-		EnableOnboarding:      true,
-		PacketTimeoutDuration: DefaultPacketTimeoutDuration,
+		EnableOnboarding: true,
 	}
 }
 
@@ -46,7 +43,6 @@ func DefaultParams() Params {
 func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	return paramtypes.ParamSetPairs{
 		paramtypes.NewParamSetPair(ParamStoreKeyEnableOnboarding, &p.EnableOnboarding, validateBool),
-		paramtypes.NewParamSetPair(ParamStoreKeyPacketTimeoutDuration, &p.PacketTimeoutDuration, validateDuration),
 	}
 }
 
@@ -59,24 +55,7 @@ func validateBool(i interface{}) error {
 	return nil
 }
 
-func validateDuration(i interface{}) error {
-	duration, ok := i.(time.Duration)
-	if !ok {
-		return fmt.Errorf("invalid parameter type: %T", i)
-	}
-
-	if duration < 0 {
-		return fmt.Errorf("packet timout duration cannot be negative")
-	}
-
-	return nil
-}
-
 // Validate checks that the fields have valid values
 func (p Params) Validate() error {
-	if err := validateDuration(p.PacketTimeoutDuration); err != nil {
-		return err
-	}
-
 	return validateBool(p.EnableOnboarding)
 }
