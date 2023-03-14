@@ -11,9 +11,6 @@ import (
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
 
-	"github.com/Canto-Network/Canto/v6/x/csr/client/cli"
-	"github.com/Canto-Network/Canto/v6/x/csr/keeper"
-	"github.com/Canto-Network/Canto/v6/x/csr/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -21,6 +18,10 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/module"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 	abci "github.com/tendermint/tendermint/abci/types"
+
+	"github.com/Canto-Network/Canto/v6/x/csr/client/cli"
+	"github.com/Canto-Network/Canto/v6/x/csr/keeper"
+	"github.com/Canto-Network/Canto/v6/x/csr/types"
 )
 
 var (
@@ -168,16 +169,17 @@ func (AppModule) ConsensusVersion() uint64 { return 2 }
 // BeginBlock executes all ABCI BeginBlock logic respective to the csr module.
 func (am AppModule) BeginBlock(ctx sdk.Context, _ abci.RequestBeginBlock) {
 	// check in begin block whether the Turnstile has been deployed, if not, deploy it and set it to state
-	if _, found := am.keeper.GetTurnstile(ctx); !found {
-		// deploy turnstile
-		turnstile, err := am.keeper.DeployTurnstile(ctx)
-		// panic on errors, (Turnstile existence is invariant)
-		if err != nil {
-			panic(err)
-		}
-		// set the Turnstile address to state
-		am.keeper.SetTurnstile(ctx, turnstile)
-	}
+	// TODO: testing, need to revert
+	//if _, found := am.keeper.GetTurnstile(ctx); !found {
+	//	// deploy turnstile
+	//	turnstile, err := am.keeper.DeployTurnstile(ctx)
+	//	// panic on errors, (Turnstile existence is invariant)
+	//	if err != nil {
+	//		panic(err)
+	//	}
+	//	// set the Turnstile address to state
+	//	am.keeper.SetTurnstile(ctx, turnstile)
+	//}
 }
 
 // EndBlock executes all ABCI EndBlock logic respective to the csr module. It
