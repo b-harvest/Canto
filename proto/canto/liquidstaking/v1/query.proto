@@ -4,6 +4,7 @@ package canto.liquidstaking.v1;
 import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
 import "cosmos/base/v1beta1/coin.proto";
+import "cosmos/base/query/v1beta1/pagination.proto";
 import "canto/liquidstaking/v1/liquidstaking.proto";
 
 option go_package = "github.com/Canto-Network/Canto/v6/x/liquidstaking/types";
@@ -18,8 +19,12 @@ service Query {
     option (google.api.http).get = "/canto/liquidstaking/v1/params";
   }
 
+  rpc Epoch(QueryEpochRequest) returns (QueryEpochResponse) {
+    option (google.api.http).get = "/canto/liquidstaking/v1/epoch";
+  }
+
   // Chunk returns all chunks on the module.
-  rpc Chunks(QueryAllChunksRequest) returns (QueryChunksResponse) {
+  rpc Chunks(QueryChunksRequest) returns (QueryChunksResponse) {
     option (google.api.http).get = "/canto/liquidstaking/v1/chunks";
   }
 
@@ -29,32 +34,13 @@ service Query {
   }
 
   // Insurances returns all insurances on the module.
-  rpc Insurances(QueryAllInsurancesRequest) returns (QueryInsurancesResponse) {
+  rpc Insurances(QueryInsurancesRequest) returns (QueryInsurancesResponse) {
     option (google.api.http).get = "/canto/liquidstaking/v1/insurances";
-  }
-
-  // InsurancesByProviderAddress returns all insurances by provider address.
-  rpc InsurancesByProviderAddress(QueryInsurancesByProviderAddressRequest)
-      returns (QueryInsurancesResponse) {
-    option (google.api.http).get =
-        "/canto/liquidstaking/v1/insurances/provider/{provider_address}";
   }
 
   // Insurance returns an insurance by id.
   rpc Insurance(QueryInsuranceRequest) returns (QueryInsuranceResponse) {
     option (google.api.http).get = "/canto/liquidstaking/v1/insurances/{id}";
-  }
-
-  // Get cumulative commission from last Epoch.
-  // Calculated by:
-  // Insurance.FeeRate *
-  // (Cumulative reward of Chunk from last epoch +
-  // DerivedAddress(Chunk.Id).Balance) +
-  // DerivedAddress(Insurance.Id).Balance - Insurance.Amount
-  rpc InsuranceCommission(QueryInsuranceCommissionRequest)
-      returns (QueryInsuranceCommissionResponse) {
-    option (google.api.http).get =
-        "/canto/liquidstaking/v1/insurances/{id}/commission";
   }
 
   // States returns the states of the module.
@@ -72,43 +58,49 @@ message QueryParamsResponse {
   Params params = 1 [ (gogoproto.nullable) = false ];
 }
 
-message QueryAllChunksRequest {
-  // Query all chunks in a specific status
-  ChunkStatus status = 1;
+message QueryEpochRequest {}
+
+message QueryEpochResponse {
+  // epoch defines the current epoch of the module.
+  Epoch epoch = 1 [ (gogoproto.nullable) = false ];
 }
 
-message QueryChunksByProviderAddressRequest { string provider_address = 1; }
+message QueryChunksRequest {
+  // Query all chunks in a specific status
+  ChunkStatus status = 1;
 
-message QueryChunksResponse { repeated ChunkResponse chunks = 1; }
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
+}
+
+message QueryChunksResponse {
+  repeated ChunkResponse chunks = 1 [ (gogoproto.nullable) = false ];
+}
 
 message QueryChunkRequest { uint64 id = 1; }
 
-message QueryChunkResponse { Chunk chunk = 1; }
+message QueryChunkResponse {
+  ChunkResponse chunk = 1 [ (gogoproto.nullable) = false ];
+}
 
-message QueryAllInsurancesRequest {
-  // Query all insurances pointing to a specific validator
-  string validator_address = 1;
+message QueryInsurancesRequest {
   // query all insurances in a specific status
-  InsuranceStatus status = 2;
+  InsuranceStatus status = 1;
+  // Query all insurances pointing to a specific validator
+  string validator_address = 2;
+  // Query all insurances provided by ProviderAddress
+  string provider_address = 3;
+
+  cosmos.base.query.v1beta1.PageRequest pagination = 4;
 }
 
-message QueryInsurancesByProviderAddressRequest {
-  // Query all insurances created by specific provider
-  string provider_address = 1;
-  // Query all insurances in a specific status
-  InsuranceStatus status = 2;
+message QueryInsurancesResponse {
+  repeated InsuranceResponse insurances = 1 [ (gogoproto.nullable) = false ];
 }
-
-message QueryInsurancesResponse { repeated InsuranceResponse insurances = 1; }
 
 message QueryInsuranceRequest { uint64 id = 1; }
 
-message QueryInsuranceResponse { InsuranceResponse insurance = 1; }
-
-message QueryInsuranceCommissionRequest { uint64 id = 1; }
-
-message QueryInsuranceCommissionResponse {
-  cosmos.base.v1beta1.Coin commission = 1;
+message QueryInsuranceResponse {
+  InsuranceResponse insurance = 1 [ (gogoproto.nullable) = false ];
 }
 
 message QueryStatesRequest {}
@@ -123,16 +115,21 @@ message ChunkResponse {
   // Amount of native tokens delegated by Chunk.
   // If got slashed, the amount will be reduced.
   // This value can be nil in Pairing status.
-  string tokens = 2
-      [ (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int" ];
+  string tokens = 2 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable) = false
+  ];
   // Amount of shares delegated by Chunk.
   // This value can be nil in Pairing status.
-  string shares = 3
-      [ (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec" ];
+  string shares = 3 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable) = false
+  ];
   // Accumulated reward of the chunk which will be reset at Epoch
-  cosmos.base.v1beta1.Coin accumulated_reward = 4;
+  cosmos.base.v1beta1.Coin accumulated_reward = 4
+      [ (gogoproto.nullable) = false ];
   // Paired insurance
-  Insurance insurance = 5;
+  Insurance insurance = 5 [ (gogoproto.nullable) = false ];
   // Status of the chunk
   ChunkStatus status = 6;
 }
@@ -147,9 +144,12 @@ message InsuranceResponse {
   // Amount of native token to guard slashing
   cosmos.base.v1beta1.Coin amount = 4 [ (gogoproto.nullable) = false ];
   // Fee rate of the insurance
-  string fee_rate = 5;
+  string fee_rate = 5 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable) = false
+  ];
   // Paired chunk
-  Chunk chunk = 6;
+  Chunk chunk = 6 [ (gogoproto.nullable) = false ];
   // Status of the insurance
   InsuranceStatus status = 7;
 }

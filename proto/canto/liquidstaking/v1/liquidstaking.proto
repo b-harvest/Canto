@@ -23,19 +23,9 @@ message Epoch {
 // Params defines the parameters for the module.
 message Params {
   option (gogoproto.goproto_getters) = false;
-  option (gogoproto.goproto_stringer) = false;
 
   // liquid_bond_denom specifies the denomination of the liquid bond.
   string liquid_bond_denom = 1;
-
-  // next_epoch_chunk_size is the size of chunk.
-  // This param is managed by gov module, but the change
-  // will always applied in the next epoch for safety.
-  uint64 next_epoch_chunk_size = 2;
-
-  // next_epoch_max_paired_chunk is the maximum number of chunks
-  // that can be paired with an insurance.
-  uint64 next_epoch_max_paired_chunk = 3;
 }
 
 // ChunkStatus defines the status of the chunk.
@@ -62,7 +52,6 @@ enum ChunkStatus {
 
 // Chunk defines the chunk of the module.
 message Chunk {
-  option (gogoproto.goproto_stringer) = false;
   option (gogoproto.goproto_getters) = false;
 
   // Id of the chunk
@@ -103,7 +92,6 @@ enum InsuranceStatus {
 
 // Insurance defines the insurance of the module.
 message Insurance {
-  option (gogoproto.goproto_stringer) = false;
   option (gogoproto.goproto_getters) = false;
 
   // Id of the insurance
@@ -112,20 +100,15 @@ message Insurance {
   string validator_address = 2;
   // Address of the insurance provider
   string provider_address = 3;
-  // Amount of native token to guard slashing
-  string amount = 4 [
-    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Coin",
-    (gogoproto.nullable) = false
-  ];
   // Fee rate of the insurance
-  string fee_rate = 5 [
+  string fee_rate = 4 [
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
     (gogoproto.nullable) = false
   ];
   // Id of Paired chunk, 0 means no chunk
-  uint64 chunk_id = 6;
+  uint64 chunk_id = 5;
   // Status of the insurance
-  InsuranceStatus status = 7;
+  InsuranceStatus status = 6;
 }
 
 // NetAmountState is type for net amount raw data and mint rate, This is a value
