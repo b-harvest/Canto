@@ -3,7 +3,9 @@ package keeper
 import (
 	"context"
 	"github.com/Canto-Network/Canto/v6/x/liquidstaking/types"
+	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/query"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -23,24 +25,43 @@ func (k Keeper) Epoch(c context.Context, _ *types.QueryEpochRequest) (*types.Que
 }
 
 func (k Keeper) Chunks(c context.Context, req *types.QueryChunksRequest) (*types.QueryChunksResponse, error) {
-	ctx := sdk.UnwrapSDKContext(c)
-	chunks := k.GetChunks(ctx)
-
-	// for all chunks, get the insurance and convert to chunk response
-	var chunkResponses []types.ChunkResponse
-	for _, chunk := range chunks {
-		if req != nil {
-			if req.Status != 0 && chunk.Status != req.Status {
-				continue
-			}
-		}
-		chunkResponses = append(chunkResponses, chunkToChunkResponse(ctx, k, chunk))
+	if req == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "empty request")
 	}
 
-	return &types.QueryChunksResponse{Chunks: chunkResponses}, nil
+	ctx := sdk.UnwrapSDKContext(c)
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefixChunk)
+
+	var chunkResponses []types.ChunkResponse
+	pageRes, err := query.FilteredPaginate(store, req.Pagination, func(key []byte, value []byte, accumulate bool) (bool, error) {
+		var chunk types.Chunk
+		if err := k.cdc.Unmarshal(value, &chunk); err != nil {
+			return false, err
+		}
+
+		if req.Status != 0 && chunk.Status != req.Status {
+			return false, nil
+		}
+
+		if accumulate {
+			// for all chunks, get the insurance and convert to chunk response
+			chunkResponses = append(chunkResponses, chunkToChunkResponse(ctx, k, chunk))
+		}
+
+		return true, nil
+	})
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &types.QueryChunksResponse{Chunks: chunkResponses, Pagination: pageRes}, nil
 }
 
 func (k Keeper) Chunk(c context.Context, req *types.QueryChunkRequest) (*types.QueryChunkResponse, error) {
+	if req == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "empty request")
+	}
+
 	ctx := sdk.UnwrapSDKContext(c)
 	chunk, found := k.GetChunk(ctx, req.Id)
 	if !found {
@@ -50,30 +71,51 @@ func (k Keeper) Chunk(c context.Context, req *types.QueryChunkRequest) (*types.Q
 }
 
 func (k Keeper) Insurances(c context.Context, req *types.QueryInsurancesRequest) (*types.QueryInsurancesResponse, error) {
-	ctx := sdk.UnwrapSDKContext(c)
-	insurances := k.GetInsurances(ctx)
-
-	// for all insurances, get the chunks and convert to insurance response
-	var insuranceResponses []types.InsuranceResponse
-	for _, insurance := range insurances {
-		if req != nil {
-			if req.Status != 0 && insurance.Status != req.Status {
-				continue
-			}
-			if req.ValidatorAddress != "" && insurance.ValidatorAddress != req.ValidatorAddress {
-				continue
-			}
-			if req.ProviderAddress != "" && insurance.ProviderAddress != req.ProviderAddress {
-				continue
-			}
-		}
-		insuranceResponses = append(insuranceResponses, insuranceToInsuranceResponse(ctx, k, insurance))
+	if req == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "empty request")
 	}
 
-	return &types.QueryInsurancesResponse{Insurances: insuranceResponses}, nil
+	ctx := sdk.UnwrapSDKContext(c)
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefixInsurance)
+
+	var insuranceResponses []types.InsuranceResponse
+	pageRes, err := query.FilteredPaginate(store, req.Pagination, func(key []byte, value []byte, accumulate bool) (bool, error) {
+		var insurance types.Insurance
+		if err := k.cdc.Unmarshal(value, &insurance); err != nil {
+			return false, err
+		}
+
+		if req.Status != 0 && insurance.Status != req.Status {
+			return false, nil
+		}
+
+		if req.ValidatorAddress != "" && insurance.ValidatorAddress != req.ValidatorAddress {
+			return false, nil
+		}
+
+		if req.ProviderAddress != "" && insurance.ProviderAddress != req.ProviderAddress {
+			return false, nil
+		}
+
+		if accumulate {
+			// for all insurances, get the chunks and convert to insurance response
+			insuranceResponses = append(insuranceResponses, insuranceToInsuranceResponse(ctx, k, insurance))
+		}
+
+		return true, nil
+	})
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &types.QueryInsurancesResponse{Insurances: insuranceResponses, Pagination: pageRes}, nil
 }
 
 func (k Keeper) Insurance(c context.Context, req *types.QueryInsuranceRequest) (*types.QueryInsuranceResponse, error) {
+	if req == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "empty request")
+	}
+
 	ctx := sdk.UnwrapSDKContext(c)
 	insurance, found := k.GetInsurance(ctx, req.Id)
 	if !found {

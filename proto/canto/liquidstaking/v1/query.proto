@@ -74,6 +74,8 @@ message QueryChunksRequest {
 
 message QueryChunksResponse {
   repeated ChunkResponse chunks = 1 [ (gogoproto.nullable) = false ];
+
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
 message QueryChunkRequest { uint64 id = 1; }
@@ -95,6 +97,8 @@ message QueryInsurancesRequest {
 
 message QueryInsurancesResponse {
   repeated InsuranceResponse insurances = 1 [ (gogoproto.nullable) = false ];
+
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
 message QueryInsuranceRequest { uint64 id = 1; }
