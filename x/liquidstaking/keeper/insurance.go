@@ -1,26 +1,20 @@
 package keeper
 
 import (
-	"encoding/binary"
 	"github.com/Canto-Network/Canto/v6/x/liquidstaking/types"
-	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	gogotypes "github.com/gogo/protobuf/types"
 )
 
 func (k Keeper) SetInsurance(ctx sdk.Context, insurance types.Insurance) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefixInsurance)
-	insuranceId := make([]byte, 8)
-	binary.LittleEndian.PutUint64(insuranceId, insurance.Id)
+	store := ctx.KVStore(k.storeKey)
 	bz := k.cdc.MustMarshal(&insurance)
-	store.Set(insuranceId, bz)
+	store.Set(types.GetInsuranceKey(insurance.Id), bz)
 }
 
 func (k Keeper) GetInsurance(ctx sdk.Context, id uint64) (insurance types.Insurance, found bool) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefixInsurance)
-	insuranceId := make([]byte, 8)
-	binary.LittleEndian.PutUint64(insuranceId, id)
-	bz := store.Get(insuranceId)
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(types.GetInsuranceKey(id))
 	if bz == nil {
 		return insurance, false
 	}
@@ -29,10 +23,8 @@ func (k Keeper) GetInsurance(ctx sdk.Context, id uint64) (insurance types.Insura
 }
 
 func (k Keeper) DeleteInsurance(ctx sdk.Context, id uint64) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefixInsurance)
-	insuranceId := make([]byte, 8)
-	binary.LittleEndian.PutUint64(insuranceId, id)
-	store.Delete(insuranceId)
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.GetInsuranceKey(id))
 }
 
 func (k Keeper) GetInsurances(ctx sdk.Context) []types.Insurance {

@@ -41,3 +41,11 @@ var (
 	KeyPrefixLiquidUnstakeUnbondingDelegation = []byte{prefixLiquidUnstakeUnbondingDelegation}
 	KeyPrefixEpoch                            = []byte{prefixEpoch}
 )
+
+func GetChunkKey(chunkId uint64) []byte {
+	return append(KeyPrefixChunk, sdk.Uint64ToBigEndian(chunkId)...)
+}
+
+func GetInsuranceKey(insuranceId uint64) []byte {
+	return append(KeyPrefixInsurance, sdk.Uint64ToBigEndian(insuranceId)...)
+}

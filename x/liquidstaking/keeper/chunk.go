@@ -1,26 +1,20 @@
 package keeper
 
 import (
-	"encoding/binary"
 	"github.com/Canto-Network/Canto/v6/x/liquidstaking/types"
-	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	gogotypes "github.com/gogo/protobuf/types"
 )
 
 func (k Keeper) SetChunk(ctx sdk.Context, chunk types.Chunk) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefixChunk)
-	chunkId := make([]byte, 8)
-	binary.LittleEndian.PutUint64(chunkId, chunk.Id)
+	store := ctx.KVStore(k.storeKey)
 	bz := k.cdc.MustMarshal(&chunk)
-	store.Set(chunkId, bz)
+	store.Set(types.GetChunkKey(chunk.Id), bz)
 }
 
 func (k Keeper) GetChunk(ctx sdk.Context, id uint64) (chunk types.Chunk, found bool) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefixChunk)
-	chunkId := make([]byte, 8)
-	binary.LittleEndian.PutUint64(chunkId, id)
-	bz := store.Get(chunkId)
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(types.GetChunkKey(id))
 	if bz == nil {
 		return chunk, false
 	}
@@ -29,10 +23,8 @@ func (k Keeper) GetChunk(ctx sdk.Context, id uint64) (chunk types.Chunk, found b
 }
 
 func (k Keeper) DeleteChunk(ctx sdk.Context, id uint64) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefixChunk)
-	chunkId := make([]byte, 8)
-	binary.LittleEndian.PutUint64(chunkId, id)
-	store.Delete(chunkId)
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.GetChunkKey(id))
 }
 
 func (k Keeper) GetChunks(ctx sdk.Context) []types.Chunk {
