@@ -1,12 +1,17 @@
 package keeper_test
 
-import "github.com/Canto-Network/Canto/v6/x/liquidstaking/types"
+import (
+	"github.com/Canto-Network/Canto/v6/x/liquidstaking/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	"github.com/evmos/ethermint/tests"
+)
 
 // Sets a bunch of insurances in the store and then get and ensure that each of them
 // match up with what is stored on stack vs keeper
 func (suite *KeeperTestSuite) TestInsuranceSetGet() {
 	numberInsurances := 10
-	insurances := GenerateInsurances(numberInsurances)
+	insurances := GenerateInsurances(numberInsurances, false)
 	for _, insurance := range insurances {
 		suite.app.LiquidStakingKeeper.SetInsurance(suite.ctx, insurance)
 	}
@@ -26,9 +31,26 @@ func (suite *KeeperTestSuite) TestInsuranceSetGet() {
 	}
 }
 
+func (suite *KeeperTestSuite) TestGetInsurancesFromProviderAddress() {
+	numberInsurances := 10
+	insurances := GenerateInsurances(numberInsurances, true)
+	for _, insurance := range insurances {
+		suite.app.LiquidStakingKeeper.SetInsurance(suite.ctx, insurance)
+	}
+
+	// Get insurances from the store
+	result := suite.app.LiquidStakingKeeper.GetInsurancesFromProviderAddress(suite.ctx, sdk.AccAddress(insurances[0].ProviderAddress))
+
+	// Validation
+	suite.Require().Equal(len(result), numberInsurances)
+	for _, insurance := range result {
+		suite.Require().Equal(insurance.ProviderAddress, insurances[0].ProviderAddress)
+	}
+}
+
 func (suite *KeeperTestSuite) TestDeleteInsurance() {
 	numberInsurances := 10
-	insurances := GenerateInsurances(numberInsurances)
+	insurances := GenerateInsurances(numberInsurances, false)
 	for _, insurance := range insurances {
 		suite.app.LiquidStakingKeeper.SetInsurance(suite.ctx, insurance)
 	}
@@ -64,11 +86,17 @@ func (suite *KeeperTestSuite) TestLastInsuranceIdSetGet() {
 }
 
 // Creates a bunch of insurances
-func GenerateInsurances(number int) []types.Insurance {
+func GenerateInsurances(number int, sameAddress bool) []types.Insurance {
 	insurances := make([]types.Insurance, number)
-
 	for i := 0; i < number; i++ {
-		insurances[i] = types.NewInsurance(uint64(i))
+		var addr string
+		if sameAddress {
+			addr = authtypes.NewModuleAddress("test").String()
+		} else {
+			addr = sdk.AccAddress(tests.GenerateAddress().Bytes()).String()
+		}
+
+		insurances[i] = types.NewInsurance(uint64(i), addr)
 	}
 	return insurances
 }

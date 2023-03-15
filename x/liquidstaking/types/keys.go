@@ -1,5 +1,11 @@
 package types
 
+import (
+	"bytes"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/address"
+)
+
 // constants
 const (
 	// ModuleName is the name of the module
@@ -17,9 +23,8 @@ const (
 	prefixLastChunkId = iota + 1
 	prefixLastInsuranceId
 	prefixChunk
-	prefixChunkByInsurance
 	prefixInsurance
-	prefixInsurancesByProvider
+	prefixInsurancesByProviderIndex
 	prefixDelegatorIndex
 	prefixWithdrawingInsurance
 	prefixPreviousInsuranceIndex
@@ -32,9 +37,8 @@ var (
 	KeyPrefixLastChunkId                      = []byte{prefixLastChunkId}
 	KeyPrefixLastInsuranceId                  = []byte{prefixLastInsuranceId}
 	KeyPrefixChunk                            = []byte{prefixChunk}
-	KeyPrefixChunkByInsurance                 = []byte{prefixChunkByInsurance}
 	KeyPrefixInsurance                        = []byte{prefixInsurance}
-	KeyPrefixInsurancesByProvider             = []byte{prefixInsurancesByProvider}
+	KeyPrefixInsurancesByProviderIndex        = []byte{prefixInsurancesByProviderIndex}
 	KeyPrefixDelegatorIndex                   = []byte{prefixDelegatorIndex}
 	KeyPrefixWithdrawingInsurance             = []byte{prefixWithdrawingInsurance}
 	KeyPrefixPreviousInsuranceIndex           = []byte{prefixPreviousInsuranceIndex}
@@ -48,4 +52,19 @@ func GetChunkKey(chunkId uint64) []byte {
 
 func GetInsuranceKey(insuranceId uint64) []byte {
 	return append(KeyPrefixInsurance, sdk.Uint64ToBigEndian(insuranceId)...)
+}
+
+func GetInsurancesByProviderIndexKey(providerAddress sdk.AccAddress, insuranceId uint64) []byte {
+	return append(append(KeyPrefixInsurancesByProviderIndex, address.MustLengthPrefix(providerAddress)...), sdk.Uint64ToBigEndian(insuranceId)...)
+}
+
+func ParseInsurancesByProviderIndexKey(key []byte) (providerAddress sdk.AccAddress, insuranceId uint64) {
+	if !bytes.HasPrefix(key, KeyPrefixInsurancesByProviderIndex) {
+		panic("invalid insurances by provider index key")
+	}
+
+	providerAddressLength := key[1]
+	providerAddress = sdk.AccAddress(key[2 : 2+providerAddressLength])
+	insuranceId = sdk.BigEndianToUint64(key[2+providerAddressLength:])
+	return
 }

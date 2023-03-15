@@ -3,6 +3,7 @@ package keeper
 import (
 	"github.com/Canto-Network/Canto/v6/x/liquidstaking/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/address"
 	gogotypes "github.com/gogo/protobuf/types"
 )
 
@@ -10,6 +11,7 @@ func (k Keeper) SetInsurance(ctx sdk.Context, insurance types.Insurance) {
 	store := ctx.KVStore(k.storeKey)
 	bz := k.cdc.MustMarshal(&insurance)
 	store.Set(types.GetInsuranceKey(insurance.Id), bz)
+	store.Set(types.GetInsurancesByProviderIndexKey(sdk.AccAddress(insurance.ProviderAddress), insurance.Id), []byte{})
 }
 
 func (k Keeper) GetInsurance(ctx sdk.Context, id uint64) (insurance types.Insurance, found bool) {
@@ -24,7 +26,9 @@ func (k Keeper) GetInsurance(ctx sdk.Context, id uint64) (insurance types.Insura
 
 func (k Keeper) DeleteInsurance(ctx sdk.Context, id uint64) {
 	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.GetInsuranceKey(id))
+	insurance, _ := k.GetInsurance(ctx, id)
+	store.Delete(types.GetInsuranceKey(insurance.Id))
+	store.Delete(types.GetInsurancesByProviderIndexKey(sdk.AccAddress(insurance.ProviderAddress), insurance.Id))
 }
 
 func (k Keeper) GetInsurances(ctx sdk.Context) []types.Insurance {
@@ -38,6 +42,22 @@ func (k Keeper) GetInsurances(ctx sdk.Context) []types.Insurance {
 		var insurance types.Insurance
 		k.cdc.MustUnmarshal(iterator.Value(), &insurance)
 
+		insurances = append(insurances, insurance)
+	}
+
+	return insurances
+}
+
+func (k Keeper) GetInsurancesFromProviderAddress(ctx sdk.Context, providerAddress sdk.AccAddress) []types.Insurance {
+	var insurances []types.Insurance
+
+	store := ctx.KVStore(k.storeKey)
+	iterator := sdk.KVStorePrefixIterator(store, append(types.KeyPrefixInsurancesByProviderIndex, address.MustLengthPrefix(providerAddress)...))
+	defer iterator.Close()
+
+	for ; iterator.Valid(); iterator.Next() {
+		_, insuranceId := types.ParseInsurancesByProviderIndexKey(iterator.Key())
+		insurance, _ := k.GetInsurance(ctx, insuranceId)
 		insurances = append(insurances, insurance)
 	}
 
