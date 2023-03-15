@@ -28,6 +28,13 @@ func (k Keeper) GetChunk(ctx sdk.Context, id uint64) (chunk types.Chunk, found b
 	return chunk, true
 }
 
+func (k Keeper) DeleteChunk(ctx sdk.Context, id uint64) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefixChunk)
+	chunkId := make([]byte, 8)
+	binary.LittleEndian.PutUint64(chunkId, id)
+	store.Delete(chunkId)
+}
+
 func (k Keeper) GetChunks(ctx sdk.Context) []types.Chunk {
 	var chunks []types.Chunk
 

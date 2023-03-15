@@ -28,6 +28,13 @@ func (k Keeper) GetInsurance(ctx sdk.Context, id uint64) (insurance types.Insura
 	return insurance, true
 }
 
+func (k Keeper) DeleteInsurance(ctx sdk.Context, id uint64) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefixInsurance)
+	insuranceId := make([]byte, 8)
+	binary.LittleEndian.PutUint64(insuranceId, id)
+	store.Delete(insuranceId)
+}
+
 func (k Keeper) GetInsurances(ctx sdk.Context) []types.Insurance {
 	var insurances []types.Insurance
 

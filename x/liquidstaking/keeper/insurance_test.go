@@ -26,6 +26,34 @@ func (suite *KeeperTestSuite) TestInsuranceSetGet() {
 	}
 }
 
+func (suite *KeeperTestSuite) TestDeleteInsurance() {
+	numberInsurances := 10
+	insurances := GenerateInsurances(numberInsurances)
+	for _, insurance := range insurances {
+		suite.app.LiquidStakingKeeper.SetInsurance(suite.ctx, insurance)
+	}
+
+	for _, insurance := range insurances {
+		id := insurance.Id
+		// Get insurance from the store
+		result, found := suite.app.LiquidStakingKeeper.GetInsurance(suite.ctx, id)
+
+		// Validation
+		suite.Require().True(found)
+		suite.Require().Equal(result.Id, id)
+
+		// Delete insurance from the store
+		suite.app.LiquidStakingKeeper.DeleteInsurance(suite.ctx, id)
+
+		// Get insurance from the store
+		result, found = suite.app.LiquidStakingKeeper.GetInsurance(suite.ctx, id)
+
+		// Validation
+		suite.Require().False(found)
+		suite.Require().Equal(result.Id, uint64(0))
+	}
+}
+
 func (suite *KeeperTestSuite) TestLastInsuranceIdSetGet() {
 	// Set LastInsuranceId and retrieve it
 	id := uint64(10)

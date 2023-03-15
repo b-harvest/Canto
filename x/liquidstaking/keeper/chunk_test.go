@@ -26,6 +26,34 @@ func (suite *KeeperTestSuite) TestChunkSetGet() {
 	}
 }
 
+func (suite *KeeperTestSuite) TestDeleteChunk() {
+	numberChunks := 10
+	chunks := GenerateChunks(numberChunks)
+	for _, chunk := range chunks {
+		suite.app.LiquidStakingKeeper.SetChunk(suite.ctx, chunk)
+	}
+
+	for _, chunk := range chunks {
+		id := chunk.Id
+		// Get chunk from the store
+		result, found := suite.app.LiquidStakingKeeper.GetChunk(suite.ctx, id)
+
+		// Validation
+		suite.Require().True(found)
+		suite.Require().Equal(result.Id, id)
+
+		// Delete chunk from the store
+		suite.app.LiquidStakingKeeper.DeleteChunk(suite.ctx, id)
+
+		// Get chunk from the store
+		result, found = suite.app.LiquidStakingKeeper.GetChunk(suite.ctx, id)
+
+		// Validation
+		suite.Require().False(found)
+		suite.Require().Equal(result.Id, uint64(0))
+	}
+}
+
 func (suite *KeeperTestSuite) TestLastChunkIdSetGet() {
 	// Set LastChunkId and retrieve it
 	id := uint64(10)

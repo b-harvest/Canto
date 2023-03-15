@@ -194,28 +194,28 @@ message NetAmountState {
 // the mint rate at the time of the request, before returning native tokens that
 // have been bound since the end of the unbonding period.
 message LiquidUnstakeUnbondingDelegationInfo {
+  // The id of chunk in UnpairingForUnstake status.
+  uint64 chunk_id = 1;
   // The address of liquid unstaker
-  string delegator_address = 1;
+  string delegator_address = 2;
   // The address of the validator
-  string validator_address = 2;
+  string validator_address = 3;
   // The amount of ls tokens to be burned
   // This is calculated by the mint rate at the time of the request
-  string burn_amount = 3 [
+  string burn_amount = 4 [
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Coin",
     (gogoproto.nullable) = false
   ];
   // The unix time for unbonding completion
-  google.protobuf.Timestamp completion_time = 4
+  google.protobuf.Timestamp completion_time = 5
       [ (gogoproto.nullable) = false, (gogoproto.stdtime) = true ];
-  // The id of chunk in UnpairingForUnstake status.
-  uint64 chunk_id = 5;
 }
 
 // WithdrawalInsurance is created when insurance provider requests a
 // MsgWithdrawInsurance. Actual withdrawal is done after completion_time.
 message WithdrawingInsurance {
   // Id of the insurance
-  uint64 id = 1;
+  uint64 insurance_id = 1;
   // Id of the chunk
   uint64 chunk_id = 2;
   // The unix time for unbonding completion
