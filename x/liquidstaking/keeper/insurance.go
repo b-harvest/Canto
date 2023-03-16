@@ -11,7 +11,6 @@ func (k Keeper) SetInsurance(ctx sdk.Context, insurance types.Insurance) {
 	store := ctx.KVStore(k.storeKey)
 	bz := k.cdc.MustMarshal(&insurance)
 	store.Set(types.GetInsuranceKey(insurance.Id), bz)
-	store.Set(types.GetInsurancesByProviderIndexKey(sdk.AccAddress(insurance.ProviderAddress), insurance.Id), []byte{})
 }
 
 func (k Keeper) GetInsurance(ctx sdk.Context, id uint64) (insurance types.Insurance, found bool) {
