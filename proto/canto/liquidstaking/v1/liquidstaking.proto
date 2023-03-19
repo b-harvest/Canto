@@ -146,7 +146,7 @@ message NetAmountState {
     (gogoproto.nullable) = false
   ];
 
-  // The cumulative reward of all chunks delegations from the last epoch
+  // The cumulative reward of all chunks delegations from the last distribution
   string total_remaining_rewards = 5 [
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
     (gogoproto.nullable) = false

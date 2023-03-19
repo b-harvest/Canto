@@ -5,6 +5,11 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
+const (
+	MaxPairedChunks = 10
+	ChunkSize       = 5000000 // 5M acanto
+)
+
 func NewChunk(id uint64) Chunk {
 	return Chunk{
 		Id:          id,

@@ -30,6 +30,26 @@ func (k Keeper) DeleteInsurance(ctx sdk.Context, id uint64) {
 	store.Delete(types.GetInsurancesByProviderIndexKey(sdk.AccAddress(insurance.ProviderAddress), insurance.Id))
 }
 
+func (k Keeper) IterateAllInsurances(ctx sdk.Context, cb func(insurance types.Insurance) (stop bool, err error)) error {
+	store := ctx.KVStore(k.storeKey)
+	iterator := sdk.KVStorePrefixIterator(store, types.KeyPrefixInsurance)
+	defer iterator.Close()
+
+	for ; iterator.Valid(); iterator.Next() {
+		var insurance types.Insurance
+		k.cdc.MustUnmarshal(iterator.Value(), &insurance)
+
+		stop, err := cb(insurance)
+		if err != nil {
+			return err
+		}
+		if stop {
+			break
+		}
+	}
+	return nil
+}
+
 func (k Keeper) GetInsurances(ctx sdk.Context) []types.Insurance {
 	var insurances []types.Insurance
 

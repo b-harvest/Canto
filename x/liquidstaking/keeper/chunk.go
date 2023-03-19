@@ -27,6 +27,26 @@ func (k Keeper) DeleteChunk(ctx sdk.Context, id uint64) {
 	store.Delete(types.GetChunkKey(id))
 }
 
+func (k Keeper) IterateAllChunks(ctx sdk.Context, cb func(chunk types.Chunk) (stop bool, err error)) error {
+	store := ctx.KVStore(k.storeKey)
+	iterator := sdk.KVStorePrefixIterator(store, types.KeyPrefixChunk)
+	defer iterator.Close()
+
+	for ; iterator.Valid(); iterator.Next() {
+		var chunk types.Chunk
+		k.cdc.MustUnmarshal(iterator.Value(), &chunk)
+
+		stop, err := cb(chunk)
+		if err != nil {
+			return err
+		}
+		if stop {
+			break
+		}
+	}
+	return nil
+}
+
 func (k Keeper) GetChunks(ctx sdk.Context) []types.Chunk {
 	var chunks []types.Chunk
 

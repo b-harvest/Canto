@@ -362,7 +362,7 @@ type NetAmountState struct {
 	NetAmount github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,3,opt,name=net_amount,json=netAmount,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"net_amount"`
 	// Total shares of all paired chunks
 	TotalDelShares github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,4,opt,name=total_del_shares,json=totalDelShares,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"total_del_shares"`
-	// The cumulative reward of all chunks delegations from the last epoch
+	// The cumulative reward of all chunks delegations from the last distribution
 	TotalRemainingRewards github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,5,opt,name=total_remaining_rewards,json=totalRemainingRewards,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"total_remaining_rewards"`
 	// Sum of the balances of all chunks.
 	// Note: Paired chunks can be pairing status for various reasons (such as lack

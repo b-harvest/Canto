@@ -4,20 +4,20 @@ import (
 	"context"
 	"github.com/Canto-Network/Canto/v6/x/liquidstaking/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
 var _ types.MsgServer = &Keeper{}
 
 func (k Keeper) LiquidStake(goCtx context.Context, msg *types.MsgLiquidStake) (*types.MsgLiquidStakeResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	if !k.bankKeeper.HasBalance(ctx, sdk.AccAddress(msg.DelegatorAddress), msg.Amount) {
-		return nil, sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "")
+
+	// TODO: Publish events using returned values
+	_, _, err := k.DoLiquidStake(ctx, sdk.AccAddress(msg.DelegatorAddress), msg.Amount)
+	if err != nil {
+		return nil, err
 	}
-
-	panic("implement me")
+	return &types.MsgLiquidStakeResponse{}, nil
 }
-
 func (k Keeper) LiquidUnstake(goCtx context.Context, msg *types.MsgLiquidUnstake) (*types.MsgLiquidUnstakeResponse, error) {
 	//ctx := sdk.UnwrapSDKContext(goCtx)
 	panic("implement me")
