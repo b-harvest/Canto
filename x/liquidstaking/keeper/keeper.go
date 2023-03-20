@@ -20,31 +20,34 @@ type Keeper struct {
 	bankKeeper         types.BankKeeper
 	distributionKeeper types.DistributionKeeper
 	stakingKeeper      types.StakingKeeper
+	slashingKeeper     types.SlashingKeeper
 }
 
 // NewKeeper creates a new mint Keeper instance
 func NewKeeper(
 	storeKey sdk.StoreKey,
 	cdc codec.BinaryCodec,
-	ps paramtypes.Subspace,
-	ak types.AccountKeeper,
-	bk types.BankKeeper,
-	dk types.DistributionKeeper,
-	sk types.StakingKeeper,
+	subspace paramtypes.Subspace,
+	accountKeeper types.AccountKeeper,
+	bankKeeper types.BankKeeper,
+	distributionKeeper types.DistributionKeeper,
+	stakingKeeper types.StakingKeeper,
+	slashingKeeper types.SlashingKeeper,
 ) Keeper {
 	// set KeyTable if it has not already been set
-	if !ps.HasKeyTable() {
-		ps = ps.WithKeyTable(types.ParamKeyTable())
+	if !subspace.HasKeyTable() {
+		subspace = subspace.WithKeyTable(types.ParamKeyTable())
 	}
 
 	return Keeper{
 		storeKey:           storeKey,
 		cdc:                cdc,
-		paramstore:         ps,
-		accountKeeper:      ak,
-		bankKeeper:         bk,
-		distributionKeeper: dk,
-		stakingKeeper:      sk,
+		paramstore:         subspace,
+		accountKeeper:      accountKeeper,
+		bankKeeper:         bankKeeper,
+		distributionKeeper: distributionKeeper,
+		stakingKeeper:      stakingKeeper,
+		slashingKeeper:     slashingKeeper,
 	}
 }
 

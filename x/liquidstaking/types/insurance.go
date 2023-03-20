@@ -9,8 +9,7 @@ import (
 
 const (
 	// 5%
-	SlashFractionInt  = 5
-	SlashFractionPrec = 2
+	SlashFraction = "0.05"
 )
 
 func NewInsurance(id uint64, providerAddress, validatorAddress string, feeRate sdk.Dec) Insurance {
@@ -20,6 +19,7 @@ func NewInsurance(id uint64, providerAddress, validatorAddress string, feeRate s
 		Status:           INSURANCE_STATUS_PAIRING,
 		ProviderAddress:  providerAddress,
 		ValidatorAddress: validatorAddress,
+		FeeRate:          feeRate,
 	}
 }
 
@@ -47,4 +47,13 @@ func SortInsurances(validatorMap map[string]stakingtypes.Validator, insurances [
 		}
 		return iInsurance.Id < jInsurance.Id
 	})
+}
+
+func (i *Insurance) Equal(other Insurance) bool {
+	return i.Id == other.Id &&
+		i.ChunkId == other.ChunkId &&
+		i.Status == other.Status &&
+		i.ProviderAddress == other.ProviderAddress &&
+		i.ValidatorAddress == other.ValidatorAddress &&
+		i.FeeRate.Equal(other.FeeRate)
 }

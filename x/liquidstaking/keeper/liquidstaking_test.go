@@ -8,6 +8,48 @@ import (
 	"math/rand"
 )
 
+func (suite *KeeperTestSuite) TestDoInsuranceProvide() {
+	// init rand with seed
+	s := rand.NewSource(0)
+	r := rand.New(s)
+
+	valAddrs := suite.CreateValidators([]int64{10, 10, 10})
+	valNum := len(valAddrs)
+
+	bondDenom := suite.app.StakingKeeper.BondDenom(suite.ctx)
+	minimumRequirement := sdk.NewCoin(bondDenom, sdk.NewInt(types.ChunkSize))
+	fraction := sdk.MustNewDecFromStr(types.SlashFraction)
+	minimumCoverage := sdk.NewCoin(bondDenom, sdk.NewInt(minimumRequirement.Amount.ToDec().Mul(fraction).TruncateInt().Int64()))
+	providers := suite.AddTestAddrs(10, minimumCoverage.Amount)
+
+	// Provide insurances
+	var providedInsurances []types.Insurance
+	for i, provider := range providers {
+		insurance, err := suite.app.LiquidStakingKeeper.DoInsuranceProvide(
+			suite.ctx,
+			provider,
+			valAddrs[i%(valNum)], // can point same validators
+			sdk.NewDecWithPrec(
+				int64(simulation.RandIntBetween(r, 1, 10)),
+				2,
+			), // 1 ~ 10% insurance fee
+			minimumCoverage,
+		)
+		suite.NoError(err)
+		providedInsurances = append(providedInsurances, insurance)
+	}
+	var storedInsurances []types.Insurance
+	suite.NoError(suite.app.LiquidStakingKeeper.IterateAllInsurances(suite.ctx, func(insurance types.Insurance) (bool, error) {
+		storedInsurances = append(storedInsurances, insurance)
+		return false, nil
+	}))
+
+	suite.Equal(len(providedInsurances), len(storedInsurances))
+	for i, insurance := range providedInsurances {
+		suite.True(insurance.Equal(storedInsurances[i]))
+	}
+}
+
 func (suite *KeeperTestSuite) TestDoLiquidStake() {
 	// TODO: Write fail test cases first
 }
@@ -25,20 +67,18 @@ func (suite *KeeperTestSuite) TestDoLiquidStakeFailCases() {
 
 	addrs := suite.AddTestAddrs(10, sdk.NewInt(minimumRequirement.Amount.Int64()))
 
-	// TC: There are no pairing insurances yet. Insurances must be proivded to liquid stake
+	// TC: There are no pairing insurances yet. Insurances must be provided to liquid stake
 	acc1 := addrs[0]
 	_, _, err := suite.app.LiquidStakingKeeper.DoLiquidStake(
 		suite.ctx,
 		acc1,
-		minimumRequirement.AddAmount(
-			sdk.NewInt(types.ChunkSize),
-		),
+		minimumRequirement,
 	)
 	suite.ErrorIs(err, types.ErrNoPairingInsurance)
 
 	// TODO: Add tc for max paired chunk size exceeded
 
-	fraction := sdk.NewDecWithPrec(types.SlashFractionInt, types.SlashFractionPrec)
+	fraction := sdk.MustNewDecFromStr(types.SlashFraction)
 	minimumCoverage := sdk.NewCoin(bondDenom, sdk.NewInt(minimumRequirement.Amount.ToDec().Mul(fraction).TruncateInt().Int64()))
 	providers := suite.AddTestAddrs(10, minimumCoverage.Amount)
 

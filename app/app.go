@@ -452,7 +452,7 @@ func NewCanto(
 
 	app.LiquidStakingKeeper = liquidstakingkeeper.NewKeeper(
 		keys[liquidstakingtypes.StoreKey], appCodec, app.GetSubspace(liquidstakingtypes.ModuleName),
-		app.AccountKeeper, app.BankKeeper, app.DistrKeeper, &stakingKeeper,
+		app.AccountKeeper, app.BankKeeper, app.DistrKeeper, &stakingKeeper, app.SlashingKeeper,
 	)
 
 	// register the staking hooks

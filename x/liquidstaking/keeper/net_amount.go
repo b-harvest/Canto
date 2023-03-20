@@ -5,7 +5,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-// TODO: 테스트할 때 실질적으로 어떤 수치들을 가지고 테스트해야할지는 태영님과 논의
+// TODO: Discuss with taeyoung what values should be used for meaningful testing
 func (k Keeper) GetNetAmountState(ctx sdk.Context) (nas types.NetAmountState) {
 	bondDenom := k.stakingKeeper.BondDenom(ctx)
 	totalDelShares := sdk.ZeroDec()
@@ -49,7 +49,6 @@ func (k Keeper) GetNetAmountState(ctx sdk.Context) (nas types.NetAmountState) {
 	err = k.IterateAllInsurances(ctx, func(insurance types.Insurance) (stop bool, err error) {
 		if insurance.Status == types.INSURANCE_STATUS_PAIRED {
 			insuranceBalance := k.bankKeeper.GetBalance(ctx, insurance.DerivedAddress(), k.stakingKeeper.BondDenom(ctx))
-			// TODO: Should we add insurance fee to total insurance tokens?
 			totalInsuranceTokens = totalInsuranceTokens.Add(insuranceBalance.Amount)
 		}
 		return false, nil
@@ -65,6 +64,7 @@ func (k Keeper) GetNetAmountState(ctx sdk.Context) (nas types.NetAmountState) {
 		TotalRemainingRewards: totalRewards,
 		TotalLiquidTokens:     totalLiquidTokens,
 		TotalInsuranceTokens:  totalInsuranceTokens,
+		TotalUnbondingBalance: totalUnbondingBalance.TruncateInt(),
 	}
 
 	nas.NetAmount = nas.CalcNetAmount()

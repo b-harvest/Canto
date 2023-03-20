@@ -9,19 +9,19 @@ import (
 
 func (k Keeper) DoLiquidStake(ctx sdk.Context, delAddr sdk.AccAddress, amount sdk.Coin) (newShares sdk.Dec, lsTokenMintAmount sdk.Int, err error) {
 	// Check if max paired chunk size is exceeded or not
-	currenPairedChunkSize := 0
+	currenPairedChunks := 0
 	err = k.IterateAllChunks(ctx, func(chunk types.Chunk) (bool, error) {
 		if chunk.Status == types.CHUNK_STATUS_PAIRED {
-			currenPairedChunkSize++
+			currenPairedChunks++
 		}
 		return false, nil
 	})
 	if err != nil {
 		return
 	}
-	availableChunks := types.MaxPairedChunks - currenPairedChunkSize
+	availableChunks := types.MaxPairedChunks - currenPairedChunks
 	if availableChunks <= 0 {
-		err = sdkerrors.Wrapf(types.ErrMaxPairedChunkSizeExceeded, "current paired chunk size: %d", currenPairedChunkSize)
+		err = sdkerrors.Wrapf(types.ErrMaxPairedChunkSizeExceeded, "current paired chunk size: %d", currenPairedChunks)
 		return
 	}
 
@@ -79,6 +79,8 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, delAddr sdk.AccAddress, amount sd
 		amount = sdk.NewCoin(bondDenom, sdk.NewInt(n*types.ChunkSize))
 	}
 
+	// TODO: Must be proved that this is safe, we must call this before sending
+	nas := k.GetNetAmountState(ctx)
 	types.SortInsurances(validatorMap, pairingInsurances)
 	totalNewShares := sdk.Dec{}
 	totalLsTokenMintAmount := sdk.Int{}
@@ -96,10 +98,10 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, delAddr sdk.AccAddress, amount sd
 		chunk := types.NewChunk(chunkId)
 
 		// Escrow liquid staker's coins
-		if err = k.bankKeeper.SendCoinsFromAccountToModule(
+		if err = k.bankKeeper.SendCoins(
 			ctx,
 			delAddr,
-			chunk.DerivedAddress().String(),
+			chunk.DerivedAddress(),
 			sdk.NewCoins(amount),
 		); err != nil {
 			return
@@ -117,7 +119,6 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, delAddr sdk.AccAddress, amount sd
 		}
 		totalNewShares.Add(newShares)
 
-		nas := k.GetNetAmountState(ctx)
 		// TODO: bond denom must be set at Genesis
 		liquidBondDenom := k.GetParams(ctx).LiquidBondDenom
 		// Mint the liquid staking token
@@ -147,16 +148,10 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, delAddr sdk.AccAddress, amount sd
 }
 
 func (k Keeper) DoInsuranceProvide(ctx sdk.Context, providerAddr sdk.AccAddress, valAddr sdk.ValAddress, feeRate sdk.Dec, amount sdk.Coin) (insurance types.Insurance, err error) {
-	// Check if the provider has enough balance to spend amount
-	if !k.bankKeeper.HasBalance(ctx, providerAddr, amount) {
-		err = sdkerrors.Wrapf(sdkerrors.ErrInsufficientFunds, "insufficient funds to liquid stake")
-		return
-	}
-
 	// Check if the amount is greater than minimum coverage
 	bondDenom := k.stakingKeeper.BondDenom(ctx)
 	minimumRequirement := sdk.NewCoin(bondDenom, sdk.NewInt(types.ChunkSize))
-	fraction := sdk.NewDecWithPrec(types.SlashFractionInt, types.SlashFractionPrec)
+	fraction := sdk.MustNewDecFromStr(types.SlashFraction)
 	minimumCoverage := sdk.NewCoin(bondDenom, sdk.NewInt(minimumRequirement.Amount.ToDec().Mul(fraction).TruncateInt().Int64()))
 	if amount.Amount.LT(minimumCoverage.Amount) {
 		err = sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "amount must be greater than minimum coverage: %s", minimumCoverage.String())
@@ -165,8 +160,8 @@ func (k Keeper) DoInsuranceProvide(ctx sdk.Context, providerAddr sdk.AccAddress,
 
 	// Check if the validator is not jailed
 	validator, found := k.stakingKeeper.GetValidator(ctx, valAddr)
-	if !found || validator.IsJailed() {
-		err = sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "validator must not be jailed")
+	_, err = k.isValidValidator(ctx, validator, found)
+	if err != nil {
 		return
 	}
 
@@ -183,7 +178,22 @@ func (k Keeper) DoInsuranceProvide(ctx sdk.Context, providerAddr sdk.AccAddress,
 	); err != nil {
 		return
 	}
+	// TODO: Add index
 	k.SetInsurance(ctx, insurance)
 
 	return
+}
+
+func (k Keeper) isValidValidator(ctx sdk.Context, validator stakingtypes.Validator, found bool) (bool, error) {
+	if !found {
+		return false, types.ErrValidatorNotFound
+	}
+	pubKey, err := validator.ConsPubKey()
+	if err != nil {
+		return false, err
+	}
+	if k.slashingKeeper.IsTombstoned(ctx, sdk.ConsAddress(pubKey.Address())) {
+		return false, types.ErrTombstonedValidator
+	}
+	return true, nil
 }
