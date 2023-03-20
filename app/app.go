@@ -143,6 +143,10 @@ import (
 	csrkeeper "github.com/Canto-Network/Canto/v6/x/csr/keeper"
 	csrtypes "github.com/Canto-Network/Canto/v6/x/csr/types"
 
+	"github.com/b-harvest/coinswap/modules/coinswap"
+	coinswapkeeper "github.com/b-harvest/coinswap/modules/coinswap/keeper"
+	coinswaptypes "github.com/b-harvest/coinswap/modules/coinswap/types"
+
 	v2 "github.com/Canto-Network/Canto/v6/app/upgrades/v2"
 	v3 "github.com/Canto-Network/Canto/v6/app/upgrades/v3"
 	v4 "github.com/Canto-Network/Canto/v6/app/upgrades/v4"
@@ -209,6 +213,7 @@ var (
 		recovery.AppModuleBasic{},
 		onboarding.AppModuleBasic{},
 		fees.AppModuleBasic{},
+		coinswap.AppModuleBasic{},
 	)
 
 	// module account permissions
@@ -226,6 +231,7 @@ var (
 		govshuttletypes.ModuleName:     {authtypes.Minter, authtypes.Burner},
 		// TODO: testing, need to revert
 		onboardingtypes.ModuleName: {authtypes.Minter, authtypes.Burner},
+		coinswaptypes.ModuleName:   {authtypes.Minter, authtypes.Burner},
 	}
 
 	// module accounts that are allowed to receive tokens
@@ -294,6 +300,9 @@ type Canto struct {
 	GovshuttleKeeper govshuttlekeeper.Keeper
 	CSRKeeper        csrkeeper.Keeper
 
+	// Coinswap keeper
+	CoinswapKeeper coinswapkeeper.Keeper
+
 	// the module manager
 	mm *module.Manager
 
@@ -352,6 +361,8 @@ func NewCanto(
 		feestypes.StoreKey,
 		csrtypes.StoreKey,
 		govshuttletypes.StoreKey,
+		// Coinswap keys
+		coinswaptypes.StoreKey,
 	)
 
 	// Add the EVM transient store key
@@ -425,6 +436,16 @@ func NewCanto(
 	// Create IBC Keeper
 	app.IBCKeeper = ibckeeper.NewKeeper(
 		appCodec, keys[ibchost.StoreKey], app.GetSubspace(ibchost.ModuleName), &stakingKeeper, app.UpgradeKeeper, scopedIBCKeeper,
+	)
+
+	app.CoinswapKeeper = coinswapkeeper.NewKeeper(
+		appCodec,
+		keys[coinswaptypes.ModuleName],
+		app.GetSubspace(coinswaptypes.ModuleName),
+		app.BankKeeper,
+		app.AccountKeeper,
+		app.ModuleAccountAddrs(),
+		authtypes.FeeCollectorName,
 	)
 
 	// register the proposal types
@@ -512,19 +533,10 @@ func NewCanto(
 	// Create Transfer Stack
 
 	// SendPacket, since it is originating from the application to core IBC:
-	// transferKeeper.SendPacket -> onboarding.SendPacket -> recovery.SendPacket -> channel.SendPacket
+	// transferKeeper.SendPacket -> recovery.SendPacket -> onboarding.SendPacket -> channel.SendPacket
 
 	// RecvPacket, message that originates from core IBC and goes down to app, the flow is the otherway
-	// channel.RecvPacket -> recovery.OnRecvPacket -> onboarding.OnRecvPacket -> transfer.OnRecvPacket
-
-	// app.TransferKeeper = ibctransferkeeper.NewKeeper(
-	// 	appCodec, keys[ibctransfertypes.StoreKey], app.GetSubspace(ibctransfertypes.ModuleName), app.RecoveryKeeper,
-	// 	//nil, // ICS4 Wrapper: claims IBC middleware
-	// 	app.IBCKeeper.ChannelKeeper, &app.IBCKeeper.PortKeeper,
-	// 	app.AccountKeeper, app.BankKeeper, scopedTransferKeeper,
-	// )
-
-	// set Recovery Module as the ICS4Wrapper
+	// channel.RecvPacket -> onboarding.OnRecvPacket -> recovery.OnRecvPacket -> transfer.OnRecvPacket
 
 	app.RecoveryKeeper = recoverykeeper.NewKeeper(
 		app.GetSubspace(recoverytypes.ModuleName),
@@ -544,7 +556,7 @@ func NewCanto(
 
 	app.TransferKeeper = ibctransferkeeper.NewKeeper(
 		// TODO: need to check didn't necessary onboarding keeper, ICS4Wrapper for recv
-		appCodec, keys[ibctransfertypes.StoreKey], app.GetSubspace(ibctransfertypes.ModuleName), app.OnboardingKeeper,
+		appCodec, keys[ibctransfertypes.StoreKey], app.GetSubspace(ibctransfertypes.ModuleName), app.RecoveryKeeper,
 		//nil, // ICS4 Wrapper: claims IBC middleware
 		app.IBCKeeper.ChannelKeeper, &app.IBCKeeper.PortKeeper,
 		app.AccountKeeper, app.BankKeeper, scopedTransferKeeper,
@@ -553,30 +565,17 @@ func NewCanto(
 	app.OnboardingKeeper.SetTransferKeeper(app.TransferKeeper)
 	app.RecoveryKeeper.SetTransferKeeper(app.TransferKeeper)
 
-	// app.TransferKeeper = ibctransferkeeper.NewKeeper(
-	// 	appCodec, keys[ibctransfertypes.StoreKey], app.GetSubspace(ibctransfertypes.ModuleName),
-	// 	app.RecoveryKeeper,
-	// 	app.IBCKeeper.ChannelKeeper, &app.IBCKeeper.PortKeeper,
-	// 	app.AccountKeeper, app.BankKeeper, scopedTransferKeeper,
-	// )
-	// Set the ICS4 wrappers for claims and recovery middlewares
-	app.RecoveryKeeper.SetICS4Wrapper(app.IBCKeeper.ChannelKeeper)
-	app.OnboardingKeeper.SetICS4Wrapper(app.RecoveryKeeper)
+	// Set the ICS4 wrappers for onboarding and recovery middlewares
+	app.RecoveryKeeper.SetICS4Wrapper(app.OnboardingKeeper)
+	app.OnboardingKeeper.SetICS4Wrapper(app.IBCKeeper.ChannelKeeper)
 	// NOTE: ICS4 wrapper for Transfer Keeper already set
 
-	// set Recovery Module as the ICS4Wrapper
-	// app.TransferKeeper = ibctransferkeeper.NewKeeper(
-	// 	appCodec, keys[ibctransfertypes.StoreKey], app.GetSubspace(ibctransfertypes.ModuleName),
-	// 	app.RecoveryKeeper,
-	// 	app.IBCKeeper.ChannelKeeper, &app.IBCKeeper.PortKeeper,
-	// 	app.AccountKeeper, app.BankKeeper, scopedTransferKeeper,
-	// )
-
+	// Override the ICS20 app module
 	transferModule := transfer.NewAppModule(app.TransferKeeper)
 
 	// transfer stack contains (from top to bottom):
-	// - Recovery Middleware
 	// - Onboarding Middleware
+	// - Recovery Middleware
 	// - Transfer
 	// TODO: need to check priority for onboarding
 
@@ -584,8 +583,9 @@ func NewCanto(
 	var transferStack porttypes.IBCModule
 
 	transferStack = transfer.NewIBCModule(app.TransferKeeper)
-	transferStack = onboarding.NewIBCMiddleware(*app.OnboardingKeeper, transferStack)
 	transferStack = recovery.NewIBCMiddleware(*app.RecoveryKeeper, transferStack)
+	transferStack = onboarding.NewIBCMiddleware(*app.OnboardingKeeper, transferStack)
+
 	// TODO: add other middleware
 
 	// Create static IBC router, add transfer route, then set and seal it
@@ -644,6 +644,8 @@ func NewCanto(
 		fees.NewAppModule(app.FeesKeeper, app.AccountKeeper),
 		govshuttle.NewAppModule(app.GovshuttleKeeper, app.AccountKeeper),
 		csr.NewAppModule(app.CSRKeeper, app.AccountKeeper),
+
+		coinswap.NewAppModule(appCodec, app.CoinswapKeeper, app.AccountKeeper, app.BankKeeper),
 	)
 
 	// During begin block slashing happens after distr.BeginBlocker so that
@@ -682,6 +684,7 @@ func NewCanto(
 		feestypes.ModuleName,
 		govshuttletypes.ModuleName,
 		csrtypes.ModuleName,
+		coinswaptypes.ModuleName,
 	)
 
 	// NOTE: fee market module must go last in order to retrieve the block gas used.
@@ -709,12 +712,15 @@ func NewCanto(
 		feegrant.ModuleName,
 		paramstypes.ModuleName,
 		upgradetypes.ModuleName,
+
 		// Canto modules
 		vestingtypes.ModuleName,
 		inflationtypes.ModuleName,
 		erc20types.ModuleName,
 		govshuttletypes.ModuleName,
 		csrtypes.ModuleName,
+		coinswaptypes.ModuleName,
+
 		// recoverytypes.ModuleName,
 		feestypes.ModuleName,
 	)
@@ -758,6 +764,8 @@ func NewCanto(
 		feestypes.ModuleName,
 		govshuttletypes.ModuleName,
 		csrtypes.ModuleName,
+		coinswaptypes.ModuleName,
+
 		// NOTE: crisis module must go at the end to check for invariants on each module
 		crisistypes.ModuleName,
 	)
@@ -792,6 +800,7 @@ func NewCanto(
 		evm.NewAppModule(app.EvmKeeper, app.AccountKeeper),
 		epochs.NewAppModule(appCodec, app.EpochsKeeper),
 		feemarket.NewAppModule(app.FeeMarketKeeper),
+		coinswap.NewAppModule(appCodec, app.CoinswapKeeper, app.AccountKeeper, app.BankKeeper),
 	)
 
 	app.sm.RegisterStoreDecoders()
@@ -1077,6 +1086,9 @@ func initParamsKeeper(
 	paramsKeeper.Subspace(feestypes.ModuleName)
 	paramsKeeper.Subspace(govshuttletypes.ModuleName)
 	paramsKeeper.Subspace(csrtypes.ModuleName)
+
+	paramsKeeper.Subspace(coinswaptypes.ModuleName)
+
 	return paramsKeeper
 }
 
