@@ -24,8 +24,14 @@ func (k Keeper) LiquidUnstake(goCtx context.Context, msg *types.MsgLiquidUnstake
 }
 
 func (k Keeper) InsuranceProvide(goCtx context.Context, msg *types.MsgInsuranceProvide) (*types.MsgInsuranceProvideResponse, error) {
-	//ctx := sdk.UnwrapSDKContext(goCtx)
-	panic("implement me")
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	// TODO: Publish events using returned values
+	_, err := k.DoInsuranceProvide(ctx, sdk.AccAddress(msg.ProviderAddress), sdk.ValAddress(msg.ValidatorAddress), msg.FeeRate, msg.Amount)
+	if err != nil {
+		return nil, err
+	}
+	return &types.MsgInsuranceProvideResponse{}, nil
 }
 
 func (k Keeper) CancelInsuranceProvide(goCtx context.Context, msg *types.MsgCancelInsuranceProvide) (*types.MsgCancelInsuranceProvideResponse, error) {

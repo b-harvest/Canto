@@ -96,7 +96,7 @@ func GenerateInsurances(number int, sameAddress bool) []types.Insurance {
 			addr = sdk.AccAddress(tests.GenerateAddress().Bytes()).String()
 		}
 
-		insurances[i] = types.NewInsurance(uint64(i), addr)
+		insurances[i] = types.NewInsurance(uint64(i), addr, "", sdk.NewDec(0))
 	}
 	return insurances
 }

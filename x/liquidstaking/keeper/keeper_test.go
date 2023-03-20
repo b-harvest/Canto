@@ -137,7 +137,7 @@ func (suite *KeeperTestSuite) CommitAfter(t time.Duration) {
 	suite.ctx = suite.app.BaseApp.NewContext(false, header)
 }
 
-func (suite *KeeperTestSuite) CreateValidators(powers []int64) (validators []stakingtypes.Validator) {
+func (suite *KeeperTestSuite) CreateValidators(powers []int64) (valAddrs []sdk.ValAddress) {
 	notBondedPool := suite.app.StakingKeeper.GetNotBondedPool(suite.ctx)
 
 	for _, power := range powers {
@@ -155,12 +155,17 @@ func (suite *KeeperTestSuite) CreateValidators(powers []int64) (validators []sta
 		suite.NoError(err)
 
 		validator, _ = validator.AddTokensFromDel(tokens)
-		validator.SetInitialCommission(stakingtypes.NewCommission(sdk.NewDecWithPrec(10, 2), sdk.NewDecWithPrec(10, 2), sdk.NewDecWithPrec(10, 2)))
+		_, err = validator.SetInitialCommission(stakingtypes.NewCommission(sdk.NewDecWithPrec(10, 2), sdk.NewDecWithPrec(10, 2), sdk.NewDecWithPrec(10, 2)))
+		if err != nil {
+			return
+		}
 		validator = stakingkeeper.TestingUpdateValidator(suite.app.StakingKeeper, suite.ctx, validator, true)
 		suite.app.StakingKeeper.AfterValidatorCreated(suite.ctx, validator.GetOperator())
+		suite.app.StakingKeeper.SetValidator(suite.ctx, validator)
 		suite.NoError(suite.app.StakingKeeper.SetValidatorByConsAddr(suite.ctx, validator))
-		validators = append(validators, validator)
+		valAddrs = append(valAddrs, valAddr)
 	}
+	suite.app.EndBlocker(suite.ctx, abci.RequestEndBlock{})
 	return
 }
 

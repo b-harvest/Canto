@@ -19,5 +19,5 @@ func NewChunk(id uint64) Chunk {
 }
 
 func (c *Chunk) DerivedAddress() sdk.AccAddress {
-	return DeriveAddress(ModuleName, fmt.Sprint("chunk%d", c.Id))
+	return DeriveAddress(ModuleName, fmt.Sprintf("chunk%d", c.Id))
 }

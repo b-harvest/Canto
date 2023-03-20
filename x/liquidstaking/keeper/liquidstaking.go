@@ -41,7 +41,11 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, delAddr sdk.AccAddress, amount sd
 			// Store validator of insurance to map
 			if _, ok := validatorMap[insurance.ValidatorAddress]; !ok {
 				// If validator is not in map, get validator from staking keeper
-				validator, found := k.stakingKeeper.GetValidator(ctx, sdk.ValAddress(insurance.ValidatorAddress))
+				valAddr, err := sdk.ValAddressFromBech32(insurance.ValidatorAddress)
+				if err != nil {
+					return false, nil
+				}
+				validator, found := k.stakingKeeper.GetValidator(ctx, valAddr)
 				if found && !validator.IsJailed() {
 					validatorMap[insurance.ValidatorAddress] = validator
 				} else {
@@ -140,4 +144,46 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, delAddr sdk.AccAddress, amount sd
 	}
 
 	return totalNewShares, totalLsTokenMintAmount, err
+}
+
+func (k Keeper) DoInsuranceProvide(ctx sdk.Context, providerAddr sdk.AccAddress, valAddr sdk.ValAddress, feeRate sdk.Dec, amount sdk.Coin) (insurance types.Insurance, err error) {
+	// Check if the provider has enough balance to spend amount
+	if !k.bankKeeper.HasBalance(ctx, providerAddr, amount) {
+		err = sdkerrors.Wrapf(sdkerrors.ErrInsufficientFunds, "insufficient funds to liquid stake")
+		return
+	}
+
+	// Check if the amount is greater than minimum coverage
+	bondDenom := k.stakingKeeper.BondDenom(ctx)
+	minimumRequirement := sdk.NewCoin(bondDenom, sdk.NewInt(types.ChunkSize))
+	fraction := sdk.NewDecWithPrec(types.SlashFractionInt, types.SlashFractionPrec)
+	minimumCoverage := sdk.NewCoin(bondDenom, sdk.NewInt(minimumRequirement.Amount.ToDec().Mul(fraction).TruncateInt().Int64()))
+	if amount.Amount.LT(minimumCoverage.Amount) {
+		err = sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "amount must be greater than minimum coverage: %s", minimumCoverage.String())
+		return
+	}
+
+	// Check if the validator is not jailed
+	validator, found := k.stakingKeeper.GetValidator(ctx, valAddr)
+	if !found || validator.IsJailed() {
+		err = sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "validator must not be jailed")
+		return
+	}
+
+	// Create an insurance
+	insuranceId := k.getNextInsuranceIdWithUpdate(ctx)
+	insurance = types.NewInsurance(insuranceId, providerAddr.String(), valAddr.String(), feeRate)
+
+	// Escrow provider's balance
+	if err = k.bankKeeper.SendCoins(
+		ctx,
+		providerAddr,
+		insurance.DerivedAddress(),
+		sdk.NewCoins(amount),
+	); err != nil {
+		return
+	}
+	k.SetInsurance(ctx, insurance)
+
+	return
 }

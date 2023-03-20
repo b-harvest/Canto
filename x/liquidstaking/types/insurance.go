@@ -7,21 +7,28 @@ import (
 	"sort"
 )
 
-func NewInsurance(id uint64, providerAddress string) Insurance {
+const (
+	// 5%
+	SlashFractionInt  = 5
+	SlashFractionPrec = 2
+)
+
+func NewInsurance(id uint64, providerAddress, validatorAddress string, feeRate sdk.Dec) Insurance {
 	return Insurance{
-		Id:              id,
-		ChunkId:         0, // Not yet assigned
-		Status:          INSURANCE_STATUS_PAIRING,
-		ProviderAddress: providerAddress,
+		Id:               id,
+		ChunkId:          0, // Not yet assigned
+		Status:           INSURANCE_STATUS_PAIRING,
+		ProviderAddress:  providerAddress,
+		ValidatorAddress: validatorAddress,
 	}
 }
 
 func (i *Insurance) DerivedAddress() sdk.AccAddress {
-	return DeriveAddress(ModuleName, fmt.Sprint("insurance%d", i.Id))
+	return DeriveAddress(ModuleName, fmt.Sprintf("insurance%d", i.Id))
 }
 
 func (i *Insurance) FeePoolAddress() sdk.AccAddress {
-	return DeriveAddress(ModuleName, fmt.Sprint("insurancefee%d", i.Id))
+	return DeriveAddress(ModuleName, fmt.Sprintf("insurancefee%d", i.Id))
 }
 
 func SortInsurances(validatorMap map[string]stakingtypes.Validator, insurances []Insurance) {
