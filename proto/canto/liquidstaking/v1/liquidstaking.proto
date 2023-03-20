@@ -133,8 +133,8 @@ message NetAmountState {
   ];
 
   // Calculated by reward module account's native token balance + all paired
-  // chunk's native token balance + all paired chunk's cumulative reward from
-  // last Epoch
+  // chunk's native token balance + all delegation tokens of paired chunks
+  // last Epoch + all unbonding delegation tokens of unpairing chunks
   string net_amount = 3 [
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
     (gogoproto.nullable) = false

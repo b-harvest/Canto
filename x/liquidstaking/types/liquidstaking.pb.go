@@ -357,8 +357,8 @@ type NetAmountState struct {
 	// ls tokens
 	LsTokensTotalSupply github_com_cosmos_cosmos_sdk_types.Int `protobuf:"bytes,2,opt,name=ls_tokens_total_supply,json=lsTokensTotalSupply,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Int" json:"ls_tokens_total_supply"`
 	// Calculated by reward module account's native token balance + all paired
-	// chunk's native token balance + all paired chunk's cumulative reward from
-	// last Epoch
+	// chunk's native token balance + all delegation tokens of paired chunks
+	// last Epoch + all unbonding delegation tokens of unpairing chunks
 	NetAmount github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,3,opt,name=net_amount,json=netAmount,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"net_amount"`
 	// Total shares of all paired chunks
 	TotalDelShares github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,4,opt,name=total_del_shares,json=totalDelShares,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"total_del_shares"`

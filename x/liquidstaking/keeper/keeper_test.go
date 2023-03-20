@@ -1,6 +1,7 @@
 package keeper_test
 
 import (
+	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	"testing"
 	"time"
 
@@ -134,4 +135,45 @@ func (suite *KeeperTestSuite) CommitAfter(t time.Duration) {
 
 	// update ctx
 	suite.ctx = suite.app.BaseApp.NewContext(false, header)
+}
+
+func (suite *KeeperTestSuite) CreateValidators(powers []int64) (validators []stakingtypes.Validator) {
+	notBondedPool := suite.app.StakingKeeper.GetNotBondedPool(suite.ctx)
+
+	for _, power := range powers {
+		priv := ed25519.GenPrivKey()
+		valAddr := sdk.ValAddress(priv.PubKey().Address().Bytes())
+		validator, err := stakingtypes.NewValidator(valAddr, priv.PubKey(), stakingtypes.Description{})
+		suite.NoError(err)
+
+		tokens := suite.app.StakingKeeper.TokensFromConsensusPower(suite.ctx, power)
+
+		// Mint tokens for not bonded pool
+		err = suite.app.BankKeeper.MintCoins(suite.ctx, types.ModuleName, sdk.NewCoins(sdk.NewCoin(suite.denom, tokens)))
+		suite.NoError(err)
+		err = suite.app.BankKeeper.SendCoinsFromModuleToModule(suite.ctx, types.ModuleName, notBondedPool.GetName(), sdk.NewCoins(sdk.NewCoin(suite.denom, tokens)))
+		suite.NoError(err)
+
+		validator, _ = validator.AddTokensFromDel(tokens)
+		validator.SetInitialCommission(stakingtypes.NewCommission(sdk.NewDecWithPrec(10, 2), sdk.NewDecWithPrec(10, 2), sdk.NewDecWithPrec(10, 2)))
+		validator = stakingkeeper.TestingUpdateValidator(suite.app.StakingKeeper, suite.ctx, validator, true)
+		suite.app.StakingKeeper.AfterValidatorCreated(suite.ctx, validator.GetOperator())
+		suite.NoError(suite.app.StakingKeeper.SetValidatorByConsAddr(suite.ctx, validator))
+		validators = append(validators, validator)
+	}
+	return
+}
+
+func (suite *KeeperTestSuite) AddTestAddrs(accNum int, amount sdk.Int) []sdk.AccAddress {
+	addrs := make([]sdk.AccAddress, 0, accNum)
+	for i := 0; i < accNum; i++ {
+		addr := sdk.AccAddress(ed25519.GenPrivKey().PubKey().Address())
+		addrs = append(addrs, addr)
+
+		err := suite.app.BankKeeper.MintCoins(suite.ctx, types.ModuleName, sdk.NewCoins(sdk.NewCoin(suite.denom, amount)))
+		suite.NoError(err)
+		err = suite.app.BankKeeper.SendCoinsFromModuleToAccount(suite.ctx, types.ModuleName, addr, sdk.NewCoins(sdk.NewCoin(suite.denom, amount)))
+		suite.NoError(err)
+	}
+	return addrs
 }
