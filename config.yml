@@ -10,11 +10,14 @@ build:
 accounts:
 - name: alice
   coins:
-  - 100000000uatom
-  - 100000000000000000000acanto
+  - 1000000000000token
+  - 1000000000000uatom
+  - 1000000000000stake
+  - 200000000000000000000acanto
 - name: bob
   coins:
-  - 5000000000000acanto
+  - 1000000000000stake
+
 faucet:
   name: bob
   coins:
@@ -22,6 +25,12 @@ faucet:
   host: 0.0.0.0:4500
 genesis:
   app_state:
+    coinswap:
+      standard_denom: acanto
+      params:
+        whitelisted_denoms:
+          - uatom
+          - stake
     crisis:
       constant_fee:
         denom: acanto
