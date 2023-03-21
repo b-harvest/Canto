@@ -169,16 +169,18 @@ func (suite *KeeperTestSuite) CreateValidators(powers []int64) (valAddrs []sdk.V
 	return
 }
 
-func (suite *KeeperTestSuite) AddTestAddrs(accNum int, amount sdk.Int) []sdk.AccAddress {
+func (suite *KeeperTestSuite) AddTestAddrs(accNum int, amount sdk.Int) ([]sdk.AccAddress, []sdk.Coin) {
 	addrs := make([]sdk.AccAddress, 0, accNum)
+	balances := make([]sdk.Coin, 0, accNum)
 	for i := 0; i < accNum; i++ {
 		addr := sdk.AccAddress(ed25519.GenPrivKey().PubKey().Address())
 		addrs = append(addrs, addr)
+		balances = append(balances, sdk.NewCoin(suite.denom, amount))
 
 		err := suite.app.BankKeeper.MintCoins(suite.ctx, types.ModuleName, sdk.NewCoins(sdk.NewCoin(suite.denom, amount)))
 		suite.NoError(err)
 		err = suite.app.BankKeeper.SendCoinsFromModuleToAccount(suite.ctx, types.ModuleName, addr, sdk.NewCoins(sdk.NewCoin(suite.denom, amount)))
 		suite.NoError(err)
 	}
-	return addrs
+	return addrs, balances
 }
