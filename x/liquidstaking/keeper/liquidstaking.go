@@ -43,17 +43,20 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, delAddr sdk.AccAddress, amount sd
 				// If validator is not in map, get validator from staking keeper
 				valAddr, err := sdk.ValAddressFromBech32(insurance.ValidatorAddress)
 				if err != nil {
-					return false, nil
+					return false, err
 				}
 				validator, found := k.stakingKeeper.GetValidator(ctx, valAddr)
-				if found && !validator.IsJailed() {
+				valid, err := k.isValidValidator(ctx, validator, found)
+				if err != nil {
+					return false, err
+				}
+				if valid {
 					validatorMap[insurance.ValidatorAddress] = validator
 				} else {
 					return false, nil
 				}
-			} else {
-				pairingInsurances = append(pairingInsurances, insurance)
 			}
+			pairingInsurances = append(pairingInsurances, insurance)
 		}
 		return false, nil
 	})
@@ -82,8 +85,8 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, delAddr sdk.AccAddress, amount sd
 	// TODO: Must be proved that this is safe, we must call this before sending
 	nas := k.GetNetAmountState(ctx)
 	types.SortInsurances(validatorMap, pairingInsurances)
-	totalNewShares := sdk.Dec{}
-	totalLsTokenMintAmount := sdk.Int{}
+	totalNewShares := sdk.ZeroDec()
+	totalLsTokenMintAmount := sdk.ZeroInt()
 	for i := int64(0); i < n; i++ {
 		// We can create paired chunk only with available pairing insurances
 		if len(pairingInsurances) == 0 {
@@ -117,7 +120,7 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, delAddr sdk.AccAddress, amount sd
 		if err != nil {
 			return
 		}
-		totalNewShares.Add(newShares)
+		totalNewShares = totalNewShares.Add(newShares)
 
 		// TODO: bond denom must be set at Genesis
 		liquidBondDenom := k.GetParams(ctx).LiquidBondDenom
@@ -134,7 +137,7 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, delAddr sdk.AccAddress, amount sd
 		if err = k.bankKeeper.MintCoins(ctx, types.ModuleName, sdk.NewCoins(mintedCoin)); err != nil {
 			return
 		}
-		totalLsTokenMintAmount.Add(lsTokenMintAmount)
+		totalLsTokenMintAmount = totalLsTokenMintAmount.Add(lsTokenMintAmount)
 		if err = k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, delAddr, sdk.NewCoins(mintedCoin)); err != nil {
 			return
 		}

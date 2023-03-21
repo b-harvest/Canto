@@ -19,7 +19,7 @@ func (suite *KeeperTestSuite) provideInsurances(providers []sdk.AccAddress, valA
 		insurance, err := suite.app.LiquidStakingKeeper.DoInsuranceProvide(
 			suite.ctx,
 			provider,
-			valAddrs[valNum%i], // can point same validators
+			valAddrs[i%valNum], // can point same validators
 			sdk.NewDecWithPrec(
 				int64(simulation.RandIntBetween(r, 1, 10)),
 				2,
@@ -59,7 +59,25 @@ func (suite *KeeperTestSuite) TestDoInsuranceProvide() {
 }
 
 func (suite *KeeperTestSuite) TestDoLiquidStake() {
-	// TODO: Write fail test cases first
+	valAddrs := suite.CreateValidators([]int64{10, 10, 10})
+	minimumRequirement, minimumCoverage := suite.getMinimumRequirements()
+	providers, balances := suite.AddTestAddrs(10, minimumCoverage.Amount)
+	suite.provideInsurances(providers, valAddrs, balances)
+
+	delegators, balances := suite.AddTestAddrs(10, minimumRequirement.Amount)
+	nas := suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
+
+	// First try
+	del1 := delegators[0]
+	amt1 := balances[0]
+	newShares, lsTokenMintAmount, err := suite.app.LiquidStakingKeeper.DoLiquidStake(suite.ctx, del1, amt1)
+	suite.NoError(err)
+	suite.True(amt1.Amount.Equal(newShares.TruncateInt()))
+	suite.True(amt1.Amount.Equal(lsTokenMintAmount))
+
+	afterNas := suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
+	suite.True(nas.TotalLiquidTokens.Add(amt1.Amount).Equal(afterNas.TotalLiquidTokens))
+	suite.True(nas.NetAmount.Add(amt1.Amount.ToDec()).Equal(afterNas.NetAmount))
 }
 
 func (suite *KeeperTestSuite) TestDoLiquidStakeFailCases() {

@@ -7,6 +7,8 @@ import (
 
 // TODO: Discuss with taeyoung what values should be used for meaningful testing
 func (k Keeper) GetNetAmountState(ctx sdk.Context) (nas types.NetAmountState) {
+	params := k.GetParams(ctx)
+	liquidBondDenom := params.LiquidBondDenom
 	bondDenom := k.stakingKeeper.BondDenom(ctx)
 	totalDelShares := sdk.ZeroDec()
 	totalChunksBalance := sdk.NewDec(0)
@@ -20,8 +22,12 @@ func (k Keeper) GetNetAmountState(ctx sdk.Context) (nas types.NetAmountState) {
 		totalChunksBalance = totalChunksBalance.Add(balance.Amount.ToDec())
 
 		insurance, _ := k.GetInsurance(ctx, chunk.InsuranceId)
-		validator := k.stakingKeeper.Validator(ctx, sdk.ValAddress(insurance.ValidatorAddress))
-		delegation, found := k.stakingKeeper.GetDelegation(ctx, chunk.DerivedAddress(), sdk.ValAddress(insurance.ValidatorAddress))
+		valAddr, err := sdk.ValAddressFromBech32(insurance.ValidatorAddress)
+		if err != nil {
+			return true, err
+		}
+		validator := k.stakingKeeper.Validator(ctx, valAddr)
+		delegation, found := k.stakingKeeper.GetDelegation(ctx, chunk.DerivedAddress(), valAddr)
 		if !found {
 			return false, nil
 		}
@@ -58,7 +64,7 @@ func (k Keeper) GetNetAmountState(ctx sdk.Context) (nas types.NetAmountState) {
 	}
 
 	nas = types.NetAmountState{
-		LsTokensTotalSupply:   k.bankKeeper.GetSupply(ctx, bondDenom).Amount,
+		LsTokensTotalSupply:   k.bankKeeper.GetSupply(ctx, liquidBondDenom).Amount,
 		TotalChunksBalance:    totalChunksBalance.TruncateInt(),
 		TotalDelShares:        totalDelShares,
 		TotalRemainingRewards: totalRewards,
@@ -67,7 +73,7 @@ func (k Keeper) GetNetAmountState(ctx sdk.Context) (nas types.NetAmountState) {
 		TotalUnbondingBalance: totalUnbondingBalance.TruncateInt(),
 	}
 
-	nas.NetAmount = nas.CalcNetAmount()
+	nas.NetAmount = nas.CalcNetAmount(k.bankKeeper.GetBalance(ctx, types.RewardPool, bondDenom).Amount)
 	nas.MintRate = nas.CalcMintRate()
 	return
 }

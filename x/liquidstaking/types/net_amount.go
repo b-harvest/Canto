@@ -2,9 +2,10 @@ package types
 
 import sdk "github.com/cosmos/cosmos-sdk/types"
 
-func (nas NetAmountState) CalcNetAmount() sdk.Dec {
+func (nas NetAmountState) CalcNetAmount(rewardPoolBalance sdk.Int) sdk.Dec {
 	// TODO: Add reward module account's balance
-	return nas.TotalChunksBalance.Add(nas.TotalLiquidTokens).
+	return rewardPoolBalance.Add(nas.TotalChunksBalance).
+		Add(nas.TotalLiquidTokens).
 		Add(nas.TotalUnbondingBalance).ToDec().
 		Add(nas.TotalRemainingRewards)
 }
