@@ -8,36 +8,40 @@ import (
 	"math/rand"
 )
 
-func (suite *KeeperTestSuite) TestDoInsuranceProvide() {
-	// init rand with seed
+// Provide insurance with random fee (1 ~ 10%)
+func (suite *KeeperTestSuite) provideInsurances(providers []sdk.AccAddress, valAddrs []sdk.ValAddress, amounts []sdk.Coin) []types.Insurance {
 	s := rand.NewSource(0)
 	r := rand.New(s)
 
-	valAddrs := suite.CreateValidators([]int64{10, 10, 10})
 	valNum := len(valAddrs)
-
-	bondDenom := suite.app.StakingKeeper.BondDenom(suite.ctx)
-	minimumRequirement := sdk.NewCoin(bondDenom, sdk.NewInt(types.ChunkSize))
-	fraction := sdk.MustNewDecFromStr(types.SlashFraction)
-	minimumCoverage := sdk.NewCoin(bondDenom, sdk.NewInt(minimumRequirement.Amount.ToDec().Mul(fraction).TruncateInt().Int64()))
-	providers := suite.AddTestAddrs(10, minimumCoverage.Amount)
-
-	// Provide insurances
 	var providedInsurances []types.Insurance
 	for i, provider := range providers {
 		insurance, err := suite.app.LiquidStakingKeeper.DoInsuranceProvide(
 			suite.ctx,
 			provider,
-			valAddrs[i%(valNum)], // can point same validators
+			valAddrs[valNum%i], // can point same validators
 			sdk.NewDecWithPrec(
 				int64(simulation.RandIntBetween(r, 1, 10)),
 				2,
 			), // 1 ~ 10% insurance fee
-			minimumCoverage,
+			amounts[i],
 		)
 		suite.NoError(err)
 		providedInsurances = append(providedInsurances, insurance)
 	}
+	return providedInsurances
+}
+
+func (suite *KeeperTestSuite) TestDoInsuranceProvide() {
+	valAddrs := suite.CreateValidators([]int64{10, 10, 10})
+
+	bondDenom := suite.app.StakingKeeper.BondDenom(suite.ctx)
+	minimumRequirement := sdk.NewCoin(bondDenom, sdk.NewInt(types.ChunkSize))
+	fraction := sdk.MustNewDecFromStr(types.SlashFraction)
+	minimumCoverage := sdk.NewCoin(bondDenom, sdk.NewInt(minimumRequirement.Amount.ToDec().Mul(fraction).TruncateInt().Int64()))
+	providers, amounts := suite.AddTestAddrs(10, minimumCoverage.Amount)
+
+	providedInsurances := suite.provideInsurances(providers, valAddrs, amounts)
 	var storedInsurances []types.Insurance
 	suite.NoError(suite.app.LiquidStakingKeeper.IterateAllInsurances(suite.ctx, func(insurance types.Insurance) (bool, error) {
 		storedInsurances = append(storedInsurances, insurance)
@@ -55,17 +59,12 @@ func (suite *KeeperTestSuite) TestDoLiquidStake() {
 }
 
 func (suite *KeeperTestSuite) TestDoLiquidStakeFailCases() {
-	// init rand with seed
-	s := rand.NewSource(0)
-	r := rand.New(s)
-
 	valAddrs := suite.CreateValidators([]int64{10, 10, 10})
-	valNum := len(valAddrs)
 
 	bondDenom := suite.app.StakingKeeper.BondDenom(suite.ctx)
 	minimumRequirement := sdk.NewCoin(bondDenom, sdk.NewInt(types.ChunkSize))
 
-	addrs := suite.AddTestAddrs(10, sdk.NewInt(minimumRequirement.Amount.Int64()))
+	addrs, _ := suite.AddTestAddrs(10, sdk.NewInt(minimumRequirement.Amount.Int64()))
 
 	// TC: There are no pairing insurances yet. Insurances must be provided to liquid stake
 	acc1 := addrs[0]
@@ -80,22 +79,8 @@ func (suite *KeeperTestSuite) TestDoLiquidStakeFailCases() {
 
 	fraction := sdk.MustNewDecFromStr(types.SlashFraction)
 	minimumCoverage := sdk.NewCoin(bondDenom, sdk.NewInt(minimumRequirement.Amount.ToDec().Mul(fraction).TruncateInt().Int64()))
-	providers := suite.AddTestAddrs(10, minimumCoverage.Amount)
-
-	// Provide insurances
-	for i, provider := range providers {
-		_, err := suite.app.LiquidStakingKeeper.DoInsuranceProvide(
-			suite.ctx,
-			provider,
-			valAddrs[i%(valNum)], // can point same validators
-			sdk.NewDecWithPrec(
-				int64(simulation.RandIntBetween(r, 1, 10)),
-				2,
-			), // 1 ~ 10% insurance fee
-			minimumCoverage,
-		)
-		suite.NoError(err)
-	}
+	providers, balances := suite.AddTestAddrs(10, minimumCoverage.Amount)
+	suite.provideInsurances(providers, valAddrs, balances)
 
 	// TC: Not enough amount to liquid stake
 	// acc1 tries to liquid stake 2 * ChunkSize tokens, but he has only ChunkSize tokens
