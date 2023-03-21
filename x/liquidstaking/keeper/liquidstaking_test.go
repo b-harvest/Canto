@@ -32,13 +32,17 @@ func (suite *KeeperTestSuite) provideInsurances(providers []sdk.AccAddress, valA
 	return providedInsurances
 }
 
+func (suite *KeeperTestSuite) getMinimumRequirements() (oneChunkAmount, slashingCoverage sdk.Coin) {
+	bondDenom := suite.app.StakingKeeper.BondDenom(suite.ctx)
+	oneChunkAmount = sdk.NewCoin(bondDenom, sdk.NewInt(types.ChunkSize))
+	fraction := sdk.MustNewDecFromStr(types.SlashFraction)
+	slashingCoverage = sdk.NewCoin(bondDenom, sdk.NewInt(oneChunkAmount.Amount.ToDec().Mul(fraction).TruncateInt().Int64()))
+	return
+}
+
 func (suite *KeeperTestSuite) TestDoInsuranceProvide() {
 	valAddrs := suite.CreateValidators([]int64{10, 10, 10})
-
-	bondDenom := suite.app.StakingKeeper.BondDenom(suite.ctx)
-	minimumRequirement := sdk.NewCoin(bondDenom, sdk.NewInt(types.ChunkSize))
-	fraction := sdk.MustNewDecFromStr(types.SlashFraction)
-	minimumCoverage := sdk.NewCoin(bondDenom, sdk.NewInt(minimumRequirement.Amount.ToDec().Mul(fraction).TruncateInt().Int64()))
+	_, minimumCoverage := suite.getMinimumRequirements()
 	providers, amounts := suite.AddTestAddrs(10, minimumCoverage.Amount)
 
 	providedInsurances := suite.provideInsurances(providers, valAddrs, amounts)
@@ -60,9 +64,7 @@ func (suite *KeeperTestSuite) TestDoLiquidStake() {
 
 func (suite *KeeperTestSuite) TestDoLiquidStakeFailCases() {
 	valAddrs := suite.CreateValidators([]int64{10, 10, 10})
-
-	bondDenom := suite.app.StakingKeeper.BondDenom(suite.ctx)
-	minimumRequirement := sdk.NewCoin(bondDenom, sdk.NewInt(types.ChunkSize))
+	minimumRequirement, minimumCoverage := suite.getMinimumRequirements()
 
 	addrs, _ := suite.AddTestAddrs(10, sdk.NewInt(minimumRequirement.Amount.Int64()))
 
@@ -77,8 +79,6 @@ func (suite *KeeperTestSuite) TestDoLiquidStakeFailCases() {
 
 	// TODO: Add tc for max paired chunk size exceeded
 
-	fraction := sdk.MustNewDecFromStr(types.SlashFraction)
-	minimumCoverage := sdk.NewCoin(bondDenom, sdk.NewInt(minimumRequirement.Amount.ToDec().Mul(fraction).TruncateInt().Int64()))
 	providers, balances := suite.AddTestAddrs(10, minimumCoverage.Amount)
 	suite.provideInsurances(providers, valAddrs, balances)
 

@@ -169,6 +169,7 @@ func (suite *KeeperTestSuite) CreateValidators(powers []int64) (valAddrs []sdk.V
 	return
 }
 
+// Add test addresses with funds
 func (suite *KeeperTestSuite) AddTestAddrs(accNum int, amount sdk.Int) ([]sdk.AccAddress, []sdk.Coin) {
 	addrs := make([]sdk.AccAddress, 0, accNum)
 	balances := make([]sdk.Coin, 0, accNum)
@@ -177,6 +178,7 @@ func (suite *KeeperTestSuite) AddTestAddrs(accNum int, amount sdk.Int) ([]sdk.Ac
 		addrs = append(addrs, addr)
 		balances = append(balances, sdk.NewCoin(suite.denom, amount))
 
+		// fund each account
 		err := suite.app.BankKeeper.MintCoins(suite.ctx, types.ModuleName, sdk.NewCoins(sdk.NewCoin(suite.denom, amount)))
 		suite.NoError(err)
 		err = suite.app.BankKeeper.SendCoinsFromModuleToAccount(suite.ctx, types.ModuleName, addr, sdk.NewCoins(sdk.NewCoin(suite.denom, amount)))
