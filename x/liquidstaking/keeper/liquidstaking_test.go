@@ -52,24 +52,6 @@ func (suite *KeeperTestSuite) getMinimumRequirements() (oneChunkAmount, slashing
 	return
 }
 
-func (suite *KeeperTestSuite) TestDoInsuranceProvide() {
-	valAddrs := suite.CreateValidators([]int64{10, 10, 10})
-	_, minimumCoverage := suite.getMinimumRequirements()
-	providers, amounts := suite.AddTestAddrs(10, minimumCoverage.Amount)
-
-	providedInsurances := suite.provideInsurances(providers, valAddrs, amounts)
-	var storedInsurances []types.Insurance
-	suite.NoError(suite.app.LiquidStakingKeeper.IterateAllInsurances(suite.ctx, func(insurance types.Insurance) (bool, error) {
-		storedInsurances = append(storedInsurances, insurance)
-		return false, nil
-	}))
-
-	suite.Equal(len(providedInsurances), len(storedInsurances))
-	for i, insurance := range providedInsurances {
-		suite.True(insurance.Equal(storedInsurances[i]))
-	}
-}
-
 func (suite *KeeperTestSuite) TestInsuranceProvide() {
 	valAddrs := suite.CreateValidators([]int64{10, 10, 10})
 	_, minimumCoverage := suite.getMinimumRequirements()
@@ -122,7 +104,7 @@ func (suite *KeeperTestSuite) TestInsuranceProvide() {
 	}
 }
 
-func (suite *KeeperTestSuite) TestDoLiquidStake() {
+func (suite *KeeperTestSuite) TestLiquidStakeSuccess() {
 	params := suite.app.LiquidStakingKeeper.GetParams(suite.ctx)
 	valAddrs := suite.CreateValidators([]int64{10, 10, 10})
 	minimumRequirement, minimumCoverage := suite.getMinimumRequirements()
@@ -151,7 +133,7 @@ func (suite *KeeperTestSuite) TestDoLiquidStake() {
 	suite.True(afterNas.MintRate.Equal(sdk.OneDec()), "no rewards yet, so mint rate should be 1")
 }
 
-func (suite *KeeperTestSuite) TestDoLiquidStakeFail() {
+func (suite *KeeperTestSuite) TestLiquidStakeFail() {
 	valAddrs := suite.CreateValidators([]int64{10, 10, 10})
 	minimumRequirement, minimumCoverage := suite.getMinimumRequirements()
 
