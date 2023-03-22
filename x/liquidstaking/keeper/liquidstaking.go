@@ -7,7 +7,7 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
-func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (newShares sdk.Dec, lsTokenMintAmount sdk.Int, err error) {
+func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (chunks []types.Chunk, newShares sdk.Dec, lsTokenMintAmount sdk.Int, err error) {
 	delAddr := msg.GetDelegator()
 	amount := msg.Amount
 
@@ -148,9 +148,9 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (newSh
 		cheapestInsurance.Status = types.INSURANCE_STATUS_PAIRED
 		k.SetChunk(ctx, chunk)
 		k.SetInsurance(ctx, cheapestInsurance)
+		chunks = append(chunks, chunk)
 	}
-
-	return totalNewShares, totalLsTokenMintAmount, err
+	return
 }
 
 func (k Keeper) DoInsuranceProvide(ctx sdk.Context, msg *types.MsgInsuranceProvide) (insurance types.Insurance, err error) {

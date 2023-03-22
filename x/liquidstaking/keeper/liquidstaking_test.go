@@ -28,6 +28,19 @@ func (suite *KeeperTestSuite) provideInsurances(providers []sdk.AccAddress, valA
 	return providedInsurances
 }
 
+func (suite *KeeperTestSuite) liquidStakes(delegators []sdk.AccAddress, amounts []sdk.Coin) []types.Chunk {
+	var chunks []types.Chunk
+	for i, delegator := range delegators {
+		msg := types.NewMsgLiquidStake(delegator.String(), amounts[i])
+		createdChunks, _, _, err := suite.app.LiquidStakingKeeper.DoLiquidStake(suite.ctx, msg)
+		suite.NoError(err)
+		for _, chunk := range createdChunks {
+			chunks = append(chunks, chunk)
+		}
+	}
+	return chunks
+}
+
 // Get minimum requirements for liquid staking
 // Liquid staker must provide at least one chunk amount
 // Insurance provider must provide at least slashing coverage
@@ -124,7 +137,7 @@ func (suite *KeeperTestSuite) TestDoLiquidStake() {
 	amt1 := balances[0]
 	msg := types.NewMsgLiquidStake(del1.String(), amt1)
 	lsTokenBefore := suite.app.BankKeeper.GetBalance(suite.ctx, del1, params.LiquidBondDenom)
-	newShares, lsTokenMintAmount, err := suite.app.LiquidStakingKeeper.DoLiquidStake(suite.ctx, msg)
+	_, newShares, lsTokenMintAmount, err := suite.app.LiquidStakingKeeper.DoLiquidStake(suite.ctx, msg)
 	lsTokenAfter := suite.app.BankKeeper.GetBalance(suite.ctx, del1, params.LiquidBondDenom)
 	suite.NoError(err)
 	suite.True(amt1.Amount.Equal(newShares.TruncateInt()), "delegation shares should be equal to amount")
@@ -139,26 +152,41 @@ func (suite *KeeperTestSuite) TestDoLiquidStake() {
 }
 
 func (suite *KeeperTestSuite) TestDoLiquidStakeFail() {
+	bondDenom := suite.app.StakingKeeper.BondDenom(suite.ctx)
 	valAddrs := suite.CreateValidators([]int64{10, 10, 10})
 	minimumRequirement, minimumCoverage := suite.getMinimumRequirements()
 
-	addrs, _ := suite.AddTestAddrs(10, sdk.NewInt(minimumRequirement.Amount.Int64()))
+	addrs, balances := suite.AddTestAddrs(types.MaxPairedChunks, sdk.NewInt(minimumRequirement.Amount.Int64()))
 
 	// TC: There are no pairing insurances yet. Insurances must be provided to liquid stake
 	acc1 := addrs[0]
 	msg := types.NewMsgLiquidStake(acc1.String(), minimumRequirement)
-	_, _, err := suite.app.LiquidStakingKeeper.DoLiquidStake(suite.ctx, msg)
+	_, _, _, err := suite.app.LiquidStakingKeeper.DoLiquidStake(suite.ctx, msg)
 	suite.ErrorIs(err, types.ErrNoPairingInsurance)
 
-	providers, balances := suite.AddTestAddrs(10, minimumCoverage.Amount)
-	suite.provideInsurances(providers, valAddrs, balances)
+	providers, providerBalances := suite.AddTestAddrs(10, minimumCoverage.Amount)
+	suite.provideInsurances(providers, valAddrs, providerBalances)
 
 	// TC: Not enough amount to liquid stake
 	// acc1 tries to liquid stake 2 * ChunkSize tokens, but he has only ChunkSize tokens
 	msg = types.NewMsgLiquidStake(acc1.String(), minimumRequirement.AddAmount(sdk.NewInt(types.ChunkSize)))
-	_, _, err = suite.app.LiquidStakingKeeper.DoLiquidStake(suite.ctx, msg)
+	_, _, _, err = suite.app.LiquidStakingKeeper.DoLiquidStake(suite.ctx, msg)
 	suite.ErrorIs(err, sdkerrors.ErrInsufficientFunds)
 
-	// TODO: Add tc for max paired chunk size exceeded
+	// Pairs as many chunks as the MaxPairedChunks
+	chunks := suite.liquidStakes(addrs, balances)
+	pairedChunks := 0
+	for i, chunk := range chunks {
+		suite.True(chunk.Status == types.CHUNK_STATUS_PAIRED)
+		// Balance of addrs[i] should be zero because they spent all their tokens to liquid stake
+		suite.True(suite.app.BankKeeper.GetBalance(suite.ctx, addrs[i], bondDenom).Amount.IsZero())
+		pairedChunks++
+	}
+	suite.Equal(types.MaxPairedChunks, pairedChunks)
 
+	// TC: MaxPairedChunks is reached, no more chunks can be paired
+	newAddrs, newBalances := suite.AddTestAddrs(1, sdk.NewInt(minimumRequirement.Amount.Int64()))
+	msg = types.NewMsgLiquidStake(newAddrs[0].String(), newBalances[0])
+	_, _, _, err = suite.app.LiquidStakingKeeper.DoLiquidStake(suite.ctx, msg)
+	suite.ErrorIs(err, types.ErrMaxPairedChunkSizeExceeded)
 }
