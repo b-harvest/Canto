@@ -7,7 +7,10 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
-func (k Keeper) DoLiquidStake(ctx sdk.Context, delAddr sdk.AccAddress, amount sdk.Coin) (newShares sdk.Dec, lsTokenMintAmount sdk.Int, err error) {
+func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (newShares sdk.Dec, lsTokenMintAmount sdk.Int, err error) {
+	delAddr := msg.GetDelegator()
+	amount := msg.Amount
+
 	// Check if max paired chunk size is exceeded or not
 	currenPairedChunks := 0
 	err = k.IterateAllChunks(ctx, func(chunk types.Chunk) (bool, error) {
@@ -150,7 +153,12 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, delAddr sdk.AccAddress, amount sd
 	return totalNewShares, totalLsTokenMintAmount, err
 }
 
-func (k Keeper) DoInsuranceProvide(ctx sdk.Context, providerAddr sdk.AccAddress, valAddr sdk.ValAddress, feeRate sdk.Dec, amount sdk.Coin) (insurance types.Insurance, err error) {
+func (k Keeper) DoInsuranceProvide(ctx sdk.Context, msg *types.MsgInsuranceProvide) (insurance types.Insurance, err error) {
+	providerAddr := msg.GetProvider()
+	valAddr := msg.GetValidator()
+	feeRate := msg.FeeRate
+	amount := msg.Amount
+
 	// Check if the amount is greater than minimum coverage
 	bondDenom := k.stakingKeeper.BondDenom(ctx)
 	minimumRequirement := sdk.NewCoin(bondDenom, sdk.NewInt(types.ChunkSize))
