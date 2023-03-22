@@ -1,8 +1,11 @@
 package keeper
 
 import (
+	errorsmod "cosmossdk.io/errors"
 	"fmt"
+	coinswaptypes "github.com/b-harvest/coinswap/modules/coinswap/types"
 	"strings"
+	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -22,10 +25,11 @@ import (
 // ethsecp256k1 address. The expected behavior is as follows:
 //
 // First transfer from authorized source chain:
-//  - sends back IBC tokens which originated from the source chain
-//  - sends over all canto native tokens
+//   - sends back IBC tokens which originated from the source chain
+//   - sends over all canto native tokens
+//
 // Second transfer from a different authorized source chain:
-//  - only sends back IBC tokens which originated from the source chain
+//   - only sends back IBC tokens which originated from the source chain
 func (k Keeper) OnRecvPacket(
 	ctx sdk.Context,
 	packet channeltypes.Packet,
@@ -74,25 +78,54 @@ func (k Keeper) OnRecvPacket(
 
 	// TODO: cached ctx
 	// TODO: denom to stakingparams.BondDenom or standard denom of coinswap
-	denom := "acanto"
-	// TODO: threshold as params
-	threshold := sdk.NewInt(1000000)
-	swapCoins := sdk.NewCoins(sdk.NewCoin(denom, threshold))
-	balance := k.bankKeeper.GetBalance(ctx, recipient, denom)
-	balanceStake := k.bankKeeper.GetBalance(ctx, recipient, "ibc/C053D637CCA2A2BA030E2C5EE1B28A16F71CCB0E45E8BE52766DC1B241B77878")
-	if balance.Amount.LT(threshold) {
+	standardDenom := k.coinswapKeeper.GetStandardDenom(ctx)
+	fmt.Println(fmt.Sprintf("[onboarding] denom %s", standardDenom))
+
+	var data transfertypes.FungibleTokenPacketData
+	if err = transfertypes.ModuleCdc.UnmarshalJSON(packet.GetData(), &data); err != nil {
+		// NOTE: shouldn't happen as the packet has already
+		// been decoded on ICS20 transfer logic
+		err = errorsmod.Wrapf(types.ErrInvalidType, "cannot unmarshal ICS-20 transfer packet data")
+		return channeltypes.NewErrorAcknowledgement(err.Error())
+	}
+	// parse the transferred denom
+	transferredCoin := ibc.GetReceivedCoin(
+		packet.SourcePort, packet.SourceChannel,
+		packet.DestinationPort, packet.DestinationChannel,
+		data.Denom, data.Amount,
+	)
+	fmt.Println(fmt.Sprintf("[onboarding] coin %s", transferredCoin))
+
+	threshold := k.GetParams(ctx).AutoSwapThreshold
+	swapCoins := sdk.NewCoin(standardDenom, threshold)
+	standardCoinBalance := k.bankKeeper.GetBalance(ctx, recipient, standardDenom)
+	transferredCoinBalance := k.bankKeeper.GetBalance(ctx, recipient, transferredCoin.Denom)
+
+	if standardCoinBalance.Amount.LT(threshold) {
 		//k.bankKeeper.SendCoins(ctx, recipient)
-		fmt.Println(fmt.Sprintf("[onboarding] balacne %s, threshold %s, swap %s, stake %s", balance, threshold, swapCoins, balanceStake))
-		if err := k.bankKeeper.MintCoins(ctx, types.ModuleName, swapCoins); err != nil {
-			panic(ack)
+		fmt.Println(fmt.Sprintf("[onboarding] balacne %s, threshold %s, swap %s, stake %s", standardCoinBalance, threshold, swapCoins, transferredCoinBalance))
+		//if err := k.bankKeeper.MintCoins(ctx, types.ModuleName, swapCoins); err != nil {
+		//	panic(ack)
+		//	return ack
+		//}
+		//if err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, recipient, swapCoins); err != nil {
+		//	panic(ack)
+		//	return ack
+		//}
+		swapDuration := k.GetParams(ctx).AutoSwapDuration
+		msg := coinswaptypes.MsgSwapOrder{
+			coinswaptypes.Input{Coin: transferredCoin, Address: recipient.String()},
+			coinswaptypes.Output{Coin: swapCoins, Address: recipient.String()},
+			time.Now().Add(swapDuration).Unix(),
+			true,
+		}
+		if err = k.coinswapKeeper.Swap(ctx, &msg); err != nil {
+			fmt.Println(fmt.Sprintf("[onboarding] swap error %s", err))
 			return ack
 		}
-		if err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, recipient, swapCoins); err != nil {
-			panic(ack)
-			return ack
-		}
+
 	} else {
-		fmt.Println(fmt.Sprintf("[onboarding] balacne %s, threshold %s, stake %s", balance, threshold, balanceStake))
+		fmt.Println(fmt.Sprintf("[onboarding] balacne %s, threshold %s, stake %s", standardCoinBalance, threshold, transferredCoinBalance))
 		return ack
 	}
 
@@ -164,9 +197,9 @@ func (k Keeper) OnRecvPacket(
 // GetIBCDenomDestinationIdentifiers returns the destination port and channel of
 // the IBC denomination, i.e port and channel on canto for the voucher. It
 // returns an error if:
-//  - the denomination is invalid
-//  - the denom trace is not found on the store
-//  - destination port or channel ID are invalid
+//   - the denomination is invalid
+//   - the denom trace is not found on the store
+//   - destination port or channel ID are invalid
 func (k Keeper) GetIBCDenomDestinationIdentifiers(ctx sdk.Context, denom, sender string) (destinationPort, destinationChannel string, err error) {
 	ibcDenom := strings.SplitN(denom, "/", 2)
 	if len(ibcDenom) < 2 {

@@ -552,6 +552,7 @@ func NewCanto(
 		app.BankKeeper,
 		app.IBCKeeper.ChannelKeeper,
 		app.TransferKeeper,
+		app.CoinswapKeeper,
 	)
 
 	app.TransferKeeper = ibctransferkeeper.NewKeeper(
@@ -1025,6 +1026,10 @@ func (app *Canto) GetStakingKeeper() stakingkeeper.Keeper {
 // GetIBCKeeper implements the TestingApp interface.
 func (app *Canto) GetIBCKeeper() *ibckeeper.Keeper {
 	return app.IBCKeeper
+}
+
+func (app *Canto) GetCoinSwapKeeper() coinswapkeeper.Keeper {
+	return app.CoinswapKeeper
 }
 
 // GetScopedIBCKeeper implements the TestingApp interface.

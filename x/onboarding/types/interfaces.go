@@ -1,6 +1,7 @@
 package types
 
 import (
+	coinswaptypes "github.com/b-harvest/coinswap/modules/coinswap/types"
 	tmbytes "github.com/tendermint/tendermint/libs/bytes"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -10,6 +11,11 @@ import (
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 )
+
+type CoinwapKeeper interface {
+	Swap(ctx sdk.Context, msg *coinswaptypes.MsgSwapOrder) error
+	GetStandardDenom(ctx sdk.Context) string
+}
 
 // BankKeeper defines the banking keeper that must be fulfilled when
 // creating a x/onboarding keeper.

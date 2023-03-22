@@ -48,6 +48,8 @@ func (suite *TransferTestSuite) TestHandleMsgTransfer() {
 	path := NewTransferPath(suite.chainA, suite.chainB)
 	suite.coordinator.Setup(path)
 
+	//suite.chainB.App.GetCoinSwapKeeper().LiquidityPool()
+
 	//	originalBalance := suite.chainA.GetSimApp().BankKeeper.GetBalance(suite.chainA.GetContext(), suite.chainA.SenderAccount.GetAddress(), sdk.DefaultBondDenom)
 	timeoutHeight := clienttypes.NewHeight(10, 100)
 
