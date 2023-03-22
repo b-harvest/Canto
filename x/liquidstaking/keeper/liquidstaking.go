@@ -183,6 +183,7 @@ func (k Keeper) DoInsuranceProvide(ctx sdk.Context, providerAddr sdk.AccAddress,
 	}
 	// TODO: Add index
 	k.SetInsurance(ctx, insurance)
+	k.SetGetInsurancesByProviderIndex(ctx, insurance)
 
 	return
 }

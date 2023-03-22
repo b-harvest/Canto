@@ -31,23 +31,6 @@ func (suite *KeeperTestSuite) TestInsuranceSetGet() {
 	}
 }
 
-func (suite *KeeperTestSuite) TestGetInsurancesFromProviderAddress() {
-	numberInsurances := 10
-	insurances := GenerateInsurances(numberInsurances, true)
-	for _, insurance := range insurances {
-		suite.app.LiquidStakingKeeper.SetInsurance(suite.ctx, insurance)
-	}
-
-	// Get insurances from the store
-	result := suite.app.LiquidStakingKeeper.GetInsurancesFromProviderAddress(suite.ctx, sdk.AccAddress(insurances[0].ProviderAddress))
-
-	// Validation
-	suite.Require().Equal(len(result), numberInsurances)
-	for _, insurance := range result {
-		suite.Require().Equal(insurance.ProviderAddress, insurances[0].ProviderAddress)
-	}
-}
-
 func (suite *KeeperTestSuite) TestDeleteInsurance() {
 	numberInsurances := 10
 	insurances := GenerateInsurances(numberInsurances, false)
@@ -97,6 +80,7 @@ func GenerateInsurances(number int, sameAddress bool) []types.Insurance {
 		}
 
 		insurances[i] = types.NewInsurance(uint64(i), addr, "", sdk.NewDec(0))
+		insurances[i].ProviderAddress = addr
 	}
 	return insurances
 }

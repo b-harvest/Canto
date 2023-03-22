@@ -16,22 +16,21 @@ func (suite *KeeperTestSuite) provideInsurances(providers []sdk.AccAddress, valA
 	valNum := len(valAddrs)
 	var providedInsurances []types.Insurance
 	for i, provider := range providers {
-		insurance, err := suite.app.LiquidStakingKeeper.DoInsuranceProvide(
-			suite.ctx,
-			provider,
-			valAddrs[i%valNum], // can point same validators
-			sdk.NewDecWithPrec(
-				int64(simulation.RandIntBetween(r, 1, 10)),
-				2,
-			), // 1 ~ 10% insurance fee
-			amounts[i],
-		)
+		msg := types.NewMsgInsuranceProvide(provider.String(), amounts[i])
+		msg.ValidatorAddress = valAddrs[i%valNum].String()
+		// 1 ~ 10% insurance fee
+		msg.FeeRate = sdk.NewDecWithPrec(int64(simulation.RandIntBetween(r, 1, 10)), 2)
+		msg.Amount = amounts[i]
+		insurance, err := suite.app.LiquidStakingKeeper.DoInsuranceProvide(suite.ctx, msg)
 		suite.NoError(err)
 		providedInsurances = append(providedInsurances, insurance)
 	}
 	return providedInsurances
 }
 
+// Get minimum requirements for liquid staking
+// Liquid staker must provide at least one chunk amount
+// Insurance provider must provide at least slashing coverage
 func (suite *KeeperTestSuite) getMinimumRequirements() (oneChunkAmount, slashingCoverage sdk.Coin) {
 	bondDenom := suite.app.StakingKeeper.BondDenom(suite.ctx)
 	oneChunkAmount = sdk.NewCoin(bondDenom, sdk.NewInt(types.ChunkSize))
@@ -58,6 +57,59 @@ func (suite *KeeperTestSuite) TestDoInsuranceProvide() {
 	}
 }
 
+func (suite *KeeperTestSuite) TestInsuranceProvide() {
+	//bondDenom := suite.app.StakingKeeper.BondDenom(suite.ctx)
+	valAddrs := suite.CreateValidators([]int64{10, 10, 10})
+	_, minimumCoverage := suite.getMinimumRequirements()
+	providers, _ := suite.AddTestAddrs(10, minimumCoverage.Amount)
+
+	for _, tc := range []struct {
+		name        string
+		msg         *types.MsgInsuranceProvide
+		validate    func(ctx sdk.Context, insurance types.Insurance)
+		expectedErr string
+	}{
+		{
+			"success",
+			&types.MsgInsuranceProvide{
+				ProviderAddress:  providers[0].String(),
+				ValidatorAddress: valAddrs[0].String(),
+				Amount:           minimumCoverage,
+				FeeRate:          sdk.ZeroDec(),
+			},
+			func(ctx sdk.Context, createdInsurance types.Insurance) {
+				insurance, found := suite.app.LiquidStakingKeeper.GetInsurance(ctx, createdInsurance.Id)
+				suite.True(found)
+				suite.True(insurance.Equal(createdInsurance))
+			},
+			"",
+		},
+		{
+			"insurance is smaller than minimum coverage",
+			&types.MsgInsuranceProvide{
+				ProviderAddress:  providers[0].String(),
+				ValidatorAddress: valAddrs[0].String(),
+				Amount:           minimumCoverage.SubAmount(sdk.NewInt(1)),
+				FeeRate:          sdk.Dec{},
+			},
+			nil,
+			"amount must be greater than minimum coverage",
+		},
+	} {
+		suite.Run(tc.name, func() {
+			s.Require().NoError(tc.msg.ValidateBasic())
+			cachedCtx, _ := s.ctx.CacheContext()
+			insurance, err := suite.app.LiquidStakingKeeper.DoInsuranceProvide(cachedCtx, tc.msg)
+			if tc.expectedErr != "" {
+				suite.ErrorContains(err, tc.expectedErr)
+			} else {
+				suite.NoError(err)
+				tc.validate(cachedCtx, insurance)
+			}
+		})
+	}
+}
+
 func (suite *KeeperTestSuite) TestDoLiquidStake() {
 	valAddrs := suite.CreateValidators([]int64{10, 10, 10})
 	minimumRequirement, minimumCoverage := suite.getMinimumRequirements()
@@ -70,7 +122,8 @@ func (suite *KeeperTestSuite) TestDoLiquidStake() {
 	// First try
 	del1 := delegators[0]
 	amt1 := balances[0]
-	newShares, lsTokenMintAmount, err := suite.app.LiquidStakingKeeper.DoLiquidStake(suite.ctx, del1, amt1)
+	msg := types.NewMsgLiquidStake(del1.String(), amt1)
+	newShares, lsTokenMintAmount, err := suite.app.LiquidStakingKeeper.DoLiquidStake(suite.ctx, msg)
 	suite.NoError(err)
 	suite.True(amt1.Amount.Equal(newShares.TruncateInt()))
 	suite.True(amt1.Amount.Equal(lsTokenMintAmount))
@@ -80,7 +133,7 @@ func (suite *KeeperTestSuite) TestDoLiquidStake() {
 	suite.True(nas.NetAmount.Add(amt1.Amount.ToDec()).Equal(afterNas.NetAmount))
 }
 
-func (suite *KeeperTestSuite) TestDoLiquidStakeFailCases() {
+func (suite *KeeperTestSuite) TestDoLiquidStakeFail() {
 	valAddrs := suite.CreateValidators([]int64{10, 10, 10})
 	minimumRequirement, minimumCoverage := suite.getMinimumRequirements()
 
@@ -88,11 +141,8 @@ func (suite *KeeperTestSuite) TestDoLiquidStakeFailCases() {
 
 	// TC: There are no pairing insurances yet. Insurances must be provided to liquid stake
 	acc1 := addrs[0]
-	_, _, err := suite.app.LiquidStakingKeeper.DoLiquidStake(
-		suite.ctx,
-		acc1,
-		minimumRequirement,
-	)
+	msg := types.NewMsgLiquidStake(acc1.String(), minimumRequirement)
+	_, _, err := suite.app.LiquidStakingKeeper.DoLiquidStake(suite.ctx, msg)
 	suite.ErrorIs(err, types.ErrNoPairingInsurance)
 
 	// TODO: Add tc for max paired chunk size exceeded
@@ -102,12 +152,7 @@ func (suite *KeeperTestSuite) TestDoLiquidStakeFailCases() {
 
 	// TC: Not enough amount to liquid stake
 	// acc1 tries to liquid stake 2 * ChunkSize tokens, but he has only ChunkSize tokens
-	_, _, err = suite.app.LiquidStakingKeeper.DoLiquidStake(
-		suite.ctx,
-		acc1,
-		minimumRequirement.AddAmount(
-			sdk.NewInt(types.ChunkSize),
-		),
-	)
+	msg = types.NewMsgLiquidStake(acc1.String(), minimumRequirement.AddAmount(sdk.NewInt(types.ChunkSize)))
+	_, _, err = suite.app.LiquidStakingKeeper.DoLiquidStake(suite.ctx, msg)
 	suite.ErrorIs(err, sdkerrors.ErrInsufficientFunds)
 }

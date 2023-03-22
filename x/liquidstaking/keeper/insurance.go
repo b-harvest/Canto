@@ -13,6 +13,11 @@ func (k Keeper) SetInsurance(ctx sdk.Context, insurance types.Insurance) {
 	store.Set(types.GetInsuranceKey(insurance.Id), bz)
 }
 
+func (k Keeper) SetGetInsurancesByProviderIndex(ctx sdk.Context, insurance types.Insurance) {
+	store := ctx.KVStore(k.storeKey)
+	store.Set(types.GetInsurancesByProviderIndexKey(insurance.GetProvider(), insurance.Id), []byte{})
+}
+
 func (k Keeper) GetInsurance(ctx sdk.Context, id uint64) (insurance types.Insurance, found bool) {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.GetInsuranceKey(id))

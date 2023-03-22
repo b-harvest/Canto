@@ -31,6 +31,15 @@ func (i *Insurance) FeePoolAddress() sdk.AccAddress {
 	return DeriveAddress(ModuleName, fmt.Sprintf("insurancefee%d", i.Id))
 }
 
+func (i *Insurance) GetProvider() sdk.AccAddress {
+	return sdk.MustAccAddressFromBech32(i.ProviderAddress)
+}
+
+func (i *Insurance) GetValidator() sdk.ValAddress {
+	valAddr, _ := sdk.ValAddressFromBech32(i.ValidatorAddress)
+	return valAddr
+}
+
 func SortInsurances(validatorMap map[string]stakingtypes.Validator, insurances []Insurance) {
 	sort.Slice(insurances, func(i, j int) bool {
 		iInsurance := insurances[i]
