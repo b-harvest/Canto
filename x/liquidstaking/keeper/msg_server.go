@@ -35,8 +35,14 @@ func (k Keeper) InsuranceProvide(goCtx context.Context, msg *types.MsgInsuranceP
 }
 
 func (k Keeper) CancelInsuranceProvide(goCtx context.Context, msg *types.MsgCancelInsuranceProvide) (*types.MsgCancelInsuranceProvideResponse, error) {
-	//ctx := sdk.UnwrapSDKContext(goCtx)
-	panic("implement me")
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	// TODO: Publish events using returned values
+	_, err := k.DoCancelInsuranceProvide(ctx, msg)
+	if err != nil {
+		return nil, err
+	}
+	return &types.MsgCancelInsuranceProvideResponse{}, nil
 }
 
 func (k Keeper) DepositInsurance(goCtx context.Context, msg *types.MsgDepositInsurance) (*types.MsgDepositInsuranceResponse, error) {

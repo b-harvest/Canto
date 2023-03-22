@@ -171,3 +171,49 @@ func (suite *KeeperTestSuite) TestLiquidStakeFail() {
 	_, _, _, err = suite.app.LiquidStakingKeeper.DoLiquidStake(suite.ctx, msg)
 	suite.ErrorIs(err, types.ErrMaxPairedChunkSizeExceeded)
 }
+
+func (suite *KeeperTestSuite) TestCancelInsuranceProvideSuccess() {
+	valAddrs := suite.CreateValidators([]int64{10, 10, 10})
+	_, minimumCoverage := suite.getMinimumRequirements()
+	providers, balances := suite.AddTestAddrs(10, minimumCoverage.Amount)
+	insurances := suite.provideInsurances(providers, valAddrs, balances)
+
+	provider := providers[0]
+	insurance := insurances[0]
+	msg := types.NewMsgCancelInsuranceProvide(provider.String(), insurance.Id)
+	canceledInsurance, err := suite.app.LiquidStakingKeeper.DoCancelInsuranceProvide(suite.ctx, msg)
+	suite.NoError(err)
+	suite.True(insurance.Equal(canceledInsurance))
+}
+
+func (suite *KeeperTestSuite) TestCancelInsuranceProvideFail() {
+	valAddrs := suite.CreateValidators([]int64{10, 10, 10})
+	minimumRequirement, minimumCoverage := suite.getMinimumRequirements()
+	providers, balances := suite.AddTestAddrs(10, minimumCoverage.Amount)
+	suite.provideInsurances(providers, valAddrs, balances)
+
+	// TC: No insurance to cancel
+	var notExistingInsuranceId uint64 = 9999
+	provider := providers[0]
+
+	_, err := suite.app.LiquidStakingKeeper.DoCancelInsuranceProvide(
+		suite.ctx,
+		types.NewMsgCancelInsuranceProvide(provider.String(), notExistingInsuranceId),
+	)
+	suite.ErrorIs(err, types.ErrPairingInsuranceNotFound, "only pairing insurances can be canceled")
+
+	// TC: Paired insurance cannot be canceled
+	delegators, delegatorBalances := suite.AddTestAddrs(10, minimumRequirement.Amount)
+	del1 := delegators[0]
+	amt1 := delegatorBalances[0]
+	createdChunks, _, _, err := suite.app.LiquidStakingKeeper.DoLiquidStake(suite.ctx, types.NewMsgLiquidStake(del1.String(), amt1))
+	chunk := createdChunks[0]
+	insurance, found := suite.app.LiquidStakingKeeper.GetInsurance(suite.ctx, chunk.InsuranceId)
+	suite.True(found)
+
+	_, err = suite.app.LiquidStakingKeeper.DoCancelInsuranceProvide(
+		suite.ctx,
+		types.NewMsgCancelInsuranceProvide(insurance.ProviderAddress, insurance.Id),
+	)
+	suite.ErrorIs(err, types.ErrPairingInsuranceNotFound, "only pairing insurances can be canceled")
+}

@@ -148,6 +148,7 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (chunk
 		cheapestInsurance.Status = types.INSURANCE_STATUS_PAIRED
 		k.SetChunk(ctx, chunk)
 		k.SetInsurance(ctx, cheapestInsurance)
+		k.DeletePairingInsuranceIndex(ctx, cheapestInsurance)
 		chunks = append(chunks, chunk)
 	}
 	return
@@ -189,10 +190,43 @@ func (k Keeper) DoInsuranceProvide(ctx sdk.Context, msg *types.MsgInsuranceProvi
 	); err != nil {
 		return
 	}
-	// TODO: Add index
 	k.SetInsurance(ctx, insurance)
-	k.SetGetInsurancesByProviderIndex(ctx, insurance)
+	k.SetPairingInsuranceIndex(ctx, insurance)
+	k.SetInsurancesByProviderIndex(ctx, insurance)
 
+	return
+}
+
+func (k Keeper) DoCancelInsuranceProvide(ctx sdk.Context, msg *types.MsgCancelInsuranceProvide) (insurance types.Insurance, err error) {
+	providerAddr := msg.GetProvider()
+	insuranceId := msg.Id
+
+	// Check if the insurance exists
+	insurance, found := k.GetPairingInsurance(ctx, insuranceId)
+	if !found {
+		err = sdkerrors.Wrapf(types.ErrPairingInsuranceNotFound, "insurance id: %d", insuranceId)
+		return
+	}
+
+	// Check if the provider is the same
+	if insurance.ProviderAddress != providerAddr.String() {
+		err = sdkerrors.Wrapf(types.ErrNotProviderOfInsurance, "insurance id: %d", insuranceId)
+		return
+	}
+
+	// Unescrow provider's balance
+	escrowed := k.bankKeeper.GetBalance(ctx, insurance.DerivedAddress(), k.stakingKeeper.BondDenom(ctx))
+	if err = k.bankKeeper.SendCoins(
+		ctx,
+		insurance.DerivedAddress(),
+		providerAddr,
+		sdk.NewCoins(escrowed),
+	); err != nil {
+		return
+	}
+	k.DeleteInsurance(ctx, insuranceId)
+	k.DeleteInsurancesByProviderIndex(ctx, insurance)
+	k.DeletePairingInsuranceIndex(ctx, insurance)
 	return
 }
 

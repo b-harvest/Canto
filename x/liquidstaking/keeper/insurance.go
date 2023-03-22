@@ -13,9 +13,33 @@ func (k Keeper) SetInsurance(ctx sdk.Context, insurance types.Insurance) {
 	store.Set(types.GetInsuranceKey(insurance.Id), bz)
 }
 
-func (k Keeper) SetGetInsurancesByProviderIndex(ctx sdk.Context, insurance types.Insurance) {
+func (k Keeper) GetPairingInsurance(ctx sdk.Context, id uint64) (insurance types.Insurance, found bool) {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(types.GetPairingInsuranceIndexKey(id))
+	if bz == nil {
+		return insurance, false
+	}
+	return k.GetInsurance(ctx, id)
+}
+
+func (k Keeper) SetPairingInsuranceIndex(ctx sdk.Context, insurance types.Insurance) {
+	store := ctx.KVStore(k.storeKey)
+	store.Set(types.GetPairingInsuranceIndexKey(insurance.Id), []byte{})
+}
+
+func (k Keeper) DeletePairingInsuranceIndex(ctx sdk.Context, insurance types.Insurance) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.GetPairingInsuranceIndexKey(insurance.Id))
+}
+
+func (k Keeper) SetInsurancesByProviderIndex(ctx sdk.Context, insurance types.Insurance) {
 	store := ctx.KVStore(k.storeKey)
 	store.Set(types.GetInsurancesByProviderIndexKey(insurance.GetProvider(), insurance.Id), []byte{})
+}
+
+func (k Keeper) DeleteInsurancesByProviderIndex(ctx sdk.Context, insurance types.Insurance) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.GetInsurancesByProviderIndexKey(insurance.GetProvider(), insurance.Id))
 }
 
 func (k Keeper) GetInsurance(ctx sdk.Context, id uint64) (insurance types.Insurance, found bool) {

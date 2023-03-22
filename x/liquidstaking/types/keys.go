@@ -24,6 +24,7 @@ const (
 	prefixLastInsuranceId
 	prefixChunk
 	prefixInsurance
+	prefixPairingInsuranceIndex
 	prefixInsurancesByProviderIndex
 	prefixDelegatorIndex
 	prefixWithdrawingInsurance
@@ -38,6 +39,7 @@ var (
 	KeyPrefixLastInsuranceId                  = []byte{prefixLastInsuranceId}
 	KeyPrefixChunk                            = []byte{prefixChunk}
 	KeyPrefixInsurance                        = []byte{prefixInsurance}
+	KeyPrefixPairingInsuranceIndex            = []byte{prefixPairingInsuranceIndex}
 	KeyPrefixInsurancesByProviderIndex        = []byte{prefixInsurancesByProviderIndex}
 	KeyPrefixDelegatorIndex                   = []byte{prefixDelegatorIndex}
 	KeyPrefixWithdrawingInsurance             = []byte{prefixWithdrawingInsurance}
@@ -52,6 +54,10 @@ func GetChunkKey(chunkId uint64) []byte {
 
 func GetInsuranceKey(insuranceId uint64) []byte {
 	return append(KeyPrefixInsurance, sdk.Uint64ToBigEndian(insuranceId)...)
+}
+
+func GetPairingInsuranceIndexKey(insuranceId uint64) []byte {
+	return append(KeyPrefixPairingInsuranceIndex, sdk.Uint64ToBigEndian(insuranceId)...)
 }
 
 func GetInsurancesByProviderIndexKey(providerAddress sdk.AccAddress, insuranceId uint64) []byte {

@@ -9,4 +9,6 @@ var (
 	ErrInvalidAmount              = sdkerrors.Register(ModuleName, 30003, "amount of coin must be greater than or equal to 5M acanto.")
 	ErrValidatorNotFound          = sdkerrors.Register(ModuleName, 30004, "validator not found")
 	ErrTombstonedValidator        = sdkerrors.Register(ModuleName, 30005, "validator is tombstoned")
+	ErrPairingInsuranceNotFound   = sdkerrors.Register(ModuleName, 30006, "pairing insurance not found")
+	ErrNotProviderOfInsurance     = sdkerrors.Register(ModuleName, 30007, "not provider of insuranec")
 )
