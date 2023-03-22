@@ -178,12 +178,17 @@ func (suite *KeeperTestSuite) TestCancelInsuranceProvideSuccess() {
 	providers, balances := suite.AddTestAddrs(10, minimumCoverage.Amount)
 	insurances := suite.provideInsurances(providers, valAddrs, balances)
 
+	bondDenom := suite.app.StakingKeeper.BondDenom(suite.ctx)
 	provider := providers[0]
 	insurance := insurances[0]
+	escrowed := suite.app.BankKeeper.GetBalance(suite.ctx, insurance.DerivedAddress(), bondDenom)
+	beforeProviderBalance := suite.app.BankKeeper.GetBalance(suite.ctx, provider, bondDenom)
 	msg := types.NewMsgCancelInsuranceProvide(provider.String(), insurance.Id)
 	canceledInsurance, err := suite.app.LiquidStakingKeeper.DoCancelInsuranceProvide(suite.ctx, msg)
 	suite.NoError(err)
 	suite.True(insurance.Equal(canceledInsurance))
+	afterProviderBalance := suite.app.BankKeeper.GetBalance(suite.ctx, provider, bondDenom)
+	suite.True(afterProviderBalance.Amount.Equal(beforeProviderBalance.Amount.Add(escrowed.Amount)), "provider should get back escrowed amount")
 }
 
 func (suite *KeeperTestSuite) TestCancelInsuranceProvideFail() {
