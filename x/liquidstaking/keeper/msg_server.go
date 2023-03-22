@@ -12,7 +12,7 @@ func (k Keeper) LiquidStake(goCtx context.Context, msg *types.MsgLiquidStake) (*
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	// TODO: Publish events using returned values
-	_, _, err := k.DoLiquidStake(ctx, sdk.AccAddress(msg.DelegatorAddress), msg.Amount)
+	_, _, err := k.DoLiquidStake(ctx, msg)
 	if err != nil {
 		return nil, err
 	}
@@ -27,7 +27,7 @@ func (k Keeper) InsuranceProvide(goCtx context.Context, msg *types.MsgInsuranceP
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	// TODO: Publish events using returned values
-	_, err := k.DoInsuranceProvide(ctx, sdk.AccAddress(msg.ProviderAddress), sdk.ValAddress(msg.ValidatorAddress), msg.FeeRate, msg.Amount)
+	_, err := k.DoInsuranceProvide(ctx, msg)
 	if err != nil {
 		return nil, err
 	}

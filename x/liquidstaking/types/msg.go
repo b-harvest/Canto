@@ -50,6 +50,11 @@ func (msg MsgLiquidStake) GetSigners() []sdk.AccAddress {
 	return []sdk.AccAddress{funder}
 }
 
+func (msg MsgLiquidStake) GetDelegator() sdk.AccAddress {
+	addr := sdk.MustAccAddressFromBech32(msg.DelegatorAddress)
+	return addr
+}
+
 func NewMsgLiquidUnstake(delegatorAddress string, amount sdk.Coin) *MsgLiquidUnstake {
 	return &MsgLiquidUnstake{
 		DelegatorAddress: delegatorAddress,
@@ -73,6 +78,11 @@ func (msg MsgLiquidUnstake) GetSignBytes() []byte {
 func (msg MsgLiquidUnstake) GetSigners() []sdk.AccAddress {
 	funder := sdk.MustAccAddressFromBech32(msg.DelegatorAddress)
 	return []sdk.AccAddress{funder}
+}
+
+func (msg MsgLiquidUnstake) GetDelegator() sdk.AccAddress {
+	addr := sdk.MustAccAddressFromBech32(msg.DelegatorAddress)
+	return addr
 }
 
 func NewMsgInsuranceProvide(providerAddress string, amount sdk.Coin) *MsgInsuranceProvide {
@@ -100,6 +110,16 @@ func (msg MsgInsuranceProvide) GetSigners() []sdk.AccAddress {
 	return []sdk.AccAddress{funder}
 }
 
+func (msg MsgInsuranceProvide) GetProvider() sdk.AccAddress {
+	addr := sdk.MustAccAddressFromBech32(msg.ProviderAddress)
+	return addr
+}
+
+func (msg MsgInsuranceProvide) GetValidator() sdk.ValAddress {
+	addr, _ := sdk.ValAddressFromBech32(msg.ValidatorAddress)
+	return addr
+}
+
 func NewMsgCancelInsuranceProvide(providerAddress string, insuranceId uint64) *MsgCancelInsuranceProvide {
 	return &MsgCancelInsuranceProvide{
 		ProviderAddress: providerAddress,
@@ -120,6 +140,11 @@ func (msg MsgCancelInsuranceProvide) GetSignBytes() []byte {
 func (msg MsgCancelInsuranceProvide) GetSigners() []sdk.AccAddress {
 	funder := sdk.MustAccAddressFromBech32(msg.ProviderAddress)
 	return []sdk.AccAddress{funder}
+}
+
+func (msg MsgCancelInsuranceProvide) GetProvider() sdk.AccAddress {
+	addr := sdk.MustAccAddressFromBech32(msg.ProviderAddress)
+	return addr
 }
 
 func NewMsgDepositInsurance(providerAddress string, insuranceId uint64, amount sdk.Coin) *MsgDepositInsurance {
@@ -148,6 +173,11 @@ func (msg MsgDepositInsurance) GetSigners() []sdk.AccAddress {
 	return []sdk.AccAddress{funder}
 }
 
+func (msg MsgDepositInsurance) GetProvider() sdk.AccAddress {
+	addr := sdk.MustAccAddressFromBech32(msg.ProviderAddress)
+	return addr
+}
+
 func NewMsgWithdrawInsurance(providerAddress string, insuranceId uint64) *MsgWithdrawInsurance {
 	return &MsgWithdrawInsurance{
 		ProviderAddress: providerAddress,
@@ -170,6 +200,11 @@ func (msg MsgWithdrawInsurance) GetSigners() []sdk.AccAddress {
 	return []sdk.AccAddress{funder}
 }
 
+func (msg MsgWithdrawInsurance) GetProvider() sdk.AccAddress {
+	addr := sdk.MustAccAddressFromBech32(msg.ProviderAddress)
+	return addr
+}
+
 func NewMsgWithdrawInsuranceCommission(providerAddress string, insuranceId uint64) *MsgWithdrawInsuranceCommission {
 	return &MsgWithdrawInsuranceCommission{
 		ProviderAddress: providerAddress,
@@ -190,4 +225,9 @@ func (msg MsgWithdrawInsuranceCommission) GetSignBytes() []byte {
 func (msg MsgWithdrawInsuranceCommission) GetSigners() []sdk.AccAddress {
 	funder := sdk.MustAccAddressFromBech32(msg.ProviderAddress)
 	return []sdk.AccAddress{funder}
+}
+
+func (msg MsgWithdrawInsuranceCommission) GetProvider() sdk.AccAddress {
+	addr := sdk.MustAccAddressFromBech32(msg.ProviderAddress)
+	return addr
 }
