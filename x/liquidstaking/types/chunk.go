@@ -21,3 +21,9 @@ func NewChunk(id uint64) Chunk {
 func (c *Chunk) DerivedAddress() sdk.AccAddress {
 	return DeriveAddress(ModuleName, fmt.Sprintf("chunk%d", c.Id))
 }
+
+func (c *Chunk) Equal(other Chunk) bool {
+	return c.Id == other.Id &&
+		c.InsuranceId == other.InsuranceId &&
+		c.Status == other.Status
+}

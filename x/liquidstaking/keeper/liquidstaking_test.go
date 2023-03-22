@@ -119,7 +119,15 @@ func (suite *KeeperTestSuite) TestLiquidStakeSuccess() {
 	amt1 := balances[0]
 	msg := types.NewMsgLiquidStake(del1.String(), amt1)
 	lsTokenBefore := suite.app.BankKeeper.GetBalance(suite.ctx, del1, params.LiquidBondDenom)
-	_, newShares, lsTokenMintAmount, err := suite.app.LiquidStakingKeeper.DoLiquidStake(suite.ctx, msg)
+	createdChunks, newShares, lsTokenMintAmount, err := suite.app.LiquidStakingKeeper.DoLiquidStake(suite.ctx, msg)
+	// Check created chunks are stored in db correctly
+	idx := 0
+	suite.NoError(suite.app.LiquidStakingKeeper.IterateAllChunks(suite.ctx, func(chunk types.Chunk) (bool, error) {
+		suite.True(chunk.Equal(createdChunks[idx]))
+		idx++
+		return false, nil
+	}))
+
 	lsTokenAfter := suite.app.BankKeeper.GetBalance(suite.ctx, del1, params.LiquidBondDenom)
 	suite.NoError(err)
 	suite.True(amt1.Amount.Equal(newShares.TruncateInt()), "delegation shares should be equal to amount")
