@@ -58,7 +58,6 @@ func (suite *KeeperTestSuite) TestDoInsuranceProvide() {
 }
 
 func (suite *KeeperTestSuite) TestInsuranceProvide() {
-	//bondDenom := suite.app.StakingKeeper.BondDenom(suite.ctx)
 	valAddrs := suite.CreateValidators([]int64{10, 10, 10})
 	_, minimumCoverage := suite.getMinimumRequirements()
 	providers, _ := suite.AddTestAddrs(10, minimumCoverage.Amount)
@@ -111,6 +110,7 @@ func (suite *KeeperTestSuite) TestInsuranceProvide() {
 }
 
 func (suite *KeeperTestSuite) TestDoLiquidStake() {
+	params := suite.app.LiquidStakingKeeper.GetParams(suite.ctx)
 	valAddrs := suite.CreateValidators([]int64{10, 10, 10})
 	minimumRequirement, minimumCoverage := suite.getMinimumRequirements()
 	providers, balances := suite.AddTestAddrs(10, minimumCoverage.Amount)
@@ -123,14 +123,19 @@ func (suite *KeeperTestSuite) TestDoLiquidStake() {
 	del1 := delegators[0]
 	amt1 := balances[0]
 	msg := types.NewMsgLiquidStake(del1.String(), amt1)
+	lsTokenBefore := suite.app.BankKeeper.GetBalance(suite.ctx, del1, params.LiquidBondDenom)
 	newShares, lsTokenMintAmount, err := suite.app.LiquidStakingKeeper.DoLiquidStake(suite.ctx, msg)
+	lsTokenAfter := suite.app.BankKeeper.GetBalance(suite.ctx, del1, params.LiquidBondDenom)
 	suite.NoError(err)
-	suite.True(amt1.Amount.Equal(newShares.TruncateInt()))
-	suite.True(amt1.Amount.Equal(lsTokenMintAmount))
+	suite.True(amt1.Amount.Equal(newShares.TruncateInt()), "delegation shares should be equal to amount")
+	suite.True(amt1.Amount.Equal(lsTokenMintAmount), "at first try mint rate is 1, so mint amount should be equal to amount")
+	suite.True(lsTokenAfter.Sub(lsTokenBefore).Amount.Equal(lsTokenMintAmount), "liquid staker must have minted ls tokens in account balance")
 
+	// NetAmountState should be updated correctly
 	afterNas := suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
 	suite.True(nas.TotalLiquidTokens.Add(amt1.Amount).Equal(afterNas.TotalLiquidTokens))
 	suite.True(nas.NetAmount.Add(amt1.Amount.ToDec()).Equal(afterNas.NetAmount))
+	suite.True(afterNas.MintRate.Equal(sdk.OneDec()), "no rewards yet, so mint rate should be 1")
 }
 
 func (suite *KeeperTestSuite) TestDoLiquidStakeFail() {
@@ -145,8 +150,6 @@ func (suite *KeeperTestSuite) TestDoLiquidStakeFail() {
 	_, _, err := suite.app.LiquidStakingKeeper.DoLiquidStake(suite.ctx, msg)
 	suite.ErrorIs(err, types.ErrNoPairingInsurance)
 
-	// TODO: Add tc for max paired chunk size exceeded
-
 	providers, balances := suite.AddTestAddrs(10, minimumCoverage.Amount)
 	suite.provideInsurances(providers, valAddrs, balances)
 
@@ -155,4 +158,7 @@ func (suite *KeeperTestSuite) TestDoLiquidStakeFail() {
 	msg = types.NewMsgLiquidStake(acc1.String(), minimumRequirement.AddAmount(sdk.NewInt(types.ChunkSize)))
 	_, _, err = suite.app.LiquidStakingKeeper.DoLiquidStake(suite.ctx, msg)
 	suite.ErrorIs(err, sdkerrors.ErrInsufficientFunds)
+
+	// TODO: Add tc for max paired chunk size exceeded
+
 }
