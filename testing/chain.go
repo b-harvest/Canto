@@ -101,7 +101,10 @@ func NewTestChainWithValSet(t *testing.T, coord *Coordinator, chainID string, va
 
 		balance := banktypes.Balance{
 			Address: acc.GetAddress().String(),
-			Coins:   sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, amount)),
+			Coins: sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, amount),
+				sdk.NewCoin("ibc/C053D637CCA2A2BA030E2C5EE1B28A16F71CCB0E45E8BE52766DC1B241B77878", sdk.NewInt(1000000000000)),
+				sdk.NewCoin("acanto", sdk.NewInt(10000000000)),
+			),
 		}
 
 		genAccs = append(genAccs, acc)

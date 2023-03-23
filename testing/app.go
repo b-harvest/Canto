@@ -5,6 +5,8 @@ import (
 	"testing"
 	"time"
 
+	onboardingkeeper "github.com/Canto-Network/Canto/v6/x/onboarding/keeper"
+	coinswapkeer "github.com/b-harvest/coinswap/modules/coinswap/keeper"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -41,6 +43,10 @@ type TestingApp interface {
 	GetIBCKeeper() *keeper.Keeper
 	GetScopedIBCKeeper() capabilitykeeper.ScopedKeeper
 	GetTxConfig() client.TxConfig
+
+	GetCoinswapKeeper() coinswapkeer.Keeper
+
+	GetOnboardingKeeper() *onboardingkeeper.Keeper
 
 	// Implemented by SimApp
 	AppCodec() codec.Codec

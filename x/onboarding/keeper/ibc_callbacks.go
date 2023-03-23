@@ -119,10 +119,15 @@ func (k Keeper) OnRecvPacket(
 			time.Now().Add(swapDuration).Unix(),
 			true,
 		}
+
 		if err = k.coinswapKeeper.Swap(ctx, &msg); err != nil {
 			fmt.Println(fmt.Sprintf("[onboarding] swap error %s", err))
 			return ack
 		}
+
+		standardCoinBalance = k.bankKeeper.GetBalance(ctx, recipient, standardDenom)
+		transferredCoinBalance = k.bankKeeper.GetBalance(ctx, recipient, transferredCoin.Denom)
+		fmt.Println(fmt.Sprintf("[onboarding] balacne %s, threshold %s, swap %s, stake %s", standardCoinBalance, threshold, swapCoins, transferredCoinBalance))
 
 	} else {
 		fmt.Println(fmt.Sprintf("[onboarding] balacne %s, threshold %s, stake %s", standardCoinBalance, threshold, transferredCoinBalance))

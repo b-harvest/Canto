@@ -1028,8 +1028,12 @@ func (app *Canto) GetIBCKeeper() *ibckeeper.Keeper {
 	return app.IBCKeeper
 }
 
-func (app *Canto) GetCoinSwapKeeper() coinswapkeeper.Keeper {
+func (app *Canto) GetCoinswapKeeper() coinswapkeeper.Keeper {
 	return app.CoinswapKeeper
+}
+
+func (app *Canto) GetOnboardingKeeper() *onboardingkeeper.Keeper {
+	return app.OnboardingKeeper
 }
 
 // GetScopedIBCKeeper implements the TestingApp interface.
