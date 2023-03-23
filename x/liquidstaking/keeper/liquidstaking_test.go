@@ -46,10 +46,9 @@ func (suite *KeeperTestSuite) liquidStakes(delegators []sdk.AccAddress, amounts 
 // Liquid staker must provide at least one chunk amount
 // Insurance provider must provide at least slashing coverage
 func (suite *KeeperTestSuite) getMinimumRequirements() (oneChunkAmount, slashingCoverage sdk.Coin) {
-	bondDenom := suite.app.StakingKeeper.BondDenom(suite.ctx)
-	oneChunkAmount = sdk.NewCoin(bondDenom, sdk.NewInt(types.ChunkSize))
+	oneChunkAmount = sdk.NewCoin(suite.denom, sdk.NewInt(types.ChunkSize))
 	fraction := sdk.MustNewDecFromStr(types.SlashFraction)
-	slashingCoverage = sdk.NewCoin(bondDenom, sdk.NewInt(oneChunkAmount.Amount.ToDec().Mul(fraction).TruncateInt().Int64()))
+	slashingCoverage = sdk.NewCoin(suite.denom, sdk.NewInt(oneChunkAmount.Amount.ToDec().Mul(fraction).TruncateInt().Int64()))
 	return
 }
 
@@ -204,16 +203,15 @@ func (suite *KeeperTestSuite) TestCancelInsuranceProvideSuccess() {
 	providers, balances := suite.AddTestAddrs(10, minimumCoverage.Amount)
 	insurances := suite.provideInsurances(providers, valAddrs, balances)
 
-	bondDenom := suite.app.StakingKeeper.BondDenom(suite.ctx)
 	provider := providers[0]
 	insurance := insurances[0]
-	escrowed := suite.app.BankKeeper.GetBalance(suite.ctx, insurance.DerivedAddress(), bondDenom)
-	beforeProviderBalance := suite.app.BankKeeper.GetBalance(suite.ctx, provider, bondDenom)
+	escrowed := suite.app.BankKeeper.GetBalance(suite.ctx, insurance.DerivedAddress(), suite.denom)
+	beforeProviderBalance := suite.app.BankKeeper.GetBalance(suite.ctx, provider, suite.denom)
 	msg := types.NewMsgCancelInsuranceProvide(provider.String(), insurance.Id)
 	canceledInsurance, err := suite.app.LiquidStakingKeeper.DoCancelInsuranceProvide(suite.ctx, msg)
 	suite.NoError(err)
 	suite.True(insurance.Equal(canceledInsurance))
-	afterProviderBalance := suite.app.BankKeeper.GetBalance(suite.ctx, provider, bondDenom)
+	afterProviderBalance := suite.app.BankKeeper.GetBalance(suite.ctx, provider, suite.denom)
 	suite.True(afterProviderBalance.Amount.Equal(beforeProviderBalance.Amount.Add(escrowed.Amount)), "provider should get back escrowed amount")
 }
 
