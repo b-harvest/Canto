@@ -116,7 +116,7 @@ func (suite *KeeperTestSuite) SetupApp() {
 	err = suite.app.StakingKeeper.SetValidatorByConsAddr(suite.ctx, validator)
 	require.NoError(t, err)
 
-	validators := s.app.StakingKeeper.GetValidators(s.ctx, 1)
+	validators := s.app.StakingKeeper.GetValidators(suite.ctx, 1)
 	suite.validator = validators[0]
 }
 
@@ -194,7 +194,7 @@ func (suite *KeeperTestSuite) advanceHeight(height int) {
 
 	feeCollector := suite.app.AccountKeeper.GetModuleAccount(suite.ctx, authtypes.FeeCollectorName)
 	for i := 0; i < height; i++ {
-		s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1).WithBlockTime(s.ctx.BlockTime().Add(time.Second))
+		suite.ctx = suite.ctx.WithBlockHeight(suite.ctx.BlockHeight() + 1).WithBlockTime(suite.ctx.BlockTime().Add(time.Second))
 
 		// Mimic inflation module AfterEpochEnd Hook
 		// - Inflation happened in the end of epoch triggered by AfterEpochEnd hook of epochs module
@@ -209,14 +209,14 @@ func (suite *KeeperTestSuite) advanceHeight(height int) {
 
 		totalPower := int64(0)
 		suite.app.StakingKeeper.IterateBondedValidatorsByPower(suite.ctx, func(index int64, validator stakingtypes.ValidatorI) (stop bool) {
-			totalPower += validator.GetConsensusPower(suite.app.StakingKeeper.PowerReduction(s.ctx))
+			totalPower += validator.GetConsensusPower(suite.app.StakingKeeper.PowerReduction(suite.ctx))
 			return false
 		})
 
 		totalRewards := sdk.ZeroDec()
 		if totalPower != 0 {
 			suite.app.StakingKeeper.IterateBondedValidatorsByPower(suite.ctx, func(index int64, validator stakingtypes.ValidatorI) (stop bool) {
-				consPower := validator.GetConsensusPower(suite.app.StakingKeeper.PowerReduction(s.ctx))
+				consPower := validator.GetConsensusPower(suite.app.StakingKeeper.PowerReduction(suite.ctx))
 				powerFraction := sdk.NewDec(consPower).QuoTruncate(sdk.NewDec(totalPower))
 				reward := rewardsToBeDistributed.ToDec().MulTruncate(powerFraction)
 				suite.app.DistrKeeper.AllocateTokensToValidator(suite.ctx, validator, sdk.DecCoins{{Denom: sdk.DefaultBondDenom, Amount: reward}})

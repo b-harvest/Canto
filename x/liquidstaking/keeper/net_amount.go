@@ -12,7 +12,7 @@ func (k Keeper) GetNetAmountState(ctx sdk.Context) (nas types.NetAmountState) {
 	bondDenom := k.stakingKeeper.BondDenom(ctx)
 	totalDelShares := sdk.ZeroDec()
 	totalChunksBalance := sdk.NewDec(0)
-	totalRewards := sdk.ZeroDec()
+	totalRemainingRewards := sdk.ZeroDec()
 	totalLiquidTokens := sdk.ZeroInt()
 	totalInsuranceTokens := sdk.ZeroInt()
 	totalUnbondingBalance := sdk.ZeroDec()
@@ -31,13 +31,13 @@ func (k Keeper) GetNetAmountState(ctx sdk.Context) (nas types.NetAmountState) {
 		if !found {
 			return false, nil
 		}
-		totalDelShares.Add(delegation.GetShares())
+		totalDelShares = totalDelShares.Add(delegation.GetShares())
 		tokens := validator.TokensFromSharesTruncated(delegation.GetShares()).TruncateInt()
 		totalLiquidTokens = totalLiquidTokens.Add(tokens)
 		cachedCtx, _ := ctx.CacheContext()
 		endingPeriod := k.distributionKeeper.IncrementValidatorPeriod(cachedCtx, validator)
 		delReward := k.distributionKeeper.CalculateDelegationRewards(cachedCtx, validator, delegation, endingPeriod)
-		totalRewards = totalRewards.Add(delReward.AmountOf(bondDenom))
+		totalRemainingRewards = totalRemainingRewards.Add(delReward.AmountOf(bondDenom))
 
 		ubds := k.stakingKeeper.GetAllUnbondingDelegations(ctx, chunk.DerivedAddress())
 		for _, ubd := range ubds {
@@ -67,7 +67,7 @@ func (k Keeper) GetNetAmountState(ctx sdk.Context) (nas types.NetAmountState) {
 		LsTokensTotalSupply:   k.bankKeeper.GetSupply(ctx, liquidBondDenom).Amount,
 		TotalChunksBalance:    totalChunksBalance.TruncateInt(),
 		TotalDelShares:        totalDelShares,
-		TotalRemainingRewards: totalRewards,
+		TotalRemainingRewards: totalRemainingRewards,
 		TotalLiquidTokens:     totalLiquidTokens,
 		TotalInsuranceTokens:  totalInsuranceTokens,
 		TotalUnbondingBalance: totalUnbondingBalance.TruncateInt(),
