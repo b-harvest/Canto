@@ -79,6 +79,25 @@ func (k Keeper) IterateAllInsurances(ctx sdk.Context, cb func(insurance types.In
 	return nil
 }
 
+func (k Keeper) IteratePairingInsurances(ctx sdk.Context, cb func(insurance types.Insurance) (stop bool, err error)) error {
+	store := ctx.KVStore(k.storeKey)
+	iterator := sdk.KVStorePrefixIterator(store, types.KeyPrefixPairingInsuranceIndex)
+	defer iterator.Close()
+
+	for ; iterator.Valid(); iterator.Next() {
+		id := types.ParsePairingInsuranceIndexKey(iterator.Key())
+		insurance, _ := k.GetInsurance(ctx, id)
+		stop, err := cb(insurance)
+		if err != nil {
+			return err
+		}
+		if stop {
+			break
+		}
+	}
+	return nil
+}
+
 func (k Keeper) GetInsurancesFromProviderAddress(ctx sdk.Context, providerAddress sdk.AccAddress) []types.Insurance {
 	var insurances []types.Insurance
 

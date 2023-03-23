@@ -40,28 +40,25 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (chunk
 	var pairingInsurances []types.Insurance
 	validatorMap := make(map[string]stakingtypes.Validator)
 	// TODO: Add pairing index for faster iteration: use index iterator
-	err = k.IterateAllInsurances(ctx, func(insurance types.Insurance) (bool, error) {
-		if insurance.Status == types.INSURANCE_STATUS_PAIRING {
-			// Store validator of insurance to map
-			if _, ok := validatorMap[insurance.ValidatorAddress]; !ok {
-				// If validator is not in map, get validator from staking keeper
-				valAddr, err := sdk.ValAddressFromBech32(insurance.ValidatorAddress)
-				if err != nil {
-					return false, err
-				}
-				validator, found := k.stakingKeeper.GetValidator(ctx, valAddr)
-				valid, err := k.isValidValidator(ctx, validator, found)
-				if err != nil {
-					return false, err
-				}
-				if valid {
-					validatorMap[insurance.ValidatorAddress] = validator
-				} else {
-					return false, nil
-				}
+	err = k.IteratePairingInsurances(ctx, func(insurance types.Insurance) (bool, error) {
+		if _, ok := validatorMap[insurance.ValidatorAddress]; !ok {
+			// If validator is not in map, get validator from staking keeper
+			valAddr, err := sdk.ValAddressFromBech32(insurance.ValidatorAddress)
+			if err != nil {
+				return false, err
 			}
-			pairingInsurances = append(pairingInsurances, insurance)
+			validator, found := k.stakingKeeper.GetValidator(ctx, valAddr)
+			valid, err := k.isValidValidator(ctx, validator, found)
+			if err != nil {
+				return false, err
+			}
+			if valid {
+				validatorMap[insurance.ValidatorAddress] = validator
+			} else {
+				return false, nil
+			}
 		}
+		pairingInsurances = append(pairingInsurances, insurance)
 		return false, nil
 	})
 	if err != nil {

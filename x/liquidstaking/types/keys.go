@@ -86,3 +86,12 @@ func ParseInsurancesByProviderIndexKey(key []byte) (providerAddress sdk.AccAddre
 	insuranceId = sdk.BigEndianToUint64(key[2+providerAddressLength:])
 	return
 }
+
+func ParsePairingInsuranceIndexKey(key []byte) (insuranceId uint64) {
+	if !bytes.HasPrefix(key, KeyPrefixPairingInsuranceIndex) {
+		panic("invalid pairing insurance index key")
+	}
+
+	insuranceId = sdk.BigEndianToUint64(key[1:])
+	return
+}
