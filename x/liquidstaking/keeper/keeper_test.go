@@ -219,7 +219,7 @@ func (suite *KeeperTestSuite) advanceHeight(height int) {
 				consPower := validator.GetConsensusPower(suite.app.StakingKeeper.PowerReduction(suite.ctx))
 				powerFraction := sdk.NewDec(consPower).QuoTruncate(sdk.NewDec(totalPower))
 				reward := rewardsToBeDistributed.ToDec().MulTruncate(powerFraction)
-				suite.app.DistrKeeper.AllocateTokensToValidator(suite.ctx, validator, sdk.DecCoins{{Denom: sdk.DefaultBondDenom, Amount: reward}})
+				suite.app.DistrKeeper.AllocateTokensToValidator(suite.ctx, validator, sdk.DecCoins{{Denom: suite.denom, Amount: reward}})
 				totalRewards = totalRewards.Add(reward)
 				return false
 			})
