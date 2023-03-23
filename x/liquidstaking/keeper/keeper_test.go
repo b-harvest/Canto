@@ -2,6 +2,9 @@ package keeper_test
 
 import (
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
+	"github.com/cosmos/cosmos-sdk/x/staking"
 	"testing"
 	"time"
 
@@ -154,11 +157,11 @@ func (suite *KeeperTestSuite) CreateValidators(powers []int64) (valAddrs []sdk.V
 		err = suite.app.BankKeeper.SendCoinsFromModuleToModule(suite.ctx, types.ModuleName, notBondedPool.GetName(), sdk.NewCoins(sdk.NewCoin(suite.denom, tokens)))
 		suite.NoError(err)
 
-		validator, _ = validator.AddTokensFromDel(tokens)
-		_, err = validator.SetInitialCommission(stakingtypes.NewCommission(sdk.NewDecWithPrec(10, 2), sdk.NewDecWithPrec(10, 2), sdk.NewDecWithPrec(10, 2)))
+		validator, err = validator.SetInitialCommission(stakingtypes.NewCommission(sdk.NewDecWithPrec(10, 2), sdk.NewDecWithPrec(10, 2), sdk.NewDecWithPrec(10, 2)))
 		if err != nil {
 			return
 		}
+		validator, _ = validator.AddTokensFromDel(tokens)
 		validator = stakingkeeper.TestingUpdateValidator(suite.app.StakingKeeper, suite.ctx, validator, true)
 		suite.app.StakingKeeper.AfterValidatorCreated(suite.ctx, validator.GetOperator())
 		suite.app.StakingKeeper.SetValidator(suite.ctx, validator)
@@ -187,10 +190,47 @@ func (suite *KeeperTestSuite) AddTestAddrs(accNum int, amount sdk.Int) ([]sdk.Ac
 	return addrs, balances
 }
 
-// TODO: impl
-//func (suite *KeeperTestSuite) advanceHeight(height int) {
-//	feeCollector := suite.app.AccountKeeper.GetModuleAccount(suite.ctx, authtypes.FeeCollectorName)
-//	for i := 0; i < height; i++ {
-//		s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1).WithBlockTime(s.ctx.BlockTime().Add(time.Second))
-//	}
-//}
+func (suite *KeeperTestSuite) advanceHeight(height int) {
+
+	feeCollector := suite.app.AccountKeeper.GetModuleAccount(suite.ctx, authtypes.FeeCollectorName)
+	for i := 0; i < height; i++ {
+		s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1).WithBlockTime(s.ctx.BlockTime().Add(time.Second))
+
+		// Mimic inflation module AfterEpochEnd Hook
+		// - Inflation happened in the end of epoch triggered by AfterEpochEnd hook of epochs module
+		mintedCoin := sdk.NewCoin(suite.denom, sdk.NewInt(1000000))
+		_, _, err := suite.app.InflationKeeper.MintAndAllocateInflation(suite.ctx, mintedCoin)
+		suite.NoError(err)
+		feeCollectorBalances := suite.app.BankKeeper.GetAllBalances(suite.ctx, feeCollector.GetAddress())
+		rewardsToBeDistributed := feeCollectorBalances.AmountOf(suite.denom)
+
+		// Mimic distribution.BeginBlock (AllocateTokens, get rewards from feeCollector, AllocateTokensToValidator, add remaining to feePool)
+		suite.NoError(suite.app.BankKeeper.SendCoinsFromModuleToModule(suite.ctx, authtypes.FeeCollectorName, distrtypes.ModuleName, feeCollectorBalances))
+
+		totalPower := int64(0)
+		suite.app.StakingKeeper.IterateBondedValidatorsByPower(suite.ctx, func(index int64, validator stakingtypes.ValidatorI) (stop bool) {
+			totalPower += validator.GetConsensusPower(suite.app.StakingKeeper.PowerReduction(s.ctx))
+			return false
+		})
+
+		totalRewards := sdk.ZeroDec()
+		if totalPower != 0 {
+			suite.app.StakingKeeper.IterateBondedValidatorsByPower(suite.ctx, func(index int64, validator stakingtypes.ValidatorI) (stop bool) {
+				consPower := validator.GetConsensusPower(suite.app.StakingKeeper.PowerReduction(s.ctx))
+				powerFraction := sdk.NewDec(consPower).QuoTruncate(sdk.NewDec(totalPower))
+				reward := rewardsToBeDistributed.ToDec().MulTruncate(powerFraction)
+				suite.app.DistrKeeper.AllocateTokensToValidator(suite.ctx, validator, sdk.DecCoins{{Denom: sdk.DefaultBondDenom, Amount: reward}})
+				totalRewards = totalRewards.Add(reward)
+				return false
+			})
+		}
+		remaining := rewardsToBeDistributed.ToDec().Sub(totalRewards)
+		suite.False(remaining.GT(sdk.NewDec(1)), "all rewards should be distributed")
+		feePool := suite.app.DistrKeeper.GetFeePool(suite.ctx)
+		feePool.CommunityPool = feePool.CommunityPool.Add(
+			sdk.NewDecCoin(suite.denom, remaining.TruncateInt()),
+		)
+		suite.app.DistrKeeper.SetFeePool(suite.ctx, feePool)
+		staking.EndBlocker(suite.ctx, suite.app.StakingKeeper)
+	}
+}

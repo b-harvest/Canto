@@ -184,23 +184,18 @@ func (suite *KeeperTestSuite) TestLiquidStakeWithAdvanceBlocks() {
 	providers, balances := suite.AddTestAddrs(10, minimumCoverage.Amount)
 	suite.provideInsurances(providers, valAddrs, balances)
 
+	nas1 := suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
 	delegators, delegatorBalances := suite.AddTestAddrs(3, minimumRequirement.Amount)
 	_ = suite.liquidStakes(delegators, delegatorBalances)
+	nas2 := suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
 
-	printAllDelegations := func(vals []sdk.ValAddress) {
-		for _, val := range vals {
-			// Get all delegation infos from validator of validator and print them
-			delegations := suite.app.StakingKeeper.GetValidatorDelegations(suite.ctx, val)
-			for _, delegation := range delegations {
-				fmt.Println(delegation)
-			}
-		}
-	}
-	printAllDelegations(valAddrs)
 	// Advance 10 blocks
-	//suite.advanceHeight(10)
-	fmt.Println("Advance 10 blocks")
-	printAllDelegations(valAddrs)
+	suite.advanceHeight(10)
+	nas3 := suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
+
+	fmt.Println(nas1)
+	fmt.Println(nas2)
+	fmt.Println(nas3)
 }
 
 func (suite *KeeperTestSuite) TestCancelInsuranceProvideSuccess() {

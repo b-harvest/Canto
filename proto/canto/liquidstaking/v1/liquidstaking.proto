@@ -117,6 +117,7 @@ message Insurance {
 message NetAmountState {
   option (gogoproto.equal) = false;
   option (gogoproto.goproto_getters) = true;
+  option (gogoproto.goproto_stringer) = false;
 
   // Calculated by (total supply of ls tokens) / NetAmount
   string mint_rate = 1 [
