@@ -186,3 +186,11 @@ func (suite *KeeperTestSuite) AddTestAddrs(accNum int, amount sdk.Int) ([]sdk.Ac
 	}
 	return addrs, balances
 }
+
+// TODO: impl
+//func (suite *KeeperTestSuite) advanceHeight(height int) {
+//	feeCollector := suite.app.AccountKeeper.GetModuleAccount(suite.ctx, authtypes.FeeCollectorName)
+//	for i := 0; i < height; i++ {
+//		s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1).WithBlockTime(s.ctx.BlockTime().Add(time.Second))
+//	}
+//}

@@ -1,6 +1,7 @@
 package keeper_test
 
 import (
+	"fmt"
 	"github.com/Canto-Network/Canto/v6/x/liquidstaking/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -121,6 +122,7 @@ func (suite *KeeperTestSuite) TestLiquidStakeSuccess() {
 	lsTokenBefore := suite.app.BankKeeper.GetBalance(suite.ctx, del1, params.LiquidBondDenom)
 	createdChunks, newShares, lsTokenMintAmount, err := suite.app.LiquidStakingKeeper.DoLiquidStake(suite.ctx, msg)
 	// Check created chunks are stored in db correctly
+	// TODO: check created chunk number (idx == 1)
 	idx := 0
 	suite.NoError(suite.app.LiquidStakingKeeper.IterateAllChunks(suite.ctx, func(chunk types.Chunk) (bool, error) {
 		suite.True(chunk.Equal(createdChunks[idx]))
@@ -133,12 +135,15 @@ func (suite *KeeperTestSuite) TestLiquidStakeSuccess() {
 	suite.True(amt1.Amount.Equal(newShares.TruncateInt()), "delegation shares should be equal to amount")
 	suite.True(amt1.Amount.Equal(lsTokenMintAmount), "at first try mint rate is 1, so mint amount should be equal to amount")
 	suite.True(lsTokenAfter.Sub(lsTokenBefore).Amount.Equal(lsTokenMintAmount), "liquid staker must have minted ls tokens in account balance")
+	// TODO: TotalLsTokensSupply
 
 	// NetAmountState should be updated correctly
 	afterNas := suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
 	suite.True(nas.TotalLiquidTokens.Add(amt1.Amount).Equal(afterNas.TotalLiquidTokens))
 	suite.True(nas.NetAmount.Add(amt1.Amount.ToDec()).Equal(afterNas.NetAmount))
 	suite.True(afterNas.MintRate.Equal(sdk.OneDec()), "no rewards yet, so mint rate should be 1")
+
+	// TODO: Should test multiple liquidstake and advance blocks and chekc mintrate is right or not
 }
 
 func (suite *KeeperTestSuite) TestLiquidStakeFail() {
@@ -170,6 +175,32 @@ func (suite *KeeperTestSuite) TestLiquidStakeFail() {
 	msg = types.NewMsgLiquidStake(newAddrs[0].String(), newBalances[0])
 	_, _, _, err = suite.app.LiquidStakingKeeper.DoLiquidStake(suite.ctx, msg)
 	suite.ErrorIs(err, types.ErrMaxPairedChunkSizeExceeded)
+}
+
+// TODO: Must implement scenario test for liquid staking
+func (suite *KeeperTestSuite) TestLiquidStakeWithAdvanceBlocks() {
+	valAddrs := suite.CreateValidators([]int64{10, 10, 10})
+	minimumRequirement, minimumCoverage := suite.getMinimumRequirements()
+	providers, balances := suite.AddTestAddrs(10, minimumCoverage.Amount)
+	suite.provideInsurances(providers, valAddrs, balances)
+
+	delegators, delegatorBalances := suite.AddTestAddrs(3, minimumRequirement.Amount)
+	_ = suite.liquidStakes(delegators, delegatorBalances)
+
+	printAllDelegations := func(vals []sdk.ValAddress) {
+		for _, val := range vals {
+			// Get all delegation infos from validator of validator and print them
+			delegations := suite.app.StakingKeeper.GetValidatorDelegations(suite.ctx, val)
+			for _, delegation := range delegations {
+				fmt.Println(delegation)
+			}
+		}
+	}
+	printAllDelegations(valAddrs)
+	// Advance 10 blocks
+	//suite.advanceHeight(10)
+	fmt.Println("Advance 10 blocks")
+	printAllDelegations(valAddrs)
 }
 
 func (suite *KeeperTestSuite) TestCancelInsuranceProvideSuccess() {

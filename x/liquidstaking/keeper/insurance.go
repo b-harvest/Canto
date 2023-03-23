@@ -79,23 +79,6 @@ func (k Keeper) IterateAllInsurances(ctx sdk.Context, cb func(insurance types.In
 	return nil
 }
 
-func (k Keeper) GetInsurances(ctx sdk.Context) []types.Insurance {
-	var insurances []types.Insurance
-
-	store := ctx.KVStore(k.storeKey)
-	iterator := sdk.KVStorePrefixIterator(store, types.KeyPrefixInsurance)
-	defer iterator.Close()
-
-	for ; iterator.Valid(); iterator.Next() {
-		var insurance types.Insurance
-		k.cdc.MustUnmarshal(iterator.Value(), &insurance)
-
-		insurances = append(insurances, insurance)
-	}
-
-	return insurances
-}
-
 func (k Keeper) GetInsurancesFromProviderAddress(ctx sdk.Context, providerAddress sdk.AccAddress) []types.Insurance {
 	var insurances []types.Insurance
 

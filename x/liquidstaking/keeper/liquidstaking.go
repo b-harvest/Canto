@@ -39,6 +39,7 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (chunk
 	// Check if there are any pairing insurances
 	var pairingInsurances []types.Insurance
 	validatorMap := make(map[string]stakingtypes.Validator)
+	// TODO: Add pairing index for faster iteration: use index iterator
 	err = k.IterateAllInsurances(ctx, func(insurance types.Insurance) (bool, error) {
 		if insurance.Status == types.INSURANCE_STATUS_PAIRING {
 			// Store validator of insurance to map
@@ -144,6 +145,7 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (chunk
 		if err = k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, delAddr, sdk.NewCoins(mintedCoin)); err != nil {
 			return
 		}
+		// TODO: Add SetStatus method (not store level)
 		chunk.Status = types.CHUNK_STATUS_PAIRED
 		cheapestInsurance.Status = types.INSURANCE_STATUS_PAIRED
 		k.SetChunk(ctx, chunk)

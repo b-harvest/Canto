@@ -15,13 +15,28 @@ func InitGenesis(ctx sdk.Context, k keeper.Keeper, genState types.GenesisState) 
 
 // ExportGenesis returns the capability module's exported genesis.
 func ExportGenesis(ctx sdk.Context, k keeper.Keeper) *types.GenesisState {
+	var chunks []types.Chunk
+	err := k.IterateAllChunks(ctx, func(chunk types.Chunk) (bool, error) {
+		chunks = append(chunks, chunk)
+		return false, nil
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	var insurances []types.Insurance
+	err = k.IterateAllInsurances(ctx, func(insurance types.Insurance) (bool, error) {
+		insurances = append(insurances, insurance)
+		return false, nil
+	})
+
 	genesis := types.DefaultGenesisState()
 	genesis.Params = k.GetParams(ctx)
 	genesis.Epoch = k.GetEpoch(ctx)
 	genesis.LastChunkId = k.GetLastChunkId(ctx)
 	genesis.LastInsuranceId = k.GetLastInsuranceId(ctx)
-	genesis.Chunks = k.GetChunks(ctx)
-	genesis.Insurances = k.GetInsurances(ctx)
+	genesis.Chunks = chunks
+	genesis.Insurances = insurances
 	genesis.WithdrawingInsurances = k.GetWithdrawingInsurances(ctx)
 	genesis.LiquidUnstakeUnbondingDelegationInfos = k.GetLiquidUnstakeUnbondingDelegationInfos(ctx)
 
