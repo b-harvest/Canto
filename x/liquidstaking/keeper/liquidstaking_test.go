@@ -122,23 +122,23 @@ func (suite *KeeperTestSuite) TestLiquidStakeSuccess() {
 	lsTokenBefore := suite.app.BankKeeper.GetBalance(suite.ctx, del1, params.LiquidBondDenom)
 	createdChunks, newShares, lsTokenMintAmount, err := suite.app.LiquidStakingKeeper.DoLiquidStake(suite.ctx, msg)
 	// Check created chunks are stored in db correctly
-	// TODO: check created chunk number (idx == 1)
 	idx := 0
 	suite.NoError(suite.app.LiquidStakingKeeper.IterateAllChunks(suite.ctx, func(chunk types.Chunk) (bool, error) {
 		suite.True(chunk.Equal(createdChunks[idx]))
 		idx++
 		return false, nil
 	}))
+	suite.Equal(len(createdChunks), idx, "number of created chunks should be equal to number of chunks in db")
 
 	lsTokenAfter := suite.app.BankKeeper.GetBalance(suite.ctx, del1, params.LiquidBondDenom)
 	suite.NoError(err)
 	suite.True(amt1.Amount.Equal(newShares.TruncateInt()), "delegation shares should be equal to amount")
 	suite.True(amt1.Amount.Equal(lsTokenMintAmount), "at first try mint rate is 1, so mint amount should be equal to amount")
 	suite.True(lsTokenAfter.Sub(lsTokenBefore).Amount.Equal(lsTokenMintAmount), "liquid staker must have minted ls tokens in account balance")
-	// TODO: TotalLsTokensSupply
 
 	// NetAmountState should be updated correctly
 	afterNas := suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
+	suite.True(afterNas.LsTokensTotalSupply.Equal(lsTokenMintAmount), "total ls token supply should be equal to minted amount")
 	suite.True(nas.TotalLiquidTokens.Add(amt1.Amount).Equal(afterNas.TotalLiquidTokens))
 	suite.True(nas.NetAmount.Add(amt1.Amount.ToDec()).Equal(afterNas.NetAmount))
 	suite.True(afterNas.MintRate.Equal(sdk.OneDec()), "no rewards yet, so mint rate should be 1")
