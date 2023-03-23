@@ -26,7 +26,6 @@ const (
 	prefixInsurance
 	prefixPairingInsuranceIndex
 	prefixInsurancesByProviderIndex
-	prefixDelegatorIndex
 	prefixWithdrawingInsurance
 	prefixPreviousInsuranceIndex
 	prefixLiquidUnstakeUnbondingDelegation
@@ -41,7 +40,6 @@ var (
 	KeyPrefixInsurance                        = []byte{prefixInsurance}
 	KeyPrefixPairingInsuranceIndex            = []byte{prefixPairingInsuranceIndex}
 	KeyPrefixInsurancesByProviderIndex        = []byte{prefixInsurancesByProviderIndex}
-	KeyPrefixDelegatorIndex                   = []byte{prefixDelegatorIndex}
 	KeyPrefixWithdrawingInsurance             = []byte{prefixWithdrawingInsurance}
 	KeyPrefixPreviousInsuranceIndex           = []byte{prefixPreviousInsuranceIndex}
 	KeyPrefixLiquidUnstakeUnbondingDelegation = []byte{prefixLiquidUnstakeUnbondingDelegation}
@@ -62,10 +60,6 @@ func GetPairingInsuranceIndexKey(insuranceId uint64) []byte {
 
 func GetInsurancesByProviderIndexKey(providerAddress sdk.AccAddress, insuranceId uint64) []byte {
 	return append(append(KeyPrefixInsurancesByProviderIndex, address.MustLengthPrefix(providerAddress)...), sdk.Uint64ToBigEndian(insuranceId)...)
-}
-
-func GetDelegatorIndexKey(chunkId uint64, delegatorAddress sdk.AccAddress) []byte {
-	return append(append(KeyPrefixDelegatorIndex, sdk.Uint64ToBigEndian(chunkId)...), address.MustLengthPrefix(delegatorAddress)...)
 }
 
 func GetWithdrawingInsuranceKey(insuranceId uint64) []byte {
