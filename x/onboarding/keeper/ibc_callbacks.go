@@ -102,16 +102,8 @@ func (k Keeper) OnRecvPacket(
 	transferredCoinBalance := k.bankKeeper.GetBalance(ctx, recipient, transferredCoin.Denom)
 
 	if standardCoinBalance.Amount.LT(threshold) {
-		//k.bankKeeper.SendCoins(ctx, recipient)
 		fmt.Println(fmt.Sprintf("[onboarding] balacne %s, threshold %s, swap %s, stake %s", standardCoinBalance, threshold, swapCoins, transferredCoinBalance))
-		//if err := k.bankKeeper.MintCoins(ctx, types.ModuleName, swapCoins); err != nil {
-		//	panic(ack)
-		//	return ack
-		//}
-		//if err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, recipient, swapCoins); err != nil {
-		//	panic(ack)
-		//	return ack
-		//}
+
 		swapDuration := k.GetParams(ctx).AutoSwapDuration
 		msg := coinswaptypes.MsgSwapOrder{
 			coinswaptypes.Input{Coin: transferredCoin, Address: recipient.String()},

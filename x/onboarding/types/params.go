@@ -19,7 +19,7 @@ var (
 // IBC transfers
 var DefaultPacketTimeoutDuration = 4 * time.Hour
 var DefaultAutoSwapDuration = 10 * time.Minute
-var DefaultAutoSwapThreshold = sdk.NewInt(10000)
+var DefaultAutoSwapThreshold = sdk.NewIntWithDecimal(4, 18) // 4 Canto
 var _ paramtypes.ParamSet = &Params{}
 
 // ParamKeyTable returns the parameter key table.
