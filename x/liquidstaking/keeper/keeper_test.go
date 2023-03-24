@@ -5,6 +5,7 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	"github.com/cosmos/cosmos-sdk/x/staking"
+	ethermint "github.com/evmos/ethermint/types"
 	"testing"
 	"time"
 
@@ -198,7 +199,7 @@ func (suite *KeeperTestSuite) advanceHeight(height int) {
 
 		// Mimic inflation module AfterEpochEnd Hook
 		// - Inflation happened in the end of epoch triggered by AfterEpochEnd hook of epochs module
-		mintedCoin := sdk.NewCoin(suite.denom, sdk.NewInt(1000000))
+		mintedCoin := sdk.NewCoin(suite.denom, sdk.TokensFromConsensusPower(100, ethermint.PowerReduction)) // 100 Canto
 		_, _, err := suite.app.InflationKeeper.MintAndAllocateInflation(suite.ctx, mintedCoin)
 		suite.NoError(err)
 		feeCollectorBalances := suite.app.BankKeeper.GetAllBalances(suite.ctx, feeCollector.GetAddress())
@@ -225,7 +226,7 @@ func (suite *KeeperTestSuite) advanceHeight(height int) {
 			})
 		}
 		remaining := rewardsToBeDistributed.ToDec().Sub(totalRewards)
-		suite.False(remaining.GT(sdk.NewDec(1)), "all rewards should be distributed")
+		suite.False(remaining.GT(sdk.NewDec(100)), "all rewards should be distributed")
 		feePool := suite.app.DistrKeeper.GetFeePool(suite.ctx)
 		feePool.CommunityPool = feePool.CommunityPool.Add(
 			sdk.NewDecCoin(suite.denom, remaining.TruncateInt()),

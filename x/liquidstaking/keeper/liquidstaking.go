@@ -29,7 +29,7 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (chunk
 	}
 
 	bondDenom := k.stakingKeeper.BondDenom(ctx)
-	minimumRequirement := sdk.NewCoin(bondDenom, sdk.NewInt(types.ChunkSize))
+	minimumRequirement, _ := k.GetMinimumRequirements(ctx)
 	// amount must be greater than or equal to one chunk size
 	if !amount.IsGTE(minimumRequirement) {
 		err = sdkerrors.Wrapf(types.ErrInvalidAmount, "amount must be greater than or equal to %s", minimumRequirement.String())
@@ -39,7 +39,6 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (chunk
 	// Check if there are any pairing insurances
 	var pairingInsurances []types.Insurance
 	validatorMap := make(map[string]stakingtypes.Validator)
-	// TODO: Add pairing index for faster iteration: use index iterator
 	err = k.IteratePairingInsurances(ctx, func(insurance types.Insurance) (bool, error) {
 		if _, ok := validatorMap[insurance.ValidatorAddress]; !ok {
 			// If validator is not in map, get validator from staking keeper
@@ -50,7 +49,7 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (chunk
 			validator, found := k.stakingKeeper.GetValidator(ctx, valAddr)
 			valid, err := k.isValidValidator(ctx, validator, found)
 			if err != nil {
-				return false, err
+				return false, nil
 			}
 			if valid {
 				validatorMap[insurance.ValidatorAddress] = validator
@@ -72,7 +71,7 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (chunk
 	// Liquid stakers can send amount of tokens corresponding multiple of chunk size and create multiple chunks
 	// Check the liquid staker's balance
 	n := amount.Amount.Quo(minimumRequirement.Amount).Int64()
-	amount = sdk.NewCoin(bondDenom, sdk.NewInt(n*types.ChunkSize))
+	amount = sdk.NewCoin(bondDenom, types.ChunkSize.Mul(sdk.NewInt(n)))
 	if !k.bankKeeper.HasBalance(ctx, delAddr, amount) {
 		err = sdkerrors.Wrapf(sdkerrors.ErrInsufficientFunds, "insufficient funds to liquid stake")
 		return
@@ -80,11 +79,12 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (chunk
 
 	if n > int64(availableChunks) {
 		n = int64(availableChunks)
-		amount = sdk.NewCoin(bondDenom, sdk.NewInt(n*types.ChunkSize))
+		amount = sdk.NewCoin(bondDenom, types.ChunkSize.Mul(sdk.NewInt(n)))
 	}
 
 	// TODO: Must be proved that this is safe, we must call this before sending
 	nas := k.GetNetAmountState(ctx)
+	// TODO: Write test code for sorting (need memory profiling)
 	types.SortInsurances(validatorMap, pairingInsurances)
 	totalNewShares := sdk.ZeroDec()
 	totalLsTokenMintAmount := sdk.ZeroInt()
@@ -160,16 +160,13 @@ func (k Keeper) DoInsuranceProvide(ctx sdk.Context, msg *types.MsgInsuranceProvi
 	amount := msg.Amount
 
 	// Check if the amount is greater than minimum coverage
-	bondDenom := k.stakingKeeper.BondDenom(ctx)
-	minimumRequirement := sdk.NewCoin(bondDenom, sdk.NewInt(types.ChunkSize))
-	fraction := sdk.MustNewDecFromStr(types.SlashFraction)
-	minimumCoverage := sdk.NewCoin(bondDenom, sdk.NewInt(minimumRequirement.Amount.ToDec().Mul(fraction).TruncateInt().Int64()))
+	_, minimumCoverage := k.GetMinimumRequirements(ctx)
 	if amount.Amount.LT(minimumCoverage.Amount) {
 		err = sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "amount must be greater than minimum coverage: %s", minimumCoverage.String())
 		return
 	}
 
-	// Check if the validator is not jailed
+	// Check if the validator is valid
 	validator, found := k.stakingKeeper.GetValidator(ctx, valAddr)
 	_, err = k.isValidValidator(ctx, validator, found)
 	if err != nil {
@@ -241,4 +238,15 @@ func (k Keeper) isValidValidator(ctx sdk.Context, validator stakingtypes.Validat
 		return false, types.ErrTombstonedValidator
 	}
 	return true, nil
+}
+
+// Get minimum requirements for liquid staking
+// Liquid staker must provide at least one chunk amount
+// Insurance provider must provide at least slashing coverage
+func (k Keeper) GetMinimumRequirements(ctx sdk.Context) (oneChunkAmount, slashingCoverage sdk.Coin) {
+	bondDenom := k.stakingKeeper.BondDenom(ctx)
+	oneChunkAmount = sdk.NewCoin(bondDenom, types.ChunkSize)
+	fraction := sdk.MustNewDecFromStr(types.SlashFraction)
+	slashingCoverage = sdk.NewCoin(bondDenom, oneChunkAmount.Amount.ToDec().Mul(fraction).TruncateInt())
+	return
 }

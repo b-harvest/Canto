@@ -6,6 +6,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/types/simulation"
+	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"math/rand"
 )
 
@@ -42,19 +44,9 @@ func (suite *KeeperTestSuite) liquidStakes(delegators []sdk.AccAddress, amounts 
 	return chunks
 }
 
-// Get minimum requirements for liquid staking
-// Liquid staker must provide at least one chunk amount
-// Insurance provider must provide at least slashing coverage
-func (suite *KeeperTestSuite) getMinimumRequirements() (oneChunkAmount, slashingCoverage sdk.Coin) {
-	oneChunkAmount = sdk.NewCoin(suite.denom, sdk.NewInt(types.ChunkSize))
-	fraction := sdk.MustNewDecFromStr(types.SlashFraction)
-	slashingCoverage = sdk.NewCoin(suite.denom, sdk.NewInt(oneChunkAmount.Amount.ToDec().Mul(fraction).TruncateInt().Int64()))
-	return
-}
-
 func (suite *KeeperTestSuite) TestInsuranceProvide() {
 	valAddrs := suite.CreateValidators([]int64{10, 10, 10})
-	_, minimumCoverage := suite.getMinimumRequirements()
+	_, minimumCoverage := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
 	providers, _ := suite.AddTestAddrs(10, minimumCoverage.Amount)
 
 	for _, tc := range []struct {
@@ -107,7 +99,7 @@ func (suite *KeeperTestSuite) TestInsuranceProvide() {
 func (suite *KeeperTestSuite) TestLiquidStakeSuccess() {
 	params := suite.app.LiquidStakingKeeper.GetParams(suite.ctx)
 	valAddrs := suite.CreateValidators([]int64{10, 10, 10})
-	minimumRequirement, minimumCoverage := suite.getMinimumRequirements()
+	minimumRequirement, minimumCoverage := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
 	providers, balances := suite.AddTestAddrs(10, minimumCoverage.Amount)
 	suite.provideInsurances(providers, valAddrs, balances)
 
@@ -147,9 +139,9 @@ func (suite *KeeperTestSuite) TestLiquidStakeSuccess() {
 
 func (suite *KeeperTestSuite) TestLiquidStakeFail() {
 	valAddrs := suite.CreateValidators([]int64{10, 10, 10})
-	minimumRequirement, minimumCoverage := suite.getMinimumRequirements()
+	minimumRequirement, minimumCoverage := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
 
-	addrs, balances := suite.AddTestAddrs(types.MaxPairedChunks, sdk.NewInt(minimumRequirement.Amount.Int64()))
+	addrs, balances := suite.AddTestAddrs(types.MaxPairedChunks, minimumRequirement.Amount)
 
 	// TC: There are no pairing insurances yet. Insurances must be provided to liquid stake
 	acc1 := addrs[0]
@@ -162,7 +154,7 @@ func (suite *KeeperTestSuite) TestLiquidStakeFail() {
 
 	// TC: Not enough amount to liquid stake
 	// acc1 tries to liquid stake 2 * ChunkSize tokens, but he has only ChunkSize tokens
-	msg = types.NewMsgLiquidStake(acc1.String(), minimumRequirement.AddAmount(sdk.NewInt(types.ChunkSize)))
+	msg = types.NewMsgLiquidStake(acc1.String(), minimumRequirement.AddAmount(types.ChunkSize))
 	_, _, _, err = suite.app.LiquidStakingKeeper.DoLiquidStake(suite.ctx, msg)
 	suite.ErrorIs(err, sdkerrors.ErrInsufficientFunds)
 
@@ -170,7 +162,7 @@ func (suite *KeeperTestSuite) TestLiquidStakeFail() {
 	_ = suite.liquidStakes(addrs, balances)
 
 	// TC: MaxPairedChunks is reached, no more chunks can be paired
-	newAddrs, newBalances := suite.AddTestAddrs(1, sdk.NewInt(minimumRequirement.Amount.Int64()))
+	newAddrs, newBalances := suite.AddTestAddrs(1, minimumRequirement.Amount)
 	msg = types.NewMsgLiquidStake(newAddrs[0].String(), newBalances[0])
 	_, _, _, err = suite.app.LiquidStakingKeeper.DoLiquidStake(suite.ctx, msg)
 	suite.ErrorIs(err, types.ErrMaxPairedChunkSizeExceeded)
@@ -178,8 +170,8 @@ func (suite *KeeperTestSuite) TestLiquidStakeFail() {
 
 // TODO: Must implement scenario test for liquid staking
 func (suite *KeeperTestSuite) TestLiquidStakeWithAdvanceBlocks() {
-	valAddrs := suite.CreateValidators([]int64{10, 10, 10})
-	minimumRequirement, minimumCoverage := suite.getMinimumRequirements()
+	valAddrs := suite.CreateValidators([]int64{1, 1, 1})
+	minimumRequirement, minimumCoverage := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
 	providers, balances := suite.AddTestAddrs(10, minimumCoverage.Amount)
 	suite.provideInsurances(providers, valAddrs, balances)
 
@@ -195,11 +187,32 @@ func (suite *KeeperTestSuite) TestLiquidStakeWithAdvanceBlocks() {
 	fmt.Println(nas1)
 	fmt.Println(nas2)
 	fmt.Println(nas3)
+
+	suite.app.StakingKeeper.IterateAllDelegations(suite.ctx, func(delegation stakingtypes.Delegation) bool {
+		fmt.Println(delegation)
+		return false
+	})
+
+	suite.app.StakingKeeper.IterateBondedValidatorsByPower(suite.ctx, func(index int64, validator stakingtypes.ValidatorI) bool {
+		fmt.Println("validator.address: ", validator.GetOperator())
+		fmt.Println("validator.minSelfDelegation: ", validator.GetMinSelfDelegation())
+		fmt.Println("validator.tokens: ", validator.GetTokens().ToDec())
+		fmt.Println("validator.delegatorShares: ", validator.GetDelegatorShares())
+		return false
+	})
+	suite.app.StakingKeeper.IterateHistoricalInfo(suite.ctx, func(info stakingtypes.HistoricalInfo) bool {
+		fmt.Println(info)
+		return false
+	})
+	suite.app.DistrKeeper.IterateValidatorAccumulatedCommissions(suite.ctx, func(validatorAddr sdk.ValAddress, commission distrtypes.ValidatorAccumulatedCommission) bool {
+		fmt.Println(validatorAddr, commission)
+		return false
+	})
 }
 
 func (suite *KeeperTestSuite) TestCancelInsuranceProvideSuccess() {
 	valAddrs := suite.CreateValidators([]int64{10, 10, 10})
-	_, minimumCoverage := suite.getMinimumRequirements()
+	_, minimumCoverage := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
 	providers, balances := suite.AddTestAddrs(10, minimumCoverage.Amount)
 	insurances := suite.provideInsurances(providers, valAddrs, balances)
 
@@ -217,7 +230,7 @@ func (suite *KeeperTestSuite) TestCancelInsuranceProvideSuccess() {
 
 func (suite *KeeperTestSuite) TestCancelInsuranceProvideFail() {
 	valAddrs := suite.CreateValidators([]int64{10, 10, 10})
-	minimumRequirement, minimumCoverage := suite.getMinimumRequirements()
+	minimumRequirement, minimumCoverage := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
 	providers, balances := suite.AddTestAddrs(10, minimumCoverage.Amount)
 	suite.provideInsurances(providers, valAddrs, balances)
 
