@@ -33,7 +33,7 @@ require (
 	github.com/evmos/ethermint v0.19.3
 )
 
-require github.com/b-harvest/coinswap v1.6.1-0.20230320082738-e5ef5b4764c1
+require github.com/b-harvest/coinswap v1.6.1-0.20230322074635-78ebc972b0c7
 
 require (
 	cosmossdk.io/errors v1.0.0-beta.7
