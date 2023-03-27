@@ -11,15 +11,16 @@ option go_package = "github.com/Canto-Network/Canto/v6/x/liquidstaking/types";
 option (gogoproto.goproto_getters_all) = false;
 
 message GenesisState {
-  Params params = 1 [ (gogoproto.nullable) = false ];
-  Epoch epoch = 2 [ (gogoproto.nullable) = false ];
-  uint64 last_chunk_id = 3;
-  uint64 last_insurance_id = 4;
-  repeated Chunk chunks = 5 [ (gogoproto.nullable) = false ];
-  repeated Insurance insurances = 6 [ (gogoproto.nullable) = false ];
-  repeated WithdrawingInsurance withdrawing_insurances = 7
+  string LiquidBondDenom = 1;
+  Params params = 2 [ (gogoproto.nullable) = false ];
+  Epoch epoch = 3 [ (gogoproto.nullable) = false ];
+  uint64 last_chunk_id = 4;
+  uint64 last_insurance_id = 5;
+  repeated Chunk chunks = 6 [ (gogoproto.nullable) = false ];
+  repeated Insurance insurances = 7 [ (gogoproto.nullable) = false ];
+  repeated WithdrawingInsurance withdrawing_insurances = 8
       [ (gogoproto.nullable) = false ];
   repeated LiquidUnstakeUnbondingDelegationInfo
-      liquid_unstake_unbonding_delegation_infos = 8
+      liquid_unstake_unbonding_delegation_infos = 9
       [ (gogoproto.nullable) = false ];
 }

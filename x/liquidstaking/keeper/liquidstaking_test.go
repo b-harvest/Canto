@@ -97,7 +97,6 @@ func (suite *KeeperTestSuite) TestInsuranceProvide() {
 }
 
 func (suite *KeeperTestSuite) TestLiquidStakeSuccess() {
-	params := suite.app.LiquidStakingKeeper.GetParams(suite.ctx)
 	valAddrs := suite.CreateValidators([]int64{10, 10, 10})
 	minimumRequirement, minimumCoverage := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
 	providers, balances := suite.AddTestAddrs(10, minimumCoverage.Amount)
@@ -106,11 +105,12 @@ func (suite *KeeperTestSuite) TestLiquidStakeSuccess() {
 	delegators, balances := suite.AddTestAddrs(10, minimumRequirement.Amount)
 	nas := suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
 
+	liquidBondDenom := suite.app.LiquidStakingKeeper.GetLiquidBondDenom(suite.ctx)
 	// First try
 	del1 := delegators[0]
 	amt1 := balances[0]
 	msg := types.NewMsgLiquidStake(del1.String(), amt1)
-	lsTokenBefore := suite.app.BankKeeper.GetBalance(suite.ctx, del1, params.LiquidBondDenom)
+	lsTokenBefore := suite.app.BankKeeper.GetBalance(suite.ctx, del1, liquidBondDenom)
 	createdChunks, newShares, lsTokenMintAmount, err := suite.app.LiquidStakingKeeper.DoLiquidStake(suite.ctx, msg)
 	// Check created chunks are stored in db correctly
 	idx := 0
@@ -121,7 +121,7 @@ func (suite *KeeperTestSuite) TestLiquidStakeSuccess() {
 	}))
 	suite.Equal(len(createdChunks), idx, "number of created chunks should be equal to number of chunks in db")
 
-	lsTokenAfter := suite.app.BankKeeper.GetBalance(suite.ctx, del1, params.LiquidBondDenom)
+	lsTokenAfter := suite.app.BankKeeper.GetBalance(suite.ctx, del1, liquidBondDenom)
 	suite.NoError(err)
 	suite.True(amt1.Amount.Equal(newShares.TruncateInt()), "delegation shares should be equal to amount")
 	suite.True(amt1.Amount.Equal(lsTokenMintAmount), "at first try mint rate is 1, so mint amount should be equal to amount")

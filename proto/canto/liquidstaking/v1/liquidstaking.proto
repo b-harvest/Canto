@@ -21,12 +21,7 @@ message Epoch {
 }
 
 // Params defines the parameters for the module.
-message Params {
-  option (gogoproto.goproto_getters) = false;
-
-  // liquid_bond_denom specifies the denomination of the liquid bond.
-  string liquid_bond_denom = 1;
-}
+message Params { option (gogoproto.goproto_getters) = false; }
 
 // ChunkStatus defines the status of the chunk.
 enum ChunkStatus {

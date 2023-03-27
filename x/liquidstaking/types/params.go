@@ -7,12 +7,6 @@ import (
 	"strings"
 )
 
-// Parameter store key
-var (
-	ParamStoreKeyLiquidBondDenom = []byte("LiquidBondDenom")
-	DefaultLiquidBondDenom       = "lscanto"
-)
-
 var _ paramtypes.ParamSet = &Params{}
 
 // ParamKeyTable returns the parameter key table.
@@ -24,15 +18,11 @@ func ParamKeyTable() paramtypes.KeyTable {
 func NewParams(
 	liquidBondDenom string,
 ) Params {
-	return Params{
-		LiquidBondDenom: liquidBondDenom,
-	}
+	return Params{}
 }
 
 func DefaultParams() Params {
-	return Params{
-		LiquidBondDenom: DefaultLiquidBondDenom,
-	}
+	return Params{}
 }
 
 func validateLiquidBondDenom(i interface{}) error {
@@ -53,18 +43,14 @@ func validateLiquidBondDenom(i interface{}) error {
 
 // ParamSetPairs returns the parameter set pairs.
 func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
-	return paramtypes.ParamSetPairs{
-		paramtypes.NewParamSetPair(ParamStoreKeyLiquidBondDenom, &p.LiquidBondDenom, validateLiquidBondDenom),
-	}
+	return paramtypes.ParamSetPairs{}
 }
 
 func (p Params) Validate() error {
 	for _, v := range []struct {
 		value     interface{}
 		validator func(interface{}) error
-	}{
-		{p.LiquidBondDenom, validateLiquidBondDenom},
-	} {
+	}{} {
 		if err := v.validator(v.value); err != nil {
 			return err
 		}

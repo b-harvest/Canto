@@ -20,7 +20,8 @@ const (
 
 // prefix bytes for the liquidstaking persistent store
 const (
-	prefixLastChunkId = iota + 1
+	prefixLiquidBondDenom = iota + 1
+	prefixLastChunkId
 	prefixLastInsuranceId
 	prefixChunk
 	prefixInsurance
@@ -44,6 +45,7 @@ var (
 	KeyPrefixPreviousInsuranceIndex           = []byte{prefixPreviousInsuranceIndex}
 	KeyPrefixLiquidUnstakeUnbondingDelegation = []byte{prefixLiquidUnstakeUnbondingDelegation}
 	KeyPrefixEpoch                            = []byte{prefixEpoch}
+	KeyLiquidBondDenom                        = []byte{prefixLiquidBondDenom}
 )
 
 func GetChunkKey(chunkId uint64) []byte {

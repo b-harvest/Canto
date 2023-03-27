@@ -123,7 +123,7 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (chunk
 		totalNewShares = totalNewShares.Add(newShares)
 
 		// TODO: bond denom must be set at Genesis
-		liquidBondDenom := k.GetParams(ctx).LiquidBondDenom
+		liquidBondDenom := k.GetLiquidBondDenom(ctx)
 		// Mint the liquid staking token
 		lsTokenMintAmount = amount.Amount
 		if nas.LsTokensTotalSupply.IsPositive() {
@@ -222,6 +222,16 @@ func (k Keeper) DoCancelInsuranceProvide(ctx sdk.Context, msg *types.MsgCancelIn
 	k.DeleteInsurancesByProviderIndex(ctx, insurance)
 	k.DeletePairingInsuranceIndex(ctx, insurance)
 	return
+}
+
+func (k Keeper) SetLiquidBondDenom(ctx sdk.Context, denom string) {
+	store := ctx.KVStore(k.storeKey)
+	store.Set(types.KeyLiquidBondDenom, []byte(denom))
+}
+
+func (k Keeper) GetLiquidBondDenom(ctx sdk.Context) string {
+	store := ctx.KVStore(k.storeKey)
+	return string(store.Get(types.KeyLiquidBondDenom))
 }
 
 func (k Keeper) isValidValidator(ctx sdk.Context, validator stakingtypes.Validator, found bool) (bool, error) {

@@ -3,6 +3,7 @@ package types
 // NewGenesisState creates a new GenesisState instance.
 func NewGenesisState(params Params, epoch Epoch, lastChunkId, lastInsuranceId uint64, chunks []Chunk, insurances []Insurance, withdrawingInsurances []WithdrawingInsurance, liquidUnstakeUnbondingDelegationInfos []LiquidUnstakeUnbondingDelegationInfo) GenesisState {
 	return GenesisState{
+		LiquidBondDenom:                       DefaultLiquidBondDenom,
 		Params:                                params,
 		Epoch:                                 epoch,
 		LastChunkId:                           lastChunkId,
@@ -16,6 +17,7 @@ func NewGenesisState(params Params, epoch Epoch, lastChunkId, lastInsuranceId ui
 
 func DefaultGenesisState() *GenesisState {
 	return &GenesisState{
+		LiquidBondDenom:                       DefaultLiquidBondDenom,
 		Params:                                DefaultParams(),
 		Epoch:                                 Epoch{},
 		LastChunkId:                           0,
