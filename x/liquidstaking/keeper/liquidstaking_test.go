@@ -181,12 +181,16 @@ func (suite *KeeperTestSuite) TestLiquidStakeWithAdvanceBlocks() {
 	nas2 := suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
 
 	// Advance 10 blocks
-	suite.advanceHeight(10)
+	suite.advanceHeight(1)
 	nas3 := suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
+
+	suite.advanceHeight(1)
+	nas4 := suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
 
 	fmt.Println(nas1)
 	fmt.Println(nas2)
 	fmt.Println(nas3)
+	fmt.Println(nas4)
 
 	suite.app.StakingKeeper.IterateAllDelegations(suite.ctx, func(delegation stakingtypes.Delegation) bool {
 		fmt.Println(delegation)
