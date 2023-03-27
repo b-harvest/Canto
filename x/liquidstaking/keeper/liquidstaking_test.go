@@ -180,10 +180,10 @@ func (suite *KeeperTestSuite) TestLiquidStakeWithAdvanceBlocks() {
 	_ = suite.liquidStakes(delegators, delegatorBalances)
 	nas2 := suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
 
-	// Advance 10 blocks
 	suite.advanceHeight(1)
 	nas3 := suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
 
+	// Check NetAmountState while incrementing blocks by one
 	suite.advanceHeight(1)
 	nas4 := suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
 
