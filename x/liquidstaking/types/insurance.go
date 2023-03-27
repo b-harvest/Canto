@@ -69,3 +69,7 @@ func (i *Insurance) Equal(other Insurance) bool {
 		i.ValidatorAddress == other.ValidatorAddress &&
 		i.FeeRate.Equal(other.FeeRate)
 }
+
+func (i *Insurance) SetStatus(status InsuranceStatus) {
+	i.Status = status
+}

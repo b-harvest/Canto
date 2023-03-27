@@ -3,12 +3,14 @@ package types
 import (
 	"fmt"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	ethermint "github.com/evmos/ethermint/types"
 )
 
 const (
 	MaxPairedChunks = 10
-	ChunkSize       = 5000000 // 5M acanto
 )
+
+var ChunkSize = sdk.TokensFromConsensusPower(5000000, ethermint.PowerReduction)
 
 func NewChunk(id uint64) Chunk {
 	return Chunk{
@@ -26,4 +28,8 @@ func (c *Chunk) Equal(other Chunk) bool {
 	return c.Id == other.Id &&
 		c.InsuranceId == other.InsuranceId &&
 		c.Status == other.Status
+}
+
+func (c *Chunk) SetStatus(status ChunkStatus) {
+	c.Status = status
 }

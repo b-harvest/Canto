@@ -84,7 +84,6 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (chunk
 
 	// TODO: Must be proved that this is safe, we must call this before sending
 	nas := k.GetNetAmountState(ctx)
-	// TODO: Write test code for sorting (need memory profiling)
 	types.SortInsurances(validatorMap, pairingInsurances)
 	totalNewShares := sdk.ZeroDec()
 	totalLsTokenMintAmount := sdk.ZeroInt()
@@ -142,9 +141,8 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (chunk
 		if err = k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, delAddr, sdk.NewCoins(mintedCoin)); err != nil {
 			return
 		}
-		// TODO: Add SetStatus method (not store level)
-		chunk.Status = types.CHUNK_STATUS_PAIRED
-		cheapestInsurance.Status = types.INSURANCE_STATUS_PAIRED
+		chunk.SetStatus(types.CHUNK_STATUS_PAIRED)
+		cheapestInsurance.SetStatus(types.INSURANCE_STATUS_PAIRED)
 		k.SetChunk(ctx, chunk)
 		k.SetInsurance(ctx, cheapestInsurance)
 		k.DeletePairingInsuranceIndex(ctx, cheapestInsurance)
