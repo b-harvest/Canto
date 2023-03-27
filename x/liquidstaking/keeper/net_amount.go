@@ -7,8 +7,7 @@ import (
 
 // TODO: Discuss with taeyoung what values should be used for meaningful testing
 func (k Keeper) GetNetAmountState(ctx sdk.Context) (nas types.NetAmountState) {
-	params := k.GetParams(ctx)
-	liquidBondDenom := params.LiquidBondDenom
+	liquidBondDenom := k.GetLiquidBondDenom(ctx)
 	bondDenom := k.stakingKeeper.BondDenom(ctx)
 	totalDelShares := sdk.ZeroDec()
 	totalChunksBalance := sdk.NewDec(0)
