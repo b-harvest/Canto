@@ -553,6 +553,7 @@ func NewCanto(
 		app.IBCKeeper.ChannelKeeper,
 		app.TransferKeeper,
 		app.CoinswapKeeper,
+		app.Erc20Keeper,
 	)
 
 	app.TransferKeeper = ibctransferkeeper.NewKeeper(

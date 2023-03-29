@@ -3,10 +3,14 @@ package keeper
 import (
 	errorsmod "cosmossdk.io/errors"
 	"fmt"
+	erc20types "github.com/Canto-Network/Canto/v6/x/erc20/types"
 	coinswaptypes "github.com/b-harvest/coinswap/modules/coinswap/types"
+	"github.com/ethereum/go-ethereum/common"
 	"strings"
 	"time"
 
+	"github.com/Canto-Network/Canto/v6/ibc"
+	"github.com/Canto-Network/Canto/v6/x/onboarding/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -15,9 +19,6 @@ import (
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
 	"github.com/cosmos/ibc-go/v3/modules/core/exported"
-
-	"github.com/Canto-Network/Canto/v6/ibc"
-	"github.com/Canto-Network/Canto/v6/x/onboarding/types"
 )
 
 // OnRecvPacket performs an IBC receive callback. It returns the tokens that
@@ -46,6 +47,20 @@ func (k Keeper) OnRecvPacket(
 	if !params.EnableOnboarding {
 		return ack
 	}
+
+	// check source channel is in the whitelist channels
+	var found bool
+	for _, s := range params.WhitelistedChannels {
+		if s == packet.SourceChannel {
+			found = true
+		}
+	}
+
+	if !found {
+		return ack
+	}
+
+	fmt.Println(fmt.Sprintf("[onboarding]: source channel: %s", packet.SourceChannel))
 
 	// Get addresses in `canto1` and the original bech32 format
 	sender, recipient, senderBech32, recipientBech32, err := ibc.GetTransferSenderRecipient(packet)
@@ -120,6 +135,31 @@ func (k Keeper) OnRecvPacket(
 		standardCoinBalance = k.bankKeeper.GetBalance(ctx, recipient, standardDenom)
 		transferredCoinBalance = k.bankKeeper.GetBalance(ctx, recipient, transferredCoin.Denom)
 		fmt.Println(fmt.Sprintf("[onboarding] balacne %s, threshold %s, swap %s, stake %s", standardCoinBalance, threshold, swapCoins, transferredCoinBalance))
+
+		//convert coins to ERC20 token
+		pairID := k.erc20Keeper.GetTokenPairID(ctx, transferredCoin.Denom)
+		if len(pairID) == 0 {
+			// short-circuit: if the denom is not registered, conversion will fail
+			// so we can continue with the rest of the stack
+			return ack
+		}
+
+		pair, _ := k.erc20Keeper.GetTokenPair(ctx, pairID)
+		if !pair.Enabled {
+			// no-op: continue with the rest of the stack without conversion
+			return ack
+		}
+
+		// Build MsgConvertCoin, from recipient to recipient since IBC transfer already occurred
+		convertMsg := erc20types.NewMsgConvertCoin(transferredCoinBalance, common.BytesToAddress(recipient.Bytes()), recipient)
+
+		// NOTE: we don't use ValidateBasic the msg since we've already validated
+		// the ICS20 packet data
+
+		// Use MsgConvertCoin to convert the Cosmos Coin to an ERC20
+		if _, err = k.erc20Keeper.ConvertCoin(sdk.WrapSDKContext(ctx), convertMsg); err != nil {
+			return ack
+		}
 
 	} else {
 		fmt.Println(fmt.Sprintf("[onboarding] balacne %s, threshold %s, stake %s", standardCoinBalance, threshold, transferredCoinBalance))

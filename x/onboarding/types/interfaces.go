@@ -1,7 +1,10 @@
 package types
 
 import (
+	"context"
+	erc20types "github.com/Canto-Network/Canto/v6/x/erc20/types"
 	coinswaptypes "github.com/b-harvest/coinswap/modules/coinswap/types"
+
 	tmbytes "github.com/tendermint/tendermint/libs/bytes"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -11,6 +14,15 @@ import (
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 )
+
+type Erc20Keeper interface {
+	ConvertCoin(
+		goCtx context.Context,
+		msg *erc20types.MsgConvertCoin,
+	) (*erc20types.MsgConvertCoinResponse, error)
+	GetTokenPairID(ctx sdk.Context, token string) []byte
+	GetTokenPair(ctx sdk.Context, id []byte) (erc20types.TokenPair, bool)
+}
 
 type CoinwapKeeper interface {
 	Swap(ctx sdk.Context, msg *coinswaptypes.MsgSwapOrder) error

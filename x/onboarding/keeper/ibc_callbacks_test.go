@@ -128,8 +128,23 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 			voucher,
 		},
 		{
+			"fail - unauthorized source channel",
+			func() {
+				sourceChannel = "channel-100"
+				transferAmount = sdk.NewIntWithDecimal(25, 6)
+				transfer := transfertypes.NewFungibleTokenPacketData(denom, transferAmount.String(), secpAddrCosmos, secpAddrcanto)
+				bz := transfertypes.ModuleCdc.MustMarshalJSON(&transfer)
+				packet = channeltypes.NewPacket(bz, 100, transfertypes.PortID, sourceChannel, transfertypes.PortID, cantoChannel, timeoutHeight, 0)
+			},
+			true,
+			false,
+			sdk.NewCoin("acanto", sdk.ZeroInt()),
+			voucher,
+		},
+		{
 			"success - swap is successful",
 			func() {
+				sourceChannel = "channel-0"
 				transferAmount = sdk.NewIntWithDecimal(25, 6)
 				transfer := transfertypes.NewFungibleTokenPacketData(denom, transferAmount.String(), secpAddrCosmos, secpAddrcanto)
 				bz := transfertypes.ModuleCdc.MustMarshalJSON(&transfer)
@@ -140,6 +155,7 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 			sdk.NewCoin("acanto", sdk.ZeroInt()),
 			voucher,
 		},
+
 		{
 			"success - swap is successful (acanto balance is positive but less than threshold)",
 			func() {
@@ -230,7 +246,7 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 
 			sp, found := suite.app.ParamsKeeper.GetSubspace(types.ModuleName)
 			suite.Require().True(found)
-			suite.app.OnboardingKeeper = keeper.NewKeeper(sp, suite.app.AccountKeeper, suite.app.BankKeeper, suite.app.IBCKeeper.ChannelKeeper, mockTransferKeeper, suite.app.CoinswapKeeper)
+			suite.app.OnboardingKeeper = keeper.NewKeeper(sp, suite.app.AccountKeeper, suite.app.BankKeeper, suite.app.IBCKeeper.ChannelKeeper, mockTransferKeeper, suite.app.CoinswapKeeper, suite.app.Erc20Keeper)
 
 			// Fund receiver account with canto, ERC20 coins and IBC vouchers
 			testutil.FundAccount(suite.app.BankKeeper, suite.ctx, secpAddr, sdk.NewCoins(sdk.NewCoin(ibcDenom, transferAmount), tc.receiverAcantoAmount))
@@ -490,7 +506,7 @@ func (suite *KeeperTestSuite) TestOnRecvPacketFailTransfer() {
 
 			sp, found := suite.app.ParamsKeeper.GetSubspace(types.ModuleName)
 			suite.Require().True(found)
-			suite.app.OnboardingKeeper = keeper.NewKeeper(sp, suite.app.AccountKeeper, suite.app.BankKeeper, suite.app.IBCKeeper.ChannelKeeper, mockTransferKeeper, suite.app.CoinswapKeeper)
+			suite.app.OnboardingKeeper = keeper.NewKeeper(sp, suite.app.AccountKeeper, suite.app.BankKeeper, suite.app.IBCKeeper.ChannelKeeper, mockTransferKeeper, suite.app.CoinswapKeeper, suite.app.Erc20Keeper)
 
 			// Fund receiver account with canto
 			coins := sdk.NewCoins(
@@ -502,7 +518,7 @@ func (suite *KeeperTestSuite) TestOnRecvPacketFailTransfer() {
 			// Perform IBC callback
 			ack := suite.app.OnboardingKeeper.OnRecvPacket(suite.ctx, packet, expAck)
 			// Onboarding should Fail
-			suite.Require().False(ack.Success())
+			suite.Require().Equal(expAck, ack)
 		})
 	}
 }

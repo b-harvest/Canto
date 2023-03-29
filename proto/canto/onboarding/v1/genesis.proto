@@ -22,4 +22,5 @@ message Params {
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
     (gogoproto.nullable) = false
   ];
+  repeated string whitelisted_channels = 4;
 }

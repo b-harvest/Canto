@@ -27,6 +27,7 @@ type Keeper struct {
 	channelKeeper  types.ChannelKeeper
 	transferKeeper types.TransferKeeper
 	coinswapKeeper types.CoinwapKeeper
+	erc20Keeper    types.Erc20Keeper
 }
 
 // NewKeeper returns keeper
@@ -37,6 +38,7 @@ func NewKeeper(
 	ck types.ChannelKeeper,
 	tk types.TransferKeeper,
 	csk types.CoinwapKeeper,
+	ek types.Erc20Keeper,
 ) *Keeper {
 	// set KeyTable if it has not already been set
 	if !ps.HasKeyTable() {
@@ -50,6 +52,7 @@ func NewKeeper(
 		channelKeeper:  ck,
 		transferKeeper: tk,
 		coinswapKeeper: csk,
+		erc20Keeper:    ek,
 	}
 }
 

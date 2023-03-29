@@ -10,9 +10,10 @@ import (
 
 // Parameter store key
 var (
-	ParamStoreKeyEnableOnboarding  = []byte("EnableOnboarding")
-	ParamStoreKeyAutoSwapDuration  = []byte("AutoSwapDuration")
-	ParamStoreKeyAutoSwapThreshold = []byte("AutoSwapThreshold")
+	ParamStoreKeyEnableOnboarding     = []byte("EnableOnboarding")
+	ParamStoreKeyAutoSwapDuration     = []byte("AutoSwapDuration")
+	ParamStoreKeyAutoSwapThreshold    = []byte("AutoSwapThreshold")
+	ParamsStoreKeyWhitelistedChannels = []byte("WhitelistedChannels")
 )
 
 // DefaultPacketTimeoutDuration defines the default packet timeout for outgoing
@@ -20,6 +21,7 @@ var (
 var DefaultPacketTimeoutDuration = 4 * time.Hour
 var DefaultAutoSwapDuration = 10 * time.Minute
 var DefaultAutoSwapThreshold = sdk.NewIntWithDecimal(4, 18) // 4 Canto
+var DefaultWhitelistedChannels = []string{"channel-0"}
 var _ paramtypes.ParamSet = &Params{}
 
 // ParamKeyTable returns the parameter key table.
@@ -32,20 +34,23 @@ func NewParams(
 	enableOnboarding bool,
 	autoSwapDuration time.Duration,
 	autoSwapThreshold sdk.Int,
+	whitelistedChannels []string,
 ) Params {
 	return Params{
-		EnableOnboarding:  enableOnboarding,
-		AutoSwapDuration:  autoSwapDuration,
-		AutoSwapThreshold: autoSwapThreshold,
+		EnableOnboarding:    enableOnboarding,
+		AutoSwapDuration:    autoSwapDuration,
+		AutoSwapThreshold:   autoSwapThreshold,
+		WhitelistedChannels: whitelistedChannels,
 	}
 }
 
 // DefaultParams defines the default params for the onboarding module
 func DefaultParams() Params {
 	return Params{
-		EnableOnboarding:  true,
-		AutoSwapDuration:  DefaultAutoSwapDuration,
-		AutoSwapThreshold: DefaultAutoSwapThreshold,
+		EnableOnboarding:    true,
+		AutoSwapDuration:    DefaultAutoSwapDuration,
+		AutoSwapThreshold:   DefaultAutoSwapThreshold,
+		WhitelistedChannels: DefaultWhitelistedChannels,
 	}
 }
 
@@ -55,7 +60,17 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 		paramtypes.NewParamSetPair(ParamStoreKeyEnableOnboarding, &p.EnableOnboarding, validateBool),
 		paramtypes.NewParamSetPair(ParamStoreKeyAutoSwapThreshold, &p.AutoSwapThreshold, validateAutoSwapThreshold),
 		paramtypes.NewParamSetPair(ParamStoreKeyAutoSwapDuration, &p.AutoSwapDuration, validateDuration),
+		paramtypes.NewParamSetPair(ParamsStoreKeyWhitelistedChannels, &p.WhitelistedChannels, validateWhitelistedChannels),
 	}
+}
+
+func validateWhitelistedChannels(i interface{}) error {
+	_, ok := i.([]string)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T", i)
+	}
+
+	return nil
 }
 
 func validateBool(i interface{}) error {
