@@ -1,12 +1,13 @@
 package types
 
 import (
+	"time"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	abci "github.com/tendermint/tendermint/abci/types"
-	"time"
 )
 
 // AccountKeeper defines the expected interface needed to retrieve account info.
@@ -67,6 +68,9 @@ type StakingKeeper interface {
 		ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress, amt sdk.Int,
 	) (shares sdk.Dec, err error)
 	GetAllUnbondingDelegations(ctx sdk.Context, delegator sdk.AccAddress) []stakingtypes.UnbondingDelegation
+	GetUnbondingDelegation(
+		ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress,
+	) (ubd stakingtypes.UnbondingDelegation, found bool)
 	BeginRedelegation(
 		ctx sdk.Context, delAddr sdk.AccAddress, valSrcAddr, valDstAddr sdk.ValAddress, sharesAmount sdk.Dec,
 	) (completionTime time.Time, err error)

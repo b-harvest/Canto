@@ -151,6 +151,132 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (chunk
 	return
 }
 
+func (k Keeper) DoLiquidUnstake(ctx sdk.Context, msg *types.MsgLiquidUnstake) (
+	unstakedChunks []types.Chunk,
+	unstakeUnbondingDelegationInfos []types.LiquidUnstakeUnbondingDelegationInfo,
+	err error,
+) {
+	delAddr := msg.GetDelegator()
+	amount := msg.Amount
+
+	if amount.Amount.LT(types.ChunkSize) {
+		err = types.ErrInvalidUnstakeAmount
+		return
+	}
+
+	var n int64 = 1
+	if amount.Amount.GT(types.ChunkSize) {
+		n = amount.Amount.Quo(types.ChunkSize).Int64()
+		amount = sdk.NewCoin(amount.Denom, types.ChunkSize.Mul(sdk.NewInt(n)))
+	}
+
+	var chunksWithInsuranceId map[uint64]types.Chunk
+	var insurances []types.Insurance
+	validatorMap := make(map[string]stakingtypes.Validator)
+	// Get a chunk which have most expensive insurance
+	err = k.IterateAllChunks(ctx, func(chunk types.Chunk) (stop bool, err error) {
+		if chunk.Status != types.CHUNK_STATUS_PAIRED {
+			return false, nil
+		}
+		insurance, found := k.GetInsurance(ctx, chunk.InsuranceId)
+		if found == false {
+			return false, types.ErrPairingInsuranceNotFound
+		}
+
+		if _, ok := validatorMap[insurance.ValidatorAddress]; !ok {
+			// If validator is not in map, get validator from staking keeper
+			valAddr, err := sdk.ValAddressFromBech32(insurance.ValidatorAddress)
+			if err != nil {
+				return false, err
+			}
+			validator, found := k.stakingKeeper.GetValidator(ctx, valAddr)
+			valid, err := k.isValidValidator(ctx, validator, found)
+			if err != nil {
+				return false, nil
+			}
+			if valid {
+				validatorMap[insurance.ValidatorAddress] = validator
+			} else {
+				return false, nil
+			}
+		}
+		insurances = append(insurances, insurance)
+		chunksWithInsuranceId[chunk.InsuranceId] = chunk
+		return false, nil
+	})
+	if err != nil {
+		return
+	}
+
+	pairedChunks := int64(len(chunksWithInsuranceId))
+	if pairedChunks == 0 {
+		err = types.ErrNoPairedChunk
+		return
+	}
+	if pairedChunks < n {
+		n = pairedChunks
+	}
+	// Sort insurances
+	types.SortInsurances(validatorMap, insurances)
+
+	// How much ls tokens must be burned
+	nas := k.GetNetAmountState(ctx)
+	lsTokenBurnAmount := amount.Amount
+	if nas.LsTokensTotalSupply.IsPositive() {
+		lsTokenBurnAmount = amount.Amount.ToDec().Mul(nas.MintRate).TruncateInt()
+	}
+	liquidBondDenom := k.GetLiquidBondDenom(ctx)
+	lsTokensToBurn := sdk.NewCoin(liquidBondDenom, lsTokenBurnAmount)
+	// Escrow
+	if err = k.bankKeeper.SendCoinsFromAccountToModule(
+		ctx, delAddr, types.ModuleName, sdk.NewCoins(lsTokensToBurn),
+	); err != nil {
+		return
+	}
+	for i := int64(0); i < n; i++ {
+		mostExpensiveInsurance := insurances[len(insurances)-1]
+		insurances = insurances[:len(insurances)-1]
+		chunkToBeUndelegated := chunksWithInsuranceId[mostExpensiveInsurance.Id]
+		chunkToBeUndelegated.SetStatus(types.CHUNK_STATUS_UNPAIRING_FOR_UNSTAKE)
+		mostExpensiveInsurance.SetStatus(types.INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAW)
+
+		del, found := k.stakingKeeper.GetDelegation(ctx, chunkToBeUndelegated.DerivedAddress(), mostExpensiveInsurance.GetValidator())
+		if !found {
+			panic("delegation not found")
+		}
+		unbondedNativeToken, err := k.stakingKeeper.Unbond(
+			ctx,
+			chunkToBeUndelegated.DerivedAddress(),
+			mostExpensiveInsurance.GetValidator(),
+			del.GetShares(),
+		)
+		if err != nil {
+			panic(err)
+		}
+		completionTime := ctx.BlockHeader().Time.Add(k.stakingKeeper.UnbondingTime(ctx))
+		ubd := k.stakingKeeper.SetUnbondingDelegationEntry(
+			ctx,
+			delAddr,
+			mostExpensiveInsurance.GetValidator(),
+			ctx.BlockHeight(),
+			completionTime,
+			unbondedNativeToken,
+		)
+		k.stakingKeeper.InsertUBDQueue(ctx, ubd, completionTime)
+		liquidUnstakeUnbondingDelegationInfo := types.NewLiquidUnstakeUnbondingDelegationInfo(
+			chunkToBeUndelegated.Id,
+			delAddr.String(),
+			mostExpensiveInsurance.ValidatorAddress,
+			lsTokensToBurn,
+			completionTime,
+		)
+		k.SetLiquidUnstakeUnbondingDelegationInfo(ctx, liquidUnstakeUnbondingDelegationInfo)
+		unstakedChunks = append(unstakedChunks, chunkToBeUndelegated)
+		unstakeUnbondingDelegationInfos = append(unstakeUnbondingDelegationInfos, liquidUnstakeUnbondingDelegationInfo)
+	}
+	return
+}
+
 func (k Keeper) DoInsuranceProvide(ctx sdk.Context, msg *types.MsgInsuranceProvide) (insurance types.Insurance, err error) {
 	providerAddr := msg.GetProvider()
 	valAddr := msg.GetValidator()

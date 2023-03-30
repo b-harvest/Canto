@@ -16,7 +16,7 @@ func (k Keeper) AfterDelegationModified(ctx sdk.Context, delAddr sdk.AccAddress,
 	}
 	insurance, found := k.GetInsurance(ctx, chunk.InsuranceId)
 	if !found {
-		panic("insurance not found")
+		panic(types.ErrNotFoundInsurance.Error())
 	}
 	bondDenom := k.stakingKeeper.BondDenom(ctx)
 	chunkBalance := k.bankKeeper.GetBalance(ctx, delAddr, bondDenom)

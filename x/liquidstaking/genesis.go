@@ -30,6 +30,12 @@ func ExportGenesis(ctx sdk.Context, k keeper.Keeper) *types.GenesisState {
 		return false, nil
 	})
 
+	var liquidUnstakeUnbondingDelegationInfos []types.LiquidUnstakeUnbondingDelegationInfo
+	err = k.IterateAllLiquidUnstakeUnbondingDelegationInfos(ctx, func(liquidUnstakeUnbondingDelegationInfo types.LiquidUnstakeUnbondingDelegationInfo) (bool, error) {
+		liquidUnstakeUnbondingDelegationInfos = append(liquidUnstakeUnbondingDelegationInfos, liquidUnstakeUnbondingDelegationInfo)
+		return false, nil
+	})
+
 	genesis := types.DefaultGenesisState()
 	genesis.Params = k.GetParams(ctx)
 	genesis.Epoch = k.GetEpoch(ctx)
@@ -38,7 +44,7 @@ func ExportGenesis(ctx sdk.Context, k keeper.Keeper) *types.GenesisState {
 	genesis.Chunks = chunks
 	genesis.Insurances = insurances
 	genesis.WithdrawingInsurances = k.GetWithdrawingInsurances(ctx)
-	genesis.LiquidUnstakeUnbondingDelegationInfos = k.GetLiquidUnstakeUnbondingDelegationInfos(ctx)
+	genesis.LiquidUnstakeUnbondingDelegationInfos = liquidUnstakeUnbondingDelegationInfos
 
 	return genesis
 }

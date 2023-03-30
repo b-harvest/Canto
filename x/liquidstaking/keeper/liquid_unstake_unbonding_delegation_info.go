@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"encoding/binary"
+
 	"github.com/Canto-Network/Canto/v6/x/liquidstaking/types"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -34,19 +35,21 @@ func (k Keeper) DeleteLiquidUnstakeUnbondingDelegationInfo(ctx sdk.Context, chun
 	store.Delete(chunkIdBytes)
 }
 
-func (k Keeper) GetLiquidUnstakeUnbondingDelegationInfos(ctx sdk.Context) []types.LiquidUnstakeUnbondingDelegationInfo {
-	var liquidUnstakeUnbondingDelegations []types.LiquidUnstakeUnbondingDelegationInfo
-
-	store := ctx.KVStore(k.storeKey)
-	iterator := sdk.KVStorePrefixIterator(store, types.KeyPrefixLiquidUnstakeUnbondingDelegation)
+func (k Keeper) IterateAllLiquidUnstakeUnbondingDelegationInfos(ctx sdk.Context, cb func(liquidUnstakeUnbondingDelegationInfo types.LiquidUnstakeUnbondingDelegationInfo) (stop bool, err error)) error {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefixLiquidUnstakeUnbondingDelegation)
+	iterator := store.Iterator(nil, nil)
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
 		var liquidUnstakeUnbondingDelegationInfo types.LiquidUnstakeUnbondingDelegationInfo
 		k.cdc.MustUnmarshal(iterator.Value(), &liquidUnstakeUnbondingDelegationInfo)
-
-		liquidUnstakeUnbondingDelegations = append(liquidUnstakeUnbondingDelegations, liquidUnstakeUnbondingDelegationInfo)
+		stop, err := cb(liquidUnstakeUnbondingDelegationInfo)
+		if err != nil {
+			return err
+		}
+		if stop {
+			break
+		}
 	}
-
-	return liquidUnstakeUnbondingDelegations
+	return nil
 }
