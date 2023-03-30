@@ -1,6 +1,10 @@
 package keeper_test
 
 import (
+	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	"github.com/evmos/ethermint/crypto/ethsecp256k1"
+	evm "github.com/evmos/ethermint/x/evm/types"
 	"testing"
 	"time"
 
@@ -11,7 +15,6 @@ import (
 	tmversion "github.com/tendermint/tendermint/proto/tendermint/version"
 	"github.com/tendermint/tendermint/version"
 
-	"github.com/evmos/ethermint/tests"
 	feemarkettypes "github.com/evmos/ethermint/x/feemarket/types"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
@@ -34,18 +37,21 @@ type KeeperTestSuite struct {
 
 	ctx sdk.Context
 
-	app         *app.Canto
-	queryClient types.QueryClient
+	app            *app.Canto
+	queryClient    types.QueryClient
+	queryClientEvm evm.QueryClient
 }
 
 func (suite *KeeperTestSuite) SetupTest() {
 	// consensus key
-	consAddress := sdk.ConsAddress(tests.GenerateAddress().Bytes())
+	privCons, err := ethsecp256k1.GenerateKey()
+	suite.NoError(err)
+	consAddress := sdk.ConsAddress(privCons.PubKey().Address())
 
 	suite.app = app.Setup(false, feemarkettypes.DefaultGenesisState())
 	suite.ctx = suite.app.BaseApp.NewContext(false, tmproto.Header{
 		Height:          1,
-		ChainID:         "canto_9000-1",
+		ChainID:         "canto_9001-1",
 		Time:            time.Now().UTC(),
 		ProposerAddress: consAddress.Bytes(),
 
@@ -72,9 +78,21 @@ func (suite *KeeperTestSuite) SetupTest() {
 	types.RegisterQueryServer(queryHelper, suite.app.OnboardingKeeper)
 	suite.queryClient = types.NewQueryClient(queryHelper)
 
+	// Set Validator
+	valAddr := sdk.ValAddress(privCons.PubKey().Address().Bytes())
+	validator, err := stakingtypes.NewValidator(valAddr, privCons.PubKey(), stakingtypes.Description{})
+	suite.NoError(err)
+	validator = stakingkeeper.TestingUpdateValidator(suite.app.StakingKeeper, suite.ctx, validator, true)
+	suite.app.StakingKeeper.AfterValidatorCreated(suite.ctx, validator.GetOperator())
+	err = suite.app.StakingKeeper.SetValidatorByConsAddr(suite.ctx, validator)
+	suite.NoError(err)
+
 	// claimsParams := claimstypes.DefaultParams()
 	// claimsParams.AirdropStartTime = suite.ctx.BlockTime()
 	// suite.app.ClaimsKeeper.SetParams(suite.ctx, claimsParams)
+	//queryHelperEvm := baseapp.NewQueryServerTestHelper(suite.ctx, suite.app.InterfaceRegistry())
+	//evm.RegisterQueryServer(queryHelperEvm, suite.app.EvmKeeper)
+	//suite.queryClientEvm = evm.NewQueryClient(queryHelperEvm)
 
 	stakingParams := suite.app.StakingKeeper.GetParams(suite.ctx)
 	stakingParams.BondDenom = "acanto"

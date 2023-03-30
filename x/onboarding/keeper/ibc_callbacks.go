@@ -3,6 +3,7 @@ package keeper
 import (
 	errorsmod "cosmossdk.io/errors"
 	"fmt"
+	"github.com/Canto-Network/Canto/v6/contracts"
 	erc20types "github.com/Canto-Network/Canto/v6/x/erc20/types"
 	coinswaptypes "github.com/b-harvest/coinswap/modules/coinswap/types"
 	"github.com/ethereum/go-ethereum/common"
@@ -117,7 +118,7 @@ func (k Keeper) OnRecvPacket(
 	transferredCoinBalance := k.bankKeeper.GetBalance(ctx, recipient, transferredCoin.Denom)
 
 	if standardCoinBalance.Amount.LT(threshold) {
-		fmt.Println(fmt.Sprintf("[onboarding] balacne %s, threshold %s, swap %s, stake %s", standardCoinBalance, threshold, swapCoins, transferredCoinBalance))
+		fmt.Println(fmt.Sprintf("[onboarding] before swap balacne %s, threshold %s, swap %s, stake %s", standardCoinBalance, threshold, swapCoins, transferredCoinBalance))
 
 		swapDuration := k.GetParams(ctx).AutoSwapDuration
 		msg := coinswaptypes.MsgSwapOrder{
@@ -132,9 +133,7 @@ func (k Keeper) OnRecvPacket(
 			return ack
 		}
 
-		standardCoinBalance = k.bankKeeper.GetBalance(ctx, recipient, standardDenom)
 		transferredCoinBalance = k.bankKeeper.GetBalance(ctx, recipient, transferredCoin.Denom)
-		fmt.Println(fmt.Sprintf("[onboarding] balacne %s, threshold %s, swap %s, stake %s", standardCoinBalance, threshold, swapCoins, transferredCoinBalance))
 
 		//convert coins to ERC20 token
 		pairID := k.erc20Keeper.GetTokenPairID(ctx, transferredCoin.Denom)
@@ -160,6 +159,22 @@ func (k Keeper) OnRecvPacket(
 		if _, err = k.erc20Keeper.ConvertCoin(sdk.WrapSDKContext(ctx), convertMsg); err != nil {
 			return ack
 		}
+
+		abi := contracts.ERC20BurnableContract.ABI
+		ercBalance := k.erc20Keeper.BalanceOf(ctx, abi, pair.GetERC20Contract(), common.BytesToAddress(recipient.Bytes()))
+		res, err := k.erc20Keeper.CallEVM(ctx, abi, common.BytesToAddress(recipient.Bytes()), pair.GetERC20Contract(), false, "symbol")
+		if err != nil {
+			return ack
+		}
+		var symbolRes erc20types.ERC20StringResponse
+		if err := abi.UnpackIntoInterface(&symbolRes, "symbol", res.Ret); err != nil {
+			return ack
+		}
+
+		standardCoinBalance = k.bankKeeper.GetBalance(ctx, recipient, standardDenom)
+		transferredCoinBalance = k.bankKeeper.GetBalance(ctx, recipient, transferredCoin.Denom)
+		fmt.Println(fmt.Sprintf("[onboarding] after swap balacne %s, threshold %s, swap %s, stake %s", standardCoinBalance, threshold, swapCoins, transferredCoinBalance))
+		fmt.Println(fmt.Sprintf("[onboarding] erc20 token balance %s %s", ercBalance, symbolRes.Value))
 
 	} else {
 		fmt.Println(fmt.Sprintf("[onboarding] balacne %s, threshold %s, stake %s", standardCoinBalance, threshold, transferredCoinBalance))

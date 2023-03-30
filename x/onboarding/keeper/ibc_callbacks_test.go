@@ -2,11 +2,18 @@ package keeper_test
 
 import (
 	"fmt"
+	"github.com/Canto-Network/Canto/v6/contracts"
+	inflationtypes "github.com/Canto-Network/Canto/v6/x/inflation/types"
 	coinswaptypes "github.com/b-harvest/coinswap/modules/coinswap/types"
+	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/evmos/ethermint/tests"
+	evm "github.com/evmos/ethermint/x/evm/types"
 	"github.com/stretchr/testify/mock"
+	abci "github.com/tendermint/tendermint/abci/types"
 	"time"
 
 	"github.com/Canto-Network/Canto/v6/testutil"
@@ -17,9 +24,58 @@ import (
 	ibcgotesting "github.com/cosmos/ibc-go/v3/testing"
 	ibcmock "github.com/cosmos/ibc-go/v3/testing/mock"
 
+	erc20types "github.com/Canto-Network/Canto/v6/x/erc20/types"
 	"github.com/Canto-Network/Canto/v6/x/onboarding/keeper"
 	"github.com/Canto-Network/Canto/v6/x/onboarding/types"
 )
+
+const (
+	ibcBase = "ibc/AB9F5F552BE005092373CD48523BA35600778C770F8564BDD6A3450FE3F15925"
+)
+
+var (
+	metadataIbc = banktypes.Metadata{
+		Description: "USDC IBC voucher (channel 0)",
+		Base:        ibcBase,
+		// NOTE: Denom units MUST be increasing
+		DenomUnits: []*banktypes.DenomUnit{
+			{
+				Denom:    ibcBase,
+				Exponent: 0,
+			},
+		},
+		Name:    "USDC channel-0",
+		Symbol:  "ibcUSDC-0",
+		Display: ibcBase,
+	}
+)
+
+func (suite *KeeperTestSuite) setupRegisterCoin(metadata banktypes.Metadata) *erc20types.TokenPair {
+	err := suite.app.BankKeeper.MintCoins(suite.ctx, inflationtypes.ModuleName, sdk.Coins{sdk.NewInt64Coin(metadata.Base, 1)})
+	suite.Require().NoError(err)
+
+	// pair := types.NewTokenPair(contractAddr, cosmosTokenBase, true, types.OWNER_MODULE)
+	pair, err := suite.app.Erc20Keeper.RegisterCoin(suite.ctx, metadata)
+	suite.Require().NoError(err)
+	suite.Commit()
+	return pair
+}
+
+func (suite *KeeperTestSuite) Commit() {
+	_ = suite.app.Commit()
+	header := suite.ctx.BlockHeader()
+	header.Height += 1
+	suite.app.BeginBlock(abci.RequestBeginBlock{
+		Header: header,
+	})
+
+	// update ctx
+	suite.ctx = suite.app.BaseApp.NewContext(false, header)
+
+	queryHelper := baseapp.NewQueryServerTestHelper(suite.ctx, suite.app.InterfaceRegistry())
+	evm.RegisterQueryServer(queryHelper, suite.app.EvmKeeper)
+	suite.queryClientEvm = evm.NewQueryClient(queryHelper)
+}
 
 func (suite *KeeperTestSuite) TestOnRecvPacket() {
 	// secp256k1 account
@@ -142,7 +198,7 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 			voucher,
 		},
 		{
-			"success - swap is successful",
+			"success - swap and erc20 conversion are successful",
 			func() {
 				sourceChannel = "channel-0"
 				transferAmount = sdk.NewIntWithDecimal(25, 6)
@@ -157,7 +213,7 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 		},
 
 		{
-			"success - swap is successful (acanto balance is positive but less than threshold)",
+			"success - swap and erc20 conversion are successful (acanto balance is positive but less than threshold)",
 			func() {
 				transferAmount = sdk.NewIntWithDecimal(25, 6)
 				transfer := transfertypes.NewFungibleTokenPacketData(denom, transferAmount.String(), secpAddrCosmos, secpAddrcanto)
@@ -251,6 +307,9 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 			// Fund receiver account with canto, ERC20 coins and IBC vouchers
 			testutil.FundAccount(suite.app.BankKeeper, suite.ctx, secpAddr, sdk.NewCoins(sdk.NewCoin(ibcDenom, transferAmount), tc.receiverAcantoAmount))
 
+			pair := suite.setupRegisterCoin(metadataIbc)
+			suite.Require().NotNil(pair)
+
 			// Perform IBC callback
 			ack := suite.app.OnboardingKeeper.OnRecvPacket(suite.ctx, packet, expAck)
 
@@ -265,12 +324,17 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 			// Check onboarding
 			cantoBalance := suite.app.BankKeeper.GetBalance(suite.ctx, secpAddr, "acanto")
 			voucherBalance := suite.app.BankKeeper.GetBalance(suite.ctx, secpAddr, ibcDenom)
+			// Check ERC20 balances
+			erc20balance := suite.app.Erc20Keeper.BalanceOf(suite.ctx, contracts.ERC20MinterBurnerDecimalsContract.ABI, pair.GetERC20Contract(), common.BytesToAddress(secpAddr.Bytes()))
+
 			if tc.expOnboarding {
 				suite.Require().True(cantoBalance.Equal(tc.receiverAcantoAmount.Add(sdk.NewCoin("acanto", params.AutoSwapThreshold))))
-				suite.Require().True(voucherBalance.Amount.LT(transferAmount))
+				suite.Require().Equal(voucherBalance.Amount, sdk.ZeroInt(), "Voucher balance should be 0")
+				suite.Require().True(erc20balance.Int64() > 0, "ERC20 balance should be > 0")
 			} else {
 				suite.Require().Equal(tc.expVoucher, sdk.NewCoins(voucherBalance))
-				suite.Require().Equal(tc.receiverAcantoAmount, cantoBalance)
+				suite.Require().Equal(tc.receiverAcantoAmount, cantoBalance, "Canto balance should be unchanged")
+				suite.Require().True(erc20balance.Int64() == 0, "ERC20 balance should be 0")
 			}
 		})
 	}

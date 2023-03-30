@@ -4,6 +4,10 @@ import (
 	"context"
 	erc20types "github.com/Canto-Network/Canto/v6/x/erc20/types"
 	coinswaptypes "github.com/b-harvest/coinswap/modules/coinswap/types"
+	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/common"
+	evmtypes "github.com/evmos/ethermint/x/evm/types"
+	"math/big"
 
 	tmbytes "github.com/tendermint/tendermint/libs/bytes"
 
@@ -22,6 +26,19 @@ type Erc20Keeper interface {
 	) (*erc20types.MsgConvertCoinResponse, error)
 	GetTokenPairID(ctx sdk.Context, token string) []byte
 	GetTokenPair(ctx sdk.Context, id []byte) (erc20types.TokenPair, bool)
+	BalanceOf(
+		ctx sdk.Context,
+		abi abi.ABI,
+		contract, account common.Address,
+	) *big.Int
+	CallEVM(
+		ctx sdk.Context,
+		abi abi.ABI,
+		from, contract common.Address,
+		commit bool,
+		method string,
+		args ...interface{},
+	) (*evmtypes.MsgEthereumTxResponse, error)
 }
 
 type CoinwapKeeper interface {
