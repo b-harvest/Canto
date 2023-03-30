@@ -37,6 +37,7 @@ func ExportGenesis(ctx sdk.Context, k keeper.Keeper) *types.GenesisState {
 	})
 
 	genesis := types.DefaultGenesisState()
+	genesis.LiquidBondDenom = k.GetLiquidBondDenom(ctx)
 	genesis.Params = k.GetParams(ctx)
 	genesis.Epoch = k.GetEpoch(ctx)
 	genesis.LastChunkId = k.GetLastChunkId(ctx)

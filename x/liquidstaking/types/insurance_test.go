@@ -114,7 +114,7 @@ func TestSortInsurances(t *testing.T) {
 	for _, tc := range cases {
 		tc := tc
 		t.Run(tc.desc, func(t *testing.T) {
-			insurances := []types.Insurance{tc.a, tc.b}
+			insurances := []types.Insurance{tc.b, tc.a}
 			types.SortInsurances(validatorMap, insurances)
 			require.Equal(t, tc.expected, tc.fn(validatorMap, insurances[0], insurances[1]))
 		})

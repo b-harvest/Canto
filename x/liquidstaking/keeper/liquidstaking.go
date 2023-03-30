@@ -7,6 +7,66 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
+func (k Keeper) coverUnpairingForUnstakeCase(ctx sdk.Context) error {
+	var unbondingDelegationInfos []types.LiquidUnstakeUnbondingDelegationInfo
+	err := k.IterateAllLiquidUnstakeUnbondingDelegationInfos(ctx, func(liquidUnstakeUnbondingDelegationInfo types.LiquidUnstakeUnbondingDelegationInfo) (bool, error) {
+		unbondingDelegationInfos = append(unbondingDelegationInfos, liquidUnstakeUnbondingDelegationInfo)
+		return false, nil
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	// For all completed unboding delegation infos
+	for _, unbondingDelegationInfo := range unbondingDelegationInfos {
+		chunk, found := k.GetChunk(ctx, unbondingDelegationInfo.ChunkId)
+		if !found {
+			panic(types.ErrNotFoundChunk.Error())
+		}
+		if chunk.Status != types.CHUNK_STATUS_UNPAIRING_FOR_UNSTAKE {
+			panic(types.ErrInvalidChunkStatus.Error())
+		}
+
+		// get insurance from chunk.InsuranceId
+		insurance, found := k.GetInsurance(ctx, chunk.InsuranceId)
+		if !found {
+			panic(types.ErrNotFoundInsurance.Error())
+		}
+
+		// get unbonding delegation using staking keeper
+		unbondingDelegation, found := k.stakingKeeper.GetUnbondingDelegation(
+			ctx, chunk.DerivedAddress(),
+			insurance.GetValidator(),
+		)
+		if !found {
+			panic(types.ErrNotFoundUnbondingDelegation.Error())
+		}
+
+		// check if chunk got damaged during unbonding
+		// for all entries of unbondingDelegation
+		for _, entry := range unbondingDelegation.Entries {
+			if entry.CompletionTime.Equal(unbondingDelegationInfo.CompletionTime) &&
+				entry.InitialBalance.Equal(types.ChunkSize) {
+				diff := entry.InitialBalance.Sub(entry.Balance)
+				if diff.IsPositive() {
+					// chunk got damaged, insurance should cover it
+				}
+			}
+
+		}
+		// if entry is not completed
+		// if entry.IsMature(ctx.BlockTime()) {
+		// then chunk got damaged
+		// }
+
+		// Check if chunk got damaged or not
+
+		k.DeleteChunk(ctx, chunk.Id)
+		return nil
+	}
+	return nil
+}
+
 func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (chunks []types.Chunk, newShares sdk.Dec, lsTokenMintAmount sdk.Int, err error) {
 	delAddr := msg.GetDelegator()
 	amount := msg.Amount
@@ -151,6 +211,8 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (chunk
 	return
 }
 
+// TODO: Instead of panic, return error so MsgServer can response with error.
+// Every error case should not be handled as error. (e.g. use continue to process next thing).
 func (k Keeper) DoLiquidUnstake(ctx sdk.Context, msg *types.MsgLiquidUnstake) (
 	unstakedChunks []types.Chunk,
 	unstakeUnbondingDelegationInfos []types.LiquidUnstakeUnbondingDelegationInfo,
@@ -180,7 +242,7 @@ func (k Keeper) DoLiquidUnstake(ctx sdk.Context, msg *types.MsgLiquidUnstake) (
 		}
 		insurance, found := k.GetInsurance(ctx, chunk.InsuranceId)
 		if found == false {
-			return false, types.ErrPairingInsuranceNotFound
+			return false, types.ErrNotFoundInsurance
 		}
 
 		if _, ok := validatorMap[insurance.ValidatorAddress]; !ok {
@@ -213,11 +275,14 @@ func (k Keeper) DoLiquidUnstake(ctx sdk.Context, msg *types.MsgLiquidUnstake) (
 		err = types.ErrNoPairedChunk
 		return
 	}
+	// TODO: Need to discuss in point of policy. Should we reject or unstake as much as possible?
 	if pairedChunks < n {
 		n = pairedChunks
+		amount = sdk.NewCoin(amount.Denom, types.ChunkSize.Mul(sdk.NewInt(n)))
 	}
-	// Sort insurances
-	types.SortInsurances(validatorMap, insurances)
+	// Sort insurances by descend order
+	// TODO: add option(descend or ascend(=default))
+	types.SortInsurances(validatorMap, insurances) // (validatorMap, insurances, DESCENT_ORDER)
 
 	// How much ls tokens must be burned
 	nas := k.GetNetAmountState(ctx)
@@ -228,22 +293,26 @@ func (k Keeper) DoLiquidUnstake(ctx sdk.Context, msg *types.MsgLiquidUnstake) (
 	liquidBondDenom := k.GetLiquidBondDenom(ctx)
 	lsTokensToBurn := sdk.NewCoin(liquidBondDenom, lsTokenBurnAmount)
 	// Escrow
+	// TODO: Add reserve address for this case because it is hard to track if many tokens are mixed in same module account.
 	if err = k.bankKeeper.SendCoinsFromAccountToModule(
 		ctx, delAddr, types.ModuleName, sdk.NewCoins(lsTokensToBurn),
 	); err != nil {
 		return
 	}
+	completionTime := ctx.BlockHeader().Time.Add(k.stakingKeeper.UnbondingTime(ctx))
 	for i := int64(0); i < n; i++ {
-		mostExpensiveInsurance := insurances[len(insurances)-1]
-		insurances = insurances[:len(insurances)-1]
+		mostExpensiveInsurance := insurances[i]
 		chunkToBeUndelegated := chunksWithInsuranceId[mostExpensiveInsurance.Id]
 		chunkToBeUndelegated.SetStatus(types.CHUNK_STATUS_UNPAIRING_FOR_UNSTAKE)
-		mostExpensiveInsurance.SetStatus(types.INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAW)
+		mostExpensiveInsurance.SetStatus(types.INSURANCE_STATUS_UNPAIRING_FOR_REPAIRING)
 
 		del, found := k.stakingKeeper.GetDelegation(ctx, chunkToBeUndelegated.DerivedAddress(), mostExpensiveInsurance.GetValidator())
 		if !found {
 			panic("delegation not found")
 		}
+		// TODO: We need to add almost every logic in cosmos-sdk staking module.
+		// e.g. validator.IsBonded, ValidateUnbondAmount(), Check bondDenom, HasMaxUnbondingDelegationEntries, etc...
+		// need to check reference of crescent
 		unbondedNativeToken, err := k.stakingKeeper.Unbond(
 			ctx,
 			chunkToBeUndelegated.DerivedAddress(),
@@ -253,7 +322,6 @@ func (k Keeper) DoLiquidUnstake(ctx sdk.Context, msg *types.MsgLiquidUnstake) (
 		if err != nil {
 			panic(err)
 		}
-		completionTime := ctx.BlockHeader().Time.Add(k.stakingKeeper.UnbondingTime(ctx))
 		ubd := k.stakingKeeper.SetUnbondingDelegationEntry(
 			ctx,
 			delAddr,
@@ -273,6 +341,8 @@ func (k Keeper) DoLiquidUnstake(ctx sdk.Context, msg *types.MsgLiquidUnstake) (
 		k.SetLiquidUnstakeUnbondingDelegationInfo(ctx, liquidUnstakeUnbondingDelegationInfo)
 		unstakedChunks = append(unstakedChunks, chunkToBeUndelegated)
 		unstakeUnbondingDelegationInfos = append(unstakeUnbondingDelegationInfos, liquidUnstakeUnbondingDelegationInfo)
+
+		// TODO: Should we delete delegation object? because we already unbonded all shares.
 	}
 	return
 }
