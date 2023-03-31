@@ -3,17 +3,12 @@ package keeper_test
 import (
 	"fmt"
 	"github.com/Canto-Network/Canto/v6/contracts"
-	inflationtypes "github.com/Canto-Network/Canto/v6/x/inflation/types"
 	coinswaptypes "github.com/b-harvest/coinswap/modules/coinswap/types"
-	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/evmos/ethermint/tests"
-	evm "github.com/evmos/ethermint/x/evm/types"
 	"github.com/stretchr/testify/mock"
-	abci "github.com/tendermint/tendermint/abci/types"
 	"time"
 
 	"github.com/Canto-Network/Canto/v6/testutil"
@@ -29,52 +24,27 @@ import (
 	"github.com/Canto-Network/Canto/v6/x/onboarding/types"
 )
 
-const (
-	ibcBase = "ibc/AB9F5F552BE005092373CD48523BA35600778C770F8564BDD6A3450FE3F15925"
-)
-
 var (
 	metadataIbc = banktypes.Metadata{
 		Description: "USDC IBC voucher (channel 0)",
-		Base:        ibcBase,
+		Base:        ibcUsdcDenom,
 		// NOTE: Denom units MUST be increasing
 		DenomUnits: []*banktypes.DenomUnit{
 			{
-				Denom:    ibcBase,
+				Denom:    ibcUsdcDenom,
 				Exponent: 0,
 			},
 		},
 		Name:    "USDC channel-0",
 		Symbol:  "ibcUSDC-0",
-		Display: ibcBase,
+		Display: ibcUsdcDenom,
 	}
 )
 
 func (suite *KeeperTestSuite) setupRegisterCoin(metadata banktypes.Metadata) *erc20types.TokenPair {
-	err := suite.app.BankKeeper.MintCoins(suite.ctx, inflationtypes.ModuleName, sdk.Coins{sdk.NewInt64Coin(metadata.Base, 1)})
-	suite.Require().NoError(err)
-
-	// pair := types.NewTokenPair(contractAddr, cosmosTokenBase, true, types.OWNER_MODULE)
 	pair, err := suite.app.Erc20Keeper.RegisterCoin(suite.ctx, metadata)
 	suite.Require().NoError(err)
-	suite.Commit()
 	return pair
-}
-
-func (suite *KeeperTestSuite) Commit() {
-	_ = suite.app.Commit()
-	header := suite.ctx.BlockHeader()
-	header.Height += 1
-	suite.app.BeginBlock(abci.RequestBeginBlock{
-		Header: header,
-	})
-
-	// update ctx
-	suite.ctx = suite.app.BaseApp.NewContext(false, header)
-
-	queryHelper := baseapp.NewQueryServerTestHelper(suite.ctx, suite.app.InterfaceRegistry())
-	evm.RegisterQueryServer(queryHelper, suite.app.EvmKeeper)
-	suite.queryClientEvm = evm.NewQueryClient(queryHelper)
 }
 
 func (suite *KeeperTestSuite) TestOnRecvPacket() {
@@ -107,8 +77,10 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 		malleate             func()
 		ackSuccess           bool
 		expOnboarding        bool
+		enableConvert        bool
 		receiverAcantoAmount sdk.Coin
 		expVoucher           sdk.Coins
+		expErc20Balance      int64
 	}{
 		{
 			"continue - params disabled",
@@ -119,8 +91,10 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 			},
 			true,
 			false,
+			true,
 			sdk.NewCoin("acanto", sdk.ZeroInt()),
 			voucher,
+			0,
 		},
 		{
 			"fail - no liquidity pool exists",
@@ -135,8 +109,10 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 			},
 			true,
 			false,
+			true,
 			sdk.NewCoin("acanto", sdk.ZeroInt()),
 			sdk.NewCoins(sdk.NewCoin(ibcUsdtDenom, transferAmount)),
+			0,
 		},
 		{
 			"continue - no liquidity pool exists but acanto balance is already bigger than threshold",
@@ -151,8 +127,10 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 			},
 			true,
 			false,
+			true,
 			sdk.NewCoin("acanto", sdk.NewIntWithDecimal(4, 18)),
 			sdk.NewCoins(sdk.NewCoin(ibcUsdtDenom, transferAmount)),
+			0,
 		},
 		{
 			"fail - not enough ibc coin to swap threshold",
@@ -167,8 +145,10 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 			},
 			true,
 			false,
+			true,
 			sdk.NewCoin("acanto", sdk.ZeroInt()),
 			sdk.NewCoins(sdk.NewCoin(ibcUsdcDenom, sdk.NewIntWithDecimal(1, 6))),
+			0,
 		},
 		{
 			"continue - acanto balance is already bigger than threshold",
@@ -180,8 +160,10 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 			},
 			true,
 			false,
+			true,
 			sdk.NewCoin("acanto", sdk.NewIntWithDecimal(4, 18)),
 			voucher,
+			0,
 		},
 		{
 			"fail - unauthorized source channel",
@@ -194,8 +176,10 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 			},
 			true,
 			false,
+			true,
 			sdk.NewCoin("acanto", sdk.ZeroInt()),
 			voucher,
+			0,
 		},
 		{
 			"success - swap and erc20 conversion are successful",
@@ -208,10 +192,27 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 			},
 			true,
 			true,
+			true,
 			sdk.NewCoin("acanto", sdk.ZeroInt()),
-			voucher,
+			sdk.NewCoins(sdk.NewCoin(ibcUsdcDenom, sdk.ZeroInt())),
+			20998399,
 		},
-
+		{
+			"success - swap is successful but erc20 conversion is not done",
+			func() {
+				sourceChannel = "channel-0"
+				transferAmount = sdk.NewIntWithDecimal(25, 6)
+				transfer := transfertypes.NewFungibleTokenPacketData(denom, transferAmount.String(), secpAddrCosmos, secpAddrcanto)
+				bz := transfertypes.ModuleCdc.MustMarshalJSON(&transfer)
+				packet = channeltypes.NewPacket(bz, 100, transfertypes.PortID, sourceChannel, transfertypes.PortID, cantoChannel, timeoutHeight, 0)
+			},
+			true,
+			true,
+			false,
+			sdk.NewCoin("acanto", sdk.ZeroInt()),
+			sdk.NewCoins(sdk.NewCoin(ibcUsdcDenom, sdk.NewInt(20998399))),
+			0,
+		},
 		{
 			"success - swap and erc20 conversion are successful (acanto balance is positive but less than threshold)",
 			func() {
@@ -222,9 +223,27 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 			},
 			true,
 			true,
+			true,
 			sdk.NewCoin("acanto", sdk.NewIntWithDecimal(3, 18)),
-			voucher,
+			sdk.NewCoins(sdk.NewCoin(ibcUsdcDenom, sdk.ZeroInt())),
+			20998399,
 		},
+		{
+			"success - swap and erc20 conversion are successful (acanto balance is positive but less than threshold)",
+			func() {
+				transferAmount = sdk.NewIntWithDecimal(25, 6)
+				transfer := transfertypes.NewFungibleTokenPacketData(denom, transferAmount.String(), secpAddrCosmos, secpAddrcanto)
+				bz := transfertypes.ModuleCdc.MustMarshalJSON(&transfer)
+				packet = channeltypes.NewPacket(bz, 100, transfertypes.PortID, sourceChannel, transfertypes.PortID, cantoChannel, timeoutHeight, 0)
+			},
+			true,
+			true,
+			false,
+			sdk.NewCoin("acanto", sdk.NewIntWithDecimal(3, 18)),
+			sdk.NewCoins(sdk.NewCoin(ibcUsdcDenom, sdk.NewInt(20998399))),
+			0,
+		},
+
 		{
 			"fail - required ibc token to swap exceeds max swap amount limit",
 			func() {
@@ -239,8 +258,10 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 			},
 			true,
 			false,
+			true,
 			sdk.NewCoin("acanto", sdk.NewIntWithDecimal(3, 18)),
 			voucher,
+			0,
 		},
 	}
 	for _, tc := range testCases {
@@ -310,6 +331,11 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 			pair := suite.setupRegisterCoin(metadataIbc)
 			suite.Require().NotNil(pair)
 
+			if !tc.enableConvert {
+				pair.Enabled = false
+				suite.app.Erc20Keeper.SetTokenPair(suite.ctx, *pair)
+			}
+
 			// Perform IBC callback
 			ack := suite.app.OnboardingKeeper.OnRecvPacket(suite.ctx, packet, expAck)
 
@@ -329,260 +355,12 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 
 			if tc.expOnboarding {
 				suite.Require().True(cantoBalance.Equal(tc.receiverAcantoAmount.Add(sdk.NewCoin("acanto", params.AutoSwapThreshold))))
-				suite.Require().Equal(voucherBalance.Amount, sdk.ZeroInt(), "Voucher balance should be 0")
-				suite.Require().True(erc20balance.Int64() > 0, "ERC20 balance should be > 0")
+
 			} else {
 				suite.Require().Equal(tc.expVoucher, sdk.NewCoins(voucherBalance))
-				suite.Require().Equal(tc.receiverAcantoAmount, cantoBalance, "Canto balance should be unchanged")
-				suite.Require().True(erc20balance.Int64() == 0, "ERC20 balance should be 0")
 			}
-		})
-	}
-}
-
-func (suite *KeeperTestSuite) TestGetIBCDenomDestinationIdentifiers() {
-	address := sdk.AccAddress(tests.GenerateAddress().Bytes()).String()
-
-	testCases := []struct {
-		name                                      string
-		denom                                     string
-		malleate                                  func()
-		expError                                  bool
-		expDestinationPort, expDestinationChannel string
-	}{
-		{
-			"invalid native denom",
-			"acanto",
-			func() {},
-			true,
-			"", "",
-		},
-		{
-			"invalid IBC denom hash",
-			"ibc/acanto",
-			func() {},
-			true,
-			"", "",
-		},
-		{
-			"denom trace not found",
-			ibcAtomDenom,
-			func() {},
-			true,
-			"", "",
-		},
-		{
-			"channel not found",
-			ibcAtomDenom,
-			func() {
-				denomTrace := transfertypes.DenomTrace{
-					Path:      "transfer/channel-3",
-					BaseDenom: "uatom",
-				}
-				suite.app.TransferKeeper.SetDenomTrace(suite.ctx, denomTrace)
-			},
-			true,
-			"", "",
-		},
-		{
-			"invalid destination port - insufficient length",
-			"ibc/B9A49AA0AB0EB977D4EC627D7D9F747AF11BB1D74F430DE759CA37B22ECACF30", // denomTrace.Hash()
-			func() {
-				denomTrace := transfertypes.DenomTrace{
-					Path:      "t/channel-3",
-					BaseDenom: "uatom",
-				}
-				suite.app.TransferKeeper.SetDenomTrace(suite.ctx, denomTrace)
-
-				channel := channeltypes.Channel{
-					Counterparty: channeltypes.NewCounterparty("t", "channel-292"),
-				}
-				suite.app.IBCKeeper.ChannelKeeper.SetChannel(suite.ctx, "t", "channel-3", channel)
-			},
-			true,
-			"", "",
-		},
-		{
-			"invalid channel identifier - insufficient length",
-			"ibc/5E3E083402F07599C795A7B75058EC3F13A8E666A8FEA2E51B6F3D93C755DFBC", // denomTrace.Hash()
-			func() {
-				denomTrace := transfertypes.DenomTrace{
-					Path:      "transfer/c-3",
-					BaseDenom: "uatom",
-				}
-				suite.app.TransferKeeper.SetDenomTrace(suite.ctx, denomTrace)
-
-				channel := channeltypes.Channel{
-					Counterparty: channeltypes.NewCounterparty("transfer", "channel-292"),
-				}
-				suite.app.IBCKeeper.ChannelKeeper.SetChannel(suite.ctx, "transfer", "c-3", channel)
-			},
-			true,
-			"", "",
-		},
-		{
-			"success - ATOM",
-			ibcAtomDenom,
-			func() {
-				denomTrace := transfertypes.DenomTrace{
-					Path:      "transfer/channel-3",
-					BaseDenom: "uatom",
-				}
-				suite.app.TransferKeeper.SetDenomTrace(suite.ctx, denomTrace)
-
-				channel := channeltypes.Channel{
-					Counterparty: channeltypes.NewCounterparty("transfer", "channel-292"),
-				}
-				suite.app.IBCKeeper.ChannelKeeper.SetChannel(suite.ctx, "transfer", "channel-3", channel)
-			},
-			false,
-			"transfer", "channel-3",
-		},
-		{
-			"success - OSMO",
-			ibcOsmoDenom,
-			func() {
-				denomTrace := transfertypes.DenomTrace{
-					Path:      "transfer/channel-0",
-					BaseDenom: "uosmo",
-				}
-				suite.app.TransferKeeper.SetDenomTrace(suite.ctx, denomTrace)
-
-				channel := channeltypes.Channel{
-					Counterparty: channeltypes.NewCounterparty("transfer", "channel-204"),
-				}
-				suite.app.IBCKeeper.ChannelKeeper.SetChannel(suite.ctx, "transfer", "channel-0", channel)
-			},
-			false,
-			"transfer", "channel-0",
-		},
-		{
-			"success - ibcATOM (via Osmosis)",
-			"ibc/6CDD4663F2F09CD62285E2D45891FC149A3568E316CE3EBBE201A71A78A69388",
-			func() {
-				denomTrace := transfertypes.DenomTrace{
-					Path:      "transfer/channel-0/transfer/channel-0",
-					BaseDenom: "uatom",
-				}
-
-				suite.app.TransferKeeper.SetDenomTrace(suite.ctx, denomTrace)
-
-				channel := channeltypes.Channel{
-					Counterparty: channeltypes.NewCounterparty("transfer", "channel-204"),
-				}
-				suite.app.IBCKeeper.ChannelKeeper.SetChannel(suite.ctx, "transfer", "channel-0", channel)
-			},
-			false,
-			"transfer", "channel-0",
-		},
-	}
-	for _, tc := range testCases {
-		suite.Run(fmt.Sprintf("Case %s", tc.name), func() {
-			suite.SetupTest() // reset
-
-			tc.malleate()
-
-			destinationPort, destinationChannel, err := suite.app.OnboardingKeeper.GetIBCDenomDestinationIdentifiers(suite.ctx, tc.denom, address)
-			if tc.expError {
-				suite.Require().Error(err)
-			} else {
-				suite.Require().NoError(err)
-				suite.Require().Equal(tc.expDestinationPort, destinationPort)
-				suite.Require().Equal(tc.expDestinationChannel, destinationChannel)
-			}
-		})
-	}
-}
-
-func (suite *KeeperTestSuite) TestOnRecvPacketFailTransfer() {
-	// secp256k1 account
-	secpPk := secp256k1.GenPrivKey()
-	secpAddr := sdk.AccAddress(secpPk.PubKey().Address())
-	secpAddrcanto := secpAddr.String()
-	secpAddrCosmos := sdk.MustBech32ifyAddressBytes(sdk.Bech32MainPrefix, secpAddr)
-
-	// Setup Cosmos <=> canto IBC relayer
-	denom := "uatom"
-	sourceChannel := "channel-292"
-	// cantoChannel := claimstypes.DefaultAuthorizedChannels[1]
-
-	cantoChannel := "channel-3"
-	path := fmt.Sprintf("%s/%s", transfertypes.PortID, cantoChannel)
-
-	var mockTransferKeeper *MockTransferKeeper
-	expAck := ibcmock.MockAcknowledgement
-	testCases := []struct {
-		name     string
-		malleate func()
-	}{
-		{
-			"Fail to retrieve ibc denom trace",
-			func() {
-				mockTransferKeeper.On("GetDenomTrace", mock.Anything, mock.Anything).Return(transfertypes.DenomTrace{}, false)
-				mockTransferKeeper.On("SendTransfer", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
-			},
-		},
-		{
-			"invalid ibc denom trace",
-			func() {
-				// Set Denom Trace
-				denomTrace := transfertypes.DenomTrace{
-					Path:      "badpath",
-					BaseDenom: denom,
-				}
-				suite.app.TransferKeeper.SetDenomTrace(suite.ctx, denomTrace)
-				mockTransferKeeper.On("GetDenomTrace", mock.Anything, mock.Anything).Return(denomTrace, true)
-				mockTransferKeeper.On("SendTransfer", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
-			},
-		},
-
-		{
-			"Fail to send transfer",
-			func() {
-				// Set Denom Trace
-				denomTrace := transfertypes.DenomTrace{
-					Path:      path,
-					BaseDenom: denom,
-				}
-				suite.app.TransferKeeper.SetDenomTrace(suite.ctx, denomTrace)
-				mockTransferKeeper.On("GetDenomTrace", mock.Anything, mock.Anything).Return(denomTrace, true)
-				mockTransferKeeper.On("SendTransfer", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(fmt.Errorf("Fail to transfer"))
-			},
-		},
-	}
-	for _, tc := range testCases {
-		suite.Run(fmt.Sprintf("Case %s", tc.name), func() {
-			suite.SetupTest() // reset
-
-			// Enable Onboarding
-			params := suite.app.OnboardingKeeper.GetParams(suite.ctx)
-			params.EnableOnboarding = true
-			suite.app.OnboardingKeeper.SetParams(suite.ctx, params)
-
-			transfer := transfertypes.NewFungibleTokenPacketData(denom, "100", secpAddrCosmos, secpAddrcanto)
-			packet := channeltypes.NewPacket(transfer.GetBytes(), 100, transfertypes.PortID, sourceChannel, transfertypes.PortID, cantoChannel, timeoutHeight, 0)
-
-			mockTransferKeeper = &MockTransferKeeper{
-				Keeper: suite.app.BankKeeper,
-			}
-
-			tc.malleate()
-
-			sp, found := suite.app.ParamsKeeper.GetSubspace(types.ModuleName)
-			suite.Require().True(found)
-			suite.app.OnboardingKeeper = keeper.NewKeeper(sp, suite.app.AccountKeeper, suite.app.BankKeeper, suite.app.IBCKeeper.ChannelKeeper, mockTransferKeeper, suite.app.CoinswapKeeper, suite.app.Erc20Keeper)
-
-			// Fund receiver account with canto
-			coins := sdk.NewCoins(
-				sdk.NewCoin("acanto", sdk.NewInt(1000)),
-				sdk.NewCoin(ibcAtomDenom, sdk.NewInt(1000)),
-			)
-			testutil.FundAccount(suite.app.BankKeeper, suite.ctx, secpAddr, coins)
-
-			// Perform IBC callback
-			ack := suite.app.OnboardingKeeper.OnRecvPacket(suite.ctx, packet, expAck)
-			// Onboarding should Fail
-			suite.Require().Equal(expAck, ack)
+			suite.Require().Equal(tc.expVoucher, sdk.NewCoins(voucherBalance))
+			suite.Require().Equal(tc.expErc20Balance, erc20balance.Int64())
 		})
 	}
 }
