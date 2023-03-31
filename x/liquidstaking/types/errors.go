@@ -15,4 +15,5 @@ var (
 	ErrNoPairedChunk               = sdkerrors.Register(ModuleName, 30010, "no paired chunk")
 	ErrNotFoundChunk               = sdkerrors.Register(ModuleName, 30011, "chunk not found")
 	ErrNotFoundUnbondingDelegation = sdkerrors.Register(ModuleName, 30012, "unbonding delegation not found")
+	ErrInvalidChunkStatus          = sdkerrors.Register(ModuleName, 30013, "invalid chunk status")
 )
