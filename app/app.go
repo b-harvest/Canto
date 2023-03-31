@@ -1029,6 +1029,10 @@ func (app *Canto) GetIBCKeeper() *ibckeeper.Keeper {
 	return app.IBCKeeper
 }
 
+func (app *Canto) GetErc20Keeper() erc20keeper.Keeper {
+	return app.Erc20Keeper
+}
+
 func (app *Canto) GetCoinswapKeeper() coinswapkeeper.Keeper {
 	return app.CoinswapKeeper
 }
