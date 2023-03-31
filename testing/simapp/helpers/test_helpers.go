@@ -14,7 +14,7 @@ import (
 
 // SimAppChainID hardcoded chainID for simulation
 const (
-	DefaultGenTxGas = 1000000
+	DefaultGenTxGas = 3300000
 	SimAppChainID   = "simulation-app"
 )
 
