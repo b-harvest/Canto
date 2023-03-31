@@ -28,7 +28,7 @@ func TestCantoExport(t *testing.T) {
 	// Initialize the chain
 	app.InitChain(
 		abci.RequestInitChain{
-			ChainId:       types.MainnetChainID + "-1",
+			ChainId:       types.TestnetChainID + "-1",
 			Validators:    []abci.ValidatorUpdate{},
 			AppStateBytes: stateBytes,
 		},

@@ -3,6 +3,7 @@ package onboarding_test
 import (
 	"fmt"
 	coinswaptypes "github.com/b-harvest/coinswap/modules/coinswap/types"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"testing"
 	"time"
 
@@ -12,6 +13,24 @@ import (
 	ibctesting "github.com/Canto-Network/Canto/v6/testing"
 	"github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
+)
+
+var (
+	ibcBase     = "ibc/C053D637CCA2A2BA030E2C5EE1B28A16F71CCB0E45E8BE52766DC1B241B77878"
+	metadataIbc = banktypes.Metadata{
+		Description: "IBC voucher (channel 0)",
+		Base:        ibcBase,
+		// NOTE: Denom units MUST be increasing
+		DenomUnits: []*banktypes.DenomUnit{
+			{
+				Denom:    ibcBase,
+				Exponent: 0,
+			},
+		},
+		Name:    "Ibc Token channel-0",
+		Symbol:  "ibcToken-0",
+		Display: ibcBase,
+	}
 )
 
 type TransferTestSuite struct {
@@ -52,23 +71,30 @@ func (suite *TransferTestSuite) TestHandleMsgTransfer() {
 	params := coinswapKeeper.GetParams(suite.chainB.GetContext())
 
 	// register ibc denoms (set params)
-	params.MaxSwapAmount = sdk.NewCoins(sdk.NewCoin("ibc/C053D637CCA2A2BA030E2C5EE1B28A16F71CCB0E45E8BE52766DC1B241B77878", sdk.NewInt(10000000)))
+	params.MaxSwapAmount = sdk.NewCoins(sdk.NewCoin(ibcBase, sdk.NewInt(10000000)))
 	coinswapKeeper.SetParams(suite.chainB.GetContext(), params)
 
 	middlewareParams := suite.chainB.App.GetOnboardingKeeper().GetParams(suite.chainB.GetContext())
 	middlewareParams.AutoSwapThreshold = sdk.NewInt(4000000)
 	suite.chainB.App.GetOnboardingKeeper().SetParams(suite.chainB.GetContext(), middlewareParams)
 
+	erc20Keeper := suite.chainB.App.GetErc20Keeper()
+	pair, err := erc20Keeper.RegisterCoin(suite.chainB.GetContext(), metadataIbc)
+	if err != nil {
+		fmt.Println(pair)
+		fmt.Println(err)
+	}
+
 	// Pool creation
 	msgAddLiquidity := coinswaptypes.MsgAddLiquidity{
-		MaxToken:         sdk.NewCoin("ibc/C053D637CCA2A2BA030E2C5EE1B28A16F71CCB0E45E8BE52766DC1B241B77878", sdk.NewInt(10000000000)),
+		MaxToken:         sdk.NewCoin(ibcBase, sdk.NewInt(10000000000)),
 		ExactStandardAmt: sdk.NewInt(10000000000),
 		MinLiquidity:     sdk.NewInt(1),
 		Deadline:         time.Now().Add(time.Minute * 10).Unix(),
 		Sender:           suite.chainB.SenderAccount.GetAddress().String(),
 	}
 
-	_, err := coinswapKeeper.AddLiquidity(suite.chainB.GetContext(), &msgAddLiquidity)
+	_, err = coinswapKeeper.AddLiquidity(suite.chainB.GetContext(), &msgAddLiquidity)
 	if err != nil {
 		fmt.Println(err)
 	}

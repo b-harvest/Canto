@@ -2,6 +2,7 @@ package ibctesting
 
 import (
 	"encoding/json"
+	erc20keeper "github.com/Canto-Network/Canto/v6/x/erc20/keeper"
 	"testing"
 	"time"
 
@@ -45,7 +46,7 @@ type TestingApp interface {
 	GetTxConfig() client.TxConfig
 
 	GetCoinswapKeeper() coinswapkeer.Keeper
-
+	GetErc20Keeper() erc20keeper.Keeper
 	GetOnboardingKeeper() *onboardingkeeper.Keeper
 
 	// Implemented by SimApp
@@ -146,6 +147,7 @@ func SetupWithGenesisValSet(t *testing.T, valSet *tmtypes.ValidatorSet, genAccs 
 				AppHash:            app.LastCommitID().Hash,
 				ValidatorsHash:     valSet.Hash(),
 				NextValidatorsHash: valSet.Hash(),
+				ProposerAddress:    valSet.Proposer.Address,
 			},
 		},
 	)

@@ -119,12 +119,12 @@ func NewTestChainWithValSet(t *testing.T, coord *Coordinator, chainID string, va
 	}
 
 	app := SetupWithGenesisValSet(t, valSet, genAccs, chainID, sdk.DefaultPowerReduction, genBals...)
-
 	// create current header and call begin block
 	header := tmproto.Header{
 		ChainID: chainID,
 		Height:  1,
 		Time:    coord.CurrentTime.UTC(),
+		//ProposerAddress: valSet.Proposer.Address,
 	}
 
 	txConfig := app.GetTxConfig()
@@ -283,6 +283,7 @@ func (chain *TestChain) NextBlock() {
 		Time:               chain.CurrentHeader.Time,
 		ValidatorsHash:     chain.Vals.Hash(),
 		NextValidatorsHash: chain.Vals.Hash(),
+		ProposerAddress:    chain.Vals.Proposer.Address,
 	}
 
 	chain.App.BeginBlock(abci.RequestBeginBlock{Header: chain.CurrentHeader})

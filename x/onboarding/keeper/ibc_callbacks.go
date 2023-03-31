@@ -61,7 +61,7 @@ func (k Keeper) OnRecvPacket(
 		return ack
 	}
 
-	fmt.Println(fmt.Sprintf("[onboarding]: source channel: %s", packet.SourceChannel))
+	fmt.Println(fmt.Sprintf("[onboarding] source channel: %s", packet.SourceChannel))
 
 	// Get addresses in `canto1` and the original bech32 format
 	sender, recipient, senderBech32, recipientBech32, err := ibc.GetTransferSenderRecipient(packet)
