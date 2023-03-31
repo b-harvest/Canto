@@ -2,8 +2,11 @@ package onboarding_test
 
 import (
 	"fmt"
+	"github.com/Canto-Network/Canto/v6/contracts"
 	coinswaptypes "github.com/b-harvest/coinswap/modules/coinswap/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	"github.com/ethereum/go-ethereum/common"
+	"math/big"
 	"testing"
 	"time"
 
@@ -116,27 +119,39 @@ func (suite *TransferTestSuite) TestHandleMsgTransfer() {
 
 	voucherDenomTrace := types.ParseDenomTrace(types.GetPrefixedDenom(packet.GetDestPort(), packet.GetDestChannel(), sdk.DefaultBondDenom))
 
-	balanceBefore := suite.chainB.GetSimApp().BankKeeper.GetBalance(suite.chainB.GetContext(), suite.chainB.SenderAccount.GetAddress(), voucherDenomTrace.IBCDenom())
+	balanceVoucherBefore := suite.chainB.GetSimApp().BankKeeper.GetBalance(suite.chainB.GetContext(), suite.chainB.SenderAccount.GetAddress(), voucherDenomTrace.IBCDenom())
 	balanceCantoBefore := suite.chainB.GetSimApp().BankKeeper.GetBalance(suite.chainB.GetContext(), suite.chainB.SenderAccount.GetAddress(), "acanto")
+	balanceErc20Before := erc20Keeper.BalanceOf(suite.chainB.GetContext(), contracts.ERC20MinterBurnerDecimalsContract.ABI, pair.GetERC20Contract(), common.BytesToAddress(suite.chainB.SenderAccount.GetAddress().Bytes()))
 
 	// relay send
 	err = path.RelayPacket(packet)
 	suite.Require().NoError(err) // relay committed
 
 	// check that voucher exists on chain B
-	balance := suite.chainB.GetSimApp().BankKeeper.GetBalance(suite.chainB.GetContext(), suite.chainB.SenderAccount.GetAddress(), voucherDenomTrace.IBCDenom())
+	balanceVoucher := suite.chainB.GetSimApp().BankKeeper.GetBalance(suite.chainB.GetContext(), suite.chainB.SenderAccount.GetAddress(), voucherDenomTrace.IBCDenom())
 	balanceCanto := suite.chainB.GetSimApp().BankKeeper.GetBalance(suite.chainB.GetContext(), suite.chainB.SenderAccount.GetAddress(), "acanto")
-	fmt.Println(balanceBefore, balance, balanceCanto)
+	balanceErc20 := erc20Keeper.BalanceOf(suite.chainB.GetContext(), contracts.ERC20MinterBurnerDecimalsContract.ABI, pair.GetERC20Contract(), common.BytesToAddress(suite.chainB.SenderAccount.GetAddress().Bytes()))
+
+	fmt.Println(balanceVoucherBefore, balanceVoucher, balanceCanto)
 
 	coinSentFromAToB := types.GetTransferCoin(path.EndpointB.ChannelConfig.PortID, path.EndpointB.ChannelID, sdk.DefaultBondDenom, amount)
-	suite.Require().True(coinSentFromAToB.Add(balanceBefore).Amount.GTE(balance.Amount))
+
+	suite.Require().True(balanceVoucher.Amount.IsZero())
 	// check whether the canto is swapped and the amount is greater than the threshold
-	suite.Require().True(balanceCanto.Amount.GTE(balanceCantoBefore.Amount))
-	suite.Require().True(balanceCanto.Amount.GTE(middlewareParams.AutoSwapThreshold))
+	if balanceCantoBefore.Amount.LT(middlewareParams.AutoSwapThreshold) {
+		suite.Require().Equal(balanceCanto.Amount, balanceCantoBefore.Amount.Add(middlewareParams.AutoSwapThreshold))
+	} else {
+		suite.Require().Equal(balanceCanto.Amount, balanceCantoBefore.Amount)
+	}
+	before := sdk.NewIntFromBigInt(balanceErc20Before)
+	suite.Require().True(before.IsZero())
+	suite.Require().Equal(new(big.Int).SetUint64(9223373026850774207), balanceErc20)
 
 	// Send again from chainA to chainB
 	coinToSendToB = suite.chainA.GetSimApp().BankKeeper.GetBalance(suite.chainA.GetContext(), suite.chainA.SenderAccount.GetAddress(), sdk.DefaultBondDenom)
-	balanceBefore = suite.chainB.GetSimApp().BankKeeper.GetBalance(suite.chainB.GetContext(), suite.chainB.SenderAccount.GetAddress(), voucherDenomTrace.IBCDenom())
+	balanceVoucherBefore = suite.chainB.GetSimApp().BankKeeper.GetBalance(suite.chainB.GetContext(), suite.chainB.SenderAccount.GetAddress(), voucherDenomTrace.IBCDenom())
+	balanceCantoBefore = suite.chainB.GetSimApp().BankKeeper.GetBalance(suite.chainB.GetContext(), suite.chainB.SenderAccount.GetAddress(), "acanto")
+	balanceErc20Before = erc20Keeper.BalanceOf(suite.chainB.GetContext(), contracts.ERC20MinterBurnerDecimalsContract.ABI, pair.GetERC20Contract(), common.BytesToAddress(suite.chainB.SenderAccount.GetAddress().Bytes()))
 
 	msg = types.NewMsgTransfer(path.EndpointA.ChannelConfig.PortID, path.EndpointA.ChannelID, coinToSendToB, suite.chainA.SenderAccount.GetAddress().String(), suite.chainB.SenderAccount.GetAddress().String(), timeoutHeight, 0)
 
@@ -150,11 +165,14 @@ func (suite *TransferTestSuite) TestHandleMsgTransfer() {
 	err = path.RelayPacket(packet)
 	suite.Require().NoError(err) // relay committed
 
-	balance = suite.chainB.GetSimApp().BankKeeper.GetBalance(suite.chainB.GetContext(), suite.chainB.SenderAccount.GetAddress(), voucherDenomTrace.IBCDenom())
 	coinSentFromAToB = types.GetTransferCoin(path.EndpointB.ChannelConfig.PortID, path.EndpointB.ChannelID, sdk.DefaultBondDenom, coinToSendToB.Amount)
-	balancCantoAfter := suite.chainB.GetSimApp().BankKeeper.GetBalance(suite.chainB.GetContext(), suite.chainB.SenderAccount.GetAddress(), "acanto")
-	suite.Require().Equal(balance, balanceBefore.Add(coinSentFromAToB))
-	suite.Require().Equal(balancCantoAfter.Amount, balanceCanto.Amount)
+	balanceVoucher = suite.chainB.GetSimApp().BankKeeper.GetBalance(suite.chainB.GetContext(), suite.chainB.SenderAccount.GetAddress(), voucherDenomTrace.IBCDenom())
+	balanceCanto = suite.chainB.GetSimApp().BankKeeper.GetBalance(suite.chainB.GetContext(), suite.chainB.SenderAccount.GetAddress(), "acanto")
+	balanceErc20 = erc20Keeper.BalanceOf(suite.chainB.GetContext(), contracts.ERC20MinterBurnerDecimalsContract.ABI, pair.GetERC20Contract(), common.BytesToAddress(suite.chainB.SenderAccount.GetAddress().Bytes()))
+
+	suite.Require().Equal(balanceVoucherBefore.Add(coinSentFromAToB), balanceVoucher)
+	suite.Require().Equal(balanceCantoBefore, balanceCanto)
+	suite.Require().Equal(balanceErc20Before, balanceErc20)
 
 	/*
 
