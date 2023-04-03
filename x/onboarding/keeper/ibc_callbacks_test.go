@@ -9,6 +9,7 @@ import (
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/mock"
+	"golang.org/x/exp/slices"
 	"time"
 
 	"github.com/Canto-Network/Canto/v6/testutil"
@@ -47,6 +48,25 @@ func (suite *KeeperTestSuite) setupRegisterCoin(metadata banktypes.Metadata) *er
 	return pair
 }
 
+func (s *KeeperTestSuite) FindEvent(events []sdk.Event, name string) sdk.Event {
+	index := slices.IndexFunc(events, func(e sdk.Event) bool { return e.Type == name })
+	if index == -1 {
+		return sdk.Event{}
+	}
+	return events[index]
+}
+
+func (s *KeeperTestSuite) ExtractAttributes(event sdk.Event) map[string]string {
+	attrs := make(map[string]string)
+	if event.Attributes == nil {
+		return attrs
+	}
+	for _, a := range event.Attributes {
+		attrs[string(a.Key)] = string(a.Value)
+	}
+	return attrs
+}
+
 func (suite *KeeperTestSuite) TestOnRecvPacket() {
 	// secp256k1 account
 	secpPk := secp256k1.GenPrivKey()
@@ -78,6 +98,8 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 		ackSuccess           bool
 		expOnboarding        bool
 		enableConvert        bool
+		expSwapAmount        sdk.Int
+		expConvertAmount     sdk.Int
 		receiverAcantoAmount sdk.Coin
 		expVoucher           sdk.Coins
 		expErc20Balance      int64
@@ -92,6 +114,8 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 			true,
 			false,
 			true,
+			sdk.ZeroInt(),
+			sdk.ZeroInt(),
 			sdk.NewCoin("acanto", sdk.ZeroInt()),
 			voucher,
 			0,
@@ -110,6 +134,8 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 			true,
 			false,
 			true,
+			sdk.ZeroInt(),
+			sdk.ZeroInt(),
 			sdk.NewCoin("acanto", sdk.ZeroInt()),
 			sdk.NewCoins(sdk.NewCoin(ibcUsdtDenom, transferAmount)),
 			0,
@@ -128,6 +154,8 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 			true,
 			false,
 			true,
+			sdk.ZeroInt(),
+			sdk.ZeroInt(),
 			sdk.NewCoin("acanto", sdk.NewIntWithDecimal(4, 18)),
 			sdk.NewCoins(sdk.NewCoin(ibcUsdtDenom, transferAmount)),
 			0,
@@ -146,6 +174,8 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 			true,
 			false,
 			true,
+			sdk.ZeroInt(),
+			sdk.ZeroInt(),
 			sdk.NewCoin("acanto", sdk.ZeroInt()),
 			sdk.NewCoins(sdk.NewCoin(ibcUsdcDenom, sdk.NewIntWithDecimal(1, 6))),
 			0,
@@ -161,6 +191,8 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 			true,
 			false,
 			true,
+			sdk.ZeroInt(),
+			sdk.ZeroInt(),
 			sdk.NewCoin("acanto", sdk.NewIntWithDecimal(4, 18)),
 			voucher,
 			0,
@@ -177,6 +209,8 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 			true,
 			false,
 			true,
+			sdk.ZeroInt(),
+			sdk.ZeroInt(),
 			sdk.NewCoin("acanto", sdk.ZeroInt()),
 			voucher,
 			0,
@@ -193,6 +227,8 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 			true,
 			true,
 			true,
+			sdk.NewInt(4001601),
+			sdk.NewInt(20998399),
 			sdk.NewCoin("acanto", sdk.ZeroInt()),
 			sdk.NewCoins(sdk.NewCoin(ibcUsdcDenom, sdk.ZeroInt())),
 			20998399,
@@ -209,6 +245,8 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 			true,
 			true,
 			false,
+			sdk.NewInt(4001601),
+			sdk.ZeroInt(),
 			sdk.NewCoin("acanto", sdk.ZeroInt()),
 			sdk.NewCoins(sdk.NewCoin(ibcUsdcDenom, sdk.NewInt(20998399))),
 			0,
@@ -224,6 +262,8 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 			true,
 			true,
 			true,
+			sdk.NewInt(4001601),
+			sdk.NewInt(20998399),
 			sdk.NewCoin("acanto", sdk.NewIntWithDecimal(3, 18)),
 			sdk.NewCoins(sdk.NewCoin(ibcUsdcDenom, sdk.ZeroInt())),
 			20998399,
@@ -239,6 +279,8 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 			true,
 			true,
 			false,
+			sdk.NewInt(4001601),
+			sdk.ZeroInt(),
 			sdk.NewCoin("acanto", sdk.NewIntWithDecimal(3, 18)),
 			sdk.NewCoins(sdk.NewCoin(ibcUsdcDenom, sdk.NewInt(20998399))),
 			0,
@@ -259,6 +301,8 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 			true,
 			false,
 			true,
+			sdk.ZeroInt(),
+			sdk.ZeroInt(),
 			sdk.NewCoin("acanto", sdk.NewIntWithDecimal(3, 18)),
 			voucher,
 			0,
@@ -355,14 +399,28 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 			erc20balance := suite.app.Erc20Keeper.BalanceOf(suite.ctx, contracts.ERC20MinterBurnerDecimalsContract.ABI, pair.GetERC20Contract(), common.BytesToAddress(secpAddr.Bytes()))
 
 			if tc.expOnboarding {
-				fmt.Println("cantoBalance", cantoBalance)
 				suite.Require().True(cantoBalance.Equal(tc.receiverAcantoAmount.Add(sdk.NewCoin("acanto", params.AutoSwapThreshold))))
-
 			} else {
 				suite.Require().Equal(tc.expVoucher, sdk.NewCoins(voucherBalance))
 			}
 			suite.Require().Equal(tc.expVoucher, sdk.NewCoins(voucherBalance))
 			suite.Require().Equal(tc.expErc20Balance, erc20balance.Int64())
+
+			events := suite.ctx.EventManager().Events()
+
+			attrs := suite.ExtractAttributes(suite.FindEvent(events, "swap"))
+			if tc.expSwapAmount.IsPositive() {
+				suite.Require().Equal(tc.expSwapAmount.String(), attrs["amount"])
+			} else {
+				suite.Require().Equal(0, len(attrs))
+			}
+
+			attrs = suite.ExtractAttributes(suite.FindEvent(events, "convert_coin"))
+			if tc.enableConvert && tc.expConvertAmount.IsPositive() {
+				suite.Require().Equal(tc.expConvertAmount.String(), attrs["amount"])
+			} else {
+				suite.Require().Equal(0, len(attrs))
+			}
 		})
 	}
 }
