@@ -300,22 +300,33 @@ func (k Keeper) DoLiquidUnstake(ctx sdk.Context, msg *types.MsgLiquidUnstake) (
 		chunkToBeUndelegated.SetStatus(types.CHUNK_STATUS_UNPAIRING_FOR_UNSTAKE)
 		mostExpensiveInsurance.SetStatus(types.INSURANCE_STATUS_UNPAIRING_FOR_REPAIRING)
 
-		del, found := k.stakingKeeper.GetDelegation(ctx, chunkToBeUndelegated.DerivedAddress(), mostExpensiveInsurance.GetValidator())
-		if !found {
-			err = types.ErrNotFoundDelegation
+		shares, err := k.stakingKeeper.ValidateUnbondAmount(ctx, chunkToBeUndelegated.DerivedAddress(), mostExpensiveInsurance.GetValidator(), types.ChunkSize)
+		if err != nil {
 			return
 		}
-		// TODO: We need to add almost every logic in cosmos-sdk staking module.
-		// e.g. validator.IsBonded, ValidateUnbondAmount(), Check bondDenom, HasMaxUnbondingDelegationEntries, etc...
-		// need to check reference of crescent
+		if amount.Denom != k.stakingKeeper.BondDenom(ctx) {
+			err = types.ErrInvalidCoinDenom
+			return
+		}
+
+		if k.stakingKeeper.HasMaxUnbondingDelegationEntries(ctx, chunkToBeUndelegated.DerivedAddress(), mostExpensiveInsurance.GetValidator()) {
+			err = stakingtypes.ErrMaxUnbondingDelegationEntries
+			return
+		}
 		unbondedNativeToken, err := k.stakingKeeper.Unbond(
 			ctx,
 			chunkToBeUndelegated.DerivedAddress(),
 			mostExpensiveInsurance.GetValidator(),
-			del.GetShares(),
+			shares,
 		)
 		if err != nil {
 			return
+		}
+		if !validatorMap[mostExpensiveInsurance.ValidatorAddress].IsBonded() {
+			coins := sdk.NewCoins(sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), unbondedNativeToken))
+			if err = k.bankKeeper.SendCoinsFromModuleToModule(ctx, stakingtypes.NotBondedPoolName, stakingtypes.BondedPoolName, coins); err != nil {
+				return
+			}
 		}
 		ubd := k.stakingKeeper.SetUnbondingDelegationEntry(
 			ctx,
@@ -336,8 +347,6 @@ func (k Keeper) DoLiquidUnstake(ctx sdk.Context, msg *types.MsgLiquidUnstake) (
 		k.SetLiquidUnstakeUnbondingDelegationInfo(ctx, liquidUnstakeUnbondingDelegationInfo)
 		unstakedChunks = append(unstakedChunks, chunkToBeUndelegated)
 		unstakeUnbondingDelegationInfos = append(unstakeUnbondingDelegationInfos, liquidUnstakeUnbondingDelegationInfo)
-
-		// TODO: Should we delete delegation object? because we already unbonded all shares.
 	}
 	return
 }
