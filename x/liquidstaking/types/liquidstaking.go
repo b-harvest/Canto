@@ -4,6 +4,7 @@ import sdk "github.com/cosmos/cosmos-sdk/types"
 
 var DefaultLiquidBondDenom = "lscanto"
 var RewardPool = DeriveAddress(ModuleName, "RewardPool")
+var LsTokenEscrowAcc = DeriveAddress(ModuleName, "LsTokenEscrowAcc")
 
 func NativeTokenToLiquidStakeToken(
 	nativeTokenAmount, lsTokenTotalSupplyAmount sdk.Int,

@@ -144,7 +144,7 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (chunk
 
 	// TODO: Must be proved that this is safe, we must call this before sending
 	nas := k.GetNetAmountState(ctx)
-	types.SortInsurances(validatorMap, pairingInsurances)
+	types.SortInsurances(validatorMap, pairingInsurances, false)
 	totalNewShares := sdk.ZeroDec()
 	totalLsTokenMintAmount := sdk.ZeroInt()
 	for i := int64(0); i < n; i++ {
@@ -182,7 +182,6 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (chunk
 		}
 		totalNewShares = totalNewShares.Add(newShares)
 
-		// TODO: bond denom must be set at Genesis
 		liquidBondDenom := k.GetLiquidBondDenom(ctx)
 		// Mint the liquid staking token
 		lsTokenMintAmount = amount.Amount
@@ -211,8 +210,6 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (chunk
 	return
 }
 
-// TODO: Instead of panic, return error so MsgServer can response with error.
-// Every error case should not be handled as error. (e.g. use continue to process next thing).
 func (k Keeper) DoLiquidUnstake(ctx sdk.Context, msg *types.MsgLiquidUnstake) (
 	unstakedChunks []types.Chunk,
 	unstakeUnbondingDelegationInfos []types.LiquidUnstakeUnbondingDelegationInfo,
@@ -281,8 +278,7 @@ func (k Keeper) DoLiquidUnstake(ctx sdk.Context, msg *types.MsgLiquidUnstake) (
 		amount = sdk.NewCoin(amount.Denom, types.ChunkSize.Mul(sdk.NewInt(n)))
 	}
 	// Sort insurances by descend order
-	// TODO: add option(descend or ascend(=default))
-	types.SortInsurances(validatorMap, insurances) // (validatorMap, insurances, DESCENT_ORDER)
+	types.SortInsurances(validatorMap, insurances, true)
 
 	// How much ls tokens must be burned
 	nas := k.GetNetAmountState(ctx)
@@ -292,10 +288,8 @@ func (k Keeper) DoLiquidUnstake(ctx sdk.Context, msg *types.MsgLiquidUnstake) (
 	}
 	liquidBondDenom := k.GetLiquidBondDenom(ctx)
 	lsTokensToBurn := sdk.NewCoin(liquidBondDenom, lsTokenBurnAmount)
-	// Escrow
-	// TODO: Add reserve address for this case because it is hard to track if many tokens are mixed in same module account.
-	if err = k.bankKeeper.SendCoinsFromAccountToModule(
-		ctx, delAddr, types.ModuleName, sdk.NewCoins(lsTokensToBurn),
+	if err = k.bankKeeper.SendCoins(
+		ctx, delAddr, types.LsTokenEscrowAcc, sdk.NewCoins(lsTokensToBurn),
 	); err != nil {
 		return
 	}
@@ -308,7 +302,8 @@ func (k Keeper) DoLiquidUnstake(ctx sdk.Context, msg *types.MsgLiquidUnstake) (
 
 		del, found := k.stakingKeeper.GetDelegation(ctx, chunkToBeUndelegated.DerivedAddress(), mostExpensiveInsurance.GetValidator())
 		if !found {
-			panic("delegation not found")
+			err = types.ErrNotFoundDelegation
+			return
 		}
 		// TODO: We need to add almost every logic in cosmos-sdk staking module.
 		// e.g. validator.IsBonded, ValidateUnbondAmount(), Check bondDenom, HasMaxUnbondingDelegationEntries, etc...
@@ -320,7 +315,7 @@ func (k Keeper) DoLiquidUnstake(ctx sdk.Context, msg *types.MsgLiquidUnstake) (
 			del.GetShares(),
 		)
 		if err != nil {
-			panic(err)
+			return
 		}
 		ubd := k.stakingKeeper.SetUnbondingDelegationEntry(
 			ctx,
