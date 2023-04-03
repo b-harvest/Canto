@@ -52,7 +52,7 @@ func (k Keeper) OnRecvPacket(
 	// check source channel is in the whitelist channels
 	var found bool
 	for _, s := range params.WhitelistedChannels {
-		if s == packet.SourceChannel {
+		if s == packet.DestinationChannel {
 			found = true
 		}
 	}
@@ -62,6 +62,7 @@ func (k Keeper) OnRecvPacket(
 	}
 
 	fmt.Println(fmt.Sprintf("[onboarding] source channel: %s", packet.SourceChannel))
+	fmt.Println(fmt.Sprintf("[onboarding] destination channel: %s", packet.DestinationChannel))
 
 	// Get addresses in `canto1` and the original bech32 format
 	sender, recipient, senderBech32, recipientBech32, err := ibc.GetTransferSenderRecipient(packet)

@@ -166,9 +166,9 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 			0,
 		},
 		{
-			"fail - unauthorized source channel",
+			"fail - unauthorized  channel",
 			func() {
-				sourceChannel = "channel-100"
+				cantoChannel = "channel-100"
 				transferAmount = sdk.NewIntWithDecimal(25, 6)
 				transfer := transfertypes.NewFungibleTokenPacketData(denom, transferAmount.String(), secpAddrCosmos, secpAddrcanto)
 				bz := transfertypes.ModuleCdc.MustMarshalJSON(&transfer)
@@ -184,7 +184,7 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 		{
 			"success - swap and erc20 conversion are successful",
 			func() {
-				sourceChannel = "channel-0"
+				cantoChannel = "channel-3"
 				transferAmount = sdk.NewIntWithDecimal(25, 6)
 				transfer := transfertypes.NewFungibleTokenPacketData(denom, transferAmount.String(), secpAddrCosmos, secpAddrcanto)
 				bz := transfertypes.ModuleCdc.MustMarshalJSON(&transfer)
@@ -229,7 +229,7 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 			20998399,
 		},
 		{
-			"success - swap and erc20 conversion are successful (acanto balance is positive but less than threshold)",
+			"success - swap is successful but erc20 conversion is not done (acanto balance is positive but less than threshold)",
 			func() {
 				transferAmount = sdk.NewIntWithDecimal(25, 6)
 				transfer := transfertypes.NewFungibleTokenPacketData(denom, transferAmount.String(), secpAddrCosmos, secpAddrcanto)
@@ -288,6 +288,7 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 			// Enable Onboarding
 			params := suite.app.OnboardingKeeper.GetParams(suite.ctx)
 			params.EnableOnboarding = true
+			params.WhitelistedChannels = []string{"channel-3"}
 			suite.app.OnboardingKeeper.SetParams(suite.ctx, params)
 
 			tc.malleate()
@@ -354,6 +355,7 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 			erc20balance := suite.app.Erc20Keeper.BalanceOf(suite.ctx, contracts.ERC20MinterBurnerDecimalsContract.ABI, pair.GetERC20Contract(), common.BytesToAddress(secpAddr.Bytes()))
 
 			if tc.expOnboarding {
+				fmt.Println("cantoBalance", cantoBalance)
 				suite.Require().True(cantoBalance.Equal(tc.receiverAcantoAmount.Add(sdk.NewCoin("acanto", params.AutoSwapThreshold))))
 
 			} else {
