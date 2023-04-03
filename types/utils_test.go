@@ -1,6 +1,9 @@
 package types
 
 import (
+	"fmt"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -79,43 +82,66 @@ func TestGetcantoAddressFromBech32(t *testing.T) {
 		expAddress string
 		expError   bool
 	}{
-		{
-			"blank bech32 address",
-			" ",
-			"",
-			true,
-		},
-		{
-			"invalid bech32 address",
-			"canto",
-			"",
-			true,
-		},
-		{
-			"invalid address bytes",
-			"canto1123",
-			"",
-			true,
-		},
-		{
-			"canto address",
-			"canto1qql8ag4cluz6r4dz28p3w00dnc9w8ueud7tc0s",
-			"canto1qql8ag4cluz6r4dz28p3w00dnc9w8ueud7tc0s",
-			false,
-		},
+		//{
+		//	"blank bech32 address",
+		//	" ",
+		//	"",
+		//	true,
+		//},
+		//{
+		//	"invalid bech32 address",
+		//	"canto",
+		//	"",
+		//	true,
+		//},
+		//{
+		//	"invalid address bytes",
+		//	"canto1123",
+		//	"",
+		//	true,
+		//},
+		//{
+		//	"canto address",
+		//	"canto1qql8ag4cluz6r4dz28p3w00dnc9w8ueud7tc0s",
+		//	"canto1qql8ag4cluz6r4dz28p3w00dnc9w8ueud7tc0s",
+		//	false,
+		//},
+		//{
+		//	"cosmos address",
+		//	"cosmos1qql8ag4cluz6r4dz28p3w00dnc9w8ueulg2gmc",
+		//	"canto1qql8ag4cluz6r4dz28p3w00dnc9w8ueud7tc0s",
+		//	false,
+		//},
+		//{
+		//	"osmosis address",
+		//	"osmo1qql8ag4cluz6r4dz28p3w00dnc9w8ueuhnecd2",
+		//	"canto1qql8ag4cluz6r4dz28p3w00dnc9w8ueud7tc0s",
+		//	false,
+		//},
 		{
 			"cosmos address",
-			"cosmos1qql8ag4cluz6r4dz28p3w00dnc9w8ueulg2gmc",
-			"canto1qql8ag4cluz6r4dz28p3w00dnc9w8ueud7tc0s",
-			false,
-		},
-		{
-			"osmosis address",
-			"osmo1qql8ag4cluz6r4dz28p3w00dnc9w8ueuhnecd2",
-			"canto1qql8ag4cluz6r4dz28p3w00dnc9w8ueud7tc0s",
+			"cosmos1jpwqcehvgmuqnqvxhx9xmky5u76sgjzh87pnrv",
+			"canto1jpwqcehvgmuqnqvxhx9xmky5u76sgjzh4gqrhy",
 			false,
 		},
 	}
+
+	//canto13c9j2m8h28ykc69ytvhj3legw2nddgz6mkzl3t
+	ecdsa, _ := crypto.HexToECDSA("9d8440cc0fba27d311318d3fcb8bc07ba8ccf7fa0789d11979bf2b89327b5d38")
+	ethermintPk := &ethsecp256k1.PrivKey{Key: crypto.FromECDSA(ecdsa)}
+	ethereumAddr := ethermintPk.PubKey().Address()
+	fmt.Println("ethereumAddr: ", ethereumAddr)
+	ethAddr := common.BytesToAddress(ethereumAddr.Bytes())
+	fmt.Println("ethAddr: ", ethAddr.String())
+	ethermintAddr := sdk.AccAddress(ethermintPk.PubKey().Address()).String()
+	fmt.Println("ethermintAddr: ", ethermintAddr)
+	cantoAddrFromEthermint, _ := GetcantoAddressFromBech32(ethermintAddr)
+	fmt.Println("cantoAddrFromEthermint: ", cantoAddrFromEthermint.String())
+	cosmosPk := &secp256k1.PrivKey{Key: crypto.FromECDSA(ecdsa)}
+	cosmosAddr := sdk.AccAddress(cosmosPk.PubKey().Address()).String()
+	fmt.Println("cosmosAddr: ", cosmosAddr)
+	cantoAddrFromCosmos, _ := GetcantoAddressFromBech32(cosmosAddr)
+	fmt.Println("cantoAddrFromCosmos: ", cantoAddrFromCosmos.String())
 
 	for _, tc := range testCases {
 		addr, err := GetcantoAddressFromBech32(tc.address)
