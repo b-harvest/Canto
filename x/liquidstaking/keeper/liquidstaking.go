@@ -88,21 +88,15 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (chunk
 		return
 	}
 
-	bondDenom := k.stakingKeeper.BondDenom(ctx)
-	minimumRequirement, _ := k.GetMinimumRequirements(ctx)
-	// amount must be greater than or equal to one chunk size
-	if !amount.IsGTE(minimumRequirement) {
-		err = sdkerrors.Wrapf(types.ErrInvalidAmount, "amount must be greater than or equal to %s", minimumRequirement.String())
+	if err = k.MustBeBondDenom(ctx, amount.Denom); err != nil {
 		return
 	}
-
 	// Liquid stakers can send amount of tokens corresponding multiple of chunk size and create multiple chunks
-	if !k.IsMultipleOfChunkSize(amount.Amount) {
-		err = sdkerrors.Wrapf(types.ErrInvalidAmount, "given: %s", amount.String())
+	if err = k.MustBeMultipleOfChunkSize(amount.Amount); err != nil {
 		return
 	}
 	chunksToCreate := amount.Amount.Quo(types.ChunkSize).Int64()
-	amount = sdk.NewCoin(bondDenom, types.ChunkSize.Mul(sdk.NewInt(chunksToCreate)))
+	bondDenom := k.stakingKeeper.BondDenom(ctx)
 	if !k.bankKeeper.HasBalance(ctx, delAddr, amount) {
 		err = sdkerrors.Wrapf(
 			sdkerrors.ErrInsufficientFunds,
@@ -230,16 +224,13 @@ func (k Keeper) DoLiquidUnstake(ctx sdk.Context, msg *types.MsgLiquidUnstake) (
 	delAddr := msg.GetDelegator()
 	amount := msg.Amount
 
-	if amount.Amount.LT(types.ChunkSize) {
-		err = types.ErrInvalidUnstakeAmount
+	if err = k.MustBeMultipleOfChunkSize(amount.Amount); err != nil {
 		return
 	}
-
-	var n int64 = 1
-	if amount.Amount.GT(types.ChunkSize) {
-		n = amount.Amount.Quo(types.ChunkSize).Int64()
-		amount = sdk.NewCoin(amount.Denom, types.ChunkSize.Mul(sdk.NewInt(n)))
+	if err = k.MustBeBondDenom(ctx, amount.Denom); err != nil {
+		return
 	}
+	chunksToLiquidUnstake := amount.Amount.Quo(types.ChunkSize).Int64()
 
 	var chunksWithInsuranceId map[uint64]types.Chunk
 	var insurances []types.Insurance
@@ -284,9 +275,14 @@ func (k Keeper) DoLiquidUnstake(ctx sdk.Context, msg *types.MsgLiquidUnstake) (
 		err = types.ErrNoPairedChunk
 		return
 	}
-	if pairedChunks < n {
-		n = pairedChunks
-		amount = sdk.NewCoin(amount.Denom, types.ChunkSize.Mul(sdk.NewInt(n)))
+	if chunksToLiquidUnstake > pairedChunks {
+		err = sdkerrors.Wrapf(
+			types.ErrExceedAvailableChunks,
+			"requested chunks to liquid unstake: %d, paired chunks: %d",
+			chunksToLiquidUnstake,
+			pairedChunks,
+		)
+		return
 	}
 	// Sort insurances by descend order
 	types.SortInsurances(validatorMap, insurances, true)
@@ -299,13 +295,14 @@ func (k Keeper) DoLiquidUnstake(ctx sdk.Context, msg *types.MsgLiquidUnstake) (
 	}
 	liquidBondDenom := k.GetLiquidBondDenom(ctx)
 	lsTokensToBurn := sdk.NewCoin(liquidBondDenom, lsTokenBurnAmount)
+	// escrow
 	if err = k.bankKeeper.SendCoins(
 		ctx, delAddr, types.LsTokenEscrowAcc, sdk.NewCoins(lsTokensToBurn),
 	); err != nil {
 		return
 	}
 	completionTime := ctx.BlockHeader().Time.Add(k.stakingKeeper.UnbondingTime(ctx))
-	for i := int64(0); i < n; i++ {
+	for i := int64(0); i < chunksToLiquidUnstake; i++ {
 		mostExpensiveInsurance := insurances[i]
 		chunkToBeUndelegated := chunksWithInsuranceId[mostExpensiveInsurance.Id]
 		chunkToBeUndelegated.SetStatus(types.CHUNK_STATUS_UNPAIRING_FOR_UNSTAKE)
@@ -472,9 +469,18 @@ func (k Keeper) GetMinimumRequirements(ctx sdk.Context) (oneChunkAmount, slashin
 	return
 }
 
-func (k Keeper) IsMultipleOfChunkSize(amount sdk.Int) bool {
-	if !amount.IsPositive() {
-		return false
+// MustBeMultipleOfChunkSize returns error if amount is not a multiple of chunk size
+func (k Keeper) MustBeMultipleOfChunkSize(amount sdk.Int) error {
+	if !amount.IsPositive() || !amount.Mod(types.ChunkSize).IsZero() {
+		return sdkerrors.Wrapf(types.ErrInvalidAmount, "got: %s", amount.String())
 	}
-	return amount.Mod(types.ChunkSize).IsZero()
+	return nil
+}
+
+// MustBeBondDenom returns erorr if denom is not the same as the bond denom
+func (k Keeper) MustBeBondDenom(ctx sdk.Context, denom string) error {
+	if denom == k.stakingKeeper.BondDenom(ctx) {
+		return nil
+	}
+	return sdkerrors.Wrapf(types.ErrInvalidBondDenom, "expected: %s, got: %s", k.stakingKeeper.BondDenom(ctx), denom)
 }
