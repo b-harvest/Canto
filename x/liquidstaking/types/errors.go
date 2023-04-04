@@ -15,7 +15,6 @@ var (
 	ErrNotFoundChunk               = sdkerrors.Register(ModuleName, 30011, "chunk not found")
 	ErrNotFoundUnbondingDelegation = sdkerrors.Register(ModuleName, 30012, "unbonding delegation not found")
 	ErrInvalidChunkStatus          = sdkerrors.Register(ModuleName, 30013, "invalid chunk status")
-	ErrInvalidCoinDenom            = sdkerrors.Register(ModuleName, 30015, "invalid coin denom")
 	ErrExceedAvailableChunks       = sdkerrors.Register(ModuleName, 30016, "exceed available chunks")
 	ErrInvalidBondDenom            = sdkerrors.Register(ModuleName, 30017, "invalid bond denom")
 )
