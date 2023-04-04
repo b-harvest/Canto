@@ -10,6 +10,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/simulation"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	ethermint "github.com/evmos/ethermint/types"
 )
 
 // Provide insurance with random fee (1 ~ 10%)
@@ -171,6 +172,13 @@ func (suite *KeeperTestSuite) TestLiquidStakeFail() {
 	_, _, _, err = suite.app.LiquidStakingKeeper.DoLiquidStake(suite.ctx, msg)
 	suite.ErrorContains(err, types.ErrExceedAvailableChunks.Error())
 
+	// TC: amount must be multiple of chunk size
+	oneTokenAmount := sdk.TokensFromConsensusPower(1, ethermint.PowerReduction)
+	msg.Amount = msg.Amount.SubAmount(oneTokenAmount)
+	_, _, _, err = suite.app.LiquidStakingKeeper.DoLiquidStake(suite.ctx, msg)
+	suite.ErrorContains(err, types.ErrInvalidAmount.Error())
+	msg.Amount = msg.Amount.AddAmount(oneTokenAmount)
+
 	// liquid stake ChunkSize tokens so maximum chunk size is reached
 	suite.liquidStakes([]sdk.AccAddress{acc1}, []sdk.Coin{minimumRequirement})
 
@@ -225,6 +233,9 @@ func (suite *KeeperTestSuite) TestLiquidStakeWithAdvanceBlocks() {
 		fmt.Println(validatorAddr, commission)
 		return false
 	})
+}
+
+func (suite *KeeperTestSuite) TestLiquidUnstakeFail() {
 }
 
 func (suite *KeeperTestSuite) TestCancelInsuranceProvideSuccess() {

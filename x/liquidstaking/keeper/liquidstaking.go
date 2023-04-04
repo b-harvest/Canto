@@ -96,6 +96,32 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (chunk
 		return
 	}
 
+	// Liquid stakers can send amount of tokens corresponding multiple of chunk size and create multiple chunks
+	if !k.IsMultipleOfChunkSize(amount.Amount) {
+		err = sdkerrors.Wrapf(types.ErrInvalidAmount, "given: %s", amount.String())
+		return
+	}
+	chunksToCreate := amount.Amount.Quo(types.ChunkSize).Int64()
+	amount = sdk.NewCoin(bondDenom, types.ChunkSize.Mul(sdk.NewInt(chunksToCreate)))
+	if !k.bankKeeper.HasBalance(ctx, delAddr, amount) {
+		err = sdkerrors.Wrapf(
+			sdkerrors.ErrInsufficientFunds,
+			"given: %s, required: %s",
+			k.bankKeeper.GetBalance(ctx, delAddr, bondDenom).Amount.String(),
+			amount.Amount.String(),
+		)
+		return
+	}
+	if chunksToCreate > int64(availableChunks) {
+		err = sdkerrors.Wrapf(
+			types.ErrExceedAvailableChunks,
+			"requested chunks to create: %d, available chunks: %d",
+			chunksToCreate,
+			availableChunks,
+		)
+		return
+	}
+
 	// Check if there are any pairing insurances
 	var pairingInsurances []types.Insurance
 	validatorMap := make(map[string]stakingtypes.Validator)
@@ -128,33 +154,12 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (chunk
 		return
 	}
 
-	// Liquid stakers can send amount of tokens corresponding multiple of chunk size and create multiple chunks
-	// Check the liquid staker's balance
-	n := amount.Amount.Quo(minimumRequirement.Amount).Int64()
-	amount = sdk.NewCoin(bondDenom, types.ChunkSize.Mul(sdk.NewInt(n)))
-	if !k.bankKeeper.HasBalance(ctx, delAddr, amount) {
-		err = sdkerrors.Wrapf(
-			sdkerrors.ErrInsufficientFunds,
-			"given: %s, required: %s",
-			k.bankKeeper.GetBalance(ctx, delAddr, bondDenom).Amount.String(),
-			amount.Amount.String(),
-		)
-		return
-	}
-	if n > int64(availableChunks) {
-		err = sdkerrors.Wrapf(
-			types.ErrExceedAvailableChunks,
-			"requested chunks to create: %d, available chunks: %d", n, availableChunks,
-		)
-		return
-	}
-
 	// TODO: Must be proved that this is safe, we must call this before sending
 	nas := k.GetNetAmountState(ctx)
 	types.SortInsurances(validatorMap, pairingInsurances, false)
 	totalNewShares := sdk.ZeroDec()
 	totalLsTokenMintAmount := sdk.ZeroInt()
-	for i := int64(0); i < n; i++ {
+	for i := int64(0); i < chunksToCreate; i++ {
 		// We can create paired chunk only with available pairing insurances
 		if len(pairingInsurances) == 0 {
 			break
@@ -465,4 +470,11 @@ func (k Keeper) GetMinimumRequirements(ctx sdk.Context) (oneChunkAmount, slashin
 	fraction := sdk.MustNewDecFromStr(types.SlashFraction)
 	slashingCoverage = sdk.NewCoin(bondDenom, oneChunkAmount.Amount.ToDec().Mul(fraction).TruncateInt())
 	return
+}
+
+func (k Keeper) IsMultipleOfChunkSize(amount sdk.Int) bool {
+	if !amount.IsPositive() {
+		return false
+	}
+	return amount.Mod(types.ChunkSize).IsZero()
 }
