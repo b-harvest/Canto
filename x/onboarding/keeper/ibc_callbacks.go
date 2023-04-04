@@ -134,6 +134,10 @@ func (k Keeper) OnRecvPacket(
 			return ack
 		}
 
+		standardCoinBalance = k.bankKeeper.GetBalance(ctx, recipient, standardDenom)
+		transferredCoinBalance = k.bankKeeper.GetBalance(ctx, recipient, transferredCoin.Denom)
+		fmt.Println(fmt.Sprintf("[onboarding] after swap balacne %s, threshold %s, swap %s, stake %s", standardCoinBalance, threshold, swapCoins, transferredCoinBalance))
+
 		transferredCoinBalance = k.bankKeeper.GetBalance(ctx, recipient, transferredCoin.Denom)
 
 		//convert coins to ERC20 token
@@ -172,9 +176,6 @@ func (k Keeper) OnRecvPacket(
 			return ack
 		}
 
-		standardCoinBalance = k.bankKeeper.GetBalance(ctx, recipient, standardDenom)
-		transferredCoinBalance = k.bankKeeper.GetBalance(ctx, recipient, transferredCoin.Denom)
-		fmt.Println(fmt.Sprintf("[onboarding] after swap balacne %s, threshold %s, swap %s, stake %s", standardCoinBalance, threshold, swapCoins, transferredCoinBalance))
 		fmt.Println(fmt.Sprintf("[onboarding] erc20 token balance %s %s", ercBalance, symbolRes.Value))
 
 	} else {
