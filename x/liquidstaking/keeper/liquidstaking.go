@@ -96,16 +96,6 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (chunk
 		return
 	}
 	chunksToCreate := amount.Amount.Quo(types.ChunkSize).Int64()
-	bondDenom := k.stakingKeeper.BondDenom(ctx)
-	if !k.bankKeeper.HasBalance(ctx, delAddr, amount) {
-		err = sdkerrors.Wrapf(
-			sdkerrors.ErrInsufficientFunds,
-			"given: %s, required: %s",
-			k.bankKeeper.GetBalance(ctx, delAddr, bondDenom).Amount.String(),
-			amount.Amount.String(),
-		)
-		return
-	}
 	if chunksToCreate > int64(availableChunks) {
 		err = sdkerrors.Wrapf(
 			types.ErrExceedAvailableChunks,
@@ -143,7 +133,7 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (chunk
 	if err != nil {
 		return
 	}
-	if len(pairingInsurances) == 0 {
+	if len(pairingInsurances) == 0 || chunksToCreate > int64(len(pairingInsurances)) {
 		err = types.ErrNoPairingInsurance
 		return
 	}
@@ -154,10 +144,6 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (chunk
 	totalNewShares := sdk.ZeroDec()
 	totalLsTokenMintAmount := sdk.ZeroInt()
 	for i := int64(0); i < chunksToCreate; i++ {
-		// We can create paired chunk only with available pairing insurances
-		if len(pairingInsurances) == 0 {
-			break
-		}
 		cheapestInsurance := pairingInsurances[0]
 		pairingInsurances = pairingInsurances[1:]
 
@@ -311,10 +297,6 @@ func (k Keeper) DoLiquidUnstake(ctx sdk.Context, msg *types.MsgLiquidUnstake) (
 		var shares sdk.Dec
 		shares, err = k.stakingKeeper.ValidateUnbondAmount(ctx, chunkToBeUndelegated.DerivedAddress(), mostExpensiveInsurance.GetValidator(), types.ChunkSize)
 		if err != nil {
-			return
-		}
-		if amount.Denom != k.stakingKeeper.BondDenom(ctx) {
-			err = types.ErrInvalidCoinDenom
 			return
 		}
 

@@ -247,16 +247,22 @@ func (suite *KeeperTestSuite) TestLiquidUnstakeFail() {
 	suite.provideInsurances(providers, valAddrs, rpvodierBalances)
 
 	// Now we have 1 paired chunks
-	delegators, delegatorBalances := suite.AddTestAddrs(1, minimumRequirement.Amount)
-	_ = suite.liquidStakes(delegators, delegatorBalances)
-
+	delegators, delegatorBalances := suite.AddTestAddrs(3, minimumRequirement.Amount)
 	undelegator := delegators[0]
-	// TC: Must be multiple of chunk size
+
 	msg := types.NewMsgLiquidUnstake(
 		undelegator.String(),
-		minimumRequirement.Sub(sdk.NewCoin(suite.denom, sdk.OneInt())),
+		minimumRequirement,
 	)
 	_, _, err := suite.app.LiquidStakingKeeper.DoLiquidUnstake(suite.ctx, msg)
+	suite.ErrorContains(err, types.ErrNoPairedChunk.Error())
+
+	// create one paired chunk
+	_ = suite.liquidStakes([]sdk.AccAddress{delegators[0]}, []sdk.Coin{delegatorBalances[0]})
+
+	msg.Amount.Amount = msg.Amount.Amount.Sub(sdk.NewInt(1))
+	// TC: Must be multiple of chunk size
+	_, _, err = suite.app.LiquidStakingKeeper.DoLiquidUnstake(suite.ctx, msg)
 	suite.ErrorContains(err, types.ErrInvalidAmount.Error())
 	msg.Amount = msg.Amount.Add(sdk.NewCoin(suite.denom, sdk.OneInt())) // now amount is valid
 
@@ -266,10 +272,17 @@ func (suite *KeeperTestSuite) TestLiquidUnstakeFail() {
 	suite.ErrorContains(err, types.ErrInvalidBondDenom.Error())
 	msg.Amount.Denom = suite.denom // now denom is valid
 
-	// TC: Want to liquid unstake 2 chunks but unstaker have lstokens corresponding to 1 chunk size
+	// TC: Want to liquid unstake 2 chunks but current paired chunk is only one
 	msg.Amount.Amount = minimumRequirement.Amount.Mul(sdk.NewInt(2))
 	_, _, err = suite.app.LiquidStakingKeeper.DoLiquidUnstake(suite.ctx, msg)
-	fmt.Println(err)
+	suite.ErrorContains(err, types.ErrExceedAvailableChunks.Error())
+
+	// Now we have 3 paired chunks
+	_ = suite.liquidStakes(delegators[1:], delegatorBalances[1:])
+
+	// TC: Want to liquid unstake 2 chunks but unstaker have lstokens corresponding to 1 chunk size
+	_, _, err = suite.app.LiquidStakingKeeper.DoLiquidUnstake(suite.ctx, msg)
+	suite.ErrorContains(err, sdkerrors.ErrInsufficientFunds.Error())
 }
 
 func (suite *KeeperTestSuite) TestCancelInsuranceProvideSuccess() {
