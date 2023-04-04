@@ -7,6 +7,9 @@ import (
 	inflationtypes "github.com/Canto-Network/Canto/v6/x/inflation/types"
 	coinswaptypes "github.com/b-harvest/coinswap/modules/coinswap/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	"github.com/evmos/ethermint/crypto/ethsecp256k1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"strconv"
@@ -94,6 +97,17 @@ func (suite *IBCTestingSuite) SetupTest() {
 	suite.Require().Equal("07-tendermint-0", suite.pathGravitycanto.EndpointA.ClientID)
 	suite.Require().Equal("connection-0", suite.pathGravitycanto.EndpointA.ConnectionID)
 	suite.Require().Equal("channel-0", suite.pathGravitycanto.EndpointA.ChannelID)
+
+	// Set Validator
+	privCons, err := ethsecp256k1.GenerateKey()
+	suite.NoError(err)
+	valAddr := sdk.ValAddress(privCons.PubKey().Address().Bytes())
+	validator, err := stakingtypes.NewValidator(valAddr, privCons.PubKey(), stakingtypes.Description{})
+	suite.NoError(err)
+	validator = stakingkeeper.TestingUpdateValidator(suite.cantoChain.App.(*app.Canto).StakingKeeper, suite.cantoChain.GetContext(), validator, true)
+	suite.cantoChain.App.(*app.Canto).StakingKeeper.AfterValidatorCreated(suite.cantoChain.GetContext(), validator.GetOperator())
+	err = suite.cantoChain.App.(*app.Canto).StakingKeeper.SetValidatorByConsAddr(suite.cantoChain.GetContext(), validator)
+	suite.NoError(err)
 
 }
 
