@@ -2,13 +2,14 @@ package keeper_test
 
 import (
 	"fmt"
+	"math/rand"
+
 	"github.com/Canto-Network/Canto/v6/x/liquidstaking/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/types/simulation"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	"math/rand"
 )
 
 // Provide insurance with random fee (1 ~ 10%)
@@ -141,13 +142,13 @@ func (suite *KeeperTestSuite) TestLiquidStakeFail() {
 	valAddrs := suite.CreateValidators([]int64{10, 10, 10})
 	minimumRequirement, minimumCoverage := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
 
-	addrs, balances := suite.AddTestAddrs(types.MaxPairedChunks, minimumRequirement.Amount)
+	addrs, balances := suite.AddTestAddrs(types.MaxPairedChunks-1, minimumRequirement.Amount)
 
 	// TC: There are no pairing insurances yet. Insurances must be provided to liquid stake
 	acc1 := addrs[0]
 	msg := types.NewMsgLiquidStake(acc1.String(), minimumRequirement)
 	_, _, _, err := suite.app.LiquidStakingKeeper.DoLiquidStake(suite.ctx, msg)
-	suite.ErrorIs(err, types.ErrNoPairingInsurance)
+	suite.ErrorContains(err, types.ErrNoPairingInsurance.Error())
 
 	providers, providerBalances := suite.AddTestAddrs(10, minimumCoverage.Amount)
 	suite.provideInsurances(providers, valAddrs, providerBalances)
@@ -156,10 +157,22 @@ func (suite *KeeperTestSuite) TestLiquidStakeFail() {
 	// acc1 tries to liquid stake 2 * ChunkSize tokens, but he has only ChunkSize tokens
 	msg = types.NewMsgLiquidStake(acc1.String(), minimumRequirement.AddAmount(types.ChunkSize))
 	_, _, _, err = suite.app.LiquidStakingKeeper.DoLiquidStake(suite.ctx, msg)
-	suite.ErrorIs(err, sdkerrors.ErrInsufficientFunds)
+	suite.ErrorContains(err, sdkerrors.ErrInsufficientFunds.Error())
 
-	// Pairs as many chunks as the MaxPairedChunks
+	// Pairs (MaxPairedChunks - 1) chunks, 1 chunk left now
 	_ = suite.liquidStakes(addrs, balances)
+
+	// Fund coins to acc1
+	suite.fundAccount(acc1, types.ChunkSize.Mul(sdk.NewInt(2)))
+	// Now acc1 have 2 * ChunkSize tokens as balance and try to liquid stake 2 * ChunkSize tokens
+	acc1Balance := suite.app.BankKeeper.GetBalance(suite.ctx, acc1, suite.denom)
+	suite.True(acc1Balance.Amount.Equal(types.ChunkSize.Mul(sdk.NewInt(2))))
+	// TC: Enough to liquid stake 2 chunks, but current available chunk size is 1
+	_, _, _, err = suite.app.LiquidStakingKeeper.DoLiquidStake(suite.ctx, msg)
+	suite.ErrorContains(err, types.ErrExceedAvailableChunks.Error())
+
+	// liquid stake ChunkSize tokens so maximum chunk size is reached
+	suite.liquidStakes([]sdk.AccAddress{acc1}, []sdk.Coin{minimumRequirement})
 
 	// TC: MaxPairedChunks is reached, no more chunks can be paired
 	newAddrs, newBalances := suite.AddTestAddrs(1, minimumRequirement.Amount)

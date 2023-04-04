@@ -133,13 +133,20 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (chunk
 	n := amount.Amount.Quo(minimumRequirement.Amount).Int64()
 	amount = sdk.NewCoin(bondDenom, types.ChunkSize.Mul(sdk.NewInt(n)))
 	if !k.bankKeeper.HasBalance(ctx, delAddr, amount) {
-		err = sdkerrors.Wrapf(sdkerrors.ErrInsufficientFunds, "insufficient funds to liquid stake")
+		err = sdkerrors.Wrapf(
+			sdkerrors.ErrInsufficientFunds,
+			"given: %s, required: %s",
+			k.bankKeeper.GetBalance(ctx, delAddr, bondDenom).Amount.String(),
+			amount.Amount.String(),
+		)
 		return
 	}
-
 	if n > int64(availableChunks) {
-		n = int64(availableChunks)
-		amount = sdk.NewCoin(bondDenom, types.ChunkSize.Mul(sdk.NewInt(n)))
+		err = sdkerrors.Wrapf(
+			types.ErrExceedAvailableChunks,
+			"requested chunks to create: %d, available chunks: %d", n, availableChunks,
+		)
+		return
 	}
 
 	// TODO: Must be proved that this is safe, we must call this before sending
@@ -272,7 +279,6 @@ func (k Keeper) DoLiquidUnstake(ctx sdk.Context, msg *types.MsgLiquidUnstake) (
 		err = types.ErrNoPairedChunk
 		return
 	}
-	// TODO: Need to discuss in point of policy. Should we reject or unstake as much as possible?
 	if pairedChunks < n {
 		n = pairedChunks
 		amount = sdk.NewCoin(amount.Denom, types.ChunkSize.Mul(sdk.NewInt(n)))
@@ -300,7 +306,8 @@ func (k Keeper) DoLiquidUnstake(ctx sdk.Context, msg *types.MsgLiquidUnstake) (
 		chunkToBeUndelegated.SetStatus(types.CHUNK_STATUS_UNPAIRING_FOR_UNSTAKE)
 		mostExpensiveInsurance.SetStatus(types.INSURANCE_STATUS_UNPAIRING_FOR_REPAIRING)
 
-		shares, err := k.stakingKeeper.ValidateUnbondAmount(ctx, chunkToBeUndelegated.DerivedAddress(), mostExpensiveInsurance.GetValidator(), types.ChunkSize)
+		var shares sdk.Dec
+		shares, err = k.stakingKeeper.ValidateUnbondAmount(ctx, chunkToBeUndelegated.DerivedAddress(), mostExpensiveInsurance.GetValidator(), types.ChunkSize)
 		if err != nil {
 			return
 		}
@@ -313,7 +320,8 @@ func (k Keeper) DoLiquidUnstake(ctx sdk.Context, msg *types.MsgLiquidUnstake) (
 			err = stakingtypes.ErrMaxUnbondingDelegationEntries
 			return
 		}
-		unbondedNativeToken, err := k.stakingKeeper.Unbond(
+		var unbondedNativeToken sdk.Int
+		unbondedNativeToken, err = k.stakingKeeper.Unbond(
 			ctx,
 			chunkToBeUndelegated.DerivedAddress(),
 			mostExpensiveInsurance.GetValidator(),
