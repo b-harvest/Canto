@@ -232,7 +232,7 @@ func (k Keeper) DoLiquidUnstake(ctx sdk.Context, msg *types.MsgLiquidUnstake) (
 	}
 	chunksToLiquidUnstake := amount.Amount.Quo(types.ChunkSize).Int64()
 
-	var chunksWithInsuranceId map[uint64]types.Chunk
+	chunksWithInsuranceId := make(map[uint64]types.Chunk)
 	var insurances []types.Insurance
 	validatorMap := make(map[string]stakingtypes.Validator)
 	// Get a chunk which have most expensive insurance
