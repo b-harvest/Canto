@@ -3,18 +3,16 @@ package keeper_test
 import (
 	"bytes"
 	"fmt"
+	"strconv"
+	"testing"
+	"time"
+
 	erc20types "github.com/Canto-Network/Canto/v6/x/erc20/types"
 	inflationtypes "github.com/Canto-Network/Canto/v6/x/inflation/types"
 	coinswaptypes "github.com/b-harvest/coinswap/modules/coinswap/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	"github.com/evmos/ethermint/crypto/ethsecp256k1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"strconv"
-	"testing"
-	"time"
 
 	"github.com/stretchr/testify/suite"
 
@@ -98,17 +96,11 @@ func (suite *IBCTestingSuite) SetupTest() {
 	suite.Require().Equal("connection-0", suite.pathGravitycanto.EndpointA.ConnectionID)
 	suite.Require().Equal("channel-0", suite.pathGravitycanto.EndpointA.ChannelID)
 
-	// Set Validator
-	privCons, err := ethsecp256k1.GenerateKey()
-	suite.NoError(err)
-	valAddr := sdk.ValAddress(privCons.PubKey().Address().Bytes())
-	validator, err := stakingtypes.NewValidator(valAddr, privCons.PubKey(), stakingtypes.Description{})
-	suite.NoError(err)
-	validator = stakingkeeper.TestingUpdateValidator(suite.cantoChain.App.(*app.Canto).StakingKeeper, suite.cantoChain.GetContext(), validator, true)
-	suite.cantoChain.App.(*app.Canto).StakingKeeper.AfterValidatorCreated(suite.cantoChain.GetContext(), validator.GetOperator())
-	err = suite.cantoChain.App.(*app.Canto).StakingKeeper.SetValidatorByConsAddr(suite.cantoChain.GetContext(), validator)
-	suite.NoError(err)
-
+	// Set the proposer address for the current header
+	// It because EVMKeeper.GetCoinbaseAddress requires ProposerAddress in block header
+	suite.cantoChain.CurrentHeader.ProposerAddress = suite.cantoChain.LastHeader.ValidatorSet.Proposer.Address
+	suite.IBCGravityChain.CurrentHeader.ProposerAddress = suite.IBCGravityChain.LastHeader.ValidatorSet.Proposer.Address
+	suite.IBCCosmosChain.CurrentHeader.ProposerAddress = suite.IBCCosmosChain.LastHeader.ValidatorSet.Proposer.Address
 }
 
 func (suite *IBCTestingSuite) FundCantoChain(coins sdk.Coins) {
@@ -199,18 +191,18 @@ func (suite *IBCTestingSuite) SendAndReceiveMessage(path *ibcgotesting.Path, ori
 	// Receive message on the counterparty side, and send ack
 
 	// original call
-	//err = path.RelayPacket(packet)
+	// err = path.RelayPacket(packet)
 
 	// patched RelayPacket call to get res
 	res, err := RelayPacket(path, packet)
 
 	// ---------- Temporary Print for Debugging
-	//for _, ev := range res.GetEvents() {
+	// for _, ev := range res.GetEvents() {
 	//	fmt.Println(string(ev.Type))
 	//	for _, e := range ev.Attributes {
 	//		fmt.Println("\t", string(e.Key), string(e.Value))
 	//	}
-	//}
+	// }
 	// ---------- Temporary Print for Debugging
 
 	suite.Require().NoError(err)
