@@ -197,12 +197,12 @@ func (suite *IBCTestingSuite) SendAndReceiveMessage(path *ibcgotesting.Path, ori
 	res, err := RelayPacket(path, packet)
 
 	// ---------- Temporary Print for Debugging
-	// for _, ev := range res.GetEvents() {
+	//for _, ev := range res.GetEvents() {
 	//	fmt.Println(string(ev.Type))
 	//	for _, e := range ev.Attributes {
 	//		fmt.Println("\t", string(e.Key), string(e.Value))
 	//	}
-	// }
+	//}
 	// ---------- Temporary Print for Debugging
 
 	suite.Require().NoError(err)

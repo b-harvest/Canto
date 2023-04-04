@@ -1,8 +1,12 @@
 package keeper_test
 
 import (
+	"fmt"
 	"github.com/Canto-Network/Canto/v6/app"
+	"github.com/Canto-Network/Canto/v6/contracts"
+	"github.com/Canto-Network/Canto/v6/x/erc20/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/ethereum/go-ethereum/common"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"golang.org/x/exp/slices"
@@ -37,6 +41,7 @@ var _ = Describe("Onboarding: Performing an IBC Transfer followed by autoswap an
 		senderAcc        sdk.AccAddress
 		receiverAcc      sdk.AccAddress
 		result           *sdk.Result
+		tokenPair        *types.TokenPair
 	)
 
 	BeforeEach(func() {
@@ -162,11 +167,29 @@ var _ = Describe("Onboarding: Performing an IBC Transfer followed by autoswap an
 						Expect(len(pairID)).To(Equal(0))
 					})
 				})
+				When("Canto chain's acanto balance is bigger than the auto swap threshold (4canto)", func() {
+					BeforeEach(func() {
+						s.FundCantoChain(sdk.NewCoins(sdk.NewCoin("acanto", sdk.NewIntWithDecimal(4, 18))))
+						result = s.SendAndReceiveMessage(s.pathGravitycanto, s.IBCGravityChain, "uUSDC", 10000000000, sender, receiver, 1)
+					})
+					It("Balance of acanto should be same with the original acanto balance (4canto)", func() {
+						nativecanto := s.cantoChain.App.(*app.Canto).BankKeeper.GetBalance(s.cantoChain.GetContext(), receiverAcc, "acanto")
+						Expect(nativecanto).To(Equal(sdk.NewCoin("acanto", sdk.NewIntWithDecimal(4, 18))))
+					})
+					It("Canto chain's IBC voucher balance should be same with the transferred amount", func() {
+						ibcUsdc := s.cantoChain.App.(*app.Canto).BankKeeper.GetBalance(s.cantoChain.GetContext(), receiverAcc, uusdcIbcdenom)
+						Expect(ibcUsdc).To(Equal(sdk.NewCoin(uusdcIbcdenom, coinUsdc.Amount)))
+					})
+					It("No ERC20 token pair exists", func() {
+						pairID := s.cantoChain.App.(*app.Canto).Erc20Keeper.GetTokenPairID(s.cantoChain.GetContext(), uusdcIbcdenom)
+						Expect(len(pairID)).To(Equal(0))
+					})
+				})
 
 			})
 			When("ERC20 contract is deployed", func() {
 				BeforeEach(func() {
-					s.setupRegisterCoin(metadataIbc)
+					tokenPair = s.setupRegisterCoin(metadataIbc)
 				})
 				When("Canto chain's acanto balance is 0", func() {
 					BeforeEach(func() {
@@ -181,9 +204,13 @@ var _ = Describe("Onboarding: Performing an IBC Transfer followed by autoswap an
 						ibcUsdc := s.cantoChain.App.(*app.Canto).BankKeeper.GetBalance(s.cantoChain.GetContext(), receiverAcc, uusdcIbcdenom)
 						Expect(ibcUsdc).To(Equal(sdk.NewCoin(uusdcIbcdenom, sdk.ZeroInt())))
 					})
-					It("No ERC20 token pair exists", func() {
-						pairID := s.cantoChain.App.(*app.Canto).Erc20Keeper.GetTokenPairID(s.cantoChain.GetContext(), uusdcIbcdenom)
-						Expect(len(pairID)).To(Equal(0))
+					It("Convert operation. ERC20 token balance should be same with the converted IBC voucher amount", func() {
+						events := result.GetEvents()
+						attrs := ExtractAttributes(FindEvent(events, "convert_coin"))
+						convertAmount, _ := sdk.NewIntFromString(attrs["amount"])
+						erc20balance := s.cantoChain.App.(*app.Canto).Erc20Keeper.BalanceOf(s.cantoChain.GetContext(), contracts.ERC20MinterBurnerDecimalsContract.ABI, tokenPair.GetERC20Contract(), common.BytesToAddress(receiverAcc.Bytes()))
+						fmt.Println("erc20balance", erc20balance)
+						Expect(erc20balance).To(Equal(convertAmount))
 					})
 				})
 			})

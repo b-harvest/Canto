@@ -79,7 +79,7 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 	ibcDenom := ibcUsdcDenom
 	transferAmount := sdk.NewIntWithDecimal(25, 6)
 	sourceChannel := "channel-0"
-	cantoChannel := "channel-3"
+	cantoChannel := "channel-0"
 	path := fmt.Sprintf("%s/%s", transfertypes.PortID, cantoChannel)
 
 	timeoutHeight := clienttypes.NewHeight(0, 100)
@@ -218,7 +218,7 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 		{
 			"success - swap and erc20 conversion are successful",
 			func() {
-				cantoChannel = "channel-3"
+				cantoChannel = "channel-0"
 				transferAmount = sdk.NewIntWithDecimal(25, 6)
 				transfer := transfertypes.NewFungibleTokenPacketData(denom, transferAmount.String(), secpAddrCosmos, secpAddrcanto)
 				bz := transfertypes.ModuleCdc.MustMarshalJSON(&transfer)
@@ -332,7 +332,7 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 			// Enable Onboarding
 			params := suite.app.OnboardingKeeper.GetParams(suite.ctx)
 			params.EnableOnboarding = true
-			params.WhitelistedChannels = []string{"channel-3"}
+			params.WhitelistedChannels = []string{"channel-0"}
 			suite.app.OnboardingKeeper.SetParams(suite.ctx, params)
 
 			tc.malleate()

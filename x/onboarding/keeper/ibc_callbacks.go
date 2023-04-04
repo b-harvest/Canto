@@ -138,8 +138,6 @@ func (k Keeper) OnRecvPacket(
 		transferredCoinBalance = k.bankKeeper.GetBalance(ctx, recipient, transferredCoin.Denom)
 		fmt.Println(fmt.Sprintf("[onboarding] after swap balacne %s, threshold %s, swap %s, stake %s", standardCoinBalance, threshold, swapCoins, transferredCoinBalance))
 
-		transferredCoinBalance = k.bankKeeper.GetBalance(ctx, recipient, transferredCoin.Denom)
-
 		//convert coins to ERC20 token
 		pairID := k.erc20Keeper.GetTokenPairID(ctx, transferredCoin.Denom)
 		if len(pairID) == 0 {
@@ -162,6 +160,7 @@ func (k Keeper) OnRecvPacket(
 
 		// Use MsgConvertCoin to convert the Cosmos Coin to an ERC20
 		if _, err = k.erc20Keeper.ConvertCoin(sdk.WrapSDKContext(ctx), convertMsg); err != nil {
+			fmt.Println(fmt.Sprintf("[onboarding] convert error %s", err))
 			return ack
 		}
 
