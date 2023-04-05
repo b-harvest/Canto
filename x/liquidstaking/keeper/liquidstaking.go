@@ -33,6 +33,7 @@ func (k Keeper) coverUnpairingForUnstakeCase(ctx sdk.Context) error {
 			panic(types.ErrNotFoundInsurance.Error())
 		}
 
+		// TODO: retreive using unstaker address, not chunk derived address
 		// get unbonding delegation using staking keeper
 		unbondingDelegation, found := k.stakingKeeper.GetUnbondingDelegation(
 			ctx, chunk.DerivedAddress(),
@@ -128,7 +129,7 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (chunk
 	if err != nil {
 		return
 	}
-	if len(pairingInsurances) == 0 || chunksToCreate > int64(len(pairingInsurances)) {
+	if chunksToCreate > int64(len(pairingInsurances)) {
 		err = types.ErrNoPairingInsurance
 		return
 	}
@@ -452,6 +453,7 @@ func (k Keeper) MustBeMultipleOfChunkSize(amount sdk.Int) error {
 	return nil
 }
 
+// TODO: Change function name not use must (if so, it should panic)
 // MustBeBondDenom returns erorr if denom is not the same as the bond denom
 func (k Keeper) MustBeBondDenom(ctx sdk.Context, denom string) error {
 	if denom == k.stakingKeeper.BondDenom(ctx) {

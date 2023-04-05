@@ -38,17 +38,28 @@ func (k Keeper) GetNetAmountState(ctx sdk.Context) (nas types.NetAmountState) {
 		delReward := k.distributionKeeper.CalculateDelegationRewards(cachedCtx, validator, delegation, endingPeriod)
 		totalRemainingRewards = totalRemainingRewards.Add(delReward.AmountOf(bondDenom))
 
-		ubds := k.stakingKeeper.GetAllUnbondingDelegations(ctx, chunk.DerivedAddress())
-		for _, ubd := range ubds {
-			for _, entry := range ubd.Entries {
-				totalUnbondingBalance = totalUnbondingBalance.Add(entry.Balance.ToDec())
-			}
-		}
 		return false, nil
 	})
 	if err != nil {
 		panic(err)
 	}
+	// TODO: retrieve using unstaker address, not chunk address
+	k.IterateAllLiquidUnstakeUnbondingDelegationInfos(ctx, func(info types.LiquidUnstakeUnbondingDelegationInfo) (bool, error) {
+		// get unbonding delegation using info.DelegatorAddress
+		ubd, found := k.stakingKeeper.GetUnbondingDelegation(ctx, info.GetDelegator(), info.GetValidator())
+		if !found {
+			// TODO: return false, nil when production
+			panic("unbonding delegation not found")
+		}
+		for _, entry := range ubd.Entries {
+			// check entry with info
+			if entry.CompletionTime.Equal(info.CompletionTime) &&
+				entry.InitialBalance.Equal(types.ChunkSize) {
+				totalUnbondingBalance = totalUnbondingBalance.Add(entry.Balance.ToDec())
+			}
+		}
+		return false, nil
+	})
 
 	// Iterate all paired insurances to get total insurance tokens
 	err = k.IterateAllInsurances(ctx, func(insurance types.Insurance) (stop bool, err error) {

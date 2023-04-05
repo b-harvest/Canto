@@ -14,3 +14,12 @@ func NewLiquidUnstakeUnbondingDelegationInfo(chunkId uint64, delegatorAddress, v
 		CompletionTime:   completionTime,
 	}
 }
+
+func (info *LiquidUnstakeUnbondingDelegationInfo) GetDelegator() sdk.AccAddress {
+	return sdk.MustAccAddressFromBech32(info.DelegatorAddress)
+}
+
+func (info *LiquidUnstakeUnbondingDelegationInfo) GetValidator() sdk.ValAddress {
+	valAddr, _ := sdk.ValAddressFromBech32(info.ValidatorAddress)
+	return valAddr
+}

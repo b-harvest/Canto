@@ -31,7 +31,8 @@ func (nas NetAmountState) String() string {
 	  TotalInsuranceTokens:  %s
 	  TotalUnbondingBalance: %s
 	  NetAmount:             %s
-	  MintRate:              %s`,
+	  MintRate:              %s
+	  RewardModuleAccountBalance: %s`,
 		nas.LsTokensTotalSupply,
 		nas.TotalChunksBalance,
 		nas.TotalDelShares,
@@ -40,5 +41,6 @@ func (nas NetAmountState) String() string {
 		nas.TotalInsuranceTokens,
 		nas.TotalUnbondingBalance,
 		nas.NetAmount,
-		nas.MintRate)
+		nas.MintRate,
+		nas.RewardModuleAccBalance)
 }
