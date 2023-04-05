@@ -1,17 +1,14 @@
 package keeper_test
 
 import (
-	"fmt"
-
+	"github.com/Canto-Network/Canto/v6/app"
+	"github.com/Canto-Network/Canto/v6/contracts"
+	"github.com/Canto-Network/Canto/v6/x/erc20/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"golang.org/x/exp/slices"
-
-	"github.com/Canto-Network/Canto/v6/app"
-	"github.com/Canto-Network/Canto/v6/contracts"
-	"github.com/Canto-Network/Canto/v6/x/erc20/types"
 )
 
 func FindEvent(events []sdk.Event, name string) sdk.Event {
@@ -69,8 +66,6 @@ var _ = Describe("Onboarding: Performing an IBC Transfer followed by autoswap an
 		It("Canto chain's IBC voucher balance should be same with the transferred amount", func() {
 			ibcAtom := s.cantoChain.App.(*app.Canto).BankKeeper.GetBalance(s.cantoChain.GetContext(), receiverAcc, uatomIbcdenom)
 			Expect(ibcAtom).To(Equal(sdk.NewCoin(uatomIbcdenom, coinAtom.Amount)))
-			//atom := s.IBCCosmosChain.GetSimApp().BankKeeper.GetBalance(s.IBCCosmosChain.GetContext(), senderAcc, "uatom")
-			//Expect(atom).To(Equal(sdk.NewCoin("uatom", sdk.ZeroInt())))
 		})
 		It("Cosmos chain's uatom balance should be 0", func() {
 			atom := s.IBCCosmosChain.GetSimApp().BankKeeper.GetBalance(s.IBCCosmosChain.GetContext(), senderAcc, "uatom")
@@ -193,6 +188,23 @@ var _ = Describe("Onboarding: Performing an IBC Transfer followed by autoswap an
 				BeforeEach(func() {
 					tokenPair = s.setupRegisterCoin(metadataIbc)
 				})
+				When("acanto balance is 0 and not enough IBC token transferred to swap acanto", func() {
+					BeforeEach(func() {
+						result = s.SendAndReceiveMessage(s.pathGravitycanto, s.IBCGravityChain, "uUSDC", 1000000, sender, receiver, 1)
+					})
+					It("Balance of acanto should be same with the original acanto balance (0)", func() {
+						nativecanto := s.cantoChain.App.(*app.Canto).BankKeeper.GetBalance(s.cantoChain.GetContext(), receiverAcc, "acanto")
+						Expect(nativecanto).To(Equal(sdk.NewCoin("acanto", sdk.ZeroInt())))
+					})
+					It("Canto chain's IBC voucher balance should be same with the transferred amount", func() {
+						ibcUsdc := s.cantoChain.App.(*app.Canto).BankKeeper.GetBalance(s.cantoChain.GetContext(), receiverAcc, uusdcIbcdenom)
+						Expect(ibcUsdc).To(Equal(sdk.NewCoin(uusdcIbcdenom, sdk.NewInt(1000000))))
+					})
+					It("ERC20 token balance is 0", func() {
+						erc20balance := s.cantoChain.App.(*app.Canto).Erc20Keeper.BalanceOf(s.cantoChain.GetContext(), contracts.ERC20MinterBurnerDecimalsContract.ABI, tokenPair.GetERC20Contract(), common.BytesToAddress(receiverAcc.Bytes()))
+						Expect(erc20balance.Int64()).To(Equal(int64(0)))
+					})
+				})
 				When("Canto chain's acanto balance is 0", func() {
 					BeforeEach(func() {
 						result = s.SendAndReceiveMessage(s.pathGravitycanto, s.IBCGravityChain, "uUSDC", 10000000000, sender, receiver, 1)
@@ -211,7 +223,32 @@ var _ = Describe("Onboarding: Performing an IBC Transfer followed by autoswap an
 						attrs := ExtractAttributes(FindEvent(events, "convert_coin"))
 						convertAmount, _ := sdk.NewIntFromString(attrs["amount"])
 						erc20balance := s.cantoChain.App.(*app.Canto).Erc20Keeper.BalanceOf(s.cantoChain.GetContext(), contracts.ERC20MinterBurnerDecimalsContract.ABI, tokenPair.GetERC20Contract(), common.BytesToAddress(receiverAcc.Bytes()))
-						fmt.Println("erc20balance", erc20balance)
+						Expect(erc20balance).To(Equal(convertAmount.BigInt()))
+					})
+				})
+				When("Canto chain's acanto balance is between 0 and auto swap threshold (3canto)", func() {
+					BeforeEach(func() {
+						s.FundCantoChain(sdk.NewCoins(sdk.NewCoin("acanto", sdk.NewIntWithDecimal(3, 18))))
+						result = s.SendAndReceiveMessage(s.pathGravitycanto, s.IBCGravityChain, "uUSDC", 10000000000, sender, receiver, 1)
+					})
+					It("Auto swap operation: balance of acanto should be same with the sum of original acanto balance and auto swap threshold", func() {
+						autoSwapThreshold := s.cantoChain.App.(*app.Canto).OnboardingKeeper.GetParams(s.cantoChain.GetContext()).AutoSwapThreshold
+						nativecanto := s.cantoChain.App.(*app.Canto).BankKeeper.GetBalance(s.cantoChain.GetContext(), receiverAcc, "acanto")
+						Expect(nativecanto).To(Equal(sdk.NewCoin("acanto", autoSwapThreshold.Add(sdk.NewIntWithDecimal(3, 18)))))
+					})
+					It("Canto chain's IBC voucher balance should be less than the transferred amount (diff: swap amount)", func() {
+						events := result.GetEvents()
+						attrs := ExtractAttributes(FindEvent(events, "swap"))
+						swapAmount, _ := sdk.NewIntFromString(attrs["amount"])
+
+						ibcUsdc := s.cantoChain.App.(*app.Canto).BankKeeper.GetBalance(s.cantoChain.GetContext(), receiverAcc, uusdcIbcdenom)
+						Expect(ibcUsdc).To(Equal(sdk.NewCoin(uusdcIbcdenom, coinUsdc.Amount.Sub(swapAmount))))
+					})
+					It("Convert operation. ERC20 token balance should be same with the converted IBC voucher amount", func() {
+						events := result.GetEvents()
+						attrs := ExtractAttributes(FindEvent(events, "convert_coin"))
+						convertAmount, _ := sdk.NewIntFromString(attrs["amount"])
+						erc20balance := s.cantoChain.App.(*app.Canto).Erc20Keeper.BalanceOf(s.cantoChain.GetContext(), contracts.ERC20MinterBurnerDecimalsContract.ABI, tokenPair.GetERC20Contract(), common.BytesToAddress(receiverAcc.Bytes()))
 						Expect(erc20balance).To(Equal(convertAmount.BigInt()))
 					})
 				})

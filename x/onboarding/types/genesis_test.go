@@ -15,11 +15,6 @@ func TestGenesisValidate(t *testing.T) {
 		expError bool
 	}{
 		{
-			"empty genesis",
-			GenesisState{},
-			false,
-		},
-		{
 			"default genesis",
 			*DefaultGenesisState(),
 			false,

@@ -21,11 +21,6 @@ func TestParamsValidate(t *testing.T) {
 		params   Params
 		expError bool
 	}{
-		//{
-		//	"empty params",
-		//	Params{},
-		//	false,
-		//},
 		{
 			"default params",
 			DefaultParams(),
@@ -36,11 +31,6 @@ func TestParamsValidate(t *testing.T) {
 			NewParams(true, 5*time.Minute, sdk.NewInt(10000), []string{"channel-0"}),
 			false,
 		},
-		//{
-		//	"invalid duration",
-		//	NewParams(true, sdk.NewInt(10000)),
-		//	true,
-		//},
 	}
 
 	for _, tc := range testCases {

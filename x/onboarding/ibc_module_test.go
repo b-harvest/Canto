@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"github.com/Canto-Network/Canto/v6/app"
 	"github.com/Canto-Network/Canto/v6/contracts"
+	inflationtypes "github.com/Canto-Network/Canto/v6/x/inflation/types"
 	coinswaptypes "github.com/b-harvest/coinswap/modules/coinswap/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+
 	"github.com/ethereum/go-ethereum/common"
 	"math/big"
 	"testing"
@@ -71,6 +73,24 @@ func (suite *TransferTestSuite) TestHandleMsgTransfer() {
 	// setup between chainA and chainB
 	path := NewTransferPath(suite.chainA, suite.chainB)
 	suite.coordinator.Setup(path)
+
+	// Fund chainA
+	//coins := sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(1000000000000)))
+	//err := suite.chainA.GetSimApp().BankKeeper.MintCoins(suite.chainA.GetContext(), inflationtypes.ModuleName, coins)
+	//suite.Require().NoError(err)
+	//err = suite.chainA.GetSimApp().BankKeeper.SendCoinsFromModuleToAccount(suite.chainA.GetContext(), inflationtypes.ModuleName, suite.chainA.SenderAccount.GetAddress(), coins)
+	//suite.Require().NoError(err)
+
+	// Fund chainB
+	coins := sdk.NewCoins(
+		sdk.NewCoin("ibc/C053D637CCA2A2BA030E2C5EE1B28A16F71CCB0E45E8BE52766DC1B241B77878", sdk.NewInt(1000000000000)),
+		sdk.NewCoin("acanto", sdk.NewInt(10000000000)),
+	)
+	err := suite.chainB.App.(*app.Canto).BankKeeper.MintCoins(suite.chainB.GetContext(), inflationtypes.ModuleName, coins)
+	suite.Require().NoError(err)
+	err = suite.chainB.App.(*app.Canto).BankKeeper.SendCoinsFromModuleToAccount(suite.chainB.GetContext(), inflationtypes.ModuleName, suite.chainB.SenderAccount.GetAddress(), coins)
+	suite.Require().NoError(err)
+
 	coinswapKeeper := suite.chainB.App.(*app.Canto).GetCoinswapKeeper()
 	coinswapKeeper.SetStandardDenom(suite.chainB.GetContext(), "acanto")
 	params := coinswapKeeper.GetParams(suite.chainB.GetContext())
@@ -85,10 +105,7 @@ func (suite *TransferTestSuite) TestHandleMsgTransfer() {
 
 	erc20Keeper := suite.chainB.App.(*app.Canto).GetErc20Keeper()
 	pair, err := erc20Keeper.RegisterCoin(suite.chainB.GetContext(), metadataIbc)
-	if err != nil {
-		fmt.Println(pair)
-		fmt.Println(err)
-	}
+	suite.Require().NoError(err)
 
 	// Pool creation
 	msgAddLiquidity := coinswaptypes.MsgAddLiquidity{
@@ -150,7 +167,7 @@ func (suite *TransferTestSuite) TestHandleMsgTransfer() {
 	suite.Require().Equal(new(big.Int).SetUint64(9223373026850774207), balanceErc20)
 
 	// Send again from chainA to chainB
-	coinToSendToB = suite.chainA.App.(*app.Canto).BankKeeper.GetBalance(suite.chainA.GetContext(), suite.chainA.SenderAccount.GetAddress(), sdk.DefaultBondDenom)
+	coinToSendToB = suite.chainA.GetSimApp().BankKeeper.GetBalance(suite.chainA.GetContext(), suite.chainA.SenderAccount.GetAddress(), sdk.DefaultBondDenom)
 	balanceVoucherBefore = suite.chainB.App.(*app.Canto).BankKeeper.GetBalance(suite.chainB.GetContext(), suite.chainB.SenderAccount.GetAddress(), voucherDenomTrace.IBCDenom())
 	balanceCantoBefore = suite.chainB.App.(*app.Canto).BankKeeper.GetBalance(suite.chainB.GetContext(), suite.chainB.SenderAccount.GetAddress(), "acanto")
 	balanceErc20Before = erc20Keeper.BalanceOf(suite.chainB.GetContext(), contracts.ERC20MinterBurnerDecimalsContract.ABI, pair.GetERC20Contract(), common.BytesToAddress(suite.chainB.SenderAccount.GetAddress().Bytes()))
