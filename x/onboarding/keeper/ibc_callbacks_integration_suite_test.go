@@ -127,9 +127,11 @@ func (suite *IBCTestingSuite) CreatePool(denom string) {
 	suite.FundCantoChain(coins)
 
 	// create ibc/uUSDC, acanto pool
-	coinswapParams := suite.cantoChain.App.(*app.Canto).CoinswapKeeper.GetParams(suite.cantoChain.GetContext())
+	coinswapKeeper := suite.cantoChain.App.(*app.Canto).CoinswapKeeper
+	coinswapKeeper.SetStandardDenom(suite.cantoChain.GetContext(), "acanto")
+	coinswapParams := coinswapKeeper.GetParams(suite.cantoChain.GetContext())
 	coinswapParams.MaxSwapAmount = sdk.NewCoins(sdk.NewCoin(denom, sdk.NewIntWithDecimal(10, 6)))
-	suite.cantoChain.App.(*app.Canto).CoinswapKeeper.SetParams(suite.cantoChain.GetContext(), coinswapParams)
+	coinswapKeeper.SetParams(suite.cantoChain.GetContext(), coinswapParams)
 	msgAddLiquidity := coinswaptypes.MsgAddLiquidity{
 		MaxToken:         sdk.NewCoin(denom, sdk.NewIntWithDecimal(10000, 6)),
 		ExactStandardAmt: sdk.NewIntWithDecimal(10000, 18),

@@ -313,6 +313,7 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 			suite.SetupTest() // reset
 
 			// Setup liquidity pool (acanto, uUSDC)
+			suite.app.CoinswapKeeper.SetStandardDenom(suite.ctx, "acanto")
 			coinswapParams := suite.app.CoinswapKeeper.GetParams(suite.ctx)
 			coinswapParams.MaxSwapAmount = sdk.NewCoins(sdk.NewCoin(ibcUsdcDenom, sdk.NewIntWithDecimal(10, 6)))
 			suite.app.CoinswapKeeper.SetParams(suite.ctx, coinswapParams)

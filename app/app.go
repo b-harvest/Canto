@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	v6 "github.com/Canto-Network/Canto/v6/app/upgrades/v6"
 	"io"
 	"net/http"
 	"os"
@@ -1129,6 +1130,11 @@ func (app *Canto) setupUpgradeHandlers() {
 		v5.CreateUpgradeHandler(app.mm, app.configurator),
 	)
 
+	app.UpgradeKeeper.SetUpgradeHandler(
+		v6.UpgradeName,
+		v6.CreateUpgradeHandler(app.mm, app.configurator, *app.OnboardingKeeper, app.CoinswapKeeper),
+	)
+
 	// When a planned update height is reached, the old binary will panic
 	// writing on disk the height and name of the update that triggered it
 	// This will read that value, and execute the preparations for the upgrade.
@@ -1156,6 +1162,10 @@ func (app *Canto) setupUpgradeHandlers() {
 	case v5.UpgradeName:
 		storeUpgrades = &storetypes.StoreUpgrades{
 			Added: []string{csrtypes.StoreKey},
+		}
+	case v6.UpgradeName:
+		storeUpgrades = &storetypes.StoreUpgrades{
+			Added: []string{onboardingtypes.StoreKey, coinswaptypes.StoreKey},
 		}
 	}
 

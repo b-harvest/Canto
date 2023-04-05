@@ -71,6 +71,7 @@ func (suite *TransferTestSuite) TestHandleMsgTransfer() {
 	path := NewTransferPath(suite.chainA, suite.chainB)
 	suite.coordinator.Setup(path)
 	coinswapKeeper := suite.chainB.App.GetCoinswapKeeper()
+	coinswapKeeper.SetStandardDenom(suite.chainB.GetContext(), "acanto")
 	params := coinswapKeeper.GetParams(suite.chainB.GetContext())
 
 	// register ibc denoms (set params)
