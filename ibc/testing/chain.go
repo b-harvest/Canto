@@ -234,9 +234,10 @@ func NewTestChainCanto(t *testing.T, coord *Coordinator, chainID string) *TestCh
 
 	// create current header and call begin block
 	header := tmproto.Header{
-		ChainID: chainID,
-		Height:  1,
-		Time:    coord.CurrentTime.UTC(),
+		ChainID:         chainID,
+		Height:          1,
+		Time:            coord.CurrentTime.UTC(),
+		ProposerAddress: validator.PubKey.Address().Bytes(),
 	}
 
 	txConfig := app.GetTxConfig()

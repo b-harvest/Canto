@@ -26,7 +26,7 @@ func TestGenesisValidate(t *testing.T) {
 		},
 		{
 			"custom genesis",
-			NewGenesisState(NewParams(true, 10*time.Minute, sdk.NewInt(10000))),
+			NewGenesisState(NewParams(true, 10*time.Minute, sdk.NewInt(10000), []string{"channel-0"})),
 			false,
 		},
 	}

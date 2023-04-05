@@ -81,7 +81,8 @@ func (suite *GenesisTestSuite) TestOnboardingInitGenesis() {
 			"custom genesis - onboarding disabled",
 			types.GenesisState{
 				Params: types.Params{
-					EnableOnboarding: false,
+					EnableOnboarding:  false,
+					AutoSwapThreshold: sdk.NewIntWithDecimal(4, 18),
 				},
 			},
 			false,

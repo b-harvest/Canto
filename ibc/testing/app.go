@@ -234,6 +234,7 @@ func SetupWithGenesisValSetCanto(t *testing.T, valSet *tmtypes.ValidatorSet, gen
 		AppHash:            app.LastCommitID().Hash,
 		ValidatorsHash:     valSet.Hash(),
 		NextValidatorsHash: valSet.Hash(),
+		ProposerAddress:    valSet.Proposer.Address,
 	}})
 
 	return app

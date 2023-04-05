@@ -33,7 +33,7 @@ func TestParamsValidate(t *testing.T) {
 		},
 		{
 			"custom params",
-			NewParams(true, 5*time.Minute, sdk.NewInt(10000)),
+			NewParams(true, 5*time.Minute, sdk.NewInt(10000), []string{"channel-0"}),
 			false,
 		},
 		//{

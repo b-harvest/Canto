@@ -93,8 +93,6 @@ func (k Keeper) OnRecvPacket(
 		return ack
 	}
 
-	// TODO: cached ctx
-	// TODO: denom to stakingparams.BondDenom or standard denom of coinswap
 	standardDenom := k.coinswapKeeper.GetStandardDenom(ctx)
 	fmt.Println(fmt.Sprintf("[onboarding] denom %s", standardDenom))
 
