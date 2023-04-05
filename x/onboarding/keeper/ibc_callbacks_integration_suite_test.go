@@ -220,6 +220,8 @@ func RelayPacket(path *ibcgotesting.Path, packet channeltypes.Packet) (*sdk.Resu
 		if err := path.EndpointB.UpdateClient(); err != nil {
 			return nil, err
 		}
+		path.EndpointB.Chain.CurrentHeader.ProposerAddress = path.EndpointB.Chain.LastHeader.ValidatorSet.Proposer.Address
+		path.EndpointA.Chain.CurrentHeader.ProposerAddress = path.EndpointB.Chain.LastHeader.ValidatorSet.Proposer.Address
 
 		res, err := path.EndpointB.RecvPacketWithResult(packet)
 		if err != nil {
