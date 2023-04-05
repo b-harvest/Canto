@@ -2,14 +2,16 @@ package keeper_test
 
 import (
 	"fmt"
-	"github.com/Canto-Network/Canto/v6/app"
-	"github.com/Canto-Network/Canto/v6/contracts"
-	"github.com/Canto-Network/Canto/v6/x/erc20/types"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"golang.org/x/exp/slices"
+
+	"github.com/Canto-Network/Canto/v6/app"
+	"github.com/Canto-Network/Canto/v6/contracts"
+	"github.com/Canto-Network/Canto/v6/x/erc20/types"
 )
 
 func FindEvent(events []sdk.Event, name string) sdk.Event {
@@ -210,7 +212,7 @@ var _ = Describe("Onboarding: Performing an IBC Transfer followed by autoswap an
 						convertAmount, _ := sdk.NewIntFromString(attrs["amount"])
 						erc20balance := s.cantoChain.App.(*app.Canto).Erc20Keeper.BalanceOf(s.cantoChain.GetContext(), contracts.ERC20MinterBurnerDecimalsContract.ABI, tokenPair.GetERC20Contract(), common.BytesToAddress(receiverAcc.Bytes()))
 						fmt.Println("erc20balance", erc20balance)
-						Expect(erc20balance).To(Equal(convertAmount))
+						Expect(erc20balance).To(Equal(convertAmount.BigInt()))
 					})
 				})
 			})

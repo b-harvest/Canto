@@ -7,12 +7,13 @@ import (
 	"testing"
 	"time"
 
-	erc20types "github.com/Canto-Network/Canto/v6/x/erc20/types"
-	inflationtypes "github.com/Canto-Network/Canto/v6/x/inflation/types"
 	coinswaptypes "github.com/b-harvest/coinswap/modules/coinswap/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	erc20types "github.com/Canto-Network/Canto/v6/x/erc20/types"
+	inflationtypes "github.com/Canto-Network/Canto/v6/x/inflation/types"
 
 	"github.com/stretchr/testify/suite"
 
@@ -20,9 +21,8 @@ import (
 	transfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
-	ibcgotesting "github.com/cosmos/ibc-go/v3/testing"
 
-	ibctesting "github.com/Canto-Network/Canto/v6/ibc/testing"
+	ibcgotesting "github.com/Canto-Network/Canto/v6/ibc/testing"
 
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 
@@ -57,8 +57,8 @@ func TestIBCTestingSuite(t *testing.T) {
 
 func (suite *IBCTestingSuite) SetupTest() {
 	// initializes 3 test chains
-	suite.coordinator = ibctesting.NewCoordinator(suite.T(), 1, 2)
-	suite.cantoChain = suite.coordinator.GetChain(ibcgotesting.GetChainID(1))
+	suite.coordinator = ibcgotesting.NewCoordinator(suite.T(), 1, 2)
+	suite.cantoChain = suite.coordinator.GetChain(ibcgotesting.GetChainIDCanto(1))
 	suite.IBCGravityChain = suite.coordinator.GetChain(ibcgotesting.GetChainID(2))
 	suite.IBCCosmosChain = suite.coordinator.GetChain(ibcgotesting.GetChainID(3))
 	suite.coordinator.CommitNBlocks(suite.cantoChain, 2)
@@ -86,9 +86,9 @@ func (suite *IBCTestingSuite) SetupTest() {
 	params.EnableOnboarding = true
 	suite.cantoChain.App.(*app.Canto).OnboardingKeeper.SetParams(suite.cantoChain.GetContext(), params)
 
-	suite.pathGravitycanto = ibctesting.NewTransferPath(suite.IBCGravityChain, suite.cantoChain) // clientID, connectionID, channelID empty
-	suite.pathCosmoscanto = ibctesting.NewTransferPath(suite.IBCCosmosChain, suite.cantoChain)
-	suite.pathGravityCosmos = ibctesting.NewTransferPath(suite.IBCCosmosChain, suite.IBCGravityChain)
+	suite.pathGravitycanto = ibcgotesting.NewTransferPath(suite.IBCGravityChain, suite.cantoChain) // clientID, connectionID, channelID empty
+	suite.pathCosmoscanto = ibcgotesting.NewTransferPath(suite.IBCCosmosChain, suite.cantoChain)
+	suite.pathGravityCosmos = ibcgotesting.NewTransferPath(suite.IBCCosmosChain, suite.IBCGravityChain)
 	suite.coordinator.Setup(suite.pathGravitycanto) // clientID, connectionID, channelID filled
 	suite.coordinator.Setup(suite.pathCosmoscanto)
 	suite.coordinator.Setup(suite.pathGravityCosmos)
@@ -220,8 +220,6 @@ func RelayPacket(path *ibcgotesting.Path, packet channeltypes.Packet) (*sdk.Resu
 		if err := path.EndpointB.UpdateClient(); err != nil {
 			return nil, err
 		}
-		path.EndpointB.Chain.CurrentHeader.ProposerAddress = path.EndpointB.Chain.LastHeader.ValidatorSet.Proposer.Address
-		path.EndpointA.Chain.CurrentHeader.ProposerAddress = path.EndpointA.Chain.LastHeader.ValidatorSet.Proposer.Address
 
 		res, err := path.EndpointB.RecvPacketWithResult(packet)
 		if err != nil {
