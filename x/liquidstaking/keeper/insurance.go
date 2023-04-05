@@ -134,8 +134,7 @@ func (k Keeper) GetLastInsuranceId(ctx sdk.Context) (id uint64) {
 }
 
 func (k Keeper) getNextInsuranceIdWithUpdate(ctx sdk.Context) uint64 {
-	id := k.GetLastInsuranceId(ctx)
-	id++
+	id := k.GetLastInsuranceId(ctx) + 1
 	k.SetLastInsuranceId(ctx, id)
 	return id
 }
