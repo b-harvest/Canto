@@ -111,12 +111,7 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (chunk
 	validatorMap := make(map[string]stakingtypes.Validator)
 	err = k.IteratePairingInsurances(ctx, func(insurance types.Insurance) (bool, error) {
 		if _, ok := validatorMap[insurance.ValidatorAddress]; !ok {
-			// If validator is not in map, get validator from staking keeper
-			valAddr, err := sdk.ValAddressFromBech32(insurance.ValidatorAddress)
-			if err != nil {
-				return false, err
-			}
-			validator, found := k.stakingKeeper.GetValidator(ctx, valAddr)
+			validator, found := k.stakingKeeper.GetValidator(ctx, insurance.GetValidator())
 			valid, err := k.isValidValidator(ctx, validator, found)
 			if err != nil {
 				return false, nil
@@ -233,11 +228,7 @@ func (k Keeper) DoLiquidUnstake(ctx sdk.Context, msg *types.MsgLiquidUnstake) (
 
 		if _, ok := validatorMap[insurance.ValidatorAddress]; !ok {
 			// If validator is not in map, get validator from staking keeper
-			valAddr, err := sdk.ValAddressFromBech32(insurance.ValidatorAddress)
-			if err != nil {
-				return false, err
-			}
-			validator, found := k.stakingKeeper.GetValidator(ctx, valAddr)
+			validator, found := k.stakingKeeper.GetValidator(ctx, insurance.GetValidator())
 			valid, err := k.isValidValidator(ctx, validator, found)
 			if err != nil {
 				return false, nil
@@ -337,6 +328,8 @@ func (k Keeper) DoLiquidUnstake(ctx sdk.Context, msg *types.MsgLiquidUnstake) (
 			completionTime,
 		)
 		k.SetLiquidUnstakeUnbondingDelegationInfo(ctx, liquidUnstakeUnbondingDelegationInfo)
+		k.SetChunk(ctx, chunkToBeUndelegated)
+		k.SetInsurance(ctx, mostExpensiveInsurance)
 		unstakedChunks = append(unstakedChunks, chunkToBeUndelegated)
 		unstakeUnbondingDelegationInfos = append(unstakeUnbondingDelegationInfos, liquidUnstakeUnbondingDelegationInfo)
 	}

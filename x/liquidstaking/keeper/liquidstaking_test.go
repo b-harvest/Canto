@@ -13,6 +13,24 @@ import (
 	ethermint "github.com/evmos/ethermint/types"
 )
 
+// getMostExpensivePairedChunk returns the paired chunk which have most expensive insurance
+func (suite *KeeperTestSuite) getMostExpensivePairedChunk(pairedChunks []types.Chunk) types.Chunk {
+	chunksWithInsuranceId := make(map[uint64]types.Chunk)
+	var insurances []types.Insurance
+	validatorMap := make(map[string]stakingtypes.Validator)
+	for _, chunk := range pairedChunks {
+		insurance, _ := suite.app.LiquidStakingKeeper.GetInsurance(suite.ctx, chunk.InsuranceId)
+		if _, ok := validatorMap[insurance.ValidatorAddress]; !ok {
+			validator, _ := suite.app.StakingKeeper.GetValidator(suite.ctx, insurance.GetValidator())
+			validatorMap[insurance.ValidatorAddress] = validator
+		}
+		insurances = append(insurances, insurance)
+		chunksWithInsuranceId[insurance.Id] = chunk
+	}
+	types.SortInsurances(validatorMap, insurances, true)
+	return chunksWithInsuranceId[insurances[0].Id]
+}
+
 // Provide insurance with random fee (1 ~ 10%)
 func (suite *KeeperTestSuite) provideInsurances(providers []sdk.AccAddress, valAddrs []sdk.ValAddress, amounts []sdk.Coin) []types.Insurance {
 	s := rand.NewSource(0)
@@ -238,6 +256,68 @@ func (suite *KeeperTestSuite) TestLiquidStakeWithAdvanceBlocks() {
 		fmt.Println(validatorAddr, commission)
 		return false
 	})
+}
+
+func (suite *KeeperTestSuite) TestLiquidUnstakeWithAdvanceBlocks() {
+	// 3 validators
+	// 3 deleagtors
+	// liquid stake 3 chunks (each delegator liquid stakes 1 chunk)
+	// advance 1 block so reward is accumulated which means mint rate is changed
+	// unstake 1 chunk
+	// unstaker is delegators[0]
+	// unstaker should escrow ls tokens less than 1 chunk size because of mint rate change
+	// must check essential data structures are created and updated correctly
+
+	valAddrs := suite.CreateValidators([]int64{1, 1, 1})
+	minimumRequirement, minimumCoverage := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
+	providers, prooviderBalances := suite.AddTestAddrs(10, minimumCoverage.Amount)
+	suite.provideInsurances(providers, valAddrs, prooviderBalances)
+
+	delegators, delegatorBalances := suite.AddTestAddrs(3, minimumRequirement.Amount)
+	nas := suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
+	fmt.Println("Before liquid stake 3 chunks")
+	fmt.Println(nas)
+
+	pairedChunks := suite.liquidStakes(delegators, delegatorBalances)
+	mostExpensivePairedChunk := suite.getMostExpensivePairedChunk(pairedChunks)
+
+	nas = suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
+	fmt.Println("After liquid stake 3 chunks")
+	fmt.Println(nas)
+	suite.advanceHeight(1)
+	fmt.Println("Advance 1 height")
+	nas = suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
+	fmt.Println(nas)
+
+	undelegator := delegators[0]
+	msg := types.NewMsgLiquidUnstake(
+		undelegator.String(),
+		minimumRequirement, // amount of tokens corresponding to 1 chunk
+	)
+	unstakedChunks, unstakeUnobndingDelegationInfos, err := suite.app.LiquidStakingKeeper.DoLiquidUnstake(suite.ctx, msg)
+	suite.NoError(err)
+	nas = suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
+	fmt.Println("After unstake 1 chunk")
+	fmt.Println(nas)
+
+	// TODO: check unstaker balance
+	// TODO: check lsTokenEScrowAcc balance
+
+	var pairedChunksAfterUnstake []types.Chunk
+	suite.app.LiquidStakingKeeper.IterateAllChunks(suite.ctx, func(chunk types.Chunk) (bool, error) {
+		if chunk.Status == types.CHUNK_STATUS_PAIRED {
+			pairedChunksAfterUnstake = append(pairedChunksAfterUnstake, chunk)
+		}
+		return false, nil
+	})
+
+	suite.Len(unstakedChunks, 1)
+	suite.Len(unstakeUnobndingDelegationInfos, 1)
+	// unstakedChunk should be the most expensive insurance paired with the previously paired chunk.
+	suite.Equal(unstakedChunks[0].Id, mostExpensivePairedChunk.Id)
+	suite.Equal(unstakedChunks[0].InsuranceId, mostExpensivePairedChunk.InsuranceId)
+	// paired chunk count should be decreased by number of unstaked chunks
+	suite.Len(pairedChunksAfterUnstake, len(pairedChunks)-len(unstakedChunks))
 }
 
 func (suite *KeeperTestSuite) TestLiquidUnstakeFail() {

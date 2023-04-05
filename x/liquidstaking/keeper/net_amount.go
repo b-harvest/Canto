@@ -63,13 +63,14 @@ func (k Keeper) GetNetAmountState(ctx sdk.Context) (nas types.NetAmountState) {
 	}
 
 	nas = types.NetAmountState{
-		LsTokensTotalSupply:   k.bankKeeper.GetSupply(ctx, liquidBondDenom).Amount,
-		TotalChunksBalance:    totalChunksBalance.TruncateInt(),
-		TotalDelShares:        totalDelShares,
-		TotalRemainingRewards: totalRemainingRewards,
-		TotalLiquidTokens:     totalLiquidTokens,
-		TotalInsuranceTokens:  totalInsuranceTokens,
-		TotalUnbondingBalance: totalUnbondingBalance.TruncateInt(),
+		LsTokensTotalSupply:    k.bankKeeper.GetSupply(ctx, liquidBondDenom).Amount,
+		TotalChunksBalance:     totalChunksBalance.TruncateInt(),
+		TotalDelShares:         totalDelShares,
+		TotalRemainingRewards:  totalRemainingRewards,
+		TotalLiquidTokens:      totalLiquidTokens,
+		TotalInsuranceTokens:   totalInsuranceTokens,
+		TotalUnbondingBalance:  totalUnbondingBalance.TruncateInt(),
+		RewardModuleAccBalance: k.bankKeeper.GetBalance(ctx, types.RewardPool, bondDenom).Amount,
 	}
 
 	nas.NetAmount = nas.CalcNetAmount(k.bankKeeper.GetBalance(ctx, types.RewardPool, bondDenom).Amount)
