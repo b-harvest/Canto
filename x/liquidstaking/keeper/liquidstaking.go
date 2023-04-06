@@ -89,11 +89,11 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (chunk
 		return
 	}
 
-	if err = k.MustBeBondDenom(ctx, amount.Denom); err != nil {
+	if err = k.ShouldBeBondDenom(ctx, amount.Denom); err != nil {
 		return
 	}
 	// Liquid stakers can send amount of tokens corresponding multiple of chunk size and create multiple chunks
-	if err = k.MustBeMultipleOfChunkSize(amount.Amount); err != nil {
+	if err = k.ShouldBeMultipleOfChunkSize(amount.Amount); err != nil {
 		return
 	}
 	chunksToCreate := amount.Amount.Quo(types.ChunkSize).Int64()
@@ -206,10 +206,10 @@ func (k Keeper) DoLiquidUnstake(ctx sdk.Context, msg *types.MsgLiquidUnstake) (
 	delAddr := msg.GetDelegator()
 	amount := msg.Amount
 
-	if err = k.MustBeMultipleOfChunkSize(amount.Amount); err != nil {
+	if err = k.ShouldBeMultipleOfChunkSize(amount.Amount); err != nil {
 		return
 	}
-	if err = k.MustBeBondDenom(ctx, amount.Denom); err != nil {
+	if err = k.ShouldBeBondDenom(ctx, amount.Denom); err != nil {
 		return
 	}
 	chunksToLiquidUnstake := amount.Amount.Quo(types.ChunkSize).Int64()
@@ -445,17 +445,16 @@ func (k Keeper) GetMinimumRequirements(ctx sdk.Context) (oneChunkAmount, slashin
 	return
 }
 
-// MustBeMultipleOfChunkSize returns error if amount is not a multiple of chunk size
-func (k Keeper) MustBeMultipleOfChunkSize(amount sdk.Int) error {
+// ShouldBeMultipleOfChunkSize returns error if amount is not a multiple of chunk size
+func (k Keeper) ShouldBeMultipleOfChunkSize(amount sdk.Int) error {
 	if !amount.IsPositive() || !amount.Mod(types.ChunkSize).IsZero() {
 		return sdkerrors.Wrapf(types.ErrInvalidAmount, "got: %s", amount.String())
 	}
 	return nil
 }
 
-// TODO: Change function name not use must (if so, it should panic)
-// MustBeBondDenom returns erorr if denom is not the same as the bond denom
-func (k Keeper) MustBeBondDenom(ctx sdk.Context, denom string) error {
+// ShouldBeBondDenom returns error if denom is not the same as the bond denom
+func (k Keeper) ShouldBeBondDenom(ctx sdk.Context, denom string) error {
 	if denom == k.stakingKeeper.BondDenom(ctx) {
 		return nil
 	}
