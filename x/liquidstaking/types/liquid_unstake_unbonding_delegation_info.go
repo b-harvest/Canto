@@ -23,3 +23,8 @@ func (info *LiquidUnstakeUnbondingDelegationInfo) GetValidator() sdk.ValAddress 
 	valAddr, _ := sdk.ValAddressFromBech32(info.ValidatorAddress)
 	return valAddr
 }
+
+// IsMature returns true if the unbonding delegation has matured
+func (info *LiquidUnstakeUnbondingDelegationInfo) IsMature(currentTime time.Time) bool {
+	return !info.CompletionTime.After(currentTime)
+}

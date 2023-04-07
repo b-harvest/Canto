@@ -196,14 +196,36 @@ message LiquidUnstakeUnbondingDelegationInfo {
   string delegator_address = 2;
   // The address of the validator
   string validator_address = 3;
+  // TODO: Without this, 할인되는 양은 기존에 기록해두었던 burnAmount를 분모로하고 penalty를 분자로 했을 때 퍼센테이지만큼 차감하면 됨
+  // The mint rate at the time of the request
+  string mint_rate = 4 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable) = false
+  ];
   // The amount of ls tokens to be burned
   // This is calculated by the mint rate at the time of the request
-  string burn_amount = 4 [
+  string burn_amount = 5 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Coin",
+    (gogoproto.nullable) = false
+  ];
+  // The total amount of slashing penalties the insurance has paid so far.
+  string covered = 6 [
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Coin",
     (gogoproto.nullable) = false
   ];
   // The unix time for unbonding completion
-  google.protobuf.Timestamp completion_time = 5
+  google.protobuf.Timestamp completion_time = 7
+      [ (gogoproto.nullable) = false, (gogoproto.stdtime) = true ];
+}
+
+// TODO: insurance handover에 대한 걸 커버할 수 있게끔 네이밍 변경
+message UnpairingForRepairingInfo {
+  // The id of chunk in UnpairingForRepairing status.
+  uint64 chunk_id = 1;
+  // The id of insurance
+  uint64 insurance_id = 2;
+  // The unix time for unbonding completion
+  google.protobuf.Timestamp completion_time = 3
       [ (gogoproto.nullable) = false, (gogoproto.stdtime) = true ];
 }
 
