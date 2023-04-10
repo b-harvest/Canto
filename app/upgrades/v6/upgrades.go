@@ -18,6 +18,11 @@ func CreateUpgradeHandler(
 	return func(ctx sdk.Context, _ upgradetypes.Plan, vm module.VersionMap) (module.VersionMap, error) {
 		logger := ctx.Logger().With("upgrading to v6.0.0", UpgradeName)
 
+		newVM, err := mm.RunMigrations(ctx, configurator, vm)
+		if err != nil {
+			return nil, err
+		}
+
 		params := onboardingKeeper.GetParams(ctx)
 		params.WhitelistedChannels = []string{"channel-0"}
 		params.AutoSwapThreshold = sdk.NewIntWithDecimal(4, 18)
@@ -35,6 +40,6 @@ func CreateUpgradeHandler(
 
 		// Leave modules are as-is to avoid running InitGenesis.
 		logger.Debug("running module migrations ...")
-		return mm.RunMigrations(ctx, configurator, vm)
+		return newVM, nil
 	}
 }
