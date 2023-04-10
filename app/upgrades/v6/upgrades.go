@@ -24,11 +24,11 @@ func CreateUpgradeHandler(
 		onboardingKeeper.SetParams(ctx, params)
 
 		coinswapParams := coinswapKeeper.GetParams(ctx)
-		coinswapParams.PoolCreationFee = sdk.NewCoin("uatom", sdk.ZeroInt())
+		coinswapParams.PoolCreationFee = sdk.NewCoin("acanto", sdk.ZeroInt())
 		coinswapParams.MaxSwapAmount = sdk.NewCoins(
-			sdk.NewCoin(usdcIBCDenom, sdk.NewIntWithDecimal(10, 6)),
-			sdk.NewCoin(usdtIBCDenom, sdk.NewIntWithDecimal(10, 6)),
-			sdk.NewCoin(ethIBCDenom, sdk.NewIntWithDecimal(1, 17)),
+			sdk.NewCoin(UsdcIBCDenom, sdk.NewIntWithDecimal(10, 6)),
+			sdk.NewCoin(UsdtIBCDenom, sdk.NewIntWithDecimal(10, 6)),
+			sdk.NewCoin(EthIBCDenom, sdk.NewIntWithDecimal(1, 17)),
 		)
 		coinswapKeeper.SetParams(ctx, coinswapParams)
 		coinswapKeeper.SetStandardDenom(ctx, "acanto")
