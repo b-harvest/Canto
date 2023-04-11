@@ -16,8 +16,7 @@ message GenesisState {
 message Params {
   // enable onboarding IBC middleware
   bool enable_onboarding = 1;
-  google.protobuf.Duration auto_swap_duration = 2
-      [ (gogoproto.nullable) = false, (gogoproto.stdduration) = true ];
+
   string auto_swap_threshold = 3 [
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
     (gogoproto.nullable) = false

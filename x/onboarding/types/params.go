@@ -11,7 +11,6 @@ import (
 // Parameter store key
 var (
 	ParamStoreKeyEnableOnboarding     = []byte("EnableOnboarding")
-	ParamStoreKeyAutoSwapDuration     = []byte("AutoSwapDuration")
 	ParamStoreKeyAutoSwapThreshold    = []byte("AutoSwapThreshold")
 	ParamsStoreKeyWhitelistedChannels = []byte("WhitelistedChannels")
 )
@@ -19,7 +18,6 @@ var (
 // DefaultPacketTimeoutDuration defines the default packet timeout for outgoing
 // IBC transfers
 var DefaultPacketTimeoutDuration = 4 * time.Hour
-var DefaultAutoSwapDuration = 10 * time.Minute
 var DefaultAutoSwapThreshold = sdk.NewIntWithDecimal(4, 18) // 4 Canto
 var DefaultWhitelistedChannels = []string{"channel-0"}
 var _ paramtypes.ParamSet = &Params{}
@@ -32,13 +30,11 @@ func ParamKeyTable() paramtypes.KeyTable {
 // NewParams creates a new Params instance
 func NewParams(
 	enableOnboarding bool,
-	autoSwapDuration time.Duration,
 	autoSwapThreshold sdk.Int,
 	whitelistedChannels []string,
 ) Params {
 	return Params{
 		EnableOnboarding:    enableOnboarding,
-		AutoSwapDuration:    autoSwapDuration,
 		AutoSwapThreshold:   autoSwapThreshold,
 		WhitelistedChannels: whitelistedChannels,
 	}
@@ -48,7 +44,6 @@ func NewParams(
 func DefaultParams() Params {
 	return Params{
 		EnableOnboarding:    true,
-		AutoSwapDuration:    DefaultAutoSwapDuration,
 		AutoSwapThreshold:   DefaultAutoSwapThreshold,
 		WhitelistedChannels: DefaultWhitelistedChannels,
 	}
@@ -59,7 +54,6 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	return paramtypes.ParamSetPairs{
 		paramtypes.NewParamSetPair(ParamStoreKeyEnableOnboarding, &p.EnableOnboarding, validateBool),
 		paramtypes.NewParamSetPair(ParamStoreKeyAutoSwapThreshold, &p.AutoSwapThreshold, validateAutoSwapThreshold),
-		paramtypes.NewParamSetPair(ParamStoreKeyAutoSwapDuration, &p.AutoSwapDuration, validateDuration),
 		paramtypes.NewParamSetPair(ParamsStoreKeyWhitelistedChannels, &p.WhitelistedChannels, validateWhitelistedChannels),
 	}
 }
@@ -95,27 +89,12 @@ func validateAutoSwapThreshold(i interface{}) error {
 	return nil
 }
 
-func validateDuration(i interface{}) error {
-	duration, ok := i.(time.Duration)
-	if !ok {
-		return fmt.Errorf("invalid parameter type: %T", i)
-	}
-	if duration < 0 {
-		return fmt.Errorf("packet timout duration cannot be negative")
-	}
-
-	return nil
-}
-
 // Validate checks that the fields have valid values
 func (p Params) Validate() error {
 	if err := validateBool(p.EnableOnboarding); err != nil {
 		return err
 	}
 	if err := validateAutoSwapThreshold(p.AutoSwapThreshold); err != nil {
-		return err
-	}
-	if err := validateDuration(p.AutoSwapDuration); err != nil {
 		return err
 	}
 	return nil

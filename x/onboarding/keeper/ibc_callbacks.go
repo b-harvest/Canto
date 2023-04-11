@@ -119,11 +119,10 @@ func (k Keeper) OnRecvPacket(
 	if standardCoinBalance.Amount.LT(threshold) {
 		fmt.Println(fmt.Sprintf("[onboarding] before swap balacne %s, threshold %s, swap %s, stake %s", standardCoinBalance, threshold, swapCoins, transferredCoinBalance))
 
-		swapDuration := k.GetParams(ctx).AutoSwapDuration
 		msg := coinswaptypes.MsgSwapOrder{
 			coinswaptypes.Input{Coin: transferredCoin, Address: recipient.String()},
 			coinswaptypes.Output{Coin: swapCoins, Address: recipient.String()},
-			time.Now().Add(swapDuration).Unix(),
+			time.Now().Add(0).Unix(),
 			true,
 		}
 
