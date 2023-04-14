@@ -9,7 +9,6 @@ import (
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 
 	"github.com/ethereum/go-ethereum/common"
-	"math/big"
 	"testing"
 	"time"
 
@@ -17,6 +16,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	ibctesting "github.com/Canto-Network/Canto/v6/ibc/testing"
+	onboardingtest "github.com/Canto-Network/Canto/v6/x/onboarding/testutil"
 	"github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 )
@@ -47,14 +47,12 @@ type TransferTestSuite struct {
 	// testing chains used for convenience and readability
 	chainA *ibctesting.TestChain
 	chainB *ibctesting.TestChain
-	//chainC *ibctesting.TestChain
 }
 
 func (suite *TransferTestSuite) SetupTest() {
 	suite.coordinator = ibctesting.NewCoordinator(suite.T(), 1, 1)
 	suite.chainA = suite.coordinator.GetChain(ibctesting.GetChainID(2))
 	suite.chainB = suite.coordinator.GetChain(ibctesting.GetChainIDCanto(1))
-	//suite.chainC = suite.coordinator.GetChain(ibctesting.GetChainID(3))
 }
 
 func NewTransferPath(chainA, chainB *ibctesting.TestChain) *ibctesting.Path {
@@ -74,16 +72,9 @@ func (suite *TransferTestSuite) TestHandleMsgTransfer() {
 	path := NewTransferPath(suite.chainA, suite.chainB)
 	suite.coordinator.Setup(path)
 
-	// Fund chainA
-	//coins := sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(1000000000000)))
-	//err := suite.chainA.GetSimApp().BankKeeper.MintCoins(suite.chainA.GetContext(), inflationtypes.ModuleName, coins)
-	//suite.Require().NoError(err)
-	//err = suite.chainA.GetSimApp().BankKeeper.SendCoinsFromModuleToAccount(suite.chainA.GetContext(), inflationtypes.ModuleName, suite.chainA.SenderAccount.GetAddress(), coins)
-	//suite.Require().NoError(err)
-
 	// Fund chainB
 	coins := sdk.NewCoins(
-		sdk.NewCoin("ibc/C053D637CCA2A2BA030E2C5EE1B28A16F71CCB0E45E8BE52766DC1B241B77878", sdk.NewInt(1000000000000)),
+		sdk.NewCoin(ibcBase, sdk.NewInt(1000000000000)),
 		sdk.NewCoin("acanto", sdk.NewInt(10000000000)),
 	)
 	err := suite.chainB.App.(*app.Canto).BankKeeper.MintCoins(suite.chainB.GetContext(), inflationtypes.ModuleName, coins)
@@ -121,7 +112,6 @@ func (suite *TransferTestSuite) TestHandleMsgTransfer() {
 		fmt.Println(err)
 	}
 
-	//	originalBalance := suite.chainA.App.(*app.Canto).BankKeeper.GetBalance(suite.chainA.GetContext(), suite.chainA.SenderAccount.GetAddress(), sdk.DefaultBondDenom)
 	timeoutHeight := clienttypes.NewHeight(10, 100)
 
 	amount, ok := sdk.NewIntFromString("9223372036854775808") // 2^63 (one above int64)
@@ -143,8 +133,16 @@ func (suite *TransferTestSuite) TestHandleMsgTransfer() {
 	balanceErc20Before := erc20Keeper.BalanceOf(suite.chainB.GetContext(), contracts.ERC20MinterBurnerDecimalsContract.ABI, pair.GetERC20Contract(), common.BytesToAddress(suite.chainB.SenderAccount.GetAddress().Bytes()))
 
 	// relay send
-	err = path.RelayPacket(packet)
+	res, err = onboardingtest.RelayPacket(path, packet)
+	//err = path.RelayPacket(packet)
 	suite.Require().NoError(err) // relay committed
+
+	events := res.GetEvents()
+	attrs := onboardingtest.ExtractAttributes(onboardingtest.FindEvent(events, "swap"))
+	swapAmount, ok := sdk.NewIntFromString(attrs["amount"])
+	if !ok {
+		swapAmount = sdk.ZeroInt()
+	}
 
 	// check that voucher exists on chain B
 	balanceVoucher := suite.chainB.App.(*app.Canto).BankKeeper.GetBalance(suite.chainB.GetContext(), suite.chainB.SenderAccount.GetAddress(), voucherDenomTrace.IBCDenom())
@@ -155,16 +153,19 @@ func (suite *TransferTestSuite) TestHandleMsgTransfer() {
 
 	coinSentFromAToB := types.GetTransferCoin(path.EndpointB.ChannelConfig.PortID, path.EndpointB.ChannelID, sdk.DefaultBondDenom, amount)
 
-	suite.Require().True(balanceVoucher.Amount.IsZero())
+	suite.Require().Equal(balanceVoucherBefore, balanceVoucher)
 	// check whether the canto is swapped and the amount is greater than the threshold
 	if balanceCantoBefore.Amount.LT(middlewareParams.AutoSwapThreshold) {
 		suite.Require().Equal(balanceCanto.Amount, balanceCantoBefore.Amount.Add(middlewareParams.AutoSwapThreshold))
 	} else {
 		suite.Require().Equal(balanceCanto.Amount, balanceCantoBefore.Amount)
 	}
+
+	suite.Require().Equal(balanceVoucherBefore, balanceVoucher)
+
 	before := sdk.NewIntFromBigInt(balanceErc20Before)
 	suite.Require().True(before.IsZero())
-	suite.Require().Equal(new(big.Int).SetUint64(9223373026850774207), balanceErc20)
+	suite.Require().Equal(coinSentFromAToB.Amount.Sub(swapAmount), sdk.NewIntFromBigInt(balanceErc20))
 
 	// Send again from chainA to chainB
 	coinToSendToB = suite.chainA.GetSimApp().BankKeeper.GetBalance(suite.chainA.GetContext(), suite.chainA.SenderAccount.GetAddress(), sdk.DefaultBondDenom)
@@ -184,81 +185,21 @@ func (suite *TransferTestSuite) TestHandleMsgTransfer() {
 	err = path.RelayPacket(packet)
 	suite.Require().NoError(err) // relay committed
 
+	events = res.GetEvents()
+	attrs = onboardingtest.ExtractAttributes(onboardingtest.FindEvent(events, "swap"))
+	swapAmount, ok = sdk.NewIntFromString(attrs["amount"])
+	if !ok {
+		swapAmount = sdk.ZeroInt()
+	}
+
 	coinSentFromAToB = types.GetTransferCoin(path.EndpointB.ChannelConfig.PortID, path.EndpointB.ChannelID, sdk.DefaultBondDenom, coinToSendToB.Amount)
 	balanceVoucher = suite.chainB.App.(*app.Canto).BankKeeper.GetBalance(suite.chainB.GetContext(), suite.chainB.SenderAccount.GetAddress(), voucherDenomTrace.IBCDenom())
 	balanceCanto = suite.chainB.App.(*app.Canto).BankKeeper.GetBalance(suite.chainB.GetContext(), suite.chainB.SenderAccount.GetAddress(), "acanto")
 	balanceErc20 = erc20Keeper.BalanceOf(suite.chainB.GetContext(), contracts.ERC20MinterBurnerDecimalsContract.ABI, pair.GetERC20Contract(), common.BytesToAddress(suite.chainB.SenderAccount.GetAddress().Bytes()))
 
-	suite.Require().Equal(balanceVoucherBefore.Add(coinSentFromAToB), balanceVoucher)
 	suite.Require().Equal(balanceCantoBefore, balanceCanto)
-	suite.Require().Equal(balanceErc20Before, balanceErc20)
-
-	/*
-
-
-
-		// setup between chainB to chainC
-		// NOTE:
-		// pathBtoC.EndpointA = endpoint on chainB
-		// pathBtoC.EndpointB = endpoint on chainC
-		pathBtoC := NewTransferPath(suite.chainB, suite.chainC)
-		suite.coordinator.Setup(pathBtoC)
-
-		// send from chainB to chainC
-		msg = types.NewMsgTransfer(pathBtoC.EndpointA.ChannelConfig.PortID, pathBtoC.EndpointA.ChannelID, coinSentFromAToB, suite.chainB.SenderAccount.GetAddress().String(), suite.chainC.SenderAccount.GetAddress().String(), timeoutHeight, 0)
-		res, err = suite.chainB.SendMsgs(msg)
-		suite.Require().NoError(err) // message committed
-
-		packet, err = ibctesting.ParsePacketFromEvents(res.GetEvents())
-		suite.Require().NoError(err)
-
-		err = pathBtoC.RelayPacket(packet)
-		suite.Require().NoError(err) // relay committed
-
-		// NOTE: fungible token is prefixed with the full trace in order to verify the packet commitment
-		fullDenomPath := types.GetPrefixedDenom(pathBtoC.EndpointB.ChannelConfig.PortID, pathBtoC.EndpointB.ChannelID, voucherDenomTrace.GetFullDenomPath())
-
-		coinSentFromBToC := sdk.NewCoin(types.ParseDenomTrace(fullDenomPath).IBCDenom(), amount)
-		balance = suite.chainC.App.(*app.Canto).BankKeeper.GetBalance(suite.chainC.GetContext(), suite.chainC.SenderAccount.GetAddress(), coinSentFromBToC.Denom)
-		balanceCanto = suite.chainC.App.(*app.Canto).BankKeeper.GetBalance(suite.chainC.GetContext(), suite.chainC.SenderAccount.GetAddress(), "acanto")
-		fmt.Println(balanceCanto)
-
-		// check that the balance is updated on chainC
-		suite.Require().Equal(coinSentFromBToC, balance)
-
-		// check that balance on chain B is empty
-		balance = suite.chainB.App.(*app.Canto).BankKeeper.GetBalance(suite.chainB.GetContext(), suite.chainB.SenderAccount.GetAddress(), coinSentFromBToC.Denom)
-		suite.Require().Zero(balance.Amount.Int64())
-
-		// send from chainC back to chainB
-		msg = types.NewMsgTransfer(pathBtoC.EndpointB.ChannelConfig.PortID, pathBtoC.EndpointB.ChannelID, coinSentFromBToC, suite.chainC.SenderAccount.GetAddress().String(), suite.chainB.SenderAccount.GetAddress().String(), timeoutHeight, 0)
-		res, err = suite.chainC.SendMsgs(msg)
-		suite.Require().NoError(err) // message committed
-
-		packet, err = ibctesting.ParsePacketFromEvents(res.GetEvents())
-		suite.Require().NoError(err)
-
-		err = pathBtoC.RelayPacket(packet)
-		suite.Require().NoError(err) // relay committed
-
-		balance = suite.chainB.App.(*app.Canto).BankKeeper.GetBalance(suite.chainB.GetContext(), suite.chainB.SenderAccount.GetAddress(), coinSentFromAToB.Denom)
-
-		// check that the balance on chainA returned back to the original state
-		suite.Require().Equal(coinSentFromAToB, balance)
-
-		// check that module account escrow address is empty
-		escrowAddress := types.GetEscrowAddress(packet.GetDestPort(), packet.GetDestChannel())
-		balance = suite.chainB.App.(*app.Canto).BankKeeper.GetBalance(suite.chainB.GetContext(), escrowAddress, sdk.DefaultBondDenom)
-		suite.Require().Equal(sdk.NewCoin(sdk.DefaultBondDenom, sdk.ZeroInt()), balance)
-
-		// check that balance on chain B is empty
-		balance = suite.chainC.App.(*app.Canto).BankKeeper.GetBalance(suite.chainC.GetContext(), suite.chainC.SenderAccount.GetAddress(), voucherDenomTrace.IBCDenom())
-		balanceCanto = suite.chainC.App.(*app.Canto).BankKeeper.GetBalance(suite.chainC.GetContext(), suite.chainC.SenderAccount.GetAddress(), "acanto")
-		fmt.Println(balanceCanto)
-
-		suite.Require().Zero(balance.Amount.Int64())
-
-	*/
+	suite.Require().Equal(balanceVoucherBefore, balanceVoucher)
+	suite.Require().Equal(sdk.NewIntFromBigInt(balanceErc20Before).Add(coinSentFromAToB.Amount).Sub(swapAmount), sdk.NewIntFromBigInt(balanceErc20))
 }
 
 func TestTransferTestSuite(t *testing.T) {

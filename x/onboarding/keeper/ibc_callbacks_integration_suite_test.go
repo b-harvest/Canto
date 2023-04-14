@@ -1,8 +1,6 @@
 package keeper_test
 
 import (
-	"bytes"
-	"fmt"
 	"strconv"
 	"testing"
 	"time"
@@ -23,6 +21,7 @@ import (
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 
 	ibcgotesting "github.com/Canto-Network/Canto/v6/ibc/testing"
+	onboardingtest "github.com/Canto-Network/Canto/v6/x/onboarding/testutil"
 
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 
@@ -190,77 +189,12 @@ func (suite *IBCTestingSuite) SendAndReceiveMessage(path *ibcgotesting.Path, ori
 	// Recreate the packet that was sent
 	transfer := transfertypes.NewFungibleTokenPacketData(coin, strconv.Itoa(int(amount)), sender, receiver)
 	packet := channeltypes.NewPacket(transfer.GetBytes(), seq, path.EndpointA.ChannelConfig.PortID, path.EndpointA.ChannelID, path.EndpointB.ChannelConfig.PortID, path.EndpointB.ChannelID, timeoutHeight, 0)
-	// Receive message on the counterparty side, and send ack
-
-	// original call
-	// err = path.RelayPacket(packet)
 
 	// patched RelayPacket call to get res
-	res, err := RelayPacket(path, packet)
-
-	// ---------- Temporary Print for Debugging
-	//for _, ev := range res.GetEvents() {
-	//	fmt.Println(string(ev.Type))
-	//	for _, e := range ev.Attributes {
-	//		fmt.Println("\t", string(e.Key), string(e.Value))
-	//	}
-	//}
-	// ---------- Temporary Print for Debugging
+	res, err := onboardingtest.RelayPacket(path, packet)
 
 	suite.Require().NoError(err)
 	return res
-}
-
-// RelayPacket attempts to relay the packet first on EndpointA and then on EndpointB
-// if EndpointA does not contain a packet commitment for that packet. An error is returned
-// if a relay step fails or the packet commitment does not exist on either endpoint.
-func RelayPacket(path *ibcgotesting.Path, packet channeltypes.Packet) (*sdk.Result, error) {
-	pc := path.EndpointA.Chain.App.GetIBCKeeper().ChannelKeeper.GetPacketCommitment(path.EndpointA.Chain.GetContext(), packet.GetSourcePort(), packet.GetSourceChannel(), packet.GetSequence())
-	if bytes.Equal(pc, channeltypes.CommitPacket(path.EndpointA.Chain.App.AppCodec(), packet)) {
-
-		// packet found, relay from A to B
-		if err := path.EndpointB.UpdateClient(); err != nil {
-			return nil, err
-		}
-
-		res, err := path.EndpointB.RecvPacketWithResult(packet)
-		if err != nil {
-			return nil, err
-		}
-
-		ack, err := ibcgotesting.ParseAckFromEvents(res.GetEvents())
-		if err != nil {
-			return nil, err
-		}
-
-		if err := path.EndpointA.AcknowledgePacket(packet, ack); err != nil {
-			return nil, err
-		}
-
-		return res, nil
-	}
-
-	pc = path.EndpointB.Chain.App.GetIBCKeeper().ChannelKeeper.GetPacketCommitment(path.EndpointB.Chain.GetContext(), packet.GetSourcePort(), packet.GetSourceChannel(), packet.GetSequence())
-	if bytes.Equal(pc, channeltypes.CommitPacket(path.EndpointB.Chain.App.AppCodec(), packet)) {
-
-		// packet found, relay B to A
-		if err := path.EndpointA.UpdateClient(); err != nil {
-			return nil, err
-		}
-
-		res, err := path.EndpointA.RecvPacketWithResult(packet)
-		ack, err := ibcgotesting.ParseAckFromEvents(res.GetEvents())
-		if err != nil {
-			return nil, err
-		}
-
-		if err := path.EndpointB.AcknowledgePacket(packet, ack); err != nil {
-			return nil, err
-		}
-		return res, nil
-	}
-
-	return nil, fmt.Errorf("packet commitment does not exist on either endpoint for provided packet")
 }
 
 func CreatePacket(amount, denom, sender, receiver, srcPort, srcChannel, dstPort, dstChannel string, seq, timeout uint64) channeltypes.Packet {

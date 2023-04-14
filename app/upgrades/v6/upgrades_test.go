@@ -94,8 +94,6 @@ func (s *UpgradeTestSuite) TestUpgradeV6() {
 				s.Require().EqualValues(
 					onboardingParams.AutoSwapThreshold, onboardingtypes.DefaultAutoSwapThreshold)
 				s.Require().EqualValues(
-					onboardingParams.AutoSwapDuration, onboardingtypes.DefaultAutoSwapDuration)
-				s.Require().EqualValues(
 					onboardingParams.WhitelistedChannels, onboardingtypes.DefaultWhitelistedChannels)
 			},
 			true,

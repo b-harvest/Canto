@@ -42,7 +42,7 @@ type Erc20Keeper interface {
 }
 
 type CoinwapKeeper interface {
-	Swap(ctx sdk.Context, msg *coinswaptypes.MsgSwapOrder) error
+	TradeInputForExactOutput(ctx sdk.Context, input coinswaptypes.Input, output coinswaptypes.Output) (sdk.Int, error)
 	GetStandardDenom(ctx sdk.Context) string
 }
 

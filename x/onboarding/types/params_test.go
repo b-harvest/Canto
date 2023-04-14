@@ -2,10 +2,8 @@ package types
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"testing"
-	"time"
-
 	"github.com/stretchr/testify/require"
+	"testing"
 )
 
 func TestParamsMisc(t *testing.T) {
@@ -28,7 +26,7 @@ func TestParamsValidate(t *testing.T) {
 		},
 		{
 			"custom params",
-			NewParams(true, 5*time.Minute, sdk.NewInt(10000), []string{"channel-0"}),
+			NewParams(true, sdk.NewInt(10000), []string{"channel-0"}),
 			false,
 		},
 	}

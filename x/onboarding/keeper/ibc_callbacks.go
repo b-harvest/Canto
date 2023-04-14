@@ -4,14 +4,10 @@ import (
 	errorsmod "cosmossdk.io/errors"
 	"fmt"
 	"github.com/Canto-Network/Canto/v6/contracts"
-	erc20types "github.com/Canto-Network/Canto/v6/x/erc20/types"
-	coinswaptypes "github.com/b-harvest/coinswap/modules/coinswap/types"
-	"github.com/ethereum/go-ethereum/common"
-	"strings"
-	"time"
-
 	"github.com/Canto-Network/Canto/v6/ibc"
+	erc20types "github.com/Canto-Network/Canto/v6/x/erc20/types"
 	"github.com/Canto-Network/Canto/v6/x/onboarding/types"
+	coinswaptypes "github.com/b-harvest/coinswap/modules/coinswap/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -20,6 +16,8 @@ import (
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
 	"github.com/cosmos/ibc-go/v3/modules/core/exported"
+	"github.com/ethereum/go-ethereum/common"
+	"strings"
 )
 
 // OnRecvPacket performs an IBC receive callback. It returns the tokens that
@@ -115,69 +113,62 @@ func (k Keeper) OnRecvPacket(
 	swapCoins := sdk.NewCoin(standardDenom, threshold)
 	standardCoinBalance := k.bankKeeper.GetBalance(ctx, recipient, standardDenom)
 	transferredCoinBalance := k.bankKeeper.GetBalance(ctx, recipient, transferredCoin.Denom)
+	swappedAmount := sdk.ZeroInt()
 
 	if standardCoinBalance.Amount.LT(threshold) {
-		fmt.Println(fmt.Sprintf("[onboarding] before swap balacne %s, threshold %s, swap %s, stake %s", standardCoinBalance, threshold, swapCoins, transferredCoinBalance))
+		fmt.Println(fmt.Sprintf("[onboarding] before swap balance %s, threshold %s, swap %s, ibc %s", standardCoinBalance, threshold, swapCoins, transferredCoinBalance))
 
-		msg := coinswaptypes.MsgSwapOrder{
-			coinswaptypes.Input{Coin: transferredCoin, Address: recipient.String()},
-			coinswaptypes.Output{Coin: swapCoins, Address: recipient.String()},
-			time.Now().Add(0).Unix(),
-			true,
-		}
-
-		if err = k.coinswapKeeper.Swap(ctx, &msg); err != nil {
+		swappedAmount, err = k.coinswapKeeper.TradeInputForExactOutput(ctx, coinswaptypes.Input{Coin: transferredCoin, Address: recipient.String()}, coinswaptypes.Output{Coin: swapCoins, Address: recipient.String()})
+		if err != nil {
 			fmt.Println(fmt.Sprintf("[onboarding] swap error %s", err))
-			return ack
 		}
 
 		standardCoinBalance = k.bankKeeper.GetBalance(ctx, recipient, standardDenom)
 		transferredCoinBalance = k.bankKeeper.GetBalance(ctx, recipient, transferredCoin.Denom)
-		fmt.Println(fmt.Sprintf("[onboarding] after swap balacne %s, threshold %s, swap %s, stake %s", standardCoinBalance, threshold, swapCoins, transferredCoinBalance))
+		fmt.Println(fmt.Sprintf("[onboarding] after swap balance %s, threshold %s, swap %s, ibc %s", standardCoinBalance, threshold, swapCoins, transferredCoinBalance))
+	}
 
-		//convert coins to ERC20 token
-		pairID := k.erc20Keeper.GetTokenPairID(ctx, transferredCoin.Denom)
-		if len(pairID) == 0 {
-			// short-circuit: if the denom is not registered, conversion will fail
-			// so we can continue with the rest of the stack
-			return ack
-		}
+	convertCoin := sdk.NewCoin(transferredCoin.Denom, transferredCoin.Amount.Sub(swappedAmount))
 
-		pair, _ := k.erc20Keeper.GetTokenPair(ctx, pairID)
-		if !pair.Enabled {
-			// no-op: continue with the rest of the stack without conversion
-			return ack
-		}
-
-		// Build MsgConvertCoin, from recipient to recipient since IBC transfer already occurred
-		convertMsg := erc20types.NewMsgConvertCoin(transferredCoinBalance, common.BytesToAddress(recipient.Bytes()), recipient)
-
-		// NOTE: we don't use ValidateBasic the msg since we've already validated
-		// the ICS20 packet data
-
-		// Use MsgConvertCoin to convert the Cosmos Coin to an ERC20
-		if _, err = k.erc20Keeper.ConvertCoin(sdk.WrapSDKContext(ctx), convertMsg); err != nil {
-			fmt.Println(fmt.Sprintf("[onboarding] convert error %s", err))
-			return ack
-		}
-
-		abi := contracts.ERC20BurnableContract.ABI
-		ercBalance := k.erc20Keeper.BalanceOf(ctx, abi, pair.GetERC20Contract(), common.BytesToAddress(recipient.Bytes()))
-		res, err := k.erc20Keeper.CallEVM(ctx, abi, common.BytesToAddress(recipient.Bytes()), pair.GetERC20Contract(), false, "symbol")
-		if err != nil {
-			return ack
-		}
-		var symbolRes erc20types.ERC20StringResponse
-		if err := abi.UnpackIntoInterface(&symbolRes, "symbol", res.Ret); err != nil {
-			return ack
-		}
-
-		fmt.Println(fmt.Sprintf("[onboarding] erc20 token balance %s %s", ercBalance, symbolRes.Value))
-
-	} else {
-		fmt.Println(fmt.Sprintf("[onboarding] balacne %s, threshold %s, stake %s", standardCoinBalance, threshold, transferredCoinBalance))
+	//convert coins to ERC20 token
+	pairID := k.erc20Keeper.GetTokenPairID(ctx, transferredCoin.Denom)
+	if len(pairID) == 0 {
+		// short-circuit: if the denom is not registered, conversion will fail
+		// so we can continue with the rest of the stack
 		return ack
 	}
+
+	pair, _ := k.erc20Keeper.GetTokenPair(ctx, pairID)
+	if !pair.Enabled {
+		// no-op: continue with the rest of the stack without conversion
+		return ack
+	}
+
+	// Build MsgConvertCoin, from recipient to recipient since IBC transfer already occurred
+	convertMsg := erc20types.NewMsgConvertCoin(convertCoin, common.BytesToAddress(recipient.Bytes()), recipient)
+
+	// NOTE: we don't use ValidateBasic the msg since we've already validated
+	// the ICS20 packet data
+
+	// Use MsgConvertCoin to convert the Cosmos Coin to an ERC20
+	if _, err = k.erc20Keeper.ConvertCoin(sdk.WrapSDKContext(ctx), convertMsg); err != nil {
+		fmt.Println(fmt.Sprintf("[onboarding] convert error %s", err))
+		return ack
+	}
+
+	abi := contracts.ERC20BurnableContract.ABI
+	ercBalance := k.erc20Keeper.BalanceOf(ctx, abi, pair.GetERC20Contract(), common.BytesToAddress(recipient.Bytes()))
+	res, err := k.erc20Keeper.CallEVM(ctx, abi, common.BytesToAddress(recipient.Bytes()), pair.GetERC20Contract(), false, "symbol")
+	if err != nil {
+		return ack
+	}
+	var symbolRes erc20types.ERC20StringResponse
+	if err := abi.UnpackIntoInterface(&symbolRes, "symbol", res.Ret); err != nil {
+		return ack
+	}
+
+	transferredCoinBalance = k.bankKeeper.GetBalance(ctx, recipient, transferredCoin.Denom)
+	fmt.Println(fmt.Sprintf("[onboarding] erc20 token balance %s%s, ibc %s", ercBalance, symbolRes.Value, transferredCoinBalance))
 
 	//// check error from the iteration above
 	//if err != nil {

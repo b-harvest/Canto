@@ -2,10 +2,8 @@ package types
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"testing"
-	"time"
-
 	"github.com/stretchr/testify/require"
+	"testing"
 )
 
 func TestGenesisValidate(t *testing.T) {
@@ -21,7 +19,7 @@ func TestGenesisValidate(t *testing.T) {
 		},
 		{
 			"custom genesis",
-			NewGenesisState(NewParams(true, 10*time.Minute, sdk.NewInt(10000), []string{"channel-0"})),
+			NewGenesisState(NewParams(true, sdk.NewInt(10000), []string{"channel-0"})),
 			false,
 		},
 	}

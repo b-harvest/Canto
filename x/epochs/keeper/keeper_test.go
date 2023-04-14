@@ -1,6 +1,9 @@
 package keeper_test
 
 import (
+	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	"github.com/evmos/ethermint/crypto/ethsecp256k1"
 	"testing"
 	"time"
 
@@ -54,6 +57,11 @@ func (suite *KeeperTestSuite) SetupTest() {
 func (suite *KeeperTestSuite) DoSetupTest(t require.TestingT) {
 	checkTx := false
 
+	privCons, err := ethsecp256k1.GenerateKey()
+	suite.NoError(err)
+	consAddress := sdk.ConsAddress(privCons.PubKey().Address())
+	suite.consAddress = consAddress
+
 	// init app
 	suite.app = app.Setup(checkTx, nil)
 
@@ -97,6 +105,14 @@ func (suite *KeeperTestSuite) DoSetupTest(t require.TestingT) {
 		epoch.CurrentEpochStartHeight = suite.ctx.BlockHeight()
 		suite.app.EpochsKeeper.SetEpochInfo(suite.ctx, epoch)
 	}
+
+	valAddr := sdk.ValAddress(privCons.PubKey().Address().Bytes())
+	validator, err := stakingtypes.NewValidator(valAddr, privCons.PubKey(), stakingtypes.Description{})
+	suite.NoError(err)
+	validator = stakingkeeper.TestingUpdateValidator(suite.app.StakingKeeper, suite.ctx, validator, true)
+	suite.app.StakingKeeper.AfterValidatorCreated(suite.ctx, validator.GetOperator())
+	err = suite.app.StakingKeeper.SetValidatorByConsAddr(suite.ctx, validator)
+	suite.NoError(err)
 }
 
 func (suite *KeeperTestSuite) Commit() {
