@@ -1,7 +1,7 @@
-package v6_test
+package v7_test
 
 import (
-	v6 "github.com/Canto-Network/Canto/v6/app/upgrades/v6"
+	v6 "github.com/Canto-Network/Canto/v6/app/upgrades/v7"
 	onboardingtypes "github.com/Canto-Network/Canto/v6/x/onboarding/types"
 	coinswaptypes "github.com/b-harvest/coinswap/modules/coinswap/types"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
@@ -71,7 +71,7 @@ func (s *UpgradeTestSuite) TestUpgradeV6() {
 		expPass bool
 	}{
 		{
-			"v6 upgrade onboarding & coinswap",
+			"v7 upgrade onboarding & coinswap",
 			func() {},
 			func() {
 				coinswapParams := s.app.CoinswapKeeper.GetParams(s.ctx)

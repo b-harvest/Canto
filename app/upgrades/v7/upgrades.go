@@ -1,4 +1,4 @@
-package v6
+package v7
 
 import (
 	onboardingkeeper "github.com/Canto-Network/Canto/v6/x/onboarding/keeper"
@@ -16,7 +16,7 @@ func CreateUpgradeHandler(
 	coinswapKeeper coinswapkeeper.Keeper,
 ) upgradetypes.UpgradeHandler {
 	return func(ctx sdk.Context, _ upgradetypes.Plan, vm module.VersionMap) (module.VersionMap, error) {
-		logger := ctx.Logger().With("upgrading to v6.0.0", UpgradeName)
+		logger := ctx.Logger().With("upgrading to v7.0.0", UpgradeName)
 
 		newVM, err := mm.RunMigrations(ctx, configurator, vm)
 		if err != nil {

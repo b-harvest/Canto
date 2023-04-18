@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	v6 "github.com/Canto-Network/Canto/v6/app/upgrades/v6"
+	v7 "github.com/Canto-Network/Canto/v6/app/upgrades/v7"
 	"io"
 	"net/http"
 	"os"
@@ -1130,9 +1130,10 @@ func (app *Canto) setupUpgradeHandlers() {
 		v5.CreateUpgradeHandler(app.mm, app.configurator),
 	)
 
+	// v7 upgrade handler
 	app.UpgradeKeeper.SetUpgradeHandler(
-		v6.UpgradeName,
-		v6.CreateUpgradeHandler(app.mm, app.configurator, *app.OnboardingKeeper, app.CoinswapKeeper),
+		v7.UpgradeName,
+		v7.CreateUpgradeHandler(app.mm, app.configurator, *app.OnboardingKeeper, app.CoinswapKeeper),
 	)
 
 	// When a planned update height is reached, the old binary will panic
@@ -1163,7 +1164,7 @@ func (app *Canto) setupUpgradeHandlers() {
 		storeUpgrades = &storetypes.StoreUpgrades{
 			Added: []string{csrtypes.StoreKey},
 		}
-	case v6.UpgradeName:
+	case v7.UpgradeName:
 		storeUpgrades = &storetypes.StoreUpgrades{
 			Added: []string{onboardingtypes.StoreKey, coinswaptypes.StoreKey},
 		}
