@@ -13,7 +13,7 @@ import (
 
 var _ = Describe("Onboarding: Performing an IBC Transfer followed by autoswap and convert", Ordered, func() {
 	coincanto := sdk.NewCoin("acanto", sdk.ZeroInt())
-	ibcBalance := sdk.NewCoin(ibcUsdcDenom, sdk.NewIntWithDecimal(10000, 6))
+	ibcBalance := sdk.NewCoin(uusdcIbcdenom, sdk.NewIntWithDecimal(10000, 6))
 	coinUsdc := sdk.NewCoin("uUSDC", sdk.NewIntWithDecimal(10000, 6))
 	coinAtom := sdk.NewCoin("uatom", sdk.NewIntWithDecimal(10000, 6))
 

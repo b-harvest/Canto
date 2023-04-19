@@ -30,32 +30,32 @@ import (
 var (
 	metadataIbcUSDC = banktypes.Metadata{
 		Description: "USDC IBC voucher (channel 0)",
-		Base:        ibcUsdcDenom,
+		Base:        uusdcIbcdenom,
 		// NOTE: Denom units MUST be increasing
 		DenomUnits: []*banktypes.DenomUnit{
 			{
-				Denom:    ibcUsdcDenom,
+				Denom:    uusdcIbcdenom,
 				Exponent: 0,
 			},
 		},
 		Name:    "USDC channel-0",
 		Symbol:  "ibcUSDC-0",
-		Display: ibcUsdcDenom,
+		Display: uusdcIbcdenom,
 	}
 
 	metadataIbcUSDT = banktypes.Metadata{
 		Description: "USDT IBC voucher (channel 0)",
-		Base:        ibcUsdtDenom,
+		Base:        uusdtIbcdenom,
 		// NOTE: Denom units MUST be increasing
 		DenomUnits: []*banktypes.DenomUnit{
 			{
-				Denom:    ibcUsdtDenom,
+				Denom:    uusdtIbcdenom,
 				Exponent: 0,
 			},
 		},
 		Name:    "USDT channel-0",
 		Symbol:  "ibcUSDT-0",
-		Display: ibcUsdtDenom,
+		Display: uusdtIbcdenom,
 	}
 )
 
@@ -75,7 +75,7 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 
 	// Setup Cosmos <=> canto IBC relayer
 	denom := "uUSDC"
-	ibcDenom := ibcUsdcDenom
+	ibcDenom := uusdcIbcdenom
 	transferAmount := sdk.NewIntWithDecimal(25, 6)
 	sourceChannel := "channel-0"
 	cantoChannel := "channel-0"
@@ -106,7 +106,7 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 			true,
 			sdk.NewCoins(sdk.NewCoin("acanto", sdk.ZeroInt())),
 			sdk.NewCoin("acanto", sdk.ZeroInt()),
-			sdk.NewCoin(ibcUsdcDenom, transferAmount),
+			sdk.NewCoin(uusdcIbcdenom, transferAmount),
 			sdk.ZeroInt(),
 		},
 		{
@@ -114,7 +114,7 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 			func() {
 
 				denom = "uUSDT"
-				ibcDenom = ibcUsdtDenom
+				ibcDenom = uusdtIbcdenom
 
 				transfer := transfertypes.NewFungibleTokenPacketData(denom, transferAmount.String(), secpAddrCosmos, secpAddrcanto)
 				bz := transfertypes.ModuleCdc.MustMarshalJSON(&transfer)
@@ -123,7 +123,7 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 			true,
 			sdk.NewCoins(sdk.NewCoin("acanto", sdk.ZeroInt())),
 			sdk.NewCoin("acanto", sdk.ZeroInt()),
-			sdk.NewCoin(ibcUsdtDenom, sdk.ZeroInt()),
+			sdk.NewCoin(uusdtIbcdenom, sdk.ZeroInt()),
 			transferAmount,
 		},
 		{
@@ -131,7 +131,7 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 			func() {
 
 				denom = "uUSDT"
-				ibcDenom = ibcUsdtDenom
+				ibcDenom = uusdtIbcdenom
 
 				transfer := transfertypes.NewFungibleTokenPacketData(denom, transferAmount.String(), secpAddrCosmos, secpAddrcanto)
 				bz := transfertypes.ModuleCdc.MustMarshalJSON(&transfer)
@@ -140,14 +140,14 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 			true,
 			sdk.NewCoins(sdk.NewCoin("acanto", sdk.NewIntWithDecimal(4, 18))),
 			sdk.NewCoin("acanto", sdk.NewIntWithDecimal(4, 18)),
-			sdk.NewCoin(ibcUsdtDenom, sdk.ZeroInt()),
+			sdk.NewCoin(uusdtIbcdenom, sdk.ZeroInt()),
 			transferAmount,
 		},
 		{
 			"swap fail / convert all transferred amount - not enough ibc coin to swap threshold",
 			func() {
 				denom = "uUSDC"
-				ibcDenom = ibcUsdcDenom
+				ibcDenom = uusdcIbcdenom
 
 				transferAmount = sdk.NewIntWithDecimal(1, 6)
 				transfer := transfertypes.NewFungibleTokenPacketData(denom, transferAmount.String(), secpAddrCosmos, secpAddrcanto)
@@ -157,7 +157,7 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 			true,
 			sdk.NewCoins(sdk.NewCoin("acanto", sdk.ZeroInt())),
 			sdk.NewCoin("acanto", sdk.ZeroInt()),
-			sdk.NewCoin(ibcUsdcDenom, sdk.ZeroInt()),
+			sdk.NewCoin(uusdcIbcdenom, sdk.ZeroInt()),
 			sdk.NewIntWithDecimal(1, 6),
 		},
 		{
@@ -171,7 +171,7 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 			true,
 			sdk.NewCoins(sdk.NewCoin("acanto", sdk.NewIntWithDecimal(4, 18))),
 			sdk.NewCoin("acanto", sdk.NewIntWithDecimal(4, 18)),
-			sdk.NewCoin(ibcUsdcDenom, sdk.ZeroInt()),
+			sdk.NewCoin(uusdcIbcdenom, sdk.ZeroInt()),
 			transferAmount,
 		},
 		{
@@ -186,7 +186,7 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 			true,
 			sdk.NewCoins(sdk.NewCoin("acanto", sdk.ZeroInt())),
 			sdk.NewCoin("acanto", sdk.ZeroInt()),
-			sdk.NewCoin(ibcUsdcDenom, sdk.NewIntWithDecimal(25, 6)),
+			sdk.NewCoin(uusdcIbcdenom, sdk.NewIntWithDecimal(25, 6)),
 			sdk.ZeroInt(),
 		},
 		{
@@ -201,7 +201,7 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 			true,
 			sdk.NewCoins(sdk.NewCoin("acanto", sdk.ZeroInt())),
 			sdk.NewCoin("acanto", sdk.NewIntWithDecimal(4, 18)),
-			sdk.NewCoin(ibcUsdcDenom, sdk.ZeroInt()),
+			sdk.NewCoin(uusdcIbcdenom, sdk.ZeroInt()),
 			sdk.NewInt(20998399),
 		},
 		{
@@ -215,7 +215,7 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 			true,
 			sdk.NewCoins(sdk.NewCoin("acanto", sdk.NewIntWithDecimal(3, 18))),
 			sdk.NewCoin("acanto", sdk.NewIntWithDecimal(7, 18)),
-			sdk.NewCoin(ibcUsdcDenom, sdk.ZeroInt()),
+			sdk.NewCoin(uusdcIbcdenom, sdk.ZeroInt()),
 			sdk.NewInt(20998399),
 		},
 		{
@@ -228,9 +228,9 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 				packet = channeltypes.NewPacket(bz, 100, transfertypes.PortID, sourceChannel, transfertypes.PortID, cantoChannel, timeoutHeight, 0)
 			},
 			true,
-			sdk.NewCoins(sdk.NewCoin("acanto", sdk.ZeroInt()), sdk.NewCoin(ibcUsdcDenom, sdk.NewIntWithDecimal(1, 6))),
+			sdk.NewCoins(sdk.NewCoin("acanto", sdk.ZeroInt()), sdk.NewCoin(uusdcIbcdenom, sdk.NewIntWithDecimal(1, 6))),
 			sdk.NewCoin("acanto", sdk.NewIntWithDecimal(4, 18)),
-			sdk.NewCoin(ibcUsdcDenom, sdk.NewIntWithDecimal(1, 6)),
+			sdk.NewCoin(uusdcIbcdenom, sdk.NewIntWithDecimal(1, 6)),
 			sdk.NewInt(20998399),
 		},
 		{
@@ -242,16 +242,16 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 				packet = channeltypes.NewPacket(bz, 100, transfertypes.PortID, sourceChannel, transfertypes.PortID, cantoChannel, timeoutHeight, 0)
 			},
 			true,
-			sdk.NewCoins(sdk.NewCoin("acanto", sdk.NewIntWithDecimal(3, 18)), sdk.NewCoin(ibcUsdcDenom, sdk.NewIntWithDecimal(1, 6))),
+			sdk.NewCoins(sdk.NewCoin("acanto", sdk.NewIntWithDecimal(3, 18)), sdk.NewCoin(uusdcIbcdenom, sdk.NewIntWithDecimal(1, 6))),
 			sdk.NewCoin("acanto", sdk.NewIntWithDecimal(7, 18)),
-			sdk.NewCoin(ibcUsdcDenom, sdk.NewIntWithDecimal(1, 6)),
+			sdk.NewCoin(uusdcIbcdenom, sdk.NewIntWithDecimal(1, 6)),
 			sdk.NewInt(20998399),
 		},
 		{
 			"swap fail / convert all transferred amount - required ibc token to swap exceeds max swap amount limit",
 			func() {
 				coinswapParams := suite.app.CoinswapKeeper.GetParams(suite.ctx)
-				coinswapParams.MaxSwapAmount = sdk.NewCoins(sdk.NewCoin(ibcUsdcDenom, sdk.NewIntWithDecimal(5, 5)))
+				coinswapParams.MaxSwapAmount = sdk.NewCoins(sdk.NewCoin(uusdcIbcdenom, sdk.NewIntWithDecimal(5, 5)))
 				suite.app.CoinswapKeeper.SetParams(suite.ctx, coinswapParams)
 
 				transferAmount = sdk.NewIntWithDecimal(25, 6)
@@ -262,7 +262,7 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 			true,
 			sdk.NewCoins(sdk.NewCoin("acanto", sdk.NewIntWithDecimal(3, 18))),
 			sdk.NewCoin("acanto", sdk.NewIntWithDecimal(3, 18)),
-			sdk.NewCoin(ibcUsdcDenom, sdk.ZeroInt()),
+			sdk.NewCoin(uusdcIbcdenom, sdk.ZeroInt()),
 			transferAmount,
 		},
 	}
@@ -273,13 +273,13 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 			// Setup liquidity pool (acanto/uUSDC)
 			suite.app.CoinswapKeeper.SetStandardDenom(suite.ctx, "acanto")
 			coinswapParams := suite.app.CoinswapKeeper.GetParams(suite.ctx)
-			coinswapParams.MaxSwapAmount = sdk.NewCoins(sdk.NewCoin(ibcUsdcDenom, sdk.NewIntWithDecimal(10, 6)))
+			coinswapParams.MaxSwapAmount = sdk.NewCoins(sdk.NewCoin(uusdcIbcdenom, sdk.NewIntWithDecimal(10, 6)))
 			suite.app.CoinswapKeeper.SetParams(suite.ctx, coinswapParams)
 
-			testutil.FundAccount(suite.app.BankKeeper, suite.ctx, secpAddr, sdk.NewCoins(sdk.NewCoin("acanto", sdk.NewIntWithDecimal(10000, 18)), sdk.NewCoin(ibcUsdcDenom, sdk.NewIntWithDecimal(10000, 6))))
+			testutil.FundAccount(suite.app.BankKeeper, suite.ctx, secpAddr, sdk.NewCoins(sdk.NewCoin("acanto", sdk.NewIntWithDecimal(10000, 18)), sdk.NewCoin(uusdcIbcdenom, sdk.NewIntWithDecimal(10000, 6))))
 
 			msgAddLiquidity := coinswaptypes.MsgAddLiquidity{
-				MaxToken:         sdk.NewCoin(ibcUsdcDenom, sdk.NewIntWithDecimal(10000, 6)),
+				MaxToken:         sdk.NewCoin(uusdcIbcdenom, sdk.NewIntWithDecimal(10000, 6)),
 				ExactStandardAmt: sdk.NewIntWithDecimal(10000, 18),
 				MinLiquidity:     sdk.NewInt(1),
 				Deadline:         time.Now().Add(time.Minute * 10).Unix(),
@@ -363,7 +363,7 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 			voucherBalance := suite.app.BankKeeper.GetBalance(suite.ctx, secpAddr, ibcDenom)
 			erc20balance := big.NewInt(0)
 
-			if ibcDenom == ibcUsdcDenom {
+			if ibcDenom == uusdcIbcdenom {
 				erc20balance = suite.app.Erc20Keeper.BalanceOf(suite.ctx, contracts.ERC20MinterBurnerDecimalsContract.ABI, usdcPair.GetERC20Contract(), common.BytesToAddress(secpAddr.Bytes()))
 			} else {
 				erc20balance = suite.app.Erc20Keeper.BalanceOf(suite.ctx, contracts.ERC20MinterBurnerDecimalsContract.ABI, usdtPair.GetERC20Contract(), common.BytesToAddress(secpAddr.Bytes()))

@@ -24,11 +24,6 @@ import (
 	"github.com/Canto-Network/Canto/v6/x/onboarding/types"
 )
 
-var (
-	ibcUsdcDenom = "ibc/FBEEDF2F566CF2568921399BD092363FCC45EB53278A3A09318C4348AAE2B27F"
-	ibcUsdtDenom = "ibc/4B32742658E7D16C1F77468D0DC35178731D694DEB17378242647EA02622EF64"
-)
-
 type KeeperTestSuite struct {
 	suite.Suite
 

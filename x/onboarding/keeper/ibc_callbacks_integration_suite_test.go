@@ -161,30 +161,11 @@ var (
 	}
 	uusdtIbcdenom = uusdtDenomtrace.IBCDenom()
 
-	uosmoDenomtrace = transfertypes.DenomTrace{
-		Path:      "transfer/channel-0",
-		BaseDenom: "uosmo",
-	}
-
-	uosmoIbcdenom = uosmoDenomtrace.IBCDenom()
-
 	uatomDenomtrace = transfertypes.DenomTrace{
 		Path:      "transfer/channel-1",
 		BaseDenom: "uatom",
 	}
 	uatomIbcdenom = uatomDenomtrace.IBCDenom()
-
-	acantoDenomtrace = transfertypes.DenomTrace{
-		Path:      "transfer/channel-0",
-		BaseDenom: "acanto",
-	}
-	acantoIbcdenom = acantoDenomtrace.IBCDenom()
-
-	uatomOsmoDenomtrace = transfertypes.DenomTrace{
-		Path:      "transfer/channel-0/transfer/channel-1",
-		BaseDenom: "uatom",
-	}
-	uatomOsmoIbcdenom = uatomOsmoDenomtrace.IBCDenom()
 )
 
 // SendAndReceiveMessage sends a transfer message from the origin chain to the destination chain
