@@ -85,6 +85,7 @@ func (suite *IBCTestingSuite) SetupTest() {
 	params.EnableOnboarding = true
 	suite.cantoChain.App.(*app.Canto).OnboardingKeeper.SetParams(suite.cantoChain.GetContext(), params)
 
+	// Setup the paths between the chains
 	suite.pathGravitycanto = ibcgotesting.NewTransferPath(suite.IBCGravityChain, suite.cantoChain) // clientID, connectionID, channelID empty
 	suite.pathCosmoscanto = ibcgotesting.NewTransferPath(suite.IBCCosmosChain, suite.cantoChain)
 	suite.pathGravityCosmos = ibcgotesting.NewTransferPath(suite.IBCCosmosChain, suite.IBCGravityChain)
@@ -102,6 +103,7 @@ func (suite *IBCTestingSuite) SetupTest() {
 	suite.IBCCosmosChain.CurrentHeader.ProposerAddress = suite.IBCCosmosChain.LastHeader.ValidatorSet.Proposer.Address
 }
 
+// FundCantoChain mints coins and sends them to the cantoChain sender account
 func (suite *IBCTestingSuite) FundCantoChain(coins sdk.Coins) {
 	err := suite.cantoChain.App.(*app.Canto).BankKeeper.MintCoins(suite.cantoChain.GetContext(), inflationtypes.ModuleName, coins)
 	suite.Require().NoError(err)
@@ -109,6 +111,7 @@ func (suite *IBCTestingSuite) FundCantoChain(coins sdk.Coins) {
 	suite.Require().NoError(err)
 }
 
+// setupRegisterCoin deploys an erc20 contract and creates the token pair
 func (suite *IBCTestingSuite) setupRegisterCoin(metadata banktypes.Metadata) *erc20types.TokenPair {
 	err := suite.cantoChain.App.(*app.Canto).BankKeeper.MintCoins(suite.cantoChain.GetContext(), inflationtypes.ModuleName, sdk.Coins{sdk.NewInt64Coin(metadata.Base, 1)})
 	suite.Require().NoError(err)
@@ -118,19 +121,20 @@ func (suite *IBCTestingSuite) setupRegisterCoin(metadata banktypes.Metadata) *er
 	return pair
 }
 
+// CreatePool creates a pool with acanto and the given denom
 func (suite *IBCTestingSuite) CreatePool(denom string) {
-
 	coincanto := sdk.NewCoin("acanto", sdk.NewIntWithDecimal(10000, 18))
 	coinIBC := sdk.NewCoin(denom, sdk.NewIntWithDecimal(10000, 6))
 	coins := sdk.NewCoins(coincanto, coinIBC)
 	suite.FundCantoChain(coins)
 
-	// create ibc/uUSDC, acanto pool
 	coinswapKeeper := suite.cantoChain.App.(*app.Canto).CoinswapKeeper
 	coinswapKeeper.SetStandardDenom(suite.cantoChain.GetContext(), "acanto")
 	coinswapParams := coinswapKeeper.GetParams(suite.cantoChain.GetContext())
 	coinswapParams.MaxSwapAmount = sdk.NewCoins(sdk.NewCoin(denom, sdk.NewIntWithDecimal(10, 6)))
 	coinswapKeeper.SetParams(suite.cantoChain.GetContext(), coinswapParams)
+
+	// Create a message to add liquidity to the pool
 	msgAddLiquidity := coinswaptypes.MsgAddLiquidity{
 		MaxToken:         sdk.NewCoin(denom, sdk.NewIntWithDecimal(10000, 6)),
 		ExactStandardAmt: sdk.NewIntWithDecimal(10000, 18),
@@ -138,6 +142,8 @@ func (suite *IBCTestingSuite) CreatePool(denom string) {
 		Deadline:         time.Now().Add(time.Minute * 10).Unix(),
 		Sender:           suite.cantoChain.SenderAccount.GetAddress().String(),
 	}
+
+	// Add liquidity to the pool
 	suite.cantoChain.App.(*app.Canto).CoinswapKeeper.AddLiquidity(suite.cantoChain.GetContext(), &msgAddLiquidity)
 }
 
@@ -181,11 +187,13 @@ var (
 	uatomOsmoIbcdenom = uatomOsmoDenomtrace.IBCDenom()
 )
 
+// SendAndReceiveMessage sends a transfer message from the origin chain to the destination chain
 func (suite *IBCTestingSuite) SendAndReceiveMessage(path *ibcgotesting.Path, origin *ibcgotesting.TestChain, coin string, amount int64, sender string, receiver string, seq uint64) *sdk.Result {
 	// Send coin from A to B
 	transferMsg := transfertypes.NewMsgTransfer(path.EndpointA.ChannelConfig.PortID, path.EndpointA.ChannelID, sdk.NewCoin(coin, sdk.NewInt(amount)), sender, receiver, timeoutHeight, 0)
 	_, err := origin.SendMsgs(transferMsg)
 	suite.Require().NoError(err) // message committed
+
 	// Recreate the packet that was sent
 	transfer := transfertypes.NewFungibleTokenPacketData(coin, strconv.Itoa(int(amount)), sender, receiver)
 	packet := channeltypes.NewPacket(transfer.GetBytes(), seq, path.EndpointA.ChannelConfig.PortID, path.EndpointA.ChannelID, path.EndpointB.ChannelConfig.PortID, path.EndpointB.ChannelID, timeoutHeight, 0)
@@ -195,23 +203,4 @@ func (suite *IBCTestingSuite) SendAndReceiveMessage(path *ibcgotesting.Path, ori
 
 	suite.Require().NoError(err)
 	return res
-}
-
-func CreatePacket(amount, denom, sender, receiver, srcPort, srcChannel, dstPort, dstChannel string, seq, timeout uint64) channeltypes.Packet {
-	transfer := transfertypes.FungibleTokenPacketData{
-		Amount:   amount,
-		Denom:    denom,
-		Receiver: sender,
-		Sender:   receiver,
-	}
-	return channeltypes.NewPacket(
-		transfer.GetBytes(),
-		seq,
-		srcPort,
-		srcChannel,
-		dstPort,
-		dstChannel,
-		clienttypes.ZeroHeight(), // timeout height disabled
-		timeout,
-	)
 }

@@ -230,9 +230,8 @@ var (
 		erc20types.ModuleName:          {authtypes.Minter, authtypes.Burner},
 		csrtypes.ModuleName:            {authtypes.Minter, authtypes.Burner},
 		govshuttletypes.ModuleName:     {authtypes.Minter, authtypes.Burner},
-		// TODO: testing, need to revert
-		onboardingtypes.ModuleName: {authtypes.Minter, authtypes.Burner},
-		coinswaptypes.ModuleName:   {authtypes.Minter, authtypes.Burner},
+		onboardingtypes.ModuleName:     {authtypes.Minter, authtypes.Burner},
+		coinswaptypes.ModuleName:       {authtypes.Minter, authtypes.Burner},
 	}
 
 	// module accounts that are allowed to receive tokens
@@ -558,9 +557,7 @@ func NewCanto(
 	)
 
 	app.TransferKeeper = ibctransferkeeper.NewKeeper(
-		// TODO: need to check didn't necessary onboarding keeper, ICS4Wrapper for recv
 		appCodec, keys[ibctransfertypes.StoreKey], app.GetSubspace(ibctransfertypes.ModuleName), app.RecoveryKeeper,
-		//nil, // ICS4 Wrapper: claims IBC middleware
 		app.IBCKeeper.ChannelKeeper, &app.IBCKeeper.PortKeeper,
 		app.AccountKeeper, app.BankKeeper, scopedTransferKeeper,
 	)
@@ -580,7 +577,6 @@ func NewCanto(
 	// - Onboarding Middleware
 	// - Recovery Middleware
 	// - Transfer
-	// TODO: need to check priority for onboarding
 
 	// create IBC module from bottom to top of stack
 	var transferStack porttypes.IBCModule
@@ -588,8 +584,6 @@ func NewCanto(
 	transferStack = transfer.NewIBCModule(app.TransferKeeper)
 	transferStack = recovery.NewIBCMiddleware(*app.RecoveryKeeper, transferStack)
 	transferStack = onboarding.NewIBCMiddleware(*app.OnboardingKeeper, transferStack)
-
-	// TODO: add other middleware
 
 	// Create static IBC router, add transfer route, then set and seal it
 	ibcRouter := porttypes.NewRouter()

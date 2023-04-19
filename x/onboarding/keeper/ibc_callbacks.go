@@ -2,8 +2,6 @@ package keeper
 
 import (
 	errorsmod "cosmossdk.io/errors"
-	"fmt"
-	"github.com/Canto-Network/Canto/v6/contracts"
 	"github.com/Canto-Network/Canto/v6/ibc"
 	erc20types "github.com/Canto-Network/Canto/v6/x/erc20/types"
 	"github.com/Canto-Network/Canto/v6/x/onboarding/types"
@@ -20,27 +18,19 @@ import (
 	"strings"
 )
 
-// OnRecvPacket performs an IBC receive callback. It returns the tokens that
-// users transferred to their Cosmos secp256k1 address instead of the Ethereum
-// ethsecp256k1 address. The expected behavior is as follows:
-//
-// First transfer from authorized source chain:
-//   - sends back IBC tokens which originated from the source chain
-//   - sends over all canto native tokens
-//
-// Second transfer from a different authorized source chain:
-//   - only sends back IBC tokens which originated from the source chain
+// OnRecvPacket performs an IBC receive callback.
+// It swaps the transferred IBC denom to acanto and
+// convert the remaining balance to ERC20 tokens.
+// If the balance of acanto is greater than the predefined value,
+// the swap is omitted and the entire transferred amount is converted to ERC20.
 func (k Keeper) OnRecvPacket(
 	ctx sdk.Context,
 	packet channeltypes.Packet,
 	ack exported.Acknowledgement,
 ) exported.Acknowledgement {
-	//logger := k.Logger(ctx)
+	logger := k.Logger(ctx)
 
-	// Check and return original ACK if:
-	//  - onboarding is disabled globally
-	//  - channel is not authorized
-	//  - channel is an EVM channel
+	// It always returns original ACK
 
 	params := k.GetParams(ctx)
 	if !params.EnableOnboarding {
@@ -59,9 +49,6 @@ func (k Keeper) OnRecvPacket(
 		return ack
 	}
 
-	fmt.Println(fmt.Sprintf("[onboarding] source channel: %s", packet.SourceChannel))
-	fmt.Println(fmt.Sprintf("[onboarding] destination channel: %s", packet.DestinationChannel))
-
 	// Get addresses in `canto1` and the original bech32 format
 	sender, recipient, senderBech32, recipientBech32, err := ibc.GetTransferSenderRecipient(packet)
 	if err != nil {
@@ -79,7 +66,7 @@ func (k Keeper) OnRecvPacket(
 		)
 	}
 
-	//get the recipient/sender account
+	//get the recipient account
 	account := k.accountKeeper.GetAccount(ctx, recipient)
 
 	// onboarding is not supported for vesting or module accounts
@@ -92,7 +79,6 @@ func (k Keeper) OnRecvPacket(
 	}
 
 	standardDenom := k.coinswapKeeper.GetStandardDenom(ctx)
-	fmt.Println(fmt.Sprintf("[onboarding] denom %s", standardDenom))
 
 	var data transfertypes.FungibleTokenPacketData
 	if err = transfertypes.ModuleCdc.UnmarshalJSON(packet.GetData(), &data); err != nil {
@@ -107,28 +93,18 @@ func (k Keeper) OnRecvPacket(
 		packet.DestinationPort, packet.DestinationChannel,
 		data.Denom, data.Amount,
 	)
-	fmt.Println(fmt.Sprintf("[onboarding] coin %s", transferredCoin))
 
-	threshold := k.GetParams(ctx).AutoSwapThreshold
-	swapCoins := sdk.NewCoin(standardDenom, threshold)
+	autoSwapThreshold := k.GetParams(ctx).AutoSwapThreshold
+	swapCoins := sdk.NewCoin(standardDenom, autoSwapThreshold)
 	standardCoinBalance := k.bankKeeper.GetBalance(ctx, recipient, standardDenom)
-	transferredCoinBalance := k.bankKeeper.GetBalance(ctx, recipient, transferredCoin.Denom)
 	swappedAmount := sdk.ZeroInt()
 
-	if standardCoinBalance.Amount.LT(threshold) {
-		fmt.Println(fmt.Sprintf("[onboarding] before swap balance %s, threshold %s, swap %s, ibc %s", standardCoinBalance, threshold, swapCoins, transferredCoinBalance))
-
+	if standardCoinBalance.Amount.LT(autoSwapThreshold) {
 		swappedAmount, err = k.coinswapKeeper.TradeInputForExactOutput(ctx, coinswaptypes.Input{Coin: transferredCoin, Address: recipient.String()}, coinswaptypes.Output{Coin: swapCoins, Address: recipient.String()})
 		if err != nil {
-			fmt.Println(fmt.Sprintf("[onboarding] swap error %s", err))
+			logger.Error("failed to swap coins", "error", err)
 		}
-
-		standardCoinBalance = k.bankKeeper.GetBalance(ctx, recipient, standardDenom)
-		transferredCoinBalance = k.bankKeeper.GetBalance(ctx, recipient, transferredCoin.Denom)
-		fmt.Println(fmt.Sprintf("[onboarding] after swap balance %s, threshold %s, swap %s, ibc %s", standardCoinBalance, threshold, swapCoins, transferredCoinBalance))
 	}
-
-	convertCoin := sdk.NewCoin(transferredCoin.Denom, transferredCoin.Amount.Sub(swappedAmount))
 
 	//convert coins to ERC20 token
 	pairID := k.erc20Keeper.GetTokenPairID(ctx, transferredCoin.Denom)
@@ -144,6 +120,8 @@ func (k Keeper) OnRecvPacket(
 		return ack
 	}
 
+	convertCoin := sdk.NewCoin(transferredCoin.Denom, transferredCoin.Amount.Sub(swappedAmount))
+
 	// Build MsgConvertCoin, from recipient to recipient since IBC transfer already occurred
 	convertMsg := erc20types.NewMsgConvertCoin(convertCoin, common.BytesToAddress(recipient.Bytes()), recipient)
 
@@ -152,84 +130,35 @@ func (k Keeper) OnRecvPacket(
 
 	// Use MsgConvertCoin to convert the Cosmos Coin to an ERC20
 	if _, err = k.erc20Keeper.ConvertCoin(sdk.WrapSDKContext(ctx), convertMsg); err != nil {
-		fmt.Println(fmt.Sprintf("[onboarding] convert error %s", err))
+		logger.Error("failed to convert coins", "error", err)
 		return ack
 	}
 
-	abi := contracts.ERC20BurnableContract.ABI
-	ercBalance := k.erc20Keeper.BalanceOf(ctx, abi, pair.GetERC20Contract(), common.BytesToAddress(recipient.Bytes()))
-	res, err := k.erc20Keeper.CallEVM(ctx, abi, common.BytesToAddress(recipient.Bytes()), pair.GetERC20Contract(), false, "symbol")
-	if err != nil {
-		return ack
-	}
-	var symbolRes erc20types.ERC20StringResponse
-	if err := abi.UnpackIntoInterface(&symbolRes, "symbol", res.Ret); err != nil {
-		return ack
-	}
+	logger.Info(
+		"coinswap and erc20 conversion completed",
+		"sender", senderBech32,
+		"receiver", recipientBech32,
+		"source-port", packet.SourcePort,
+		"source-channel", packet.SourceChannel,
+		"dest-port", packet.DestinationPort,
+		"dest-channel", packet.DestinationChannel,
+		"swap amount", swappedAmount,
+		"convert amount", convertCoin.Amount,
+	)
 
-	transferredCoinBalance = k.bankKeeper.GetBalance(ctx, recipient, transferredCoin.Denom)
-	fmt.Println(fmt.Sprintf("[onboarding] erc20 token balance %s%s, ibc %s", ercBalance, symbolRes.Value, transferredCoinBalance))
-
-	//// check error from the iteration above
-	//if err != nil {
-	//	logger.Error(
-	//		"failed to recover IBC vouchers",
-	//		"sender", senderBech32,
-	//		"receiver", recipientBech32,
-	//		"source-port", packet.SourcePort,
-	//		"source-channel", packet.SourceChannel,
-	//		"error", err.Error(),
-	//	)
-	//
-	//	return channeltypes.NewErrorAcknowledgement(
-	//		sdkerrors.Wrapf(
-	//			err,
-	//			"failed to recover IBC vouchers back to sender '%s' in the corresponding IBC chain", senderBech32,
-	//		).Error(),
-	//	)
-	//}
-
-	//logger.Info(
-	//	"balances recovered to sender address",
-	//	"sender", senderBech32,
-	//	"receiver", recipientBech32,
-	//	"amount", amtStr,
-	//	"source-port", packet.SourcePort,
-	//	"source-channel", packet.SourceChannel,
-	//	"dest-port", packet.DestinationPort,
-	//	"dest-channel", packet.DestinationChannel,
-	//)
-
-	//defer func() {
-	//	telemetry.IncrCounter(1, types.ModuleName, "ibc", "on_recv", "total")
-	//
-	//	for _, b := range balances {
-	//		if b.Amount.IsInt64() {
-	//			telemetry.IncrCounterWithLabels(
-	//				[]string{types.ModuleName, "ibc", "on_recv", "token", "total"},
-	//				float32(b.Amount.Int64()),
-	//				[]metrics.Label{
-	//					telemetry.NewLabel("denom", b.Denom),
-	//					telemetry.NewLabel("source_channel", packet.SourceChannel),
-	//					telemetry.NewLabel("source_port", packet.SourcePort),
-	//				},
-	//			)
-	//		}
-	//	}
-	//}()
-
-	//ctx.EventManager().EmitEvent(
-	//	sdk.NewEvent(
-	//		types.EventTypeOnboarding,
-	//		sdk.NewAttribute(sdk.AttributeKeySender, senderBech32),
-	//		sdk.NewAttribute(transfertypes.AttributeKeyReceiver, recipientBech32),
-	//		sdk.NewAttribute(sdk.AttributeKeyAmount, amtStr),
-	//		sdk.NewAttribute(channeltypes.AttributeKeySrcChannel, packet.SourceChannel),
-	//		sdk.NewAttribute(channeltypes.AttributeKeySrcPort, packet.SourcePort),
-	//		sdk.NewAttribute(channeltypes.AttributeKeyDstPort, packet.DestinationPort),
-	//		sdk.NewAttribute(channeltypes.AttributeKeyDstChannel, packet.DestinationChannel),
-	//	),
-	//)
+	ctx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			types.EventTypeOnboarding,
+			sdk.NewAttribute(sdk.AttributeKeySender, senderBech32),
+			sdk.NewAttribute(transfertypes.AttributeKeyReceiver, recipientBech32),
+			sdk.NewAttribute(channeltypes.AttributeKeySrcChannel, packet.SourceChannel),
+			sdk.NewAttribute(channeltypes.AttributeKeySrcPort, packet.SourcePort),
+			sdk.NewAttribute(channeltypes.AttributeKeyDstPort, packet.DestinationPort),
+			sdk.NewAttribute(channeltypes.AttributeKeyDstChannel, packet.DestinationChannel),
+			sdk.NewAttribute(types.AttributeKeySwapAmount, swappedAmount.String()),
+			sdk.NewAttribute(types.AttributeKeyConvertAmount, convertCoin.Amount.String()),
+		),
+	)
 
 	// return original acknowledgement
 	return ack

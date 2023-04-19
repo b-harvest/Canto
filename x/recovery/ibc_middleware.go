@@ -1,8 +1,6 @@
 package recovery
 
 import (
-	"fmt"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
@@ -38,7 +36,6 @@ func (im IBCMiddleware) OnRecvPacket(
 	packet channeltypes.Packet,
 	relayer sdk.AccAddress,
 ) exported.Acknowledgement {
-	fmt.Println("[recover start]")
 	ack := im.Module.OnRecvPacket(ctx, packet, relayer)
 
 	// return if the acknowledgement is an error ACK
@@ -46,7 +43,6 @@ func (im IBCMiddleware) OnRecvPacket(
 		return ack
 	}
 
-	fmt.Println("[recover end]")
 	return im.keeper.OnRecvPacket(ctx, packet, ack)
 }
 

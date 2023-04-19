@@ -49,7 +49,7 @@ var (
 		// NOTE: Denom units MUST be increasing
 		DenomUnits: []*banktypes.DenomUnit{
 			{
-				Denom:    ibcUsdcDenom,
+				Denom:    ibcUsdtDenom,
 				Exponent: 0,
 			},
 		},
@@ -59,6 +59,7 @@ var (
 	}
 )
 
+// setupRegisterCoin is a helper function for registering a new ERC20 token pair using the Erc20Keeper.
 func (suite *KeeperTestSuite) setupRegisterCoin(metadata banktypes.Metadata) *erc20types.TokenPair {
 	pair, err := suite.app.Erc20Keeper.RegisterCoin(suite.ctx, metadata)
 	suite.Require().NoError(err)
@@ -269,7 +270,7 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 		suite.Run(fmt.Sprintf("Case %s", tc.name), func() {
 			suite.SetupTest() // reset
 
-			// Setup liquidity pool (acanto, uUSDC)
+			// Setup liquidity pool (acanto/uUSDC)
 			suite.app.CoinswapKeeper.SetStandardDenom(suite.ctx, "acanto")
 			coinswapParams := suite.app.CoinswapKeeper.GetParams(suite.ctx)
 			coinswapParams.MaxSwapAmount = sdk.NewCoins(sdk.NewCoin(ibcUsdcDenom, sdk.NewIntWithDecimal(10, 6)))
@@ -328,8 +329,9 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 			suite.Require().True(found)
 			suite.app.OnboardingKeeper = keeper.NewKeeper(sp, suite.app.AccountKeeper, suite.app.BankKeeper, suite.app.IBCKeeper.ChannelKeeper, mockTransferKeeper, suite.app.CoinswapKeeper, suite.app.Erc20Keeper)
 
-			// Fund receiver account with canto, ERC20 coins and IBC vouchers
+			// Fund receiver account with canto, IBC vouchers
 			testutil.FundAccount(suite.app.BankKeeper, suite.ctx, secpAddr, tc.receiverBalance)
+			// Fund receiver account with the transferred amount
 			testutil.FundAccount(suite.app.BankKeeper, suite.ctx, secpAddr, sdk.NewCoins(sdk.NewCoin(ibcDenom, transferAmount)))
 
 			// Deploy ERC20 Contract
@@ -383,6 +385,8 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 			attrs = onboardingtest.ExtractAttributes(onboardingtest.FindEvent(events, "convert_coin"))
 
 			if tc.expErc20Balance.IsPositive() {
+				// Check that the amount of ERC20 tokens minted is equal to the difference between
+				// the transferred amount and the swapped amount
 				suite.Require().Equal(tc.expErc20Balance.String(), transferAmount.Sub(swappedAmount).String())
 				suite.Require().Equal(tc.expErc20Balance.String(), attrs["amount"])
 			} else {

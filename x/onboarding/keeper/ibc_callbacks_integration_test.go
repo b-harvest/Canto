@@ -31,7 +31,7 @@ var _ = Describe("Onboarding: Performing an IBC Transfer followed by autoswap an
 
 	Describe("from a non-authorized channel: Cosmos ---(uatom)---> Canto", func() {
 		BeforeEach(func() {
-			// register token pair
+			// deploy ERC20 contract and register token pair
 			tokenPair = s.setupRegisterCoin(metadataIbcUSDC)
 
 			// send coins from Cosmos to canto
@@ -58,18 +58,20 @@ var _ = Describe("Onboarding: Performing an IBC Transfer followed by autoswap an
 
 	Describe("from an authorized channel: Gravity ---(uUSDC)---> Canto", func() {
 		BeforeEach(func() {
-			// register token pair
+			// deploy ERC20 contract and register token pair
 			tokenPair = s.setupRegisterCoin(metadataIbcUSDC)
 
 			sender = s.IBCGravityChain.SenderAccount.GetAddress().String()
 			receiver = s.cantoChain.SenderAccount.GetAddress().String()
 			senderAcc = sdk.MustAccAddressFromBech32(sender)
 			receiverAcc = sdk.MustAccAddressFromBech32(receiver)
+
+			s.FundCantoChain(sdk.NewCoins(ibcBalance))
+
 		})
 
 		Context("when no swap pool exists", func() {
 			BeforeEach(func() {
-				s.FundCantoChain(sdk.NewCoins(ibcBalance))
 				result = s.SendAndReceiveMessage(s.pathGravitycanto, s.IBCGravityChain, "uUSDC", 10000000000, sender, receiver, 1)
 			})
 			It("No swap: acanto balance should be 0", func() {
@@ -99,7 +101,6 @@ var _ = Describe("Onboarding: Performing an IBC Transfer followed by autoswap an
 			})
 			When("acanto balance is 0 and not enough IBC token transferred to swap acanto", func() {
 				BeforeEach(func() {
-					s.FundCantoChain(sdk.NewCoins(ibcBalance))
 					result = s.SendAndReceiveMessage(s.pathGravitycanto, s.IBCGravityChain, "uUSDC", 1000000, sender, receiver, 1)
 				})
 				It("No swap: Balance of acanto should be same with the original acanto balance (0)", func() {
@@ -125,7 +126,6 @@ var _ = Describe("Onboarding: Performing an IBC Transfer followed by autoswap an
 
 			When("Canto chain's acanto balance is 0", func() {
 				BeforeEach(func() {
-					s.FundCantoChain(sdk.NewCoins(ibcBalance))
 					result = s.SendAndReceiveMessage(s.pathGravitycanto, s.IBCGravityChain, "uUSDC", 10000000000, sender, receiver, 1)
 				})
 				It("Swap: balance of acanto should be same with the auto swap threshold", func() {
@@ -155,7 +155,6 @@ var _ = Describe("Onboarding: Performing an IBC Transfer followed by autoswap an
 
 			When("Canto chain's acanto balance is between 0 and auto swap threshold (3canto)", func() {
 				BeforeEach(func() {
-					s.FundCantoChain(sdk.NewCoins(ibcBalance))
 					s.FundCantoChain(sdk.NewCoins(sdk.NewCoin("acanto", sdk.NewIntWithDecimal(3, 18))))
 					result = s.SendAndReceiveMessage(s.pathGravitycanto, s.IBCGravityChain, "uUSDC", 10000000000, sender, receiver, 1)
 				})
@@ -185,7 +184,6 @@ var _ = Describe("Onboarding: Performing an IBC Transfer followed by autoswap an
 			})
 			When("Canto chain's acanto balance is bigger than the auto swap threshold (4canto)", func() {
 				BeforeEach(func() {
-					s.FundCantoChain(sdk.NewCoins(ibcBalance))
 					s.FundCantoChain(sdk.NewCoins(sdk.NewCoin("acanto", sdk.NewIntWithDecimal(4, 18))))
 					result = s.SendAndReceiveMessage(s.pathGravitycanto, s.IBCGravityChain, "uUSDC", 10000000000, sender, receiver, 1)
 				})

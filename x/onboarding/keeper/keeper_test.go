@@ -27,9 +27,6 @@ import (
 var (
 	ibcUsdcDenom = "ibc/FBEEDF2F566CF2568921399BD092363FCC45EB53278A3A09318C4348AAE2B27F"
 	ibcUsdtDenom = "ibc/4B32742658E7D16C1F77468D0DC35178731D694DEB17378242647EA02622EF64"
-	ibcAtomDenom = "ibc/A4DB47A9D3CF9A068D454513891B526702455D3EF08FB9EB558C561F9DC2B701"
-	ibcOsmoDenom = "ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518"
-	erc20Denom   = "erc20/0xdac17f958d2ee523a2206206994597c13d831ec7"
 )
 
 type KeeperTestSuite struct {
@@ -86,13 +83,6 @@ func (suite *KeeperTestSuite) SetupTest() {
 	suite.app.StakingKeeper.AfterValidatorCreated(suite.ctx, validator.GetOperator())
 	err = suite.app.StakingKeeper.SetValidatorByConsAddr(suite.ctx, validator)
 	suite.NoError(err)
-
-	// claimsParams := claimstypes.DefaultParams()
-	// claimsParams.AirdropStartTime = suite.ctx.BlockTime()
-	// suite.app.ClaimsKeeper.SetParams(suite.ctx, claimsParams)
-	//queryHelperEvm := baseapp.NewQueryServerTestHelper(suite.ctx, suite.app.InterfaceRegistry())
-	//evm.RegisterQueryServer(queryHelperEvm, suite.app.EvmKeeper)
-	//suite.queryClientEvm = evm.NewQueryClient(queryHelperEvm)
 
 	stakingParams := suite.app.StakingKeeper.GetParams(suite.ctx)
 	stakingParams.BondDenom = "acanto"
