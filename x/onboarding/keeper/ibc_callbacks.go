@@ -12,10 +12,8 @@ import (
 	vestexported "github.com/cosmos/cosmos-sdk/x/auth/vesting/exported"
 	transfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
-	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
 	"github.com/cosmos/ibc-go/v3/modules/core/exported"
 	"github.com/ethereum/go-ethereum/common"
-	"strings"
 )
 
 // OnRecvPacket performs an IBC receive callback.
@@ -87,6 +85,7 @@ func (k Keeper) OnRecvPacket(
 		err = errorsmod.Wrapf(types.ErrInvalidType, "cannot unmarshal ICS-20 transfer packet data")
 		return channeltypes.NewErrorAcknowledgement(err.Error())
 	}
+
 	// parse the transferred denom
 	transferredCoin := ibc.GetReceivedCoin(
 		packet.SourcePort, packet.SourceChannel,
@@ -162,73 +161,4 @@ func (k Keeper) OnRecvPacket(
 
 	// return original acknowledgement
 	return ack
-}
-
-// GetIBCDenomDestinationIdentifiers returns the destination port and channel of
-// the IBC denomination, i.e port and channel on canto for the voucher. It
-// returns an error if:
-//   - the denomination is invalid
-//   - the denom trace is not found on the store
-//   - destination port or channel ID are invalid
-func (k Keeper) GetIBCDenomDestinationIdentifiers(ctx sdk.Context, denom, sender string) (destinationPort, destinationChannel string, err error) {
-	ibcDenom := strings.SplitN(denom, "/", 2)
-	if len(ibcDenom) < 2 {
-		return "", "", sdkerrors.Wrap(transfertypes.ErrInvalidDenomForTransfer, denom)
-	}
-
-	hash, err := transfertypes.ParseHexHash(ibcDenom[1])
-	if err != nil {
-		return "", "", sdkerrors.Wrapf(
-			err,
-			"failed to recover IBC vouchers back to sender '%s' in the corresponding IBC chain", sender,
-		)
-	}
-
-	denomTrace, found := k.transferKeeper.GetDenomTrace(ctx, hash)
-	if !found {
-		return "", "", sdkerrors.Wrapf(
-			transfertypes.ErrTraceNotFound,
-			"failed to recover IBC vouchers back to sender '%s' in the corresponding IBC chain", sender,
-		)
-	}
-
-	path := strings.Split(denomTrace.Path, "/")
-	if len(path)%2 != 0 {
-		// safety check: shouldn't occur
-		return "", "", sdkerrors.Wrapf(
-			transfertypes.ErrInvalidDenomForTransfer,
-			"invalid denom (%s) trace path %s", denomTrace.BaseDenom, denomTrace.Path,
-		)
-	}
-
-	destinationPort = path[0]
-	destinationChannel = path[1]
-
-	_, found = k.channelKeeper.GetChannel(ctx, destinationPort, destinationChannel)
-	if !found {
-		return "", "", sdkerrors.Wrapf(
-			channeltypes.ErrChannelNotFound,
-			"port ID %s, channel ID %s", destinationPort, destinationChannel,
-		)
-	}
-
-	// NOTE: optimistic handshakes could cause unforeseen issues.
-	// Safety check: verify that the destination port and channel are valid
-	if err := host.PortIdentifierValidator(destinationPort); err != nil {
-		// shouldn't occur
-		return "", "", sdkerrors.Wrapf(
-			host.ErrInvalidID,
-			"invalid port ID '%s': %s", destinationPort, err.Error(),
-		)
-	}
-
-	if err := host.ChannelIdentifierValidator(destinationChannel); err != nil {
-		// shouldn't occur
-		return "", "", sdkerrors.Wrapf(
-			channeltypes.ErrInvalidChannelIdentifier,
-			"channel ID '%s': %s", destinationChannel, err.Error(),
-		)
-	}
-
-	return destinationPort, destinationChannel, nil
 }

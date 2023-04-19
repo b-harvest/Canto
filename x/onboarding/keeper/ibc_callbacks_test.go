@@ -4,10 +4,13 @@ import (
 	"fmt"
 	"github.com/Canto-Network/Canto/v6/contracts"
 	inflationtypes "github.com/Canto-Network/Canto/v6/x/inflation/types"
+	vestingtypes "github.com/Canto-Network/Canto/v6/x/vesting/types"
 	coinswaptypes "github.com/b-harvest/coinswap/modules/coinswap/types"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/mock"
 	"math/big"
@@ -96,6 +99,82 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 		expVoucherBalance sdk.Coin
 		expErc20Balance   sdk.Int
 	}{
+		{
+			"fail - invalid sender - missing '1' ",
+			func() {
+				transfer := transfertypes.NewFungibleTokenPacketData(denom, "100", "canto", secpAddrcanto)
+				bz := transfertypes.ModuleCdc.MustMarshalJSON(&transfer)
+				packet = channeltypes.NewPacket(bz, 100, transfertypes.PortID, sourceChannel, transfertypes.PortID, cantoChannel, timeoutHeight, 0)
+			},
+			false,
+			sdk.NewCoins(sdk.NewCoin("acanto", sdk.ZeroInt())),
+			sdk.NewCoin("acanto", sdk.ZeroInt()),
+			sdk.NewCoin(uusdcIbcdenom, transferAmount),
+			sdk.ZeroInt(),
+		},
+		{
+			"fail - invalid sender - invalid bech32",
+			func() {
+				transfer := transfertypes.NewFungibleTokenPacketData(denom, "100", "badba1sv9m0g7ycejwr3s369km58h5qe7xj77hvcxrms", secpAddrcanto)
+				bz := transfertypes.ModuleCdc.MustMarshalJSON(&transfer)
+				packet = channeltypes.NewPacket(bz, 100, transfertypes.PortID, sourceChannel, transfertypes.PortID, cantoChannel, timeoutHeight, 0)
+			},
+			false,
+			sdk.NewCoins(sdk.NewCoin("acanto", sdk.ZeroInt())),
+			sdk.NewCoin("acanto", sdk.ZeroInt()),
+			sdk.NewCoin(uusdcIbcdenom, transferAmount),
+			sdk.ZeroInt(),
+		},
+		{
+			"fail - case: receiver address is in deny list",
+			func() {
+				blockedAddr := authtypes.NewModuleAddress(transfertypes.ModuleName)
+
+				transfer := transfertypes.NewFungibleTokenPacketData(denom, "100", secpAddrCosmos, blockedAddr.String())
+				bz := transfertypes.ModuleCdc.MustMarshalJSON(&transfer)
+				packet = channeltypes.NewPacket(bz, 100, transfertypes.PortID, sourceChannel, transfertypes.PortID, cantoChannel, timeoutHeight, 0)
+			},
+			false,
+			sdk.NewCoins(sdk.NewCoin("acanto", sdk.ZeroInt())),
+			sdk.NewCoin("acanto", sdk.ZeroInt()),
+			sdk.NewCoin(uusdcIbcdenom, transferAmount),
+			sdk.ZeroInt(),
+		},
+		{
+			"continue - receiver is a vesting account",
+			func() {
+				// Set vesting account
+				bacc := authtypes.NewBaseAccount(secpAddr, nil, 0, 0)
+				acc := vestingtypes.NewClawbackVestingAccount(bacc, secpAddr, nil, suite.ctx.BlockTime(), nil, nil)
+
+				suite.app.AccountKeeper.SetAccount(suite.ctx, acc)
+
+				transfer := transfertypes.NewFungibleTokenPacketData(denom, "100", secpAddrCosmos, secpAddrcanto)
+				bz := transfertypes.ModuleCdc.MustMarshalJSON(&transfer)
+				packet = channeltypes.NewPacket(bz, 100, transfertypes.PortID, sourceChannel, transfertypes.PortID, cantoChannel, timeoutHeight, 0)
+			},
+			true,
+			sdk.NewCoins(sdk.NewCoin("acanto", sdk.ZeroInt())),
+			sdk.NewCoin("acanto", sdk.ZeroInt()),
+			sdk.NewCoin(uusdcIbcdenom, transferAmount),
+			sdk.ZeroInt(),
+		},
+		{
+			"continue - receiver is a module account",
+			func() {
+				distrAcc := suite.app.AccountKeeper.GetModuleAccount(suite.ctx, distrtypes.ModuleName)
+				suite.Require().NotNil(distrAcc)
+				addr := distrAcc.GetAddress().String()
+				transfer := transfertypes.NewFungibleTokenPacketData(denom, "100", addr, addr)
+				bz := transfertypes.ModuleCdc.MustMarshalJSON(&transfer)
+				packet = channeltypes.NewPacket(bz, 100, transfertypes.PortID, sourceChannel, transfertypes.PortID, cantoChannel, timeoutHeight, 0)
+			},
+			true,
+			sdk.NewCoins(sdk.NewCoin("acanto", sdk.ZeroInt())),
+			sdk.NewCoin("acanto", sdk.ZeroInt()),
+			sdk.NewCoin(uusdcIbcdenom, transferAmount),
+			sdk.ZeroInt(),
+		},
 		{
 			"continue - params disabled",
 			func() {
