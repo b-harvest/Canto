@@ -30,6 +30,7 @@ var _ = time.Kitchen
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// TODO: Update comments for each statuses
 // ChunkStatus defines the status of the chunk.
 type ChunkStatus int32
 
@@ -45,7 +46,7 @@ const (
 	// For various reasons, the insurance paired to Chunk can be un-paired.
 	// At this time, if there is no insurance candidate,
 	// a chunk enters this status.
-	CHUNK_STATUS_UNPAIRING_FOR_REPAIRING ChunkStatus = 3
+	CHUNK_STATUS_UNPAIRING ChunkStatus = 3
 	// When a delegator(= liquid staker) sends a MsgLiquidUnstake, the last ranked
 	// paired chunk enters this status and waits until the un-bonding period times
 	// out.
@@ -56,16 +57,16 @@ var ChunkStatus_name = map[int32]string{
 	0: "CHUNK_STATUS_UNSPECIFIED",
 	1: "CHUNK_STATUS_PAIRING",
 	2: "CHUNK_STATUS_PAIRED",
-	3: "CHUNK_STATUS_UNPAIRING_FOR_REPAIRING",
+	3: "CHUNK_STATUS_UNPAIRING",
 	4: "CHUNK_STATUS_UNPAIRING_FOR_UNSTAKE",
 }
 
 var ChunkStatus_value = map[string]int32{
-	"CHUNK_STATUS_UNSPECIFIED":             0,
-	"CHUNK_STATUS_PAIRING":                 1,
-	"CHUNK_STATUS_PAIRED":                  2,
-	"CHUNK_STATUS_UNPAIRING_FOR_REPAIRING": 3,
-	"CHUNK_STATUS_UNPAIRING_FOR_UNSTAKE":   4,
+	"CHUNK_STATUS_UNSPECIFIED":           0,
+	"CHUNK_STATUS_PAIRING":               1,
+	"CHUNK_STATUS_PAIRED":                2,
+	"CHUNK_STATUS_UNPAIRING":             3,
+	"CHUNK_STATUS_UNPAIRING_FOR_UNSTAKE": 4,
 }
 
 func (x ChunkStatus) String() string {
@@ -76,6 +77,7 @@ func (ChunkStatus) EnumDescriptor() ([]byte, []int) {
 	return fileDescriptor_d5ab11aad71f7b33, []int{0}
 }
 
+// TODO: Update comments for each statuses
 // InsuranceStatus defines the status of the insurance.
 type InsuranceStatus int32
 
@@ -93,7 +95,7 @@ const (
 	// For various reasons, the insurance paired to Chunk can enters this status.
 	// The insurance in this status wait until
 	// the paired chunk's un-bonding period times out.
-	INSURANCE_STATUS_UNPAIRING_FOR_REPAIRING InsuranceStatus = 3
+	INSURANCE_STATUS_UNPAIRING InsuranceStatus = 3
 	// Insurance enters this status when msgServer receives MsgWithdrawInsurance.
 	// The insurance waits until the paired chunk's un-bonding period times out.
 	INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAW InsuranceStatus = 4
@@ -101,25 +103,25 @@ const (
 	// cover slash. If not, the insurance enters this status. Insurance provider
 	// can re-fill token amount of the insurance by sending MsgRefillInsurance or
 	// cancel the insurance by sending MsgCancelInsuranceProvide.
-	INSURANCE_STATUS_VULNERABLE InsuranceStatus = 5
+	INSURANCE_STATUS_UNPAIRED InsuranceStatus = 5
 )
 
 var InsuranceStatus_name = map[int32]string{
 	0: "INSURANCE_STATUS_UNSPECIFIED",
 	1: "INSURANCE_STATUS_PAIRING",
 	2: "INSURANCE_STATUS_PAIRED",
-	3: "INSURANCE_STATUS_UNPAIRING_FOR_REPAIRING",
+	3: "INSURANCE_STATUS_UNPAIRING",
 	4: "INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAW",
-	5: "INSURANCE_STATUS_VULNERABLE",
+	5: "INSURANCE_STATUS_UNPAIRED",
 }
 
 var InsuranceStatus_value = map[string]int32{
-	"INSURANCE_STATUS_UNSPECIFIED":             0,
-	"INSURANCE_STATUS_PAIRING":                 1,
-	"INSURANCE_STATUS_PAIRED":                  2,
-	"INSURANCE_STATUS_UNPAIRING_FOR_REPAIRING": 3,
-	"INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAW":  4,
-	"INSURANCE_STATUS_VULNERABLE":              5,
+	"INSURANCE_STATUS_UNSPECIFIED":            0,
+	"INSURANCE_STATUS_PAIRING":                1,
+	"INSURANCE_STATUS_PAIRED":                 2,
+	"INSURANCE_STATUS_UNPAIRING":              3,
+	"INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAW": 4,
+	"INSURANCE_STATUS_UNPAIRED":               5,
 }
 
 func (x InsuranceStatus) String() string {
@@ -257,9 +259,10 @@ type Chunk struct {
 	// Id of the chunk
 	Id uint64 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
 	// Id of Paired insurance, 0 means no insurance
-	InsuranceId uint64 `protobuf:"varint,2,opt,name=insurance_id,json=insuranceId,proto3" json:"insurance_id,omitempty"`
+	PairedInsuranceId    uint64 `protobuf:"varint,2,opt,name=paired_insurance_id,json=pairedInsuranceId,proto3" json:"paired_insurance_id,omitempty"`
+	UnpairingInsuranceId uint64 `protobuf:"varint,3,opt,name=unpairing_insurance_id,json=unpairingInsuranceId,proto3" json:"unpairing_insurance_id,omitempty"`
 	// Status of the chunk
-	Status ChunkStatus `protobuf:"varint,3,opt,name=status,proto3,enum=canto.liquidstaking.v1.ChunkStatus" json:"status,omitempty"`
+	Status ChunkStatus `protobuf:"varint,4,opt,name=status,proto3,enum=canto.liquidstaking.v1.ChunkStatus" json:"status,omitempty"`
 }
 
 func (m *Chunk) Reset()         { *m = Chunk{} }
@@ -412,40 +415,23 @@ func (m *NetAmountState) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_NetAmountState proto.InternalMessageInfo
 
-// LiquidUnstakeUnbondingDelegationInfo is created when liquid unstaker requests
-// a MsgLiquidUnstake. It exists to burn ls tokens in the amount calculated at
-// the mint rate at the time of the request, before returning native tokens that
-// have been bound since the end of the unbonding period.
-type LiquidUnstakeUnbondingDelegationInfo struct {
-	// The id of chunk in UnpairingForUnstake status.
-	ChunkId uint64 `protobuf:"varint,1,opt,name=chunk_id,json=chunkId,proto3" json:"chunk_id,omitempty"`
-	// The address of liquid unstaker
-	DelegatorAddress string `protobuf:"bytes,2,opt,name=delegator_address,json=delegatorAddress,proto3" json:"delegator_address,omitempty"`
-	// The address of the validator
-	ValidatorAddress string `protobuf:"bytes,3,opt,name=validator_address,json=validatorAddress,proto3" json:"validator_address,omitempty"`
-	// The mint rate at the time of the request
-	MintRate github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,4,opt,name=mint_rate,json=mintRate,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"mint_rate"`
-	// The amount of ls tokens to be burned
-	// This is calculated by the mint rate at the time of the request
-	BurnAmount github_com_cosmos_cosmos_sdk_types.Coin `protobuf:"bytes,5,opt,name=burn_amount,json=burnAmount,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Coin" json:"burn_amount"`
-	// The total amount of slashing penalties the insurance has paid so far.
-	Covered github_com_cosmos_cosmos_sdk_types.Coin `protobuf:"bytes,6,opt,name=covered,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Coin" json:"covered"`
-	// The unix time for unbonding completion
-	CompletionTime time.Time `protobuf:"bytes,7,opt,name=completion_time,json=completionTime,proto3,stdtime" json:"completion_time"`
+// LiquidUnstakeEntry is an array for handling MsgLiquidUnstake in sequential.
+type PendingLiquidUnstake struct {
+	Entries []LiquidUnstakeEntry `protobuf:"bytes,1,rep,name=entries,proto3" json:"entries"`
 }
 
-func (m *LiquidUnstakeUnbondingDelegationInfo) Reset()         { *m = LiquidUnstakeUnbondingDelegationInfo{} }
-func (m *LiquidUnstakeUnbondingDelegationInfo) String() string { return proto.CompactTextString(m) }
-func (*LiquidUnstakeUnbondingDelegationInfo) ProtoMessage()    {}
-func (*LiquidUnstakeUnbondingDelegationInfo) Descriptor() ([]byte, []int) {
+func (m *PendingLiquidUnstake) Reset()         { *m = PendingLiquidUnstake{} }
+func (m *PendingLiquidUnstake) String() string { return proto.CompactTextString(m) }
+func (*PendingLiquidUnstake) ProtoMessage()    {}
+func (*PendingLiquidUnstake) Descriptor() ([]byte, []int) {
 	return fileDescriptor_d5ab11aad71f7b33, []int{5}
 }
-func (m *LiquidUnstakeUnbondingDelegationInfo) XXX_Unmarshal(b []byte) error {
+func (m *PendingLiquidUnstake) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *LiquidUnstakeUnbondingDelegationInfo) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *PendingLiquidUnstake) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_LiquidUnstakeUnbondingDelegationInfo.Marshal(b, m, deterministic)
+		return xxx_messageInfo_PendingLiquidUnstake.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -455,133 +441,140 @@ func (m *LiquidUnstakeUnbondingDelegationInfo) XXX_Marshal(b []byte, determinist
 		return b[:n], nil
 	}
 }
-func (m *LiquidUnstakeUnbondingDelegationInfo) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_LiquidUnstakeUnbondingDelegationInfo.Merge(m, src)
+func (m *PendingLiquidUnstake) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_PendingLiquidUnstake.Merge(m, src)
 }
-func (m *LiquidUnstakeUnbondingDelegationInfo) XXX_Size() int {
+func (m *PendingLiquidUnstake) XXX_Size() int {
 	return m.Size()
 }
-func (m *LiquidUnstakeUnbondingDelegationInfo) XXX_DiscardUnknown() {
-	xxx_messageInfo_LiquidUnstakeUnbondingDelegationInfo.DiscardUnknown(m)
+func (m *PendingLiquidUnstake) XXX_DiscardUnknown() {
+	xxx_messageInfo_PendingLiquidUnstake.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_LiquidUnstakeUnbondingDelegationInfo proto.InternalMessageInfo
+var xxx_messageInfo_PendingLiquidUnstake proto.InternalMessageInfo
 
-func (m *LiquidUnstakeUnbondingDelegationInfo) GetChunkId() uint64 {
+func (m *PendingLiquidUnstake) GetEntries() []LiquidUnstakeEntry {
+	if m != nil {
+		return m.Entries
+	}
+	return nil
+}
+
+type LiquidUnstakeEntry struct {
+	// The id of chunk
+	ChunkId uint64 `protobuf:"varint,1,opt,name=chunk_id,json=chunkId,proto3" json:"chunk_id,omitempty"`
+	// Address of delegator
+	DelegatorAddress string `protobuf:"bytes,2,opt,name=delegator_address,json=delegatorAddress,proto3" json:"delegator_address,omitempty"`
+	// Amount of ls tokens to burn
+	EscrowedLstokens github_com_cosmos_cosmos_sdk_types.Coin `protobuf:"bytes,3,opt,name=escrowed_lstokens,json=escrowedLstokens,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Coin" json:"escrowed_lstokens"`
+}
+
+func (m *LiquidUnstakeEntry) Reset()         { *m = LiquidUnstakeEntry{} }
+func (m *LiquidUnstakeEntry) String() string { return proto.CompactTextString(m) }
+func (*LiquidUnstakeEntry) ProtoMessage()    {}
+func (*LiquidUnstakeEntry) Descriptor() ([]byte, []int) {
+	return fileDescriptor_d5ab11aad71f7b33, []int{6}
+}
+func (m *LiquidUnstakeEntry) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *LiquidUnstakeEntry) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_LiquidUnstakeEntry.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *LiquidUnstakeEntry) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_LiquidUnstakeEntry.Merge(m, src)
+}
+func (m *LiquidUnstakeEntry) XXX_Size() int {
+	return m.Size()
+}
+func (m *LiquidUnstakeEntry) XXX_DiscardUnknown() {
+	xxx_messageInfo_LiquidUnstakeEntry.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_LiquidUnstakeEntry proto.InternalMessageInfo
+
+type UnpairingForUnstakeChunkInfo struct {
+	// The id of chunk
+	ChunkId uint64 `protobuf:"varint,1,opt,name=chunk_id,json=chunkId,proto3" json:"chunk_id,omitempty"`
+	// Address of delegator
+	DelegatorAddress string `protobuf:"bytes,2,opt,name=delegator_address,json=delegatorAddress,proto3" json:"delegator_address,omitempty"`
+	// Amount of ls tokens to burn
+	EscrowedLstokens github_com_cosmos_cosmos_sdk_types.Coin `protobuf:"bytes,3,opt,name=escrowed_lstokens,json=escrowedLstokens,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Coin" json:"escrowed_lstokens"`
+}
+
+func (m *UnpairingForUnstakeChunkInfo) Reset()         { *m = UnpairingForUnstakeChunkInfo{} }
+func (m *UnpairingForUnstakeChunkInfo) String() string { return proto.CompactTextString(m) }
+func (*UnpairingForUnstakeChunkInfo) ProtoMessage()    {}
+func (*UnpairingForUnstakeChunkInfo) Descriptor() ([]byte, []int) {
+	return fileDescriptor_d5ab11aad71f7b33, []int{7}
+}
+func (m *UnpairingForUnstakeChunkInfo) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *UnpairingForUnstakeChunkInfo) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_UnpairingForUnstakeChunkInfo.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *UnpairingForUnstakeChunkInfo) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_UnpairingForUnstakeChunkInfo.Merge(m, src)
+}
+func (m *UnpairingForUnstakeChunkInfo) XXX_Size() int {
+	return m.Size()
+}
+func (m *UnpairingForUnstakeChunkInfo) XXX_DiscardUnknown() {
+	xxx_messageInfo_UnpairingForUnstakeChunkInfo.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_UnpairingForUnstakeChunkInfo proto.InternalMessageInfo
+
+func (m *UnpairingForUnstakeChunkInfo) GetChunkId() uint64 {
 	if m != nil {
 		return m.ChunkId
 	}
 	return 0
 }
 
-func (m *LiquidUnstakeUnbondingDelegationInfo) GetDelegatorAddress() string {
+func (m *UnpairingForUnstakeChunkInfo) GetDelegatorAddress() string {
 	if m != nil {
 		return m.DelegatorAddress
 	}
 	return ""
 }
 
-func (m *LiquidUnstakeUnbondingDelegationInfo) GetValidatorAddress() string {
-	if m != nil {
-		return m.ValidatorAddress
-	}
-	return ""
-}
-
-func (m *LiquidUnstakeUnbondingDelegationInfo) GetCompletionTime() time.Time {
-	if m != nil {
-		return m.CompletionTime
-	}
-	return time.Time{}
-}
-
-type UnpairingForRepairingInfo struct {
-	// The id of chunk in UnpairingForRepairing status.
-	ChunkId uint64 `protobuf:"varint,1,opt,name=chunk_id,json=chunkId,proto3" json:"chunk_id,omitempty"`
+type WithdrawInsuranceRequest struct {
 	// The id of insurance
-	InsuranceId uint64 `protobuf:"varint,2,opt,name=insurance_id,json=insuranceId,proto3" json:"insurance_id,omitempty"`
-	// The unix time for unbonding completion
-	CompletionTime time.Time `protobuf:"bytes,3,opt,name=completion_time,json=completionTime,proto3,stdtime" json:"completion_time"`
-}
-
-func (m *UnpairingForRepairingInfo) Reset()         { *m = UnpairingForRepairingInfo{} }
-func (m *UnpairingForRepairingInfo) String() string { return proto.CompactTextString(m) }
-func (*UnpairingForRepairingInfo) ProtoMessage()    {}
-func (*UnpairingForRepairingInfo) Descriptor() ([]byte, []int) {
-	return fileDescriptor_d5ab11aad71f7b33, []int{6}
-}
-func (m *UnpairingForRepairingInfo) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *UnpairingForRepairingInfo) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_UnpairingForRepairingInfo.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *UnpairingForRepairingInfo) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_UnpairingForRepairingInfo.Merge(m, src)
-}
-func (m *UnpairingForRepairingInfo) XXX_Size() int {
-	return m.Size()
-}
-func (m *UnpairingForRepairingInfo) XXX_DiscardUnknown() {
-	xxx_messageInfo_UnpairingForRepairingInfo.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_UnpairingForRepairingInfo proto.InternalMessageInfo
-
-func (m *UnpairingForRepairingInfo) GetChunkId() uint64 {
-	if m != nil {
-		return m.ChunkId
-	}
-	return 0
-}
-
-func (m *UnpairingForRepairingInfo) GetInsuranceId() uint64 {
-	if m != nil {
-		return m.InsuranceId
-	}
-	return 0
-}
-
-func (m *UnpairingForRepairingInfo) GetCompletionTime() time.Time {
-	if m != nil {
-		return m.CompletionTime
-	}
-	return time.Time{}
-}
-
-// WithdrawalInsurance is created when insurance provider requests a
-// MsgWithdrawInsurance. Actual withdrawal is done after completion_time.
-type WithdrawingInsurance struct {
-	// Id of the insurance
 	InsuranceId uint64 `protobuf:"varint,1,opt,name=insurance_id,json=insuranceId,proto3" json:"insurance_id,omitempty"`
-	// Id of the chunk
-	ChunkId uint64 `protobuf:"varint,2,opt,name=chunk_id,json=chunkId,proto3" json:"chunk_id,omitempty"`
-	// The unix time for unbonding completion
-	// Insurance is withdrawn after completion_time
-	CompletionTime time.Time `protobuf:"bytes,3,opt,name=completion_time,json=completionTime,proto3,stdtime" json:"completion_time"`
 }
 
-func (m *WithdrawingInsurance) Reset()         { *m = WithdrawingInsurance{} }
-func (m *WithdrawingInsurance) String() string { return proto.CompactTextString(m) }
-func (*WithdrawingInsurance) ProtoMessage()    {}
-func (*WithdrawingInsurance) Descriptor() ([]byte, []int) {
-	return fileDescriptor_d5ab11aad71f7b33, []int{7}
+func (m *WithdrawInsuranceRequest) Reset()         { *m = WithdrawInsuranceRequest{} }
+func (m *WithdrawInsuranceRequest) String() string { return proto.CompactTextString(m) }
+func (*WithdrawInsuranceRequest) ProtoMessage()    {}
+func (*WithdrawInsuranceRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_d5ab11aad71f7b33, []int{8}
 }
-func (m *WithdrawingInsurance) XXX_Unmarshal(b []byte) error {
+func (m *WithdrawInsuranceRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *WithdrawingInsurance) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *WithdrawInsuranceRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_WithdrawingInsurance.Marshal(b, m, deterministic)
+		return xxx_messageInfo_WithdrawInsuranceRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -591,37 +584,23 @@ func (m *WithdrawingInsurance) XXX_Marshal(b []byte, deterministic bool) ([]byte
 		return b[:n], nil
 	}
 }
-func (m *WithdrawingInsurance) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_WithdrawingInsurance.Merge(m, src)
+func (m *WithdrawInsuranceRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_WithdrawInsuranceRequest.Merge(m, src)
 }
-func (m *WithdrawingInsurance) XXX_Size() int {
+func (m *WithdrawInsuranceRequest) XXX_Size() int {
 	return m.Size()
 }
-func (m *WithdrawingInsurance) XXX_DiscardUnknown() {
-	xxx_messageInfo_WithdrawingInsurance.DiscardUnknown(m)
+func (m *WithdrawInsuranceRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_WithdrawInsuranceRequest.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_WithdrawingInsurance proto.InternalMessageInfo
+var xxx_messageInfo_WithdrawInsuranceRequest proto.InternalMessageInfo
 
-func (m *WithdrawingInsurance) GetInsuranceId() uint64 {
+func (m *WithdrawInsuranceRequest) GetInsuranceId() uint64 {
 	if m != nil {
 		return m.InsuranceId
 	}
 	return 0
-}
-
-func (m *WithdrawingInsurance) GetChunkId() uint64 {
-	if m != nil {
-		return m.ChunkId
-	}
-	return 0
-}
-
-func (m *WithdrawingInsurance) GetCompletionTime() time.Time {
-	if m != nil {
-		return m.CompletionTime
-	}
-	return time.Time{}
 }
 
 func init() {
@@ -632,9 +611,10 @@ func init() {
 	proto.RegisterType((*Chunk)(nil), "canto.liquidstaking.v1.Chunk")
 	proto.RegisterType((*Insurance)(nil), "canto.liquidstaking.v1.Insurance")
 	proto.RegisterType((*NetAmountState)(nil), "canto.liquidstaking.v1.NetAmountState")
-	proto.RegisterType((*LiquidUnstakeUnbondingDelegationInfo)(nil), "canto.liquidstaking.v1.LiquidUnstakeUnbondingDelegationInfo")
-	proto.RegisterType((*UnpairingForRepairingInfo)(nil), "canto.liquidstaking.v1.UnpairingForRepairingInfo")
-	proto.RegisterType((*WithdrawingInsurance)(nil), "canto.liquidstaking.v1.WithdrawingInsurance")
+	proto.RegisterType((*PendingLiquidUnstake)(nil), "canto.liquidstaking.v1.PendingLiquidUnstake")
+	proto.RegisterType((*LiquidUnstakeEntry)(nil), "canto.liquidstaking.v1.LiquidUnstakeEntry")
+	proto.RegisterType((*UnpairingForUnstakeChunkInfo)(nil), "canto.liquidstaking.v1.UnpairingForUnstakeChunkInfo")
+	proto.RegisterType((*WithdrawInsuranceRequest)(nil), "canto.liquidstaking.v1.WithdrawInsuranceRequest")
 }
 
 func init() {
@@ -642,84 +622,84 @@ func init() {
 }
 
 var fileDescriptor_d5ab11aad71f7b33 = []byte{
-	// 1225 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x57, 0x4f, 0x6f, 0x1b, 0x45,
-	0x14, 0xf7, 0xda, 0xce, 0xbf, 0x97, 0xd6, 0x75, 0x27, 0x21, 0x75, 0xd2, 0xca, 0x0e, 0xa1, 0xb4,
-	0xa1, 0x7f, 0x6c, 0xb5, 0x95, 0x40, 0x2a, 0x07, 0xe4, 0xd8, 0x2e, 0x5d, 0xda, 0x98, 0xb0, 0xb6,
-	0x29, 0xe2, 0xc0, 0x32, 0xde, 0x9d, 0xd8, 0xa3, 0xec, 0xce, 0x98, 0xdd, 0x59, 0xf7, 0x8f, 0xc4,
-	0xbd, 0xc7, 0x1e, 0x7b, 0x8c, 0xd4, 0x0b, 0x9f, 0x80, 0xcf, 0xd0, 0x63, 0x0f, 0x48, 0x20, 0x84,
-	0x0a, 0x6a, 0x2f, 0x1c, 0xf9, 0x08, 0x68, 0x67, 0x76, 0x9d, 0x38, 0x76, 0x68, 0xed, 0x72, 0xf2,
-	0xee, 0xbc, 0xdf, 0xfb, 0xbd, 0xdf, 0x7b, 0x6f, 0xe6, 0xcd, 0x1a, 0x2e, 0x59, 0x98, 0x09, 0x5e,
-	0x72, 0xe8, 0x0f, 0x01, 0xb5, 0x7d, 0x81, 0xf7, 0x28, 0xeb, 0x94, 0xfa, 0xd7, 0x86, 0x17, 0x8a,
-	0x3d, 0x8f, 0x0b, 0x8e, 0x56, 0x24, 0xb6, 0x38, 0x6c, 0xea, 0x5f, 0x5b, 0x5b, 0xee, 0xf0, 0x0e,
-	0x97, 0x90, 0x52, 0xf8, 0xa4, 0xd0, 0x6b, 0xf9, 0x0e, 0xe7, 0x1d, 0x87, 0x94, 0xe4, 0x5b, 0x3b,
-	0xd8, 0x2d, 0xd9, 0x81, 0x87, 0x05, 0xe5, 0x2c, 0xb2, 0x17, 0x8e, 0xda, 0x05, 0x75, 0x89, 0x2f,
-	0xb0, 0xdb, 0x8b, 0x00, 0xab, 0x16, 0xf7, 0x5d, 0xee, 0x9b, 0x8a, 0x59, 0xbd, 0x28, 0xd3, 0xc6,
-	0xaf, 0x49, 0x98, 0xa9, 0xf5, 0xb8, 0xd5, 0x45, 0x1f, 0x42, 0xc6, 0x0a, 0x3c, 0x8f, 0x30, 0x61,
-	0xb2, 0xc0, 0x6d, 0x13, 0x2f, 0xa7, 0xad, 0x6b, 0x9b, 0x69, 0xe3, 0x64, 0xb4, 0x5a, 0x97, 0x8b,
-	0xa8, 0x0e, 0x59, 0x12, 0xe2, 0x4d, 0x5f, 0x60, 0x4f, 0x98, 0x61, 0xa8, 0x5c, 0x72, 0x5d, 0xdb,
-	0x5c, 0xbc, 0xbe, 0x56, 0x54, 0x3a, 0x8a, 0xb1, 0x8e, 0x62, 0x33, 0xd6, 0xb1, 0x35, 0xff, 0xfc,
-	0x65, 0x21, 0xf1, 0xe4, 0xcf, 0x82, 0x66, 0x64, 0xa4, 0x77, 0x23, 0x74, 0x0e, 0xcd, 0xe8, 0x0b,
-	0x50, 0x2b, 0x66, 0x9c, 0x54, 0x2e, 0x25, 0xd9, 0x56, 0x47, 0xd8, 0xaa, 0x11, 0x40, 0x91, 0x3d,
-	0x0d, 0xc9, 0x4e, 0x4a, 0xd7, 0xd8, 0x80, 0xae, 0x00, 0x3a, 0xac, 0xad, 0x4b, 0x68, 0xa7, 0x2b,
-	0x72, 0xe9, 0x75, 0x6d, 0x33, 0x65, 0x64, 0x0f, 0xe2, 0xde, 0x96, 0xeb, 0x68, 0x33, 0xce, 0xc4,
-	0xea, 0x06, 0x6c, 0xcf, 0xf4, 0xe9, 0x23, 0x92, 0x9b, 0x91, 0x29, 0x2b, 0x45, 0x95, 0x70, 0xb9,
-	0x41, 0x1f, 0x11, 0x74, 0x03, 0x56, 0x14, 0xd2, 0xc5, 0x0f, 0xcc, 0x1e, 0xa6, 0x1e, 0xb1, 0x95,
-	0x53, 0x6e, 0x56, 0xe2, 0x97, 0xa4, 0x75, 0x1b, 0x3f, 0xd8, 0x91, 0x36, 0xe9, 0xb8, 0x91, 0x81,
-	0xd9, 0x1d, 0xec, 0x61, 0xd7, 0xbf, 0x99, 0x7e, 0xbc, 0x5f, 0x48, 0x6c, 0xfc, 0x08, 0x33, 0xd2,
-	0x80, 0x32, 0x90, 0xa4, 0x76, 0x54, 0xdc, 0x24, 0xb5, 0xd1, 0xfb, 0x70, 0x82, 0x32, 0x3f, 0xf0,
-	0x30, 0xb3, 0x88, 0x49, 0x6d, 0x59, 0xcd, 0xb4, 0xb1, 0x38, 0x58, 0xd3, 0x6d, 0xf4, 0x29, 0xcc,
-	0xfa, 0x02, 0x8b, 0xc0, 0x97, 0xc5, 0xc9, 0x5c, 0xff, 0xa0, 0x38, 0x7e, 0x03, 0x15, 0x95, 0x66,
-	0x09, 0x35, 0x22, 0x97, 0x28, 0xfc, 0x7e, 0x12, 0x16, 0xf4, 0x98, 0x72, 0x44, 0xc3, 0x65, 0x38,
-	0xdd, 0xc7, 0x0e, 0xb5, 0xb1, 0xe0, 0x9e, 0x89, 0x6d, 0xdb, 0x23, 0xbe, 0x2f, 0x85, 0x2c, 0x18,
-	0xd9, 0x81, 0xa1, 0xac, 0xd6, 0xd1, 0x47, 0x90, 0xed, 0x79, 0xbc, 0x4f, 0x6d, 0x72, 0x80, 0x4d,
-	0x49, 0xec, 0xa9, 0x78, 0x3d, 0x86, 0xea, 0x30, 0xbf, 0x4b, 0x88, 0xe9, 0x61, 0x41, 0x64, 0x1f,
-	0x16, 0xb6, 0x8a, 0x61, 0xf3, 0x7e, 0x7f, 0x59, 0xb8, 0xd0, 0xa1, 0xa2, 0x1b, 0xb4, 0x8b, 0x16,
-	0x77, 0xa3, 0x1d, 0x19, 0xfd, 0x5c, 0xf5, 0xed, 0xbd, 0x92, 0x78, 0xd8, 0x23, 0x7e, 0xb1, 0x4a,
-	0x2c, 0x63, 0x6e, 0x97, 0x10, 0x03, 0x0b, 0x82, 0x56, 0x61, 0x5e, 0x35, 0x8a, 0xda, 0x51, 0x9b,
-	0xe6, 0xe4, 0xbb, 0x6e, 0xa3, 0xcf, 0x06, 0xe5, 0x99, 0x95, 0xe5, 0xb9, 0x78, 0x5c, 0x79, 0x06,
-	0x05, 0x18, 0x5b, 0xa2, 0x3f, 0xe6, 0x20, 0x53, 0x27, 0xa2, 0xec, 0xf2, 0x80, 0x89, 0x10, 0x41,
-	0xd0, 0x1d, 0x58, 0x70, 0x29, 0x13, 0x2a, 0x01, 0x6d, 0xaa, 0x04, 0xe6, 0x43, 0x02, 0x99, 0x81,
-	0x05, 0x2b, 0x8e, 0x6f, 0x0a, 0xbe, 0x47, 0x58, 0xf8, 0x23, 0xb0, 0x63, 0xfa, 0x41, 0xaf, 0xe7,
-	0x3c, 0x54, 0x95, 0x9e, 0x88, 0x59, 0x67, 0xc2, 0x58, 0x72, 0xfc, 0xa6, 0x24, 0x6b, 0x86, 0x5c,
-	0x0d, 0x49, 0x85, 0xb6, 0x01, 0x18, 0x11, 0x26, 0x96, 0x49, 0xa8, 0xb6, 0x4c, 0x2c, 0x79, 0x81,
-	0xc5, 0x55, 0x40, 0xdf, 0x40, 0x56, 0x29, 0xb5, 0x89, 0x63, 0xfa, 0x5d, 0xec, 0x11, 0x7f, 0xca,
-	0x46, 0x66, 0x24, 0x4f, 0x95, 0x38, 0x0d, 0xc9, 0x82, 0x76, 0xe1, 0x8c, 0x62, 0xf6, 0x88, 0x8b,
-	0x29, 0xa3, 0xac, 0x63, 0x7a, 0xe4, 0x3e, 0xf6, 0x6c, 0x5f, 0xb6, 0x77, 0xf2, 0x00, 0xef, 0x49,
-	0x3a, 0x23, 0x66, 0x33, 0x14, 0x19, 0xfa, 0x1e, 0x96, 0x55, 0x1c, 0xb9, 0x5b, 0x7c, 0xb3, 0x8d,
-	0x9d, 0x70, 0x07, 0xc8, 0xad, 0x32, 0x79, 0xcd, 0x91, 0xe4, 0x92, 0xc7, 0xcc, 0xdf, 0x52, 0x4c,
-	0xe8, 0x3b, 0x58, 0x52, 0x11, 0xd4, 0x7e, 0x8b, 0x3a, 0x9c, 0x9b, 0x9b, 0x2a, 0xc0, 0x69, 0x49,
-	0x75, 0x57, 0x32, 0xa9, 0xee, 0x22, 0x1b, 0x56, 0x14, 0xff, 0xc1, 0x98, 0x88, 0x42, 0xcc, 0x4f,
-	0x15, 0x42, 0xd5, 0x63, 0x70, 0x16, 0xa2, 0x28, 0x83, 0x7e, 0x04, 0xac, 0xcd, 0x99, 0x1d, 0xf6,
-	0x23, 0x2e, 0xd5, 0xc2, 0x54, 0x61, 0x54, 0x3f, 0x5a, 0x31, 0x5b, 0x5c, 0x2d, 0x0a, 0xab, 0xaa,
-	0xcf, 0xa6, 0xcb, 0xed, 0xc0, 0x21, 0x26, 0xb6, 0xac, 0x41, 0x24, 0x98, 0x2a, 0xd2, 0x8a, 0x22,
-	0xdc, 0x96, 0x7c, 0x65, 0xcb, 0x8a, 0x42, 0xdd, 0x3c, 0xf1, 0x78, 0xbf, 0xa0, 0x3d, 0xdd, 0x2f,
-	0x24, 0xfe, 0x0e, 0x8f, 0xf7, 0x2f, 0x29, 0x38, 0xaf, 0xea, 0xda, 0x62, 0xe1, 0x4c, 0x20, 0x03,
-	0x69, 0x55, 0xe2, 0x90, 0x8e, 0xbc, 0x42, 0x74, 0xb6, 0xcb, 0x87, 0x26, 0x8d, 0x36, 0x3c, 0x69,
-	0x2e, 0xc3, 0x69, 0x5b, 0x81, 0x47, 0xe7, 0xe4, 0xc0, 0x10, 0x0f, 0xbf, 0xb1, 0x43, 0x35, 0x75,
-	0xcc, 0x50, 0x1d, 0x9a, 0x34, 0xe9, 0x77, 0x9c, 0x34, 0x3b, 0xb0, 0xd8, 0x0e, 0x3c, 0x16, 0x4f,
-	0x01, 0x75, 0x9e, 0x4a, 0x11, 0xdd, 0xc5, 0xb7, 0xa0, 0xab, 0x70, 0xca, 0x0c, 0x08, 0x39, 0xa2,
-	0x39, 0xa0, 0xc3, 0x9c, 0xc5, 0xfb, 0xc4, 0x23, 0x76, 0x74, 0x70, 0x26, 0x66, 0x8b, 0xfd, 0xd1,
-	0x36, 0x9c, 0xb2, 0xb8, 0xdb, 0x73, 0x48, 0x58, 0x70, 0xf5, 0x01, 0x31, 0x37, 0xc9, 0x07, 0xc4,
-	0x81, 0x73, 0x68, 0xde, 0xf8, 0x49, 0x83, 0xd5, 0x16, 0x0b, 0x6f, 0x65, 0xca, 0x3a, 0xb7, 0xb8,
-	0x67, 0x90, 0xe8, 0xf9, 0x4d, 0xbd, 0x7c, 0x8b, 0x7b, 0x77, 0x8c, 0xd4, 0xd4, 0x3b, 0x48, 0x7d,
-	0xa6, 0xc1, 0xf2, 0x3d, 0x2a, 0xba, 0xb6, 0x87, 0xef, 0x4b, 0x81, 0xf1, 0x75, 0x7c, 0x54, 0x8a,
-	0x36, 0x2a, 0xe5, 0x70, 0x22, 0xc9, 0xe1, 0x44, 0xfe, 0x5f, 0x95, 0x97, 0x7e, 0xd6, 0x60, 0xf1,
-	0xd0, 0x77, 0x04, 0x3a, 0x07, 0xb9, 0xca, 0xed, 0x56, 0xfd, 0x8e, 0xd9, 0x68, 0x96, 0x9b, 0xad,
-	0x86, 0xd9, 0xaa, 0x37, 0x76, 0x6a, 0x15, 0xfd, 0x96, 0x5e, 0xab, 0x66, 0x13, 0x28, 0x07, 0xcb,
-	0x43, 0xd6, 0x9d, 0xb2, 0x6e, 0xe8, 0xf5, 0xcf, 0xb3, 0x1a, 0x3a, 0x03, 0x4b, 0x23, 0x96, 0x5a,
-	0x35, 0x9b, 0x44, 0x9b, 0x70, 0xfe, 0x08, 0x61, 0xe4, 0x64, 0xde, 0xfa, 0xd2, 0x30, 0x8d, 0x5a,
-	0x4c, 0x91, 0x42, 0x17, 0x60, 0xe3, 0x3f, 0x90, 0xad, 0x7a, 0xa3, 0x59, 0xbe, 0x53, 0xcb, 0xa6,
-	0xd7, 0xd2, 0x8f, 0x9f, 0xe5, 0x13, 0x97, 0xfe, 0xd1, 0xe0, 0xd4, 0x91, 0x1b, 0x1e, 0xad, 0xc3,
-	0x39, 0xbd, 0xde, 0x68, 0x19, 0xe5, 0x7a, 0xa5, 0x36, 0x3e, 0x81, 0x73, 0x90, 0x1b, 0x41, 0x1c,
-	0x24, 0x71, 0x16, 0xce, 0x8c, 0xb5, 0xca, 0x44, 0xae, 0xc0, 0xe6, 0x18, 0xf2, 0xe3, 0x92, 0xb9,
-	0x0c, 0x17, 0xdf, 0x80, 0xbe, 0xa7, 0x37, 0x6f, 0x57, 0x8d, 0xf2, 0xbd, 0x6c, 0x1a, 0x15, 0xe0,
-	0xec, 0x08, 0xf8, 0xeb, 0xd6, 0xdd, 0x7a, 0xcd, 0x28, 0x6f, 0xdd, 0xad, 0x65, 0x67, 0x54, 0xca,
-	0x5b, 0x5f, 0x3d, 0x7f, 0x95, 0xd7, 0x5e, 0xbc, 0xca, 0x6b, 0x7f, 0xbd, 0xca, 0x6b, 0x4f, 0x5e,
-	0xe7, 0x13, 0x2f, 0x5e, 0xe7, 0x13, 0xbf, 0xbd, 0xce, 0x27, 0xbe, 0xfd, 0xe4, 0xd0, 0xb9, 0xac,
-	0x84, 0x5f, 0x43, 0x57, 0xeb, 0x44, 0xdc, 0xe7, 0xde, 0x9e, 0x7a, 0x2b, 0xf5, 0x3f, 0x2e, 0x3d,
-	0x38, 0xf2, 0x67, 0x45, 0x1e, 0xd6, 0xf6, 0xac, 0xdc, 0x2c, 0x37, 0xfe, 0x0d, 0x00, 0x00, 0xff,
-	0xff, 0xe6, 0xc8, 0x84, 0xb5, 0xd0, 0x0c, 0x00, 0x00,
+	// 1217 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xd4, 0x56, 0xcf, 0x6e, 0xdb, 0xc6,
+	0x13, 0x16, 0x6d, 0xf9, 0xdf, 0x38, 0x51, 0xe8, 0xb5, 0x7f, 0x0a, 0xed, 0x9f, 0x2b, 0xb9, 0x2a,
+	0x9a, 0xb8, 0x4e, 0x23, 0x21, 0x49, 0xd1, 0x02, 0x29, 0x8a, 0x42, 0x96, 0x94, 0x86, 0x4d, 0xa2,
+	0xba, 0x94, 0x84, 0x14, 0x45, 0x51, 0x76, 0x45, 0xae, 0xa5, 0x85, 0xa9, 0xa5, 0xc2, 0x5d, 0xda,
+	0x49, 0x9e, 0xc0, 0xc7, 0x1c, 0x73, 0x34, 0xd0, 0x4b, 0x1f, 0xa3, 0x87, 0x1c, 0x72, 0xcc, 0xad,
+	0x45, 0x51, 0xa4, 0x41, 0x72, 0xe9, 0x63, 0x14, 0xdc, 0x25, 0x25, 0xcb, 0x96, 0x81, 0x5a, 0xb7,
+	0x9e, 0x6c, 0xce, 0x37, 0xf3, 0xcd, 0xcc, 0x37, 0xb3, 0xbb, 0x82, 0x2d, 0x07, 0x33, 0xe1, 0x97,
+	0x3c, 0xfa, 0x28, 0xa4, 0x2e, 0x17, 0x78, 0x8f, 0xb2, 0x4e, 0x69, 0xff, 0xc6, 0xa8, 0xa1, 0xd8,
+	0x0f, 0x7c, 0xe1, 0xa3, 0xac, 0xf4, 0x2d, 0x8e, 0x42, 0xfb, 0x37, 0xd6, 0x56, 0x3a, 0x7e, 0xc7,
+	0x97, 0x2e, 0xa5, 0xe8, 0x3f, 0xe5, 0xbd, 0x96, 0xeb, 0xf8, 0x7e, 0xc7, 0x23, 0x25, 0xf9, 0xd5,
+	0x0e, 0x77, 0x4b, 0x6e, 0x18, 0x60, 0x41, 0x7d, 0x16, 0xe3, 0xf9, 0x93, 0xb8, 0xa0, 0x3d, 0xc2,
+	0x05, 0xee, 0xf5, 0x63, 0x87, 0x55, 0xc7, 0xe7, 0x3d, 0x9f, 0xdb, 0x8a, 0x59, 0x7d, 0x28, 0xa8,
+	0xf0, 0xdb, 0x14, 0xcc, 0xd4, 0xfa, 0xbe, 0xd3, 0x45, 0x1f, 0x42, 0xc6, 0x09, 0x83, 0x80, 0x30,
+	0x61, 0xb3, 0xb0, 0xd7, 0x26, 0x81, 0xa1, 0x6d, 0x68, 0x9b, 0x69, 0xeb, 0x62, 0x6c, 0xad, 0x4b,
+	0x23, 0xaa, 0x83, 0x4e, 0x22, 0x7f, 0x9b, 0x0b, 0x1c, 0x08, 0x3b, 0x4a, 0x65, 0x4c, 0x6d, 0x68,
+	0x9b, 0x8b, 0x37, 0xd7, 0x8a, 0xaa, 0x8e, 0x62, 0x52, 0x47, 0xb1, 0x99, 0xd4, 0xb1, 0x3d, 0xff,
+	0xf2, 0x75, 0x3e, 0xf5, 0xec, 0xaf, 0xbc, 0x66, 0x65, 0x64, 0x74, 0x23, 0x0a, 0x8e, 0x60, 0xf4,
+	0x35, 0x28, 0x8b, 0x9d, 0x34, 0x65, 0x4c, 0x4b, 0xb6, 0xd5, 0x53, 0x6c, 0xd5, 0xd8, 0x41, 0x91,
+	0x3d, 0x8f, 0xc8, 0x2e, 0xca, 0xd0, 0x04, 0x40, 0x1f, 0x03, 0x3a, 0x5e, 0x5b, 0x97, 0xd0, 0x4e,
+	0x57, 0x18, 0xe9, 0x0d, 0x6d, 0x73, 0xda, 0xd2, 0x87, 0x79, 0xef, 0x4a, 0x3b, 0xda, 0x4c, 0x3a,
+	0x71, 0xba, 0x21, 0xdb, 0xb3, 0x39, 0x7d, 0x4a, 0x8c, 0x19, 0xd9, 0xb2, 0xaa, 0xa8, 0x12, 0x99,
+	0x1b, 0xf4, 0x29, 0x41, 0xb7, 0x20, 0xab, 0x3c, 0x7b, 0xf8, 0xb1, 0xdd, 0xc7, 0x34, 0x20, 0xae,
+	0x0a, 0x32, 0x66, 0xa5, 0xff, 0xb2, 0x44, 0x1f, 0xe0, 0xc7, 0x3b, 0x12, 0x93, 0x81, 0x85, 0x0c,
+	0xcc, 0xee, 0xe0, 0x00, 0xf7, 0xf8, 0xed, 0xf4, 0xe1, 0x51, 0x3e, 0x55, 0xf8, 0x55, 0x83, 0x19,
+	0x89, 0xa0, 0x0c, 0x4c, 0x51, 0x37, 0x56, 0x77, 0x8a, 0xba, 0xa8, 0x08, 0xcb, 0x31, 0x29, 0x65,
+	0x3c, 0x0c, 0x30, 0x73, 0x88, 0x4d, 0x5d, 0xa9, 0x6a, 0xda, 0x5a, 0x52, 0x90, 0x99, 0x20, 0xa6,
+	0x8b, 0x3e, 0x81, 0x6c, 0xc8, 0x22, 0x33, 0x65, 0x9d, 0xd1, 0x90, 0x69, 0x19, 0xb2, 0x32, 0x40,
+	0x8f, 0x47, 0x7d, 0x0e, 0xb3, 0x5c, 0x60, 0x11, 0x72, 0x29, 0x48, 0xe6, 0xe6, 0x07, 0xc5, 0xf1,
+	0x4b, 0x58, 0x54, 0x7d, 0x4b, 0x57, 0x2b, 0x0e, 0x89, 0x5b, 0x38, 0x9a, 0x82, 0x85, 0x01, 0xe5,
+	0xa9, 0x36, 0xae, 0xc1, 0xd2, 0x3e, 0xf6, 0xa8, 0x8b, 0x85, 0x1f, 0xd8, 0xd8, 0x75, 0x03, 0xc2,
+	0xb9, 0x6c, 0x62, 0xc1, 0xd2, 0x07, 0x40, 0x59, 0xd9, 0xd1, 0x47, 0xa0, 0xf7, 0x03, 0x7f, 0x9f,
+	0xba, 0x64, 0xe8, 0x3b, 0x2d, 0x7d, 0x2f, 0x25, 0xf6, 0xc4, 0xd5, 0x84, 0xf9, 0x5d, 0x42, 0xec,
+	0x00, 0x0b, 0x22, 0x4b, 0x5f, 0xd8, 0x2e, 0x46, 0x0b, 0xf0, 0xc7, 0xeb, 0xfc, 0x95, 0x0e, 0x15,
+	0xdd, 0xb0, 0x5d, 0x74, 0xfc, 0x5e, 0xbc, 0xd5, 0xf1, 0x9f, 0xeb, 0xdc, 0xdd, 0x2b, 0x89, 0x27,
+	0x7d, 0xc2, 0x8b, 0x55, 0xe2, 0x58, 0x73, 0xbb, 0x84, 0x58, 0x58, 0x10, 0xb4, 0x0a, 0xf3, 0x6a,
+	0xd8, 0xd4, 0x8d, 0x47, 0x3d, 0x27, 0xbf, 0x4d, 0x17, 0x7d, 0x39, 0x90, 0x67, 0x56, 0xca, 0x73,
+	0xf5, 0x2c, 0x79, 0x06, 0x02, 0x8c, 0x95, 0xe8, 0xcf, 0x39, 0xc8, 0xd4, 0x89, 0x28, 0xf7, 0xfc,
+	0x90, 0x89, 0xc8, 0x83, 0xa0, 0x7b, 0xb0, 0xd0, 0xa3, 0x4c, 0xa8, 0x06, 0xb4, 0x89, 0x1a, 0x98,
+	0x8f, 0x08, 0x64, 0x07, 0x0e, 0x64, 0x3d, 0x6e, 0x0b, 0x7f, 0x8f, 0xb0, 0xe8, 0x8f, 0xc0, 0x9e,
+	0xcd, 0xc3, 0x7e, 0xdf, 0x7b, 0xa2, 0x94, 0x3e, 0x17, 0xb3, 0xc9, 0x84, 0xb5, 0xec, 0xf1, 0xa6,
+	0x24, 0x6b, 0x46, 0x5c, 0x0d, 0x49, 0x85, 0x1e, 0x00, 0x30, 0x22, 0x6c, 0x2c, 0x9b, 0x50, 0x63,
+	0x39, 0x77, 0xc9, 0x0b, 0x2c, 0x51, 0x01, 0x7d, 0x07, 0xba, 0xaa, 0xd4, 0x25, 0x9e, 0xcd, 0xbb,
+	0x38, 0x20, 0x7c, 0xc2, 0x41, 0x66, 0x24, 0x4f, 0x95, 0x78, 0x0d, 0xc9, 0x82, 0x76, 0xe1, 0xb2,
+	0x62, 0x0e, 0x48, 0x0f, 0x53, 0x16, 0x9d, 0x87, 0x80, 0x1c, 0xe0, 0xc0, 0xe5, 0x72, 0xbc, 0xe7,
+	0x4f, 0xf0, 0x3f, 0x49, 0x67, 0x25, 0x6c, 0x96, 0x22, 0x43, 0x3f, 0xc1, 0x8a, 0xca, 0x23, 0xb7,
+	0x85, 0xdb, 0x6d, 0xec, 0x45, 0x1b, 0x20, 0x57, 0xe5, 0xfc, 0x9a, 0x23, 0xc9, 0x25, 0x8f, 0x19,
+	0xdf, 0x56, 0x4c, 0xe8, 0x47, 0x58, 0x56, 0x19, 0xd4, 0xbe, 0xc5, 0x13, 0x36, 0xe6, 0x26, 0x4a,
+	0xb0, 0x24, 0xa9, 0xee, 0x4b, 0x26, 0x35, 0x5d, 0xe4, 0x42, 0x56, 0xf1, 0x0f, 0xef, 0x8b, 0x38,
+	0xc5, 0xfc, 0x44, 0x29, 0x94, 0x1e, 0x83, 0xb3, 0x10, 0x67, 0x19, 0xcc, 0x23, 0x64, 0x6d, 0x9f,
+	0xb9, 0xd1, 0x3c, 0x12, 0xa9, 0x16, 0x26, 0x4a, 0xa3, 0xe6, 0xd1, 0x4a, 0xd8, 0x12, 0xb5, 0x28,
+	0xac, 0xaa, 0x39, 0xdb, 0x3d, 0xdf, 0x0d, 0x3d, 0x62, 0x63, 0xc7, 0x19, 0x64, 0x82, 0x89, 0x32,
+	0x65, 0x15, 0xe1, 0x03, 0xc9, 0x57, 0x76, 0x9c, 0x38, 0xd5, 0xed, 0x0b, 0x87, 0x47, 0x79, 0xed,
+	0xf9, 0x51, 0x3e, 0xf5, 0x77, 0x74, 0xbc, 0xdb, 0xb0, 0xb2, 0x43, 0x64, 0x29, 0x4a, 0xdd, 0x16,
+	0x8b, 0x6e, 0x86, 0xe8, 0x15, 0x9b, 0x23, 0x4c, 0x04, 0x94, 0x70, 0x43, 0xdb, 0x98, 0xde, 0x5c,
+	0xbc, 0xb9, 0x75, 0xd6, 0xf5, 0x31, 0x12, 0x57, 0x63, 0x22, 0x78, 0xb2, 0x9d, 0x8e, 0x4a, 0xb5,
+	0x12, 0x82, 0xc2, 0x0b, 0x0d, 0xd0, 0x69, 0xaf, 0x91, 0xbb, 0x4b, 0x1b, 0xbd, 0xbb, 0xae, 0xc1,
+	0x92, 0x4b, 0x3c, 0xd2, 0x19, 0x77, 0xf3, 0x0e, 0x80, 0xe4, 0x3a, 0xfd, 0x01, 0x96, 0x08, 0x77,
+	0x02, 0xff, 0x80, 0xb8, 0xb6, 0xc7, 0xe3, 0x25, 0x50, 0x67, 0xbc, 0x14, 0x6b, 0x76, 0xf5, 0x5f,
+	0x68, 0x56, 0xf1, 0x29, 0xb3, 0xf4, 0x84, 0xe9, 0x7e, 0x4c, 0x74, 0x7b, 0xfe, 0x30, 0x91, 0xea,
+	0x85, 0x06, 0xeb, 0xad, 0xe4, 0x21, 0xba, 0xe3, 0x07, 0x71, 0x33, 0x72, 0xed, 0x4d, 0xb6, 0xeb,
+	0xff, 0x37, 0x1a, 0x2a, 0x7c, 0x01, 0xc6, 0x43, 0x2a, 0xba, 0x6e, 0x80, 0x0f, 0x06, 0xdb, 0x6e,
+	0x91, 0x47, 0x21, 0xe1, 0x02, 0xbd, 0x0f, 0x17, 0x46, 0x9e, 0x5f, 0xd5, 0xc5, 0x22, 0x1d, 0xbe,
+	0xba, 0x5b, 0xbf, 0x68, 0xb0, 0x78, 0xec, 0x41, 0x45, 0xeb, 0x60, 0x54, 0xee, 0xb6, 0xea, 0xf7,
+	0xec, 0x46, 0xb3, 0xdc, 0x6c, 0x35, 0xec, 0x56, 0xbd, 0xb1, 0x53, 0xab, 0x98, 0x77, 0xcc, 0x5a,
+	0x55, 0x4f, 0x21, 0x03, 0x56, 0x46, 0xd0, 0x9d, 0xb2, 0x69, 0x99, 0xf5, 0xaf, 0x74, 0x0d, 0x5d,
+	0x86, 0xe5, 0x53, 0x48, 0xad, 0xaa, 0x4f, 0xa1, 0x35, 0xc8, 0x9e, 0x20, 0x4c, 0x82, 0xa6, 0xd1,
+	0x15, 0x28, 0x8c, 0xc7, 0xec, 0x3b, 0xdf, 0x58, 0x51, 0xea, 0x66, 0xf9, 0x5e, 0x4d, 0x4f, 0xaf,
+	0xa5, 0x0f, 0x7f, 0xce, 0xa5, 0xb6, 0xde, 0x68, 0x70, 0xe9, 0xc4, 0xe3, 0x86, 0x36, 0x60, 0xdd,
+	0xac, 0x37, 0x5a, 0x56, 0xb9, 0x5e, 0xa9, 0x8d, 0x2f, 0x79, 0x1d, 0x8c, 0x53, 0x1e, 0xc3, 0xb2,
+	0xff, 0x0f, 0x97, 0xc7, 0xa2, 0xb2, 0xf4, 0x1c, 0xac, 0x8d, 0x21, 0x1f, 0x96, 0x7f, 0x0d, 0xae,
+	0x9e, 0x8d, 0xcb, 0x16, 0x1e, 0x9a, 0xcd, 0xbb, 0x55, 0xab, 0xfc, 0x50, 0x4f, 0xa3, 0xf7, 0x60,
+	0xf5, 0x0c, 0xe7, 0x5a, 0x55, 0x9f, 0x51, 0x2d, 0x6e, 0x7f, 0xfb, 0xf2, 0x6d, 0x4e, 0x7b, 0xf5,
+	0x36, 0xa7, 0xbd, 0x79, 0x9b, 0xd3, 0x9e, 0xbd, 0xcb, 0xa5, 0x5e, 0xbd, 0xcb, 0xa5, 0x7e, 0x7f,
+	0x97, 0x4b, 0x7d, 0xff, 0xd9, 0xb1, 0x0d, 0xa9, 0x44, 0x27, 0xf7, 0x7a, 0x9d, 0x88, 0x03, 0x3f,
+	0xd8, 0x53, 0x5f, 0xa5, 0xfd, 0x4f, 0x4b, 0x8f, 0x4f, 0xfc, 0xb6, 0x97, 0x6b, 0xd3, 0x9e, 0x95,
+	0xbf, 0x4f, 0x6f, 0xfd, 0x13, 0x00, 0x00, 0xff, 0xff, 0x7f, 0x08, 0xbf, 0xa6, 0xff, 0x0b, 0x00,
+	0x00,
 }
 
 func (m *Epoch) Marshal() (dAtA []byte, err error) {
@@ -827,10 +807,15 @@ func (m *Chunk) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	if m.Status != 0 {
 		i = encodeVarintLiquidstaking(dAtA, i, uint64(m.Status))
 		i--
+		dAtA[i] = 0x20
+	}
+	if m.UnpairingInsuranceId != 0 {
+		i = encodeVarintLiquidstaking(dAtA, i, uint64(m.UnpairingInsuranceId))
+		i--
 		dAtA[i] = 0x18
 	}
-	if m.InsuranceId != 0 {
-		i = encodeVarintLiquidstaking(dAtA, i, uint64(m.InsuranceId))
+	if m.PairedInsuranceId != 0 {
+		i = encodeVarintLiquidstaking(dAtA, i, uint64(m.PairedInsuranceId))
 		i--
 		dAtA[i] = 0x10
 	}
@@ -1027,7 +1012,7 @@ func (m *NetAmountState) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *LiquidUnstakeUnbondingDelegationInfo) Marshal() (dAtA []byte, err error) {
+func (m *PendingLiquidUnstake) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -1037,61 +1022,63 @@ func (m *LiquidUnstakeUnbondingDelegationInfo) Marshal() (dAtA []byte, err error
 	return dAtA[:n], nil
 }
 
-func (m *LiquidUnstakeUnbondingDelegationInfo) MarshalTo(dAtA []byte) (int, error) {
+func (m *PendingLiquidUnstake) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *LiquidUnstakeUnbondingDelegationInfo) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *PendingLiquidUnstake) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	n3, err3 := github_com_gogo_protobuf_types.StdTimeMarshalTo(m.CompletionTime, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdTime(m.CompletionTime):])
-	if err3 != nil {
-		return 0, err3
+	if len(m.Entries) > 0 {
+		for iNdEx := len(m.Entries) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Entries[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintLiquidstaking(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0xa
+		}
 	}
-	i -= n3
-	i = encodeVarintLiquidstaking(dAtA, i, uint64(n3))
-	i--
-	dAtA[i] = 0x3a
+	return len(dAtA) - i, nil
+}
+
+func (m *LiquidUnstakeEntry) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *LiquidUnstakeEntry) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *LiquidUnstakeEntry) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
 	{
-		size := m.Covered.Size()
+		size := m.EscrowedLstokens.Size()
 		i -= size
-		if _, err := m.Covered.MarshalTo(dAtA[i:]); err != nil {
+		if _, err := m.EscrowedLstokens.MarshalTo(dAtA[i:]); err != nil {
 			return 0, err
 		}
 		i = encodeVarintLiquidstaking(dAtA, i, uint64(size))
 	}
 	i--
-	dAtA[i] = 0x32
-	{
-		size := m.BurnAmount.Size()
-		i -= size
-		if _, err := m.BurnAmount.MarshalTo(dAtA[i:]); err != nil {
-			return 0, err
-		}
-		i = encodeVarintLiquidstaking(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0x2a
-	{
-		size := m.MintRate.Size()
-		i -= size
-		if _, err := m.MintRate.MarshalTo(dAtA[i:]); err != nil {
-			return 0, err
-		}
-		i = encodeVarintLiquidstaking(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0x22
-	if len(m.ValidatorAddress) > 0 {
-		i -= len(m.ValidatorAddress)
-		copy(dAtA[i:], m.ValidatorAddress)
-		i = encodeVarintLiquidstaking(dAtA, i, uint64(len(m.ValidatorAddress)))
-		i--
-		dAtA[i] = 0x1a
-	}
+	dAtA[i] = 0x1a
 	if len(m.DelegatorAddress) > 0 {
 		i -= len(m.DelegatorAddress)
 		copy(dAtA[i:], m.DelegatorAddress)
@@ -1107,7 +1094,7 @@ func (m *LiquidUnstakeUnbondingDelegationInfo) MarshalToSizedBuffer(dAtA []byte)
 	return len(dAtA) - i, nil
 }
 
-func (m *UnpairingForRepairingInfo) Marshal() (dAtA []byte, err error) {
+func (m *UnpairingForUnstakeChunkInfo) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -1117,28 +1104,32 @@ func (m *UnpairingForRepairingInfo) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *UnpairingForRepairingInfo) MarshalTo(dAtA []byte) (int, error) {
+func (m *UnpairingForUnstakeChunkInfo) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *UnpairingForRepairingInfo) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *UnpairingForUnstakeChunkInfo) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	n4, err4 := github_com_gogo_protobuf_types.StdTimeMarshalTo(m.CompletionTime, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdTime(m.CompletionTime):])
-	if err4 != nil {
-		return 0, err4
+	{
+		size := m.EscrowedLstokens.Size()
+		i -= size
+		if _, err := m.EscrowedLstokens.MarshalTo(dAtA[i:]); err != nil {
+			return 0, err
+		}
+		i = encodeVarintLiquidstaking(dAtA, i, uint64(size))
 	}
-	i -= n4
-	i = encodeVarintLiquidstaking(dAtA, i, uint64(n4))
 	i--
 	dAtA[i] = 0x1a
-	if m.InsuranceId != 0 {
-		i = encodeVarintLiquidstaking(dAtA, i, uint64(m.InsuranceId))
+	if len(m.DelegatorAddress) > 0 {
+		i -= len(m.DelegatorAddress)
+		copy(dAtA[i:], m.DelegatorAddress)
+		i = encodeVarintLiquidstaking(dAtA, i, uint64(len(m.DelegatorAddress)))
 		i--
-		dAtA[i] = 0x10
+		dAtA[i] = 0x12
 	}
 	if m.ChunkId != 0 {
 		i = encodeVarintLiquidstaking(dAtA, i, uint64(m.ChunkId))
@@ -1148,7 +1139,7 @@ func (m *UnpairingForRepairingInfo) MarshalToSizedBuffer(dAtA []byte) (int, erro
 	return len(dAtA) - i, nil
 }
 
-func (m *WithdrawingInsurance) Marshal() (dAtA []byte, err error) {
+func (m *WithdrawInsuranceRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -1158,29 +1149,16 @@ func (m *WithdrawingInsurance) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *WithdrawingInsurance) MarshalTo(dAtA []byte) (int, error) {
+func (m *WithdrawInsuranceRequest) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *WithdrawingInsurance) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *WithdrawInsuranceRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	n5, err5 := github_com_gogo_protobuf_types.StdTimeMarshalTo(m.CompletionTime, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdTime(m.CompletionTime):])
-	if err5 != nil {
-		return 0, err5
-	}
-	i -= n5
-	i = encodeVarintLiquidstaking(dAtA, i, uint64(n5))
-	i--
-	dAtA[i] = 0x1a
-	if m.ChunkId != 0 {
-		i = encodeVarintLiquidstaking(dAtA, i, uint64(m.ChunkId))
-		i--
-		dAtA[i] = 0x10
-	}
 	if m.InsuranceId != 0 {
 		i = encodeVarintLiquidstaking(dAtA, i, uint64(m.InsuranceId))
 		i--
@@ -1243,8 +1221,11 @@ func (m *Chunk) Size() (n int) {
 	if m.Id != 0 {
 		n += 1 + sovLiquidstaking(uint64(m.Id))
 	}
-	if m.InsuranceId != 0 {
-		n += 1 + sovLiquidstaking(uint64(m.InsuranceId))
+	if m.PairedInsuranceId != 0 {
+		n += 1 + sovLiquidstaking(uint64(m.PairedInsuranceId))
+	}
+	if m.UnpairingInsuranceId != 0 {
+		n += 1 + sovLiquidstaking(uint64(m.UnpairingInsuranceId))
 	}
 	if m.Status != 0 {
 		n += 1 + sovLiquidstaking(uint64(m.Status))
@@ -1309,7 +1290,22 @@ func (m *NetAmountState) Size() (n int) {
 	return n
 }
 
-func (m *LiquidUnstakeUnbondingDelegationInfo) Size() (n int) {
+func (m *PendingLiquidUnstake) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if len(m.Entries) > 0 {
+		for _, e := range m.Entries {
+			l = e.Size()
+			n += 1 + l + sovLiquidstaking(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *LiquidUnstakeEntry) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -1322,39 +1318,30 @@ func (m *LiquidUnstakeUnbondingDelegationInfo) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovLiquidstaking(uint64(l))
 	}
-	l = len(m.ValidatorAddress)
+	l = m.EscrowedLstokens.Size()
+	n += 1 + l + sovLiquidstaking(uint64(l))
+	return n
+}
+
+func (m *UnpairingForUnstakeChunkInfo) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.ChunkId != 0 {
+		n += 1 + sovLiquidstaking(uint64(m.ChunkId))
+	}
+	l = len(m.DelegatorAddress)
 	if l > 0 {
 		n += 1 + l + sovLiquidstaking(uint64(l))
 	}
-	l = m.MintRate.Size()
-	n += 1 + l + sovLiquidstaking(uint64(l))
-	l = m.BurnAmount.Size()
-	n += 1 + l + sovLiquidstaking(uint64(l))
-	l = m.Covered.Size()
-	n += 1 + l + sovLiquidstaking(uint64(l))
-	l = github_com_gogo_protobuf_types.SizeOfStdTime(m.CompletionTime)
+	l = m.EscrowedLstokens.Size()
 	n += 1 + l + sovLiquidstaking(uint64(l))
 	return n
 }
 
-func (m *UnpairingForRepairingInfo) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.ChunkId != 0 {
-		n += 1 + sovLiquidstaking(uint64(m.ChunkId))
-	}
-	if m.InsuranceId != 0 {
-		n += 1 + sovLiquidstaking(uint64(m.InsuranceId))
-	}
-	l = github_com_gogo_protobuf_types.SizeOfStdTime(m.CompletionTime)
-	n += 1 + l + sovLiquidstaking(uint64(l))
-	return n
-}
-
-func (m *WithdrawingInsurance) Size() (n int) {
+func (m *WithdrawInsuranceRequest) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -1363,11 +1350,6 @@ func (m *WithdrawingInsurance) Size() (n int) {
 	if m.InsuranceId != 0 {
 		n += 1 + sovLiquidstaking(uint64(m.InsuranceId))
 	}
-	if m.ChunkId != 0 {
-		n += 1 + sovLiquidstaking(uint64(m.ChunkId))
-	}
-	l = github_com_gogo_protobuf_types.SizeOfStdTime(m.CompletionTime)
-	n += 1 + l + sovLiquidstaking(uint64(l))
 	return n
 }
 
@@ -1669,9 +1651,9 @@ func (m *Chunk) Unmarshal(dAtA []byte) error {
 			}
 		case 2:
 			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field InsuranceId", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field PairedInsuranceId", wireType)
 			}
-			m.InsuranceId = 0
+			m.PairedInsuranceId = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowLiquidstaking
@@ -1681,12 +1663,31 @@ func (m *Chunk) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.InsuranceId |= uint64(b&0x7F) << shift
+				m.PairedInsuranceId |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
 		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field UnpairingInsuranceId", wireType)
+			}
+			m.UnpairingInsuranceId = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowLiquidstaking
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.UnpairingInsuranceId |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 4:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Status", wireType)
 			}
@@ -2321,7 +2322,7 @@ func (m *NetAmountState) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *LiquidUnstakeUnbondingDelegationInfo) Unmarshal(dAtA []byte) error {
+func (m *PendingLiquidUnstake) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -2344,10 +2345,94 @@ func (m *LiquidUnstakeUnbondingDelegationInfo) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: LiquidUnstakeUnbondingDelegationInfo: wiretype end group for non-group")
+			return fmt.Errorf("proto: PendingLiquidUnstake: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: LiquidUnstakeUnbondingDelegationInfo: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: PendingLiquidUnstake: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Entries", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowLiquidstaking
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthLiquidstaking
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthLiquidstaking
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Entries = append(m.Entries, LiquidUnstakeEntry{})
+			if err := m.Entries[len(m.Entries)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipLiquidstaking(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthLiquidstaking
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *LiquidUnstakeEntry) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowLiquidstaking
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: LiquidUnstakeEntry: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: LiquidUnstakeEntry: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -2403,7 +2488,7 @@ func (m *LiquidUnstakeUnbondingDelegationInfo) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ValidatorAddress", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field EscrowedLstokens", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -2431,140 +2516,7 @@ func (m *LiquidUnstakeUnbondingDelegationInfo) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ValidatorAddress = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 4:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field MintRate", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowLiquidstaking
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthLiquidstaking
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthLiquidstaking
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.MintRate.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 5:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field BurnAmount", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowLiquidstaking
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthLiquidstaking
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthLiquidstaking
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.BurnAmount.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 6:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Covered", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowLiquidstaking
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthLiquidstaking
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthLiquidstaking
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.Covered.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 7:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field CompletionTime", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowLiquidstaking
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthLiquidstaking
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthLiquidstaking
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := github_com_gogo_protobuf_types.StdTimeUnmarshal(&m.CompletionTime, dAtA[iNdEx:postIndex]); err != nil {
+			if err := m.EscrowedLstokens.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -2589,7 +2541,7 @@ func (m *LiquidUnstakeUnbondingDelegationInfo) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *UnpairingForRepairingInfo) Unmarshal(dAtA []byte) error {
+func (m *UnpairingForUnstakeChunkInfo) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -2612,10 +2564,10 @@ func (m *UnpairingForRepairingInfo) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: UnpairingForRepairingInfo: wiretype end group for non-group")
+			return fmt.Errorf("proto: UnpairingForUnstakeChunkInfo: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: UnpairingForRepairingInfo: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: UnpairingForUnstakeChunkInfo: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -2638,29 +2590,10 @@ func (m *UnpairingForRepairingInfo) Unmarshal(dAtA []byte) error {
 				}
 			}
 		case 2:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field InsuranceId", wireType)
-			}
-			m.InsuranceId = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowLiquidstaking
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.InsuranceId |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 3:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field CompletionTime", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field DelegatorAddress", wireType)
 			}
-			var msglen int
+			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowLiquidstaking
@@ -2670,22 +2603,55 @@ func (m *UnpairingForRepairingInfo) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				stringLen |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			if msglen < 0 {
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
 				return ErrInvalidLengthLiquidstaking
 			}
-			postIndex := iNdEx + msglen
+			postIndex := iNdEx + intStringLen
 			if postIndex < 0 {
 				return ErrInvalidLengthLiquidstaking
 			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if err := github_com_gogo_protobuf_types.StdTimeUnmarshal(&m.CompletionTime, dAtA[iNdEx:postIndex]); err != nil {
+			m.DelegatorAddress = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field EscrowedLstokens", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowLiquidstaking
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthLiquidstaking
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthLiquidstaking
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.EscrowedLstokens.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -2710,7 +2676,7 @@ func (m *UnpairingForRepairingInfo) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *WithdrawingInsurance) Unmarshal(dAtA []byte) error {
+func (m *WithdrawInsuranceRequest) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -2733,10 +2699,10 @@ func (m *WithdrawingInsurance) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: WithdrawingInsurance: wiretype end group for non-group")
+			return fmt.Errorf("proto: WithdrawInsuranceRequest: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: WithdrawingInsurance: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: WithdrawInsuranceRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -2758,58 +2724,6 @@ func (m *WithdrawingInsurance) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
-		case 2:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ChunkId", wireType)
-			}
-			m.ChunkId = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowLiquidstaking
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.ChunkId |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field CompletionTime", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowLiquidstaking
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthLiquidstaking
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthLiquidstaking
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := github_com_gogo_protobuf_types.StdTimeUnmarshal(&m.CompletionTime, dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipLiquidstaking(dAtA[iNdEx:])

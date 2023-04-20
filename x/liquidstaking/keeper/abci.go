@@ -4,10 +4,14 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-func BeginBlocker(ctx sdk.Context, k Keeper) {
-	// TODO: should we panic here? or continue as much as possible?
-	// Need to check references (e.g. crescent BeginBlocker, EndBlocker)
-	k.coverUnpairingForUnstakeCase(ctx)
-	k.coverUnpairingForRepairingCase(ctx)
-	k.coverVulnerableInsurances(ctx)
+func EndBlocker(ctx sdk.Context, k Keeper) {
+	// TODO: Check epoch
+	k.DistributeReward(ctx)
+	k.CoverSlashingAndHandleMatureUnbondings(ctx)
+	if _, err := k.HandleQueuedLiquidUnstakes(ctx); err != nil {
+		panic(err)
+	}
+	if _, err := k.HandleQueuedWithdrawInsuranceRequests(ctx); err != nil {
+		panic(err)
+	}
 }

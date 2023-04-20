@@ -9,20 +9,20 @@ import (
 // 1. Give commission based on chunk reward
 // 2. Send rest of rewards to reward module account
 func (k Keeper) CollectReward(ctx sdk.Context, chunk types.Chunk) {
-	insurance, found := k.GetInsurance(ctx, chunk.InsuranceId)
+	pairedInsurance, found := k.GetInsurance(ctx, chunk.PairedInsuranceId)
 	if !found {
 		panic(types.ErrNotFoundInsurance.Error())
 	}
 
 	bondDenom := k.stakingKeeper.BondDenom(ctx)
 	chunkBalance := k.bankKeeper.GetBalance(ctx, chunk.DerivedAddress(), bondDenom)
-	insuranceFee := chunkBalance.Amount.ToDec().Mul(insurance.FeeRate).TruncateInt()
+	insuranceFee := chunkBalance.Amount.ToDec().Mul(pairedInsurance.FeeRate).TruncateInt()
 
-	// Send insurance fee to the insurance fee pool
+	// Send pairedInsurance fee to the pairedInsurance fee pool
 	if err := k.bankKeeper.SendCoins(
 		ctx,
 		chunk.DerivedAddress(),
-		insurance.FeePoolAddress(),
+		pairedInsurance.FeePoolAddress(),
 		sdk.NewCoins(sdk.NewCoin(bondDenom, insuranceFee)),
 	); err != nil {
 		panic(err)

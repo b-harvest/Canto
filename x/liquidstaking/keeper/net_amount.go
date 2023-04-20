@@ -3,6 +3,7 @@ package keeper
 import (
 	"github.com/Canto-Network/Canto/v6/x/liquidstaking/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
 // TODO: Discuss with taeyoung what values should be used for meaningful testing
@@ -20,8 +21,8 @@ func (k Keeper) GetNetAmountState(ctx sdk.Context) (nas types.NetAmountState) {
 		balance := k.bankKeeper.GetBalance(ctx, chunk.DerivedAddress(), k.stakingKeeper.BondDenom(ctx))
 		totalChunksBalance = totalChunksBalance.Add(balance.Amount.ToDec())
 
-		insurance, _ := k.GetInsurance(ctx, chunk.InsuranceId)
-		valAddr, err := sdk.ValAddressFromBech32(insurance.ValidatorAddress)
+		pairedInsurance, _ := k.GetInsurance(ctx, chunk.PairedInsuranceId)
+		valAddr, err := sdk.ValAddressFromBech32(pairedInsurance.ValidatorAddress)
 		if err != nil {
 			return true, err
 		}
@@ -38,28 +39,17 @@ func (k Keeper) GetNetAmountState(ctx sdk.Context) (nas types.NetAmountState) {
 		delReward := k.distributionKeeper.CalculateDelegationRewards(cachedCtx, validator, delegation, endingPeriod)
 		totalRemainingRewards = totalRemainingRewards.Add(delReward.AmountOf(bondDenom))
 
+		k.stakingKeeper.IterateDelegatorUnbondingDelegations(ctx, chunk.DerivedAddress(), func(ubd stakingtypes.UnbondingDelegation) (stop bool) {
+			for _, entry := range ubd.Entries {
+				totalUnbondingBalance = totalUnbondingBalance.Add(entry.Balance.ToDec())
+			}
+			return false
+		})
 		return false, nil
 	})
 	if err != nil {
 		panic(err)
 	}
-	// TODO: retrieve using unstaker address, not chunk address
-	k.IterateAllLiquidUnstakeUnbondingDelegationInfos(ctx, func(info types.LiquidUnstakeUnbondingDelegationInfo) (bool, error) {
-		// get unbonding delegation using info.DelegatorAddress
-		ubd, found := k.stakingKeeper.GetUnbondingDelegation(ctx, info.GetDelegator(), info.GetValidator())
-		if !found {
-			// TODO: return false, nil when production
-			panic("unbonding delegation not found")
-		}
-		for _, entry := range ubd.Entries {
-			// check entry with info
-			if entry.CompletionTime.Equal(info.CompletionTime) &&
-				entry.InitialBalance.Equal(types.ChunkSize) {
-				totalUnbondingBalance = totalUnbondingBalance.Add(entry.Balance.ToDec())
-			}
-		}
-		return false, nil
-	})
 
 	// Iterate all paired insurances to get total insurance tokens
 	err = k.IterateAllInsurances(ctx, func(insurance types.Insurance) (stop bool, err error) {
