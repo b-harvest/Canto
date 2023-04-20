@@ -188,12 +188,7 @@ message NetAmountState {
   ];
 }
 
-// LiquidUnstakeEntry is an array for handling MsgLiquidUnstake in sequential.
 message PendingLiquidUnstake {
-  repeated LiquidUnstakeEntry entries = 1 [(gogoproto.nullable) = false];
-}
-
-message LiquidUnstakeEntry {
   option (gogoproto.equal)            = false;
   option (gogoproto.goproto_getters)  = false;
 

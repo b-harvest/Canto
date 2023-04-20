@@ -1,8 +1,6 @@
 package keeper
 
 import (
-	"time"
-
 	"github.com/Canto-Network/Canto/v6/x/liquidstaking/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -63,15 +61,15 @@ func (k Keeper) CoverSlashingAndHandleMatureUnbondings(ctx sdk.Context) {
 	}
 }
 
-// HandleQueuedLiquidUnstakes Processes unstaking requests that were queued before the epoch.
+// HandleQueuedLiquidUnstakes processes unstaking requests that were queued before the epoch.
 func (k Keeper) HandleQueuedLiquidUnstakes(ctx sdk.Context) ([]types.Chunk, error) {
 	var unstakedChunks []types.Chunk
-	entries := k.DequeueAllLiquidUnstakeEntry(ctx, ctx.BlockTime())
-	for _, entry := range entries {
+	pendingLiquidunstakes := k.GetAllPendingLiquidUnstake(ctx)
+	for _, plu := range pendingLiquidunstakes {
 		// Get chunk
-		chunk, found := k.GetChunk(ctx, entry.ChunkId)
+		chunk, found := k.GetChunk(ctx, plu.ChunkId)
 		if !found {
-			return nil, sdkerrors.Wrapf(types.ErrNotFoundChunk, "id: %d", entry.ChunkId)
+			return nil, sdkerrors.Wrapf(types.ErrNotFoundChunk, "id: %d", plu.ChunkId)
 		}
 		if chunk.Status != types.CHUNK_STATUS_PAIRED {
 			return nil, sdkerrors.Wrapf(types.ErrInvalidChunkStatus, "id: %d, status: %s", chunk.Id, chunk.Status)
@@ -104,8 +102,9 @@ func (k Keeper) HandleQueuedLiquidUnstakes(ctx sdk.Context) ([]types.Chunk, erro
 		// Set tracking obj
 		k.SetUnpairingForUnstakeChunkInfo(
 			ctx,
-			types.NewUnpairingForUnstakeChunkInfo(chunk.Id, entry.DelegatorAddress, entry.EscrowedLstokens),
+			types.NewUnpairingForUnstakeChunkInfo(chunk.Id, plu.DelegatorAddress, plu.EscrowedLstokens),
 		)
+		k.DeletePendingLiquidUnstake(ctx, plu)
 	}
 	return unstakedChunks, nil
 }
@@ -336,12 +335,12 @@ func (k Keeper) QueueLiquidUnstake(ctx sdk.Context, msg *types.MsgLiquidUnstake)
 
 		mostExpensiveInsurance := insurances[i]
 		chunkToBeUndelegated := chunksWithInsuranceId[mostExpensiveInsurance.Id]
-		k.InsertLUQueue(
+		k.SetPendingLiquidUnstake(
 			ctx,
-			time.Now(),
-			chunkToBeUndelegated.Id,
-			chunkToBeUndelegated.DerivedAddress(),
-			lsTokensToBurn,
+			types.NewPendingLiquidUnstake(
+				chunkToBeUndelegated.Id,
+				chunkToBeUndelegated.DerivedAddress().String(), lsTokensToBurn,
+			),
 		)
 	}
 	return

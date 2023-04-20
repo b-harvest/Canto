@@ -2,7 +2,6 @@ package types
 
 import (
 	"bytes"
-	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/address"
@@ -32,7 +31,7 @@ const (
 	prefixWithdrawInsuranceRequest
 	prefixPreviousInsuranceIndex
 	prefixUnpairingForUnstakeChunkInfo
-	prefixLiquidUnstakeQueueKey
+	prefixLiquidUnstakeKey
 	prefixEpoch
 )
 
@@ -46,7 +45,7 @@ var (
 	KeyPrefixInsurancesByProviderIndex    = []byte{prefixInsurancesByProviderIndex}
 	KeyPrefixWithdrawInsuranceRequest     = []byte{prefixWithdrawInsuranceRequest}
 	KeyPrefixUnpairingForUnstakeChunkInfo = []byte{prefixUnpairingForUnstakeChunkInfo}
-	KeyPrefixLiquidUnstakeQueueKey        = []byte{prefixLiquidUnstakeQueueKey}
+	KeyPrefixLiquidUnstakeKey             = []byte{prefixLiquidUnstakeKey}
 	KeyPrefixEpoch                        = []byte{prefixEpoch}
 	KeyLiquidBondDenom                    = []byte{prefixLiquidBondDenom}
 )
@@ -95,8 +94,6 @@ func ParsePairingInsuranceIndexKey(key []byte) (insuranceId uint64) {
 	return
 }
 
-// GetPendingLiquidStakeTimeKey creates the prefix for all pending liquid unstake from a delegator
-func GetPendingLiquidStakeTimeKey(timestamp time.Time) []byte {
-	bz := sdk.FormatTimeBytes(timestamp)
-	return append(KeyPrefixLiquidUnstakeQueueKey, bz...)
+func GetPendingLiquidStakeKey(delegator sdk.AccAddress) []byte {
+	return append(KeyPrefixLiquidUnstakeKey, address.MustLengthPrefix(delegator)...)
 }
