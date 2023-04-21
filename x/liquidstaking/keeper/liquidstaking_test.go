@@ -387,11 +387,15 @@ func (suite *KeeperTestSuite) TestLiquidUnstakeWithAdvanceBlocks() {
 	rewardsClaimedAfterLiquidUnstake++
 
 	beforeNas = nas
+	fmt.Println("beforeNas")
+	fmt.Println(beforeNas)
 	nas = suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
+	fmt.Println("nas")
+	fmt.Println(nas)
 
 	// 2 rewards epoch is passed after one chunk delegation was gone.
 	// That means we missed 2 unit delegation rewards.
-	missedDelegationReward := eachDelegationRewardPerEpoch.ToDec().Mul(sdk.NewDec(int64(rewardsClaimedAfterLiquidUnstake)))
+	missedDelegationReward := eachDelegationRewardPerEpoch.ToDec().Mul(sdk.NewDec(int64(2)))
 	// check changed net amount state after liquid unstake
 	suite.Equal(
 		beforeNas.TotalRemainingRewards.Sub(nas.TotalRemainingRewards),
@@ -407,15 +411,15 @@ func (suite *KeeperTestSuite) TestLiquidUnstakeWithAdvanceBlocks() {
 	cumulativeInsuranceCommission := unpairingInsurnace.FeeRate.Mul(missedDelegationReward).TruncateInt()
 	// check reward module balance
 	suite.Equal(
-		suite.app.BankKeeper.GetBalance(suite.ctx, types.RewardPool, suite.app.StakingKeeper.BondDenom(suite.ctx)).Amount,
-		missedDelegationReward.Sub(cumulativeInsuranceCommission.ToDec()).TruncateInt(),
+		suite.app.BankKeeper.GetBalance(suite.ctx, types.RewardPool, suite.app.StakingKeeper.BondDenom(suite.ctx)).Amount.String(),
+		missedDelegationReward.Sub(cumulativeInsuranceCommission.ToDec()).TruncateInt().String(),
 		"reward module account collect chunk's delegation reward minus insurance commission",
 	)
 	suite.Equal(nas.RewardModuleAccBalance, missedDelegationReward.Sub(cumulativeInsuranceCommission.ToDec()))
 	// check insurance got fee
 	suite.Equal(
-		suite.app.BankKeeper.GetBalance(suite.ctx, unpairingInsurnace.FeePoolAddress(), suite.app.StakingKeeper.BondDenom(suite.ctx)).Amount,
-		cumulativeInsuranceCommission,
+		suite.app.BankKeeper.GetBalance(suite.ctx, unpairingInsurnace.FeePoolAddress(), suite.app.StakingKeeper.BondDenom(suite.ctx)).Amount.String(),
+		cumulativeInsuranceCommission.String(),
 		"insurance got commission from chunk's delegation reward",
 	)
 }

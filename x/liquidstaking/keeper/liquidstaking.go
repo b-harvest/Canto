@@ -67,8 +67,9 @@ func (k Keeper) CoverSlashingAndHandleMatureUnbondings(ctx sdk.Context) {
 // HandleQueuedLiquidUnstakes processes unstaking requests that were queued before the epoch.
 func (k Keeper) HandleQueuedLiquidUnstakes(ctx sdk.Context) ([]types.Chunk, error) {
 	var unstakedChunks []types.Chunk
-	pendingLiquidunstakes := k.GetAllPendingLiquidUnstake(ctx)
-	for _, plu := range pendingLiquidunstakes {
+	// TODO: Should use Queue for processing in sequence? MintRate is ok?, insurance issue? etc...
+	pendingLiquidUnstakes := k.GetAllPendingLiquidUnstake(ctx)
+	for _, plu := range pendingLiquidUnstakes {
 		// Get chunk
 		chunk, found := k.GetChunk(ctx, plu.ChunkId)
 		if !found {
@@ -340,6 +341,7 @@ func (k Keeper) QueueLiquidUnstake(ctx sdk.Context, msg *types.MsgLiquidUnstake)
 
 		mostExpensiveInsurance := insurances[i]
 		chunkToBeUndelegated := chunksWithInsuranceId[mostExpensiveInsurance.Id]
+		// TODO: Check if the chunk is not already in the queue
 		plu := types.NewPendingLiquidUnstake(
 			chunkToBeUndelegated.Id,
 			msg.DelegatorAddress,
@@ -537,6 +539,7 @@ func (k Keeper) completeInsuranceDuty(ctx sdk.Context, insurance types.Insurance
 		return sdkerrors.Wrapf(types.ErrNotFoundChunk, "chunk id: %d", insurance.ChunkId)
 	}
 
+	// TODO: instead of using 0, need some UppercaseName or method(e.g. SetNull)
 	// insurance duty is over
 	insurance.ChunkId = 0
 	chunk.UnpairingInsuranceId = chunk.PairedInsuranceId
@@ -556,7 +559,7 @@ func (k Keeper) completeLiquidUnstake(ctx sdk.Context, chunk types.Chunk) error 
 	liquidBondDenom := k.GetLiquidBondDenom(ctx)
 
 	// get paired insurance from chunk
-	unpairingInsurnace, found := k.GetInsurance(ctx, chunk.UnpairingInsuranceId)
+	unpairingInsurance, found := k.GetInsurance(ctx, chunk.UnpairingInsuranceId)
 	if !found {
 		return sdkerrors.Wrapf(types.ErrNotFoundInsurance, "insurance id: %d", chunk.UnpairingInsuranceId)
 	}
@@ -566,7 +569,7 @@ func (k Keeper) completeLiquidUnstake(ctx sdk.Context, chunk types.Chunk) error 
 	}
 
 	// unpairing for unstake chunk only have unpairing insurance
-	_, found = k.stakingKeeper.GetUnbondingDelegation(ctx, chunk.DerivedAddress(), unpairingInsurnace.GetValidator())
+	_, found = k.stakingKeeper.GetUnbondingDelegation(ctx, chunk.DerivedAddress(), unpairingInsurance.GetValidator())
 	if found {
 		// UnbondingDelegation must be removed by staking keeper EndBlocker
 		// because Endblocker of liquidstaking module is called after staking module.
@@ -583,14 +586,14 @@ func (k Keeper) completeLiquidUnstake(ctx sdk.Context, chunk types.Chunk) error 
 		// send penalty to reward pool
 		if err = k.bankKeeper.SendCoins(
 			ctx,
-			unpairingInsurnace.DerivedAddress(),
+			unpairingInsurance.DerivedAddress(),
 			types.RewardPool,
 			sdk.NewCoins(sdk.NewCoin(bondDenom, penalty)),
 		); err != nil {
 			return err
 		}
 		penaltyRatio := penalty.ToDec().Quo(types.ChunkSize.ToDec())
-		discount := penaltyRatio.Mul(types.ChunkSize.ToDec())
+		discount := penaltyRatio.Mul(lsTokensToBurn.Amount.ToDec())
 		refund := sdk.NewCoin(liquidBondDenom, discount.TruncateInt())
 
 		// send discount lstokens to info.Delegator
@@ -605,7 +608,7 @@ func (k Keeper) completeLiquidUnstake(ctx sdk.Context, chunk types.Chunk) error 
 		lsTokensToBurn = lsTokensToBurn.Sub(refund)
 	}
 	// insurance duty is over
-	if err = k.completeInsuranceDuty(ctx, unpairingInsurnace); err != nil {
+	if err = k.completeInsuranceDuty(ctx, unpairingInsurance); err != nil {
 		return err
 	}
 	if err = k.burnEscrowedLsTokens(ctx, lsTokensToBurn); err != nil {

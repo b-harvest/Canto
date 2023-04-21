@@ -1,7 +1,6 @@
 package keeper_test
 
 import (
-	"fmt"
 	liquidstakingkeeper "github.com/Canto-Network/Canto/v6/x/liquidstaking/keeper"
 	"testing"
 	"time"
@@ -244,9 +243,7 @@ func (suite *KeeperTestSuite) advanceHeight(height int) {
 			})
 		}
 		remaining := rewardsToBeDistributed.ToDec().Sub(totalRewards)
-		fmt.Println("remaining:")
-		fmt.Println(remaining.String())
-		//suite.False(remaining.GT(sdk.NewDec(100)), "all rewards should be distributed")
+		suite.False(remaining.GT(sdk.NewDec(1000)), "all rewards should be distributed")
 		feePool := suite.app.DistrKeeper.GetFeePool(suite.ctx)
 		feePool.CommunityPool = feePool.CommunityPool.Add(
 			sdk.NewDecCoin(suite.denom, remaining.TruncateInt()),
@@ -261,5 +258,5 @@ func (suite *KeeperTestSuite) advanceEpoch() {
 	// Set block header time as epochStartTime + duration + 1 second
 	epoch := suite.app.LiquidStakingKeeper.GetEpoch(suite.ctx)
 	// Lets pass epoch
-	suite.ctx = suite.ctx.WithBlockTime(epoch.StartTime.Add(epoch.Duration).Add(time.Second))
+	suite.ctx = suite.ctx.WithBlockTime(epoch.StartTime.Add(epoch.Duration))
 }
