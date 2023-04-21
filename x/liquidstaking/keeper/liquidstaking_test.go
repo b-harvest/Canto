@@ -24,6 +24,17 @@ func (suite *KeeperTestSuite) getPairedChunks() []types.Chunk {
 	return pairedChunks
 }
 
+func (suite *KeeperTestSuite) getUnpairingForUnstakeChunks() []types.Chunk {
+	var unpairingForUnstakeChunks []types.Chunk
+	suite.app.LiquidStakingKeeper.IterateAllChunks(suite.ctx, func(chunk types.Chunk) (bool, error) {
+		if chunk.Status == types.CHUNK_STATUS_UNPAIRING_FOR_UNSTAKE {
+			unpairingForUnstakeChunks = append(unpairingForUnstakeChunks, chunk)
+		}
+		return false, nil
+	})
+	return unpairingForUnstakeChunks
+}
+
 // getMostExpensivePairedChunk returns the paired chunk which have most expensive insurance
 func (suite *KeeperTestSuite) getMostExpensivePairedChunk(pairedChunks []types.Chunk) types.Chunk {
 	chunksWithInsuranceId := make(map[uint64]types.Chunk)
@@ -223,6 +234,7 @@ func (suite *KeeperTestSuite) TestLiquidStakeFail() {
 	suite.ErrorIs(err, types.ErrMaxPairedChunkSizeExceeded)
 }
 
+// TODO: Must upgarde this TC with actual numbers, currently it just prints out without checking.
 func (suite *KeeperTestSuite) TestLiquidStakeWithAdvanceBlocks() {
 	valAddrs := suite.CreateValidators([]int64{1, 1, 1})
 	minimumRequirement, minimumCoverage := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
@@ -321,11 +333,10 @@ func (suite *KeeperTestSuite) TestLiquidUnstakeWithAdvanceBlocks() {
 	bondDenom := suite.app.StakingKeeper.BondDenom(suite.ctx)
 	liquidBondDenom := suite.app.LiquidStakingKeeper.GetLiquidBondDenom(suite.ctx)
 
-	// liquid unstake 1 chunk
+	// Queue liquid unstake 1 chunk
 	undelegator := delegators[0]
 	beforeBondDenomBalance := suite.app.BankKeeper.GetBalance(suite.ctx, undelegator, bondDenom)
 	beforeLiquidBondDenomBalance := suite.app.BankKeeper.GetBalance(suite.ctx, undelegator, liquidBondDenom)
-
 	msg := types.NewMsgLiquidUnstake(undelegator.String(), oneChunk)
 	lsTokensToEscrow := nas.MintRate.Mul(oneChunk.Amount.ToDec()).TruncateInt()
 	toBeUnstakedChunks, pendingLiquidUnstakes, err := suite.app.LiquidStakingKeeper.QueueLiquidUnstake(suite.ctx, msg)
@@ -337,15 +348,19 @@ func (suite *KeeperTestSuite) TestLiquidUnstakeWithAdvanceBlocks() {
 	suite.Equal(pendingLiquidUnstakes[0].DelegatorAddress, undelegator.String())
 	suite.Equal(toBeUnstakedChunks[0].PairedInsuranceId, mostExpensivePairedChunk.PairedInsuranceId)
 
+	rewardsClaimedAfterLiquidUnstake := 0
 	// Process pending(=queued) liquid unstakes
+	suite.advanceEpoch()
 	suite.advanceHeight(1)
+	// we did not count rewardsClaimedAfterLiquidUnstake because
+	// un-delegation is called after reward distribution
+
+	// After epoch reached, toBeUnstakedChunks should be unstaked
 	unstakedChunk, found := suite.app.LiquidStakingKeeper.GetChunk(suite.ctx, toBeUnstakedChunks[0].Id)
 	suite.True(found)
 	suite.Equal(unstakedChunk.Status, types.CHUNK_STATUS_UNPAIRING_FOR_UNSTAKE)
 	suite.Equal(unstakedChunk.UnpairingInsuranceId, toBeUnstakedChunks[0].PairedInsuranceId)
 
-	beforeNas = nas
-	nas = suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
 	bondDenomBalance := suite.app.BankKeeper.GetBalance(suite.ctx, undelegator, bondDenom)
 	liquidBondDenomBalance := suite.app.BankKeeper.GetBalance(suite.ctx, undelegator, liquidBondDenom)
 	suite.Equal(bondDenomBalance.Sub(beforeBondDenomBalance).Amount, sdk.ZeroInt(), "unbonding period is just started so no tokens are backed yet")
@@ -362,13 +377,25 @@ func (suite *KeeperTestSuite) TestLiquidUnstakeWithAdvanceBlocks() {
 
 	// check states after liquid unstake
 	pairedChunksAfterUnstake := suite.getPairedChunks()
+	// check unpairingForUnstake chunks
+	unpairingForUnstakeChunks := suite.getUnpairingForUnstakeChunks()
 	// paired chunk count should be decreased by number of unstaked chunks
-	suite.Len(pairedChunksAfterUnstake, len(pairedChunks)-len(toBeUnstakedChunks))
+	suite.Len(pairedChunksAfterUnstake, len(pairedChunks)-len(unpairingForUnstakeChunks))
 
-	// check chagned net amount state after liquid unstake
+	suite.advanceEpoch()
+	suite.advanceHeight(1)
+	rewardsClaimedAfterLiquidUnstake++
+
+	beforeNas = nas
+	nas = suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
+
+	// 2 rewards epoch is passed after one chunk delegation was gone.
+	// That means we missed 2 unit delegation rewards.
+	missedDelegationReward := eachDelegationRewardPerEpoch.ToDec().Mul(sdk.NewDec(int64(rewardsClaimedAfterLiquidUnstake)))
+	// check changed net amount state after liquid unstake
 	suite.Equal(
 		beforeNas.TotalRemainingRewards.Sub(nas.TotalRemainingRewards),
-		eachDelegationRewardPerEpoch.ToDec(),
+		missedDelegationReward,
 		"delegation reward for one chunk is claimed by reward module account",
 	)
 	suite.Equal(
@@ -376,19 +403,19 @@ func (suite *KeeperTestSuite) TestLiquidUnstakeWithAdvanceBlocks() {
 		oneInsurance.Amount,
 		"insurance tokens must be increased by one chunk insurance",
 	)
-	unstakedInsurance, _ := suite.app.LiquidStakingKeeper.GetInsurance(suite.ctx, toBeUnstakedChunks[0].UnpairingInsuranceId)
-	insuranceCommission := unstakedInsurance.FeeRate.Mul(eachDelegationRewardPerEpoch.ToDec()).TruncateInt()
+	unpairingInsurnace, _ := suite.app.LiquidStakingKeeper.GetInsurance(suite.ctx, unstakedChunk.UnpairingInsuranceId)
+	cumulativeInsuranceCommission := unpairingInsurnace.FeeRate.Mul(missedDelegationReward).TruncateInt()
 	// check reward module balance
 	suite.Equal(
 		suite.app.BankKeeper.GetBalance(suite.ctx, types.RewardPool, suite.app.StakingKeeper.BondDenom(suite.ctx)).Amount,
-		eachDelegationRewardPerEpoch.Sub(insuranceCommission),
+		missedDelegationReward.Sub(cumulativeInsuranceCommission.ToDec()).TruncateInt(),
 		"reward module account collect chunk's delegation reward minus insurance commission",
 	)
-	suite.Equal(nas.RewardModuleAccBalance, eachDelegationRewardPerEpoch.Sub(insuranceCommission))
+	suite.Equal(nas.RewardModuleAccBalance, missedDelegationReward.Sub(cumulativeInsuranceCommission.ToDec()))
 	// check insurance got fee
 	suite.Equal(
-		suite.app.BankKeeper.GetBalance(suite.ctx, unstakedInsurance.FeePoolAddress(), suite.app.StakingKeeper.BondDenom(suite.ctx)).Amount,
-		insuranceCommission,
+		suite.app.BankKeeper.GetBalance(suite.ctx, unpairingInsurnace.FeePoolAddress(), suite.app.StakingKeeper.BondDenom(suite.ctx)).Amount,
+		cumulativeInsuranceCommission,
 		"insurance got commission from chunk's delegation reward",
 	)
 }

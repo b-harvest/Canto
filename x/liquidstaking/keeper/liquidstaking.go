@@ -213,6 +213,7 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (chunk
 			return
 		}
 		chunk.PairedInsuranceId = cheapestInsurance.Id
+		cheapestInsurance.ChunkId = chunk.Id
 		validator := validatorMap[cheapestInsurance.ValidatorAddress]
 
 		// Delegate to the validator

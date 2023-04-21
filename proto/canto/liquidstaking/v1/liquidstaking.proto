@@ -11,13 +11,11 @@ option go_package = "github.com/Canto-Network/Canto/v6/x/liquidstaking/types";
 // Epoch defines the epoch of the module.
 message Epoch {
   uint64 current_number = 1;
-  google.protobuf.Timestamp epoch_start_time = 2
+  google.protobuf.Timestamp start_time = 2
       [ (gogoproto.stdtime) = true, (gogoproto.nullable) = false ];
-  google.protobuf.Duration epoch_duration = 3
+  google.protobuf.Duration duration = 3
       [ (gogoproto.stdduration) = true, (gogoproto.nullable) = false ];
-  int64 epoch_start_height = 4;
-  uint64 epoch_chunk_size = 5;
-  uint64 epoch_max_paired_chunk = 6;
+  int64 start_height = 4;
 }
 
 // Params defines the parameters for the module.
