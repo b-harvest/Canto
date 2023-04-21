@@ -4,7 +4,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/evmos/ethermint/crypto/ethsecp256k1"
 	"github.com/stretchr/testify/suite"
+	tmversion "github.com/tendermint/tendermint/proto/tendermint/version"
+	"github.com/tendermint/tendermint/version"
 
 	"github.com/tendermint/tendermint/crypto/tmhash"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
@@ -43,8 +46,36 @@ type TestSuite struct {
 }
 
 func (suite *TestSuite) SetupTest() {
+	// consensus key
+	privCons, err := ethsecp256k1.GenerateKey()
+	suite.NoError(err)
+	consAddress := sdk.ConsAddress(privCons.PubKey().Address())
+
 	app := setupWithGenesisAccounts()
-	ctx := app.BaseApp.NewContext(false, tmproto.Header{})
+	ctx := app.BaseApp.NewContext(false, tmproto.Header{
+		Height:          1,
+		ChainID:         "canto_9001-1",
+		Time:            time.Now().UTC(),
+		ProposerAddress: consAddress.Bytes(),
+
+		Version: tmversion.Consensus{
+			Block: version.BlockProtocol,
+		},
+		LastBlockId: tmproto.BlockID{
+			Hash: tmhash.Sum([]byte("block_id")),
+			PartSetHeader: tmproto.PartSetHeader{
+				Total: 11,
+				Hash:  tmhash.Sum([]byte("partset_header")),
+			},
+		},
+		AppHash:            tmhash.Sum([]byte("app")),
+		DataHash:           tmhash.Sum([]byte("data")),
+		EvidenceHash:       tmhash.Sum([]byte("evidence")),
+		ValidatorsHash:     tmhash.Sum([]byte("validators")),
+		NextValidatorsHash: tmhash.Sum([]byte("next_validators")),
+		ConsensusHash:      tmhash.Sum([]byte("consensus")),
+		LastResultsHash:    tmhash.Sum([]byte("last_result")),
+	})
 
 	queryHelper := baseapp.NewQueryServerTestHelper(ctx, app.InterfaceRegistry())
 	types.RegisterQueryServer(queryHelper, app.CoinswapKeeper)
@@ -58,6 +89,11 @@ func (suite *TestSuite) SetupTest() {
 	sdk.SetCoinDenomRegex(func() string {
 		return `[a-zA-Z][a-zA-Z0-9/\-]{2,127}`
 	})
+
+	stakingParams := suite.app.StakingKeeper.GetParams(suite.ctx)
+	stakingParams.BondDenom = "acanto"
+	suite.app.StakingKeeper.SetParams(suite.ctx, stakingParams)
+	suite.app.CoinswapKeeper.SetStandardDenom(ctx, "acanto")
 }
 
 func TestKeeperTestSuite(t *testing.T) {

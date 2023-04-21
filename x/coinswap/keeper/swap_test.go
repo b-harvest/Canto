@@ -208,7 +208,7 @@ func createReservePool(suite *TestSuite, denom string) (sdk.AccAddress, sdk.AccA
 		PoolCreationFee:        sdk.Coin{denomStandard, sdk.ZeroInt()},
 		TaxRate:                sdk.NewDec(0),
 		MaxStandardCoinPerPool: sdk.NewInt(10_000_000_000),
-		MaxSwapAmount:          sdk.NewCoins(sdk.NewInt64Coin(denomBTC, 10_000_000)),
+		MaxSwapAmount:          sdk.NewCoins(sdk.NewInt64Coin(denom, 10_000_000)),
 	}
 	suite.app.CoinswapKeeper.SetParams(suite.ctx, params)
 

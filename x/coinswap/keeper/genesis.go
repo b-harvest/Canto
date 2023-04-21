@@ -14,10 +14,10 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState types.GenesisState) {
 		panic(fmt.Errorf("panic for ValidateGenesis,%v", err))
 	}
 
-	// init to prevent nil slice, []types.WhitelistedValidator(nil)
-	//if genState.Params.WhitelistedDenoms == nil || len(genState.Params.WhitelistedDenoms) == 0 {
-	//	genState.Params.WhitelistedDenoms = []string{}
-	//}
+	// init to prevent nil slice
+	if genState.Params.MaxSwapAmount == nil || len(genState.Params.MaxSwapAmount) == 0 {
+		genState.Params.MaxSwapAmount = sdk.Coins{}
+	}
 	k.SetParams(ctx, genState.Params)
 	k.SetStandardDenom(ctx, genState.StandardDenom)
 	k.setSequence(ctx, genState.Sequence)
@@ -30,10 +30,10 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState types.GenesisState) {
 func (k Keeper) ExportGenesis(ctx sdk.Context) types.GenesisState {
 
 	params := k.GetParams(ctx)
-	// init to prevent nil slice, []types.WhitelistedValidator(nil)
-	//if params.WhitelistedDenoms == nil || len(params.WhitelistedDenoms) == 0 {
-	//	params.WhitelistedDenoms = []string{}
-	//}
+	// init to prevent nil slice
+	if params.MaxSwapAmount == nil || len(params.MaxSwapAmount) == 0 {
+		params.MaxSwapAmount = sdk.Coins{}
+	}
 	return types.GenesisState{
 		Params:        params,
 		StandardDenom: k.GetStandardDenom(ctx),
