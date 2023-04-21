@@ -1,6 +1,7 @@
 package keeper_test
 
 import (
+	liquidstakingkeeper "github.com/Canto-Network/Canto/v6/x/liquidstaking/keeper"
 	"testing"
 	"time"
 
@@ -238,5 +239,6 @@ func (suite *KeeperTestSuite) advanceHeight(height int) {
 		)
 		suite.app.DistrKeeper.SetFeePool(suite.ctx, feePool)
 		staking.EndBlocker(suite.ctx, suite.app.StakingKeeper)
+		liquidstakingkeeper.EndBlocker(suite.ctx, suite.app.LiquidStakingKeeper)
 	}
 }

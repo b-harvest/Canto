@@ -21,30 +21,33 @@ func (k Keeper) GetNetAmountState(ctx sdk.Context) (nas types.NetAmountState) {
 		balance := k.bankKeeper.GetBalance(ctx, chunk.DerivedAddress(), k.stakingKeeper.BondDenom(ctx))
 		totalChunksBalance = totalChunksBalance.Add(balance.Amount.ToDec())
 
-		pairedInsurance, _ := k.GetInsurance(ctx, chunk.PairedInsuranceId)
-		valAddr, err := sdk.ValAddressFromBech32(pairedInsurance.ValidatorAddress)
-		if err != nil {
-			return true, err
-		}
-		validator := k.stakingKeeper.Validator(ctx, valAddr)
-		delegation, found := k.stakingKeeper.GetDelegation(ctx, chunk.DerivedAddress(), valAddr)
-		if !found {
-			return false, nil
-		}
-		totalDelShares = totalDelShares.Add(delegation.GetShares())
-		tokens := validator.TokensFromSharesTruncated(delegation.GetShares()).TruncateInt()
-		totalLiquidTokens = totalLiquidTokens.Add(tokens)
-		cachedCtx, _ := ctx.CacheContext()
-		endingPeriod := k.distributionKeeper.IncrementValidatorPeriod(cachedCtx, validator)
-		delReward := k.distributionKeeper.CalculateDelegationRewards(cachedCtx, validator, delegation, endingPeriod)
-		totalRemainingRewards = totalRemainingRewards.Add(delReward.AmountOf(bondDenom))
-
-		k.stakingKeeper.IterateDelegatorUnbondingDelegations(ctx, chunk.DerivedAddress(), func(ubd stakingtypes.UnbondingDelegation) (stop bool) {
-			for _, entry := range ubd.Entries {
-				totalUnbondingBalance = totalUnbondingBalance.Add(entry.Balance.ToDec())
+		if chunk.PairedInsuranceId != 0 {
+			// chunk is paired which meanas have delegation
+			pairedInsurance, _ := k.GetInsurance(ctx, chunk.PairedInsuranceId)
+			valAddr, err := sdk.ValAddressFromBech32(pairedInsurance.ValidatorAddress)
+			if err != nil {
+				return true, err
 			}
-			return false
-		})
+			validator := k.stakingKeeper.Validator(ctx, valAddr)
+			delegation, found := k.stakingKeeper.GetDelegation(ctx, chunk.DerivedAddress(), valAddr)
+			if !found {
+				return false, nil
+			}
+			totalDelShares = totalDelShares.Add(delegation.GetShares())
+			tokens := validator.TokensFromSharesTruncated(delegation.GetShares()).TruncateInt()
+			totalLiquidTokens = totalLiquidTokens.Add(tokens)
+			cachedCtx, _ := ctx.CacheContext()
+			endingPeriod := k.distributionKeeper.IncrementValidatorPeriod(cachedCtx, validator)
+			delReward := k.distributionKeeper.CalculateDelegationRewards(cachedCtx, validator, delegation, endingPeriod)
+			totalRemainingRewards = totalRemainingRewards.Add(delReward.AmountOf(bondDenom))
+		} else {
+			k.stakingKeeper.IterateDelegatorUnbondingDelegations(ctx, chunk.DerivedAddress(), func(ubd stakingtypes.UnbondingDelegation) (stop bool) {
+				for _, entry := range ubd.Entries {
+					totalUnbondingBalance = totalUnbondingBalance.Add(entry.Balance.ToDec())
+				}
+				return false
+			})
+		}
 		return false, nil
 	})
 	if err != nil {

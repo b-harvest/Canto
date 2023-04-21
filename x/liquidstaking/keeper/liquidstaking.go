@@ -256,7 +256,8 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (chunk
 // QueueLiquidUnstake queues MsgLiquidUnstake.
 // Actual unstaking will be done in the next epoch.
 func (k Keeper) QueueLiquidUnstake(ctx sdk.Context, msg *types.MsgLiquidUnstake) (
-	unstakedChunks []types.Chunk,
+	toBeUnstakedChunks []types.Chunk,
+	pendingLiquidUnstakes []types.PendingLiquidUnstake,
 	err error,
 ) {
 	delAddr := msg.GetDelegator()
@@ -338,13 +339,14 @@ func (k Keeper) QueueLiquidUnstake(ctx sdk.Context, msg *types.MsgLiquidUnstake)
 
 		mostExpensiveInsurance := insurances[i]
 		chunkToBeUndelegated := chunksWithInsuranceId[mostExpensiveInsurance.Id]
-		k.SetPendingLiquidUnstake(
-			ctx,
-			types.NewPendingLiquidUnstake(
-				chunkToBeUndelegated.Id,
-				chunkToBeUndelegated.DerivedAddress().String(), lsTokensToBurn,
-			),
+		plu := types.NewPendingLiquidUnstake(
+			chunkToBeUndelegated.Id,
+			msg.DelegatorAddress,
+			lsTokensToBurn,
 		)
+		toBeUnstakedChunks = append(toBeUnstakedChunks, chunksWithInsuranceId[insurances[i].Id])
+		pendingLiquidUnstakes = append(pendingLiquidUnstakes, plu)
+		k.SetPendingLiquidUnstake(ctx, plu)
 	}
 	return
 }

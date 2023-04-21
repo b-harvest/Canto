@@ -223,7 +223,6 @@ func (suite *KeeperTestSuite) TestLiquidStakeFail() {
 	suite.ErrorIs(err, types.ErrMaxPairedChunkSizeExceeded)
 }
 
-// TODO: Must implement scenario test for liquid staking
 func (suite *KeeperTestSuite) TestLiquidStakeWithAdvanceBlocks() {
 	valAddrs := suite.CreateValidators([]int64{1, 1, 1})
 	minimumRequirement, minimumCoverage := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
@@ -270,166 +269,174 @@ func (suite *KeeperTestSuite) TestLiquidStakeWithAdvanceBlocks() {
 }
 
 // TODO: Update liquid unstake scenario test with updated code
-// func (suite *KeeperTestSuite) TestLiquidUnstakeWithAdvanceBlocks() {
-// 	// 3 validators we have
-// 	valAddrs := suite.CreateValidators([]int64{1, 1, 1})
-// 	oneChunk, oneInsurance := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
-// 	providers, providerBalances := suite.AddTestAddrs(10, oneInsurance.Amount)
-// 	suite.provideInsurances(providers, valAddrs, providerBalances)
-//
-// 	// 3 delegators
-// 	delegators, delegatorBalances := suite.AddTestAddrs(3, oneChunk.Amount)
-// 	nas := suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
-// 	suite.True(nas.IsZeroState(), "nothing happened yet so it must be zero state")
-//
-// 	// liquid stake 3 chunks (each delegator liquid stakes 1 chunk)
-// 	pairedChunks := suite.liquidStakes(delegators, delegatorBalances)
-// 	mostExpensivePairedChunk := suite.getMostExpensivePairedChunk(pairedChunks)
-//
-// 	nas = suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
-// 	// 1 chunk size * number of paired chunks (=3) tokens are liquidated
-// 	currentLiquidtedTokens := types.ChunkSize.Mul(sdk.NewInt(int64(len(pairedChunks))))
-// 	currentInsuranceTokens := oneInsurance.Amount.Mul(sdk.NewInt(int64(len(pairedChunks))))
-// 	suite.True(nas.Equal(types.NetAmountState{
-// 		MintRate:               sdk.OneDec(),
-// 		LsTokensTotalSupply:    currentLiquidtedTokens,
-// 		NetAmount:              currentLiquidtedTokens.ToDec(),
-// 		TotalDelShares:         currentLiquidtedTokens.ToDec(),
-// 		TotalRemainingRewards:  sdk.ZeroDec(),
-// 		TotalChunksBalance:     sdk.ZeroInt(),
-// 		TotalLiquidTokens:      currentLiquidtedTokens,
-// 		TotalInsuranceTokens:   currentInsuranceTokens,
-// 		TotalUnbondingBalance:  sdk.ZeroInt(),
-// 		RewardModuleAccBalance: sdk.ZeroInt(),
-// 	}), "no block processed yet, so there are no mint rate change and remaining rewards yet")
-//
-// 	// advance 1 block(= epoch period in test environment) so reward is accumulated which means mint rate is changed
-// 	suite.advanceHeight(1)
-// 	eachDelegationRewardPerEpoch, _ := sdk.NewIntFromString("29999994000000000000")
-// 	// each delegation reward per epoch(=1 block in test) * number of paired chunks
-// 	// = 29999994000000000000 * 3
-// 	notClaimedRewards := eachDelegationRewardPerEpoch.Mul(sdk.NewInt(int64(len(pairedChunks))))
-// 	beforeNas := nas
-// 	nas = suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
-// 	suite.Equal(
-// 		nas.TotalRemainingRewards.Sub(beforeNas.TotalRemainingRewards),
-// 		notClaimedRewards.ToDec(),
-// 		"one epoch(=1 block in test) passed, so remaining rewards must be increased",
-// 	)
-// 	suite.Equal(nas.NetAmount.Sub(beforeNas.NetAmount), notClaimedRewards.ToDec(), "net amount must be increased by not claimed rewards")
-// 	suite.Equal(nas.MintRate, sdk.MustNewDecFromStr("0.999994000037199769"), "mint rate increased because of reward accumulation")
-//
-// 	bondDenom := suite.app.StakingKeeper.BondDenom(suite.ctx)
-// 	liquidBondDenom := suite.app.LiquidStakingKeeper.GetLiquidBondDenom(suite.ctx)
-//
-// 	// liquid unstake 1 chunk
-// 	undelegator := delegators[0]
-// 	beforeBondDenomBalance := suite.app.BankKeeper.GetBalance(suite.ctx, undelegator, bondDenom)
-// 	beforeLiquidBondDenomBalance := suite.app.BankKeeper.GetBalance(suite.ctx, undelegator, liquidBondDenom)
-//
-// 	msg := types.NewMsgLiquidUnstake(undelegator.String(), oneChunk)
-// 	lsTokensToEscrow := nas.MintRate.Mul(oneChunk.Amount.ToDec()).TruncateInt()
-// 	unstakedChunks, unstakeUnobndingDelegationInfos, err := suite.app.LiquidStakingKeeper.QueueLiquidUnstake(suite.ctx, msg)
-// 	suite.NoError(err)
-// 	beforeNas = nas
-// 	nas = suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
-//
-// 	bondDenomBalance := suite.app.BankKeeper.GetBalance(suite.ctx, undelegator, bondDenom)
-// 	liquidBondDenomBalance := suite.app.BankKeeper.GetBalance(suite.ctx, undelegator, liquidBondDenom)
-// 	suite.Equal(bondDenomBalance.Sub(beforeBondDenomBalance).Amount, sdk.ZeroInt(), "unbonding period is just started so no tokens are backed yet")
-// 	suite.Equal(
-// 		beforeLiquidBondDenomBalance.Sub(liquidBondDenomBalance).Amount,
-// 		lsTokensToEscrow,
-// 		"ls tokens are escrowed by module",
-// 	)
-// 	suite.Equal(
-// 		suite.app.BankKeeper.GetBalance(suite.ctx, types.LsTokenEscrowAcc, liquidBondDenom).Amount,
-// 		lsTokensToEscrow,
-// 		"module got ls tokens from liquid unstaker",
-// 	)
-//
-// 	// check states after liquid unstake
-// 	pairedChunksAfterUnstake := suite.getPairedChunks()
-// 	suite.Len(unstakedChunks, 1)
-// 	suite.Len(unstakeUnobndingDelegationInfos, 1)
-// 	// unstakedChunk should be the most expensive insurance paired with the previously paired chunk.
-// 	suite.Equal(unstakedChunks[0].Id, mostExpensivePairedChunk.Id)
-// 	suite.Equal(unstakedChunks[0].InsuranceId, mostExpensivePairedChunk.InsuranceId)
-// 	// paired chunk count should be decreased by number of unstaked chunks
-// 	suite.Len(pairedChunksAfterUnstake, len(pairedChunks)-len(unstakedChunks))
-//
-// 	// check chagned net amount state after liquid unstake
-// 	suite.Equal(
-// 		beforeNas.TotalRemainingRewards.Sub(nas.TotalRemainingRewards),
-// 		eachDelegationRewardPerEpoch.ToDec(),
-// 		"delegation reward for one chunk is claimed by reward module account",
-// 	)
-// 	suite.Equal(
-// 		beforeNas.TotalInsuranceTokens.Sub(nas.TotalInsuranceTokens),
-// 		oneInsurance.Amount,
-// 		"insurance tokens must be increased by one chunk insurance",
-// 	)
-// 	unstakedInsurance, _ := suite.app.LiquidStakingKeeper.GetInsurance(suite.ctx, unstakedChunks[0].InsuranceId)
-// 	insuranceCommission := unstakedInsurance.FeeRate.Mul(eachDelegationRewardPerEpoch.ToDec()).TruncateInt()
-// 	// check reward module balance
-// 	suite.Equal(
-// 		suite.app.BankKeeper.GetBalance(suite.ctx, types.RewardPool, suite.app.StakingKeeper.BondDenom(suite.ctx)).Amount,
-// 		eachDelegationRewardPerEpoch.Sub(insuranceCommission),
-// 		"reward module account collect chunk's delegation reward minus insurance commission",
-// 	)
-// 	suite.Equal(nas.RewardModuleAccBalance, eachDelegationRewardPerEpoch.Sub(insuranceCommission))
-// 	// check insurance got fee
-// 	suite.Equal(
-// 		suite.app.BankKeeper.GetBalance(suite.ctx, unstakedInsurance.FeePoolAddress(), suite.app.StakingKeeper.BondDenom(suite.ctx)).Amount,
-// 		insuranceCommission,
-// 		"insurance got commission from chunk's delegation reward",
-// 	)
-// }
-//
-// func (suite *KeeperTestSuite) TestLiquidUnstakeFail() {
-// 	valAddrs := suite.CreateValidators([]int64{10, 10, 10})
-// 	minimumRequirement, minimumCoverage := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
-// 	providers, rpvodierBalances := suite.AddTestAddrs(10, minimumCoverage.Amount)
-// 	suite.provideInsurances(providers, valAddrs, rpvodierBalances)
-//
-// 	// Now we have 1 paired chunks
-// 	delegators, delegatorBalances := suite.AddTestAddrs(3, minimumRequirement.Amount)
-// 	undelegator := delegators[0]
-//
-// 	msg := types.NewMsgLiquidUnstake(
-// 		undelegator.String(),
-// 		minimumRequirement,
-// 	)
-// 	_, _, err := suite.app.LiquidStakingKeeper.QueueLiquidUnstake(suite.ctx, msg)
-// 	suite.ErrorContains(err, types.ErrNoPairedChunk.Error())
-//
-// 	// create one paired chunk
-// 	_ = suite.liquidStakes([]sdk.AccAddress{delegators[0]}, []sdk.Coin{delegatorBalances[0]})
-//
-// 	msg.Amount.Amount = msg.Amount.Amount.Sub(sdk.NewInt(1))
-// 	// TC: Must be multiple of chunk size
-// 	_, _, err = suite.app.LiquidStakingKeeper.QueueLiquidUnstake(suite.ctx, msg)
-// 	suite.ErrorContains(err, types.ErrInvalidAmount.Error())
-// 	msg.Amount = msg.Amount.Add(sdk.NewCoin(suite.denom, sdk.OneInt())) // now amount is valid
-//
-// 	// TC: Must be bond denom
-// 	msg.Amount.Denom = "invalid"
-// 	_, _, err = suite.app.LiquidStakingKeeper.QueueLiquidUnstake(suite.ctx, msg)
-// 	suite.ErrorContains(err, types.ErrInvalidBondDenom.Error())
-// 	msg.Amount.Denom = suite.denom // now denom is valid
-//
-// 	// TC: Want to liquid unstake 2 chunks but current paired chunk is only one
-// 	msg.Amount.Amount = minimumRequirement.Amount.Mul(sdk.NewInt(2))
-// 	_, _, err = suite.app.LiquidStakingKeeper.QueueLiquidUnstake(suite.ctx, msg)
-// 	suite.ErrorContains(err, types.ErrExceedAvailableChunks.Error())
-//
-// 	// Now we have 3 paired chunks
-// 	_ = suite.liquidStakes(delegators[1:], delegatorBalances[1:])
-//
-// 	// TC: Want to liquid unstake 2 chunks but unstaker have lstokens corresponding to 1 chunk size
-// 	_, _, err = suite.app.LiquidStakingKeeper.QueueLiquidUnstake(suite.ctx, msg)
-// 	suite.ErrorContains(err, sdkerrors.ErrInsufficientFunds.Error())
-// }
+func (suite *KeeperTestSuite) TestLiquidUnstakeWithAdvanceBlocks() {
+	// 3 validators we have
+	valAddrs := suite.CreateValidators([]int64{1, 1, 1})
+	oneChunk, oneInsurance := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
+	providers, providerBalances := suite.AddTestAddrs(10, oneInsurance.Amount)
+	suite.provideInsurances(providers, valAddrs, providerBalances)
+
+	// 3 delegators
+	delegators, delegatorBalances := suite.AddTestAddrs(3, oneChunk.Amount)
+	nas := suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
+	suite.True(nas.IsZeroState(), "nothing happened yet so it must be zero state")
+
+	// liquid stake 3 chunks (each delegator liquid stakes 1 chunk)
+	pairedChunks := suite.liquidStakes(delegators, delegatorBalances)
+	mostExpensivePairedChunk := suite.getMostExpensivePairedChunk(pairedChunks)
+
+	nas = suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
+	// 1 chunk size * number of paired chunks (=3) tokens are liquidated
+	currentLiquidtedTokens := types.ChunkSize.Mul(sdk.NewInt(int64(len(pairedChunks))))
+	currentInsuranceTokens := oneInsurance.Amount.Mul(sdk.NewInt(int64(len(pairedChunks))))
+	suite.True(nas.Equal(types.NetAmountState{
+		MintRate:               sdk.OneDec(),
+		LsTokensTotalSupply:    currentLiquidtedTokens,
+		NetAmount:              currentLiquidtedTokens.ToDec(),
+		TotalDelShares:         currentLiquidtedTokens.ToDec(),
+		TotalRemainingRewards:  sdk.ZeroDec(),
+		TotalChunksBalance:     sdk.ZeroInt(),
+		TotalLiquidTokens:      currentLiquidtedTokens,
+		TotalInsuranceTokens:   currentInsuranceTokens,
+		TotalUnbondingBalance:  sdk.ZeroInt(),
+		RewardModuleAccBalance: sdk.ZeroInt(),
+	}), "no block processed yet, so there are no mint rate change and remaining rewards yet")
+
+	// advance 1 block(= epoch period in test environment) so reward is accumulated which means mint rate is changed
+	suite.advanceHeight(1)
+	eachDelegationRewardPerEpoch, _ := sdk.NewIntFromString("29999994000000000000")
+	// each delegation reward per epoch(=1 block in test) * number of paired chunks
+	// = 29999994000000000000 * 3
+	notClaimedRewards := eachDelegationRewardPerEpoch.Mul(sdk.NewInt(int64(len(pairedChunks))))
+	beforeNas := nas
+	nas = suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
+	suite.Equal(
+		nas.TotalRemainingRewards.Sub(beforeNas.TotalRemainingRewards),
+		notClaimedRewards.ToDec(),
+		"one epoch(=1 block in test) passed, so remaining rewards must be increased",
+	)
+	suite.Equal(nas.NetAmount.Sub(beforeNas.NetAmount), notClaimedRewards.ToDec(), "net amount must be increased by not claimed rewards")
+	suite.Equal(nas.MintRate, sdk.MustNewDecFromStr("0.999994000037199769"), "mint rate increased because of reward accumulation")
+
+	bondDenom := suite.app.StakingKeeper.BondDenom(suite.ctx)
+	liquidBondDenom := suite.app.LiquidStakingKeeper.GetLiquidBondDenom(suite.ctx)
+
+	// liquid unstake 1 chunk
+	undelegator := delegators[0]
+	beforeBondDenomBalance := suite.app.BankKeeper.GetBalance(suite.ctx, undelegator, bondDenom)
+	beforeLiquidBondDenomBalance := suite.app.BankKeeper.GetBalance(suite.ctx, undelegator, liquidBondDenom)
+
+	msg := types.NewMsgLiquidUnstake(undelegator.String(), oneChunk)
+	lsTokensToEscrow := nas.MintRate.Mul(oneChunk.Amount.ToDec()).TruncateInt()
+	toBeUnstakedChunks, pendingLiquidUnstakes, err := suite.app.LiquidStakingKeeper.QueueLiquidUnstake(suite.ctx, msg)
+	suite.NoError(err)
+	suite.Equal(1, len(toBeUnstakedChunks))
+	suite.Equal(1, len(pendingLiquidUnstakes))
+	// unstakedChunk should be the most expensive insurance paired with the previously paired chunk.
+	suite.Equal(toBeUnstakedChunks[0].Id, pendingLiquidUnstakes[0].ChunkId)
+	suite.Equal(pendingLiquidUnstakes[0].DelegatorAddress, undelegator.String())
+	suite.Equal(toBeUnstakedChunks[0].PairedInsuranceId, mostExpensivePairedChunk.PairedInsuranceId)
+
+	// Process pending(=queued) liquid unstakes
+	suite.advanceHeight(1)
+	unstakedChunk, found := suite.app.LiquidStakingKeeper.GetChunk(suite.ctx, toBeUnstakedChunks[0].Id)
+	suite.True(found)
+	suite.Equal(unstakedChunk.Status, types.CHUNK_STATUS_UNPAIRING_FOR_UNSTAKE)
+	suite.Equal(unstakedChunk.UnpairingInsuranceId, toBeUnstakedChunks[0].PairedInsuranceId)
+
+	beforeNas = nas
+	nas = suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
+	bondDenomBalance := suite.app.BankKeeper.GetBalance(suite.ctx, undelegator, bondDenom)
+	liquidBondDenomBalance := suite.app.BankKeeper.GetBalance(suite.ctx, undelegator, liquidBondDenom)
+	suite.Equal(bondDenomBalance.Sub(beforeBondDenomBalance).Amount, sdk.ZeroInt(), "unbonding period is just started so no tokens are backed yet")
+	suite.Equal(
+		beforeLiquidBondDenomBalance.Sub(liquidBondDenomBalance).Amount,
+		lsTokensToEscrow,
+		"ls tokens are escrowed by module",
+	)
+	suite.Equal(
+		suite.app.BankKeeper.GetBalance(suite.ctx, types.LsTokenEscrowAcc, liquidBondDenom).Amount,
+		lsTokensToEscrow,
+		"module got ls tokens from liquid unstaker",
+	)
+
+	// check states after liquid unstake
+	pairedChunksAfterUnstake := suite.getPairedChunks()
+	// paired chunk count should be decreased by number of unstaked chunks
+	suite.Len(pairedChunksAfterUnstake, len(pairedChunks)-len(toBeUnstakedChunks))
+
+	// check chagned net amount state after liquid unstake
+	suite.Equal(
+		beforeNas.TotalRemainingRewards.Sub(nas.TotalRemainingRewards),
+		eachDelegationRewardPerEpoch.ToDec(),
+		"delegation reward for one chunk is claimed by reward module account",
+	)
+	suite.Equal(
+		beforeNas.TotalInsuranceTokens.Sub(nas.TotalInsuranceTokens),
+		oneInsurance.Amount,
+		"insurance tokens must be increased by one chunk insurance",
+	)
+	unstakedInsurance, _ := suite.app.LiquidStakingKeeper.GetInsurance(suite.ctx, toBeUnstakedChunks[0].UnpairingInsuranceId)
+	insuranceCommission := unstakedInsurance.FeeRate.Mul(eachDelegationRewardPerEpoch.ToDec()).TruncateInt()
+	// check reward module balance
+	suite.Equal(
+		suite.app.BankKeeper.GetBalance(suite.ctx, types.RewardPool, suite.app.StakingKeeper.BondDenom(suite.ctx)).Amount,
+		eachDelegationRewardPerEpoch.Sub(insuranceCommission),
+		"reward module account collect chunk's delegation reward minus insurance commission",
+	)
+	suite.Equal(nas.RewardModuleAccBalance, eachDelegationRewardPerEpoch.Sub(insuranceCommission))
+	// check insurance got fee
+	suite.Equal(
+		suite.app.BankKeeper.GetBalance(suite.ctx, unstakedInsurance.FeePoolAddress(), suite.app.StakingKeeper.BondDenom(suite.ctx)).Amount,
+		insuranceCommission,
+		"insurance got commission from chunk's delegation reward",
+	)
+}
+
+func (suite *KeeperTestSuite) TestLiquidUnstakeFail() {
+	valAddrs := suite.CreateValidators([]int64{10, 10, 10})
+	minimumRequirement, minimumCoverage := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
+	providers, rpvodierBalances := suite.AddTestAddrs(10, minimumCoverage.Amount)
+	suite.provideInsurances(providers, valAddrs, rpvodierBalances)
+
+	// Now we have 1 paired chunks
+	delegators, delegatorBalances := suite.AddTestAddrs(3, minimumRequirement.Amount)
+	undelegator := delegators[0]
+
+	msg := types.NewMsgLiquidUnstake(
+		undelegator.String(),
+		minimumRequirement,
+	)
+	_, _, err := suite.app.LiquidStakingKeeper.QueueLiquidUnstake(suite.ctx, msg)
+	suite.ErrorContains(err, types.ErrNoPairedChunk.Error())
+
+	// create one paired chunk
+	_ = suite.liquidStakes([]sdk.AccAddress{delegators[0]}, []sdk.Coin{delegatorBalances[0]})
+
+	msg.Amount.Amount = msg.Amount.Amount.Sub(sdk.NewInt(1))
+	// TC: Must be multiple of chunk size
+	_, _, err = suite.app.LiquidStakingKeeper.QueueLiquidUnstake(suite.ctx, msg)
+	suite.ErrorContains(err, types.ErrInvalidAmount.Error())
+	msg.Amount = msg.Amount.Add(sdk.NewCoin(suite.denom, sdk.OneInt())) // now amount is valid
+
+	// TC: Must be bond denom
+	msg.Amount.Denom = "invalid"
+	_, _, err = suite.app.LiquidStakingKeeper.QueueLiquidUnstake(suite.ctx, msg)
+	suite.ErrorContains(err, types.ErrInvalidBondDenom.Error())
+	msg.Amount.Denom = suite.denom // now denom is valid
+
+	// TC: Want to liquid unstake 2 chunks but current paired chunk is only one
+	msg.Amount.Amount = minimumRequirement.Amount.Mul(sdk.NewInt(2))
+	_, _, err = suite.app.LiquidStakingKeeper.QueueLiquidUnstake(suite.ctx, msg)
+	suite.ErrorContains(err, types.ErrExceedAvailableChunks.Error())
+
+	// Now we have 3 paired chunks
+	_ = suite.liquidStakes(delegators[1:], delegatorBalances[1:])
+
+	// TC: Want to liquid unstake 2 chunks but unstaker have lstokens corresponding to 1 chunk size
+	_, _, err = suite.app.LiquidStakingKeeper.QueueLiquidUnstake(suite.ctx, msg)
+	suite.ErrorContains(err, sdkerrors.ErrInsufficientFunds.Error())
+}
 
 func (suite *KeeperTestSuite) TestCancelInsuranceProvideSuccess() {
 	valAddrs := suite.CreateValidators([]int64{10, 10, 10})
@@ -479,4 +486,8 @@ func (suite *KeeperTestSuite) TestCancelInsuranceProvideFail() {
 		types.NewMsgCancelInsuranceProvide(insurance.ProviderAddress, insurance.Id),
 	)
 	suite.ErrorIs(err, types.ErrPairingInsuranceNotFound, "only pairing insurances can be canceled")
+}
+
+func (suite *KeeperTestSuite) TestQueueLiquidUnstake() {
+
 }
