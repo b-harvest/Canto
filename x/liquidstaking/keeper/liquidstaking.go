@@ -11,6 +11,9 @@ import (
 // Keeper.CollectReward will be called during withdrawing process.
 func (k Keeper) DistributeReward(ctx sdk.Context) {
 	err := k.IterateAllChunks(ctx, func(chunk types.Chunk) (bool, error) {
+		if chunk.Status != types.CHUNK_STATUS_PAIRED {
+			return false, nil
+		}
 		// get an insurance from chunk
 		insurance, found := k.GetInsurance(ctx, chunk.Id)
 		if !found {
