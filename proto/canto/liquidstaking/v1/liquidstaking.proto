@@ -189,12 +189,12 @@ message NetAmountState {
 }
 
 message PendingLiquidUnstake {
-  option (gogoproto.equal)            = false;
-  option (gogoproto.goproto_getters)  = false;
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = false;
 
   // The id of chunk
   uint64 chunk_id = 1;
-  // Address of delegator
+  // Address of delegator (=liquid unstaker)
   string delegator_address = 2;
   // Amount of ls tokens to burn
   string escrowed_lstokens = 3 [
@@ -206,7 +206,7 @@ message PendingLiquidUnstake {
 message UnpairingForUnstakeChunkInfo {
   // The id of chunk
   uint64 chunk_id = 1;
-  // Address of delegator
+  // Address of delegator (=liquid unstaker)
   string delegator_address = 2;
   // Amount of ls tokens to burn
   string escrowed_lstokens = 3 [

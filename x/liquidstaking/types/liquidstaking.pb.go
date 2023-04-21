@@ -418,7 +418,7 @@ var xxx_messageInfo_NetAmountState proto.InternalMessageInfo
 type PendingLiquidUnstake struct {
 	// The id of chunk
 	ChunkId uint64 `protobuf:"varint,1,opt,name=chunk_id,json=chunkId,proto3" json:"chunk_id,omitempty"`
-	// Address of delegator
+	// Address of delegator (=liquid unstaker)
 	DelegatorAddress string `protobuf:"bytes,2,opt,name=delegator_address,json=delegatorAddress,proto3" json:"delegator_address,omitempty"`
 	// Amount of ls tokens to burn
 	EscrowedLstokens github_com_cosmos_cosmos_sdk_types.Coin `protobuf:"bytes,3,opt,name=escrowed_lstokens,json=escrowedLstokens,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Coin" json:"escrowed_lstokens"`
@@ -460,7 +460,7 @@ var xxx_messageInfo_PendingLiquidUnstake proto.InternalMessageInfo
 type UnpairingForUnstakeChunkInfo struct {
 	// The id of chunk
 	ChunkId uint64 `protobuf:"varint,1,opt,name=chunk_id,json=chunkId,proto3" json:"chunk_id,omitempty"`
-	// Address of delegator
+	// Address of delegator (=liquid unstaker)
 	DelegatorAddress string `protobuf:"bytes,2,opt,name=delegator_address,json=delegatorAddress,proto3" json:"delegator_address,omitempty"`
 	// Amount of ls tokens to burn
 	EscrowedLstokens github_com_cosmos_cosmos_sdk_types.Coin `protobuf:"bytes,3,opt,name=escrowed_lstokens,json=escrowedLstokens,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Coin" json:"escrowed_lstokens"`
