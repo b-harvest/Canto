@@ -29,5 +29,5 @@ func (k Keeper) IncrementEpoch(ctx sdk.Context) {
 
 func (k Keeper) IsEpochReached(ctx sdk.Context) bool {
 	epoch := k.GetEpoch(ctx)
-	return ctx.BlockTime().After(epoch.StartTime.Add(epoch.Duration))
+	return !ctx.BlockTime().Before(epoch.StartTime.Add(epoch.Duration))
 }
