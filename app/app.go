@@ -4,11 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	v7 "github.com/Canto-Network/Canto/v7/app/upgrades/v7"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
+
+	v7 "github.com/Canto-Network/Canto/v7/app/upgrades/v7"
 
 	"github.com/gorilla/mux"
 	"github.com/rakyll/statik/fs"
@@ -144,9 +145,9 @@ import (
 	csrkeeper "github.com/Canto-Network/Canto/v7/x/csr/keeper"
 	csrtypes "github.com/Canto-Network/Canto/v7/x/csr/types"
 
-	"github.com/b-harvest/coinswap/modules/coinswap"
-	coinswapkeeper "github.com/b-harvest/coinswap/modules/coinswap/keeper"
-	coinswaptypes "github.com/b-harvest/coinswap/modules/coinswap/types"
+	"github.com/Canto-Network/Canto/v7/x/coinswap"
+	coinswapkeeper "github.com/Canto-Network/Canto/v7/x/coinswap/keeper"
+	coinswaptypes "github.com/Canto-Network/Canto/v7/x/coinswap/types"
 
 	v2 "github.com/Canto-Network/Canto/v7/app/upgrades/v2"
 	v3 "github.com/Canto-Network/Canto/v7/app/upgrades/v3"

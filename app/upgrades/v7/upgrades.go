@@ -1,11 +1,12 @@
 package v7
 
 import (
-	onboardingkeeper "github.com/Canto-Network/Canto/v7/x/onboarding/keeper"
-	coinswapkeeper "github.com/b-harvest/coinswap/modules/coinswap/keeper"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
+
+	coinswapkeeper "github.com/Canto-Network/Canto/v7/x/coinswap/keeper"
+	onboardingkeeper "github.com/Canto-Network/Canto/v7/x/onboarding/keeper"
 )
 
 // CreateUpgradeHandler creates an SDK upgrade handler for v2

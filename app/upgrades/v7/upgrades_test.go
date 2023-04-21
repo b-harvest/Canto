@@ -1,15 +1,17 @@
 package v7_test
 
 import (
-	v6 "github.com/Canto-Network/Canto/v7/app/upgrades/v7"
-	onboardingtypes "github.com/Canto-Network/Canto/v7/x/onboarding/types"
-	coinswaptypes "github.com/b-harvest/coinswap/modules/coinswap/types"
+	"testing"
+	"time"
+
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/evmos/ethermint/crypto/ethsecp256k1"
 	feemarkettypes "github.com/evmos/ethermint/x/feemarket/types"
-	"testing"
-	"time"
+
+	v6 "github.com/Canto-Network/Canto/v7/app/upgrades/v7"
+	coinswaptypes "github.com/Canto-Network/Canto/v7/x/coinswap/types"
+	onboardingtypes "github.com/Canto-Network/Canto/v7/x/onboarding/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"

@@ -2,10 +2,6 @@ package keeper
 
 import (
 	errorsmod "cosmossdk.io/errors"
-	"github.com/Canto-Network/Canto/v7/ibc"
-	erc20types "github.com/Canto-Network/Canto/v7/x/erc20/types"
-	"github.com/Canto-Network/Canto/v7/x/onboarding/types"
-	coinswaptypes "github.com/b-harvest/coinswap/modules/coinswap/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -14,6 +10,11 @@ import (
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	"github.com/cosmos/ibc-go/v3/modules/core/exported"
 	"github.com/ethereum/go-ethereum/common"
+
+	"github.com/Canto-Network/Canto/v7/ibc"
+	coinswaptypes "github.com/Canto-Network/Canto/v7/x/coinswap/types"
+	erc20types "github.com/Canto-Network/Canto/v7/x/erc20/types"
+	"github.com/Canto-Network/Canto/v7/x/onboarding/types"
 )
 
 // OnRecvPacket performs an IBC receive callback.

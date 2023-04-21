@@ -2,12 +2,14 @@ package types
 
 import (
 	"context"
-	erc20types "github.com/Canto-Network/Canto/v7/x/erc20/types"
-	coinswaptypes "github.com/b-harvest/coinswap/modules/coinswap/types"
+	"math/big"
+
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	evmtypes "github.com/evmos/ethermint/x/evm/types"
-	"math/big"
+
+	coinswaptypes "github.com/Canto-Network/Canto/v7/x/coinswap/types"
+	erc20types "github.com/Canto-Network/Canto/v7/x/erc20/types"
 
 	tmbytes "github.com/tendermint/tendermint/libs/bytes"
 

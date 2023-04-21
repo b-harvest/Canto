@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/cosmos/cosmos-sdk/simapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/ibc-go/v3/testing/simapp"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/log"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
@@ -87,4 +89,50 @@ func Setup(
 	}
 
 	return app
+}
+
+// SetupWithGenesisAccounts initializes a new SimApp with the provided genesis
+// accounts and possible balances.
+func SetupWithGenesisAccounts(genAccs []authtypes.GenesisAccount, balances ...banktypes.Balance) *Canto {
+	app := Setup(false, feemarkettypes.DefaultGenesisState())
+	genesisState := NewDefaultGenesisState()
+	authGenesis := authtypes.NewGenesisState(authtypes.DefaultParams(), genAccs)
+	genesisState[authtypes.ModuleName] = app.AppCodec().MustMarshalJSON(authGenesis)
+
+	totalSupply := sdk.NewCoins()
+	for _, b := range balances {
+		totalSupply = totalSupply.Add(b.Coins...)
+	}
+
+	bankGenesis := banktypes.NewGenesisState(banktypes.DefaultGenesisState().Params, balances, totalSupply, []banktypes.Metadata{})
+	genesisState[banktypes.ModuleName] = app.AppCodec().MustMarshalJSON(bankGenesis)
+
+	stateBytes, err := json.MarshalIndent(genesisState, "", " ")
+	if err != nil {
+		panic(err)
+	}
+
+	app.InitChain(
+		abci.RequestInitChain{
+			ChainId:         types.MainnetChainID + "-1",
+			Validators:      []abci.ValidatorUpdate{},
+			ConsensusParams: DefaultConsensusParams,
+			AppStateBytes:   stateBytes,
+		},
+	)
+
+	//app.Commit()
+	//app.BeginBlock(abci.RequestBeginBlock{Header: tmproto.Header{Height: app.LastBlockHeight() + 1}})
+
+	return app
+}
+
+type GenerateAccountStrategy func(int) []sdk.AccAddress
+
+// EmptyAppOptions is a stub implementing AppOptions
+type EmptyAppOptions struct{}
+
+// Get implements AppOptions
+func (ao EmptyAppOptions) Get(o string) interface{} {
+	return nil
 }

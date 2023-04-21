@@ -2,10 +2,9 @@ package keeper_test
 
 import (
 	"fmt"
-	"github.com/Canto-Network/Canto/v7/contracts"
-	inflationtypes "github.com/Canto-Network/Canto/v7/x/inflation/types"
-	vestingtypes "github.com/Canto-Network/Canto/v7/x/vesting/types"
-	coinswaptypes "github.com/b-harvest/coinswap/modules/coinswap/types"
+	"math/big"
+	"time"
+
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -13,8 +12,11 @@ import (
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/mock"
-	"math/big"
-	"time"
+
+	"github.com/Canto-Network/Canto/v7/contracts"
+	coinswaptypes "github.com/Canto-Network/Canto/v7/x/coinswap/types"
+	inflationtypes "github.com/Canto-Network/Canto/v7/x/inflation/types"
+	vestingtypes "github.com/Canto-Network/Canto/v7/x/vesting/types"
 
 	"github.com/Canto-Network/Canto/v7/testutil"
 

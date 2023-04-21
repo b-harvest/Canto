@@ -2,15 +2,17 @@ package cli
 
 import (
 	"fmt"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"strings"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/spf13/cobra"
 
-	"github.com/b-harvest/coinswap/modules/coinswap/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/version"
+
+	"github.com/Canto-Network/Canto/v7/x/coinswap/types"
 )
 
 // GetQueryCmd returns the cli query commands for this module
