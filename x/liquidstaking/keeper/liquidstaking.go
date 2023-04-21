@@ -555,20 +555,24 @@ func (k Keeper) completeLiquidUnstake(ctx sdk.Context, chunk types.Chunk) error 
 	// get paired insurance from chunk
 	unpairingInsurnace, found := k.GetInsurance(ctx, chunk.UnpairingInsuranceId)
 	if !found {
-		panic(types.ErrNotFoundInsurance.Error())
+		return sdkerrors.Wrapf(types.ErrNotFoundInsurance, "insurance id: %d", chunk.UnpairingInsuranceId)
+	}
+
+	if chunk.PairedInsuranceId != 0 {
+		return sdkerrors.Wrapf(types.ErrUnpairingChunkHavePairedChunk, "paired insurance id: %d", chunk.PairedInsuranceId)
 	}
 
 	// unpairing for unstake chunk only have unpairing insurance
 	_, found = k.stakingKeeper.GetUnbondingDelegation(ctx, chunk.DerivedAddress(), unpairingInsurnace.GetValidator())
 	if found {
 		// UnbondingDelegation must be removed by staking keeper EndBlocker
-		// TODO: Consider removing panic when production, may be we can just skip this chunk
-		panic("not matured yet")
+		// because Endblocker of liquidstaking module is called after staking module.
+		return sdkerrors.Wrapf(types.ErrUnbondingDelegationNotRemoved, "chunk id: %d", chunk.Id)
 	}
 	// handle mature unbondings
 	info, found := k.GetUnpairingForUnstakeChunkInfo(ctx, chunk.Id)
 	if !found {
-		panic("not found unpairing for unstake chunk info")
+		return sdkerrors.Wrapf(types.ErrNotFoundUnpairingForUnstakeChunkInfo, "chunk id: %d", chunk.Id)
 	}
 	lsTokensToBurn := info.EscrowedLstokens
 	penalty := types.ChunkSize.Sub(k.bankKeeper.GetBalance(ctx, chunk.DerivedAddress(), bondDenom).Amount)
@@ -580,7 +584,7 @@ func (k Keeper) completeLiquidUnstake(ctx sdk.Context, chunk types.Chunk) error 
 			types.RewardPool,
 			sdk.NewCoins(sdk.NewCoin(bondDenom, penalty)),
 		); err != nil {
-			panic(err)
+			return err
 		}
 		penaltyRatio := penalty.ToDec().Quo(types.ChunkSize.ToDec())
 		discount := penaltyRatio.Mul(types.ChunkSize.ToDec())
@@ -593,16 +597,16 @@ func (k Keeper) completeLiquidUnstake(ctx sdk.Context, chunk types.Chunk) error 
 			info.GetDelegator(),
 			sdk.NewCoins(refund),
 		); err != nil {
-			panic(err)
+			return err
 		}
 		lsTokensToBurn = lsTokensToBurn.Sub(refund)
 	}
 	// insurance duty is over
 	if err = k.completeInsuranceDuty(ctx, unpairingInsurnace); err != nil {
-		panic(err)
+		return err
 	}
 	if err = k.burnEscrowedLsTokens(ctx, lsTokensToBurn); err != nil {
-		panic(err)
+		return err
 	}
 	k.DeleteUnpairingForUnstakeChunkInfo(ctx, chunk.Id)
 	k.DeleteChunk(ctx, chunk.Id)
