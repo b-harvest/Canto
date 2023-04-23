@@ -11,25 +11,34 @@ import (
 // Keeper.CollectReward will be called during withdrawing process.
 func (k Keeper) DistributeReward(ctx sdk.Context) {
 	err := k.IterateAllChunks(ctx, func(chunk types.Chunk) (bool, error) {
-		if chunk.Status != types.CHUNK_STATUS_PAIRED {
+		var insurance types.Insurance
+		var found bool
+		switch chunk.Status {
+		case types.CHUNK_STATUS_PAIRED:
+			insurance, found = k.GetInsurance(ctx, chunk.PairedInsuranceId)
+			if !found {
+				panic(types.ErrNotFoundInsurance.Error())
+			}
+		case types.CHUNK_STATUS_UNPAIRING_FOR_UNSTAKE:
+			// Chunk got reward already when it was undelegated by HandleQueuedLiquidUnstake
+			insurance, found = k.GetInsurance(ctx, chunk.UnpairingInsuranceId)
+			if !found {
+				panic(types.ErrNotFoundInsurance.Error())
+			}
+		default:
 			return false, nil
-		}
-		// get an insurance from chunk
-		insurance, found := k.GetInsurance(ctx, chunk.Id)
-		if !found {
-			panic(types.ErrNotFoundInsurance.Error())
 		}
 		validator, found := k.stakingKeeper.GetValidator(ctx, insurance.GetValidator())
 		if !found {
 			// Tombstoned validator can be existed in staking keeper
 			panic(types.ErrValidatorNotFound.Error())
 		}
-		// withdraw delegation reward of chunk
-		// AfterModifiedHook will call CollectReward
 		_, err := k.distributionKeeper.WithdrawDelegationRewards(ctx, chunk.DerivedAddress(), validator.GetOperator())
 		if err != nil {
 			panic(err.Error())
 		}
+
+		k.CollectReward(ctx, chunk, insurance)
 		return false, nil
 	})
 	if err != nil {
@@ -463,6 +472,36 @@ func (k Keeper) SetLiquidBondDenom(ctx sdk.Context, denom string) {
 func (k Keeper) GetLiquidBondDenom(ctx sdk.Context) string {
 	store := ctx.KVStore(k.storeKey)
 	return string(store.Get(types.KeyLiquidBondDenom))
+}
+
+// CollectReward collects reward of chunk and
+// distribute to reward module account and insurance
+// 1. Send commission to insurance based on chunk reward
+// 2. Send rest of rewards to reward module account
+func (k Keeper) CollectReward(ctx sdk.Context, chunk types.Chunk, insurance types.Insurance) {
+	bondDenom := k.stakingKeeper.BondDenom(ctx)
+	chunkBalance := k.bankKeeper.GetBalance(ctx, chunk.DerivedAddress(), bondDenom)
+	insuranceFee := chunkBalance.Amount.ToDec().Mul(insurance.FeeRate).TruncateInt()
+
+	// Send pairedInsurance fee to the pairedInsurance fee pool
+	if err := k.bankKeeper.SendCoins(
+		ctx,
+		chunk.DerivedAddress(),
+		insurance.FeePoolAddress(),
+		sdk.NewCoins(sdk.NewCoin(bondDenom, insuranceFee)),
+	); err != nil {
+		panic(err)
+	}
+
+	remained := chunkBalance.Amount.Sub(insuranceFee)
+	if err := k.bankKeeper.SendCoins(
+		ctx,
+		chunk.DerivedAddress(),
+		types.RewardPool,
+		sdk.NewCoins(sdk.NewCoin(bondDenom, remained)),
+	); err != nil {
+		panic(err)
+	}
 }
 
 func (k Keeper) isValidValidator(ctx sdk.Context, validator stakingtypes.Validator, found bool) (bool, error) {
