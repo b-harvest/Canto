@@ -47,8 +47,9 @@ func (nas NetAmountState) IsZeroState() bool {
 		nas.TotalDelShares.IsZero() &&
 		nas.TotalRemainingRewards.IsZero() &&
 		nas.TotalLiquidTokens.IsZero() &&
-		nas.TotalInsuranceTokens.IsZero() &&
-		nas.TotalInsuranceCommissions.IsZero() &&
+		// Currently total insurances includes Pairing insurances, so we should skip this
+		//nas.TotalInsuranceTokens.IsZero() &&
+		//nas.TotalInsuranceCommissions.IsZero() &&
 		nas.TotalPairedInsuranceTokens.IsZero() &&
 		nas.TotalPairedInsuranceCommissions.IsZero() &&
 		nas.TotalUnpairingInsuranceTokens.IsZero() &&

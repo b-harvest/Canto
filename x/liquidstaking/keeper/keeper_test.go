@@ -1,7 +1,9 @@
 package keeper_test
 
 import (
+	"fmt"
 	liquidstakingkeeper "github.com/Canto-Network/Canto/v6/x/liquidstaking/keeper"
+	"strconv"
 	"testing"
 	"time"
 
@@ -42,6 +44,10 @@ type KeeperTestSuite struct {
 	validator   stakingtypes.Validator
 
 	denom string
+	// EpochCount counted by epochs module
+	rewardEpochCount int64
+	// EpochCount counted by liquidstaking module
+	lsEpochCount int64
 }
 
 var s *KeeperTestSuite
@@ -209,7 +215,13 @@ func (suite *KeeperTestSuite) fundAccount(addr sdk.AccAddress, amount sdk.Int) {
 	suite.NoError(err)
 }
 
-func (suite *KeeperTestSuite) advanceHeight(height int) {
+func (suite *KeeperTestSuite) advanceHeight(height int, msg string) {
+	fmt.Println("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+	fmt.Println("advance " + strconv.Itoa(height) + " blocks(= reward epochs)")
+	if msg != "" {
+		fmt.Println(msg)
+	}
+	fmt.Println("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
 	feeCollector := suite.app.AccountKeeper.GetModuleAccount(suite.ctx, authtypes.FeeCollectorName)
 	for i := 0; i < height; i++ {
 		suite.ctx = suite.ctx.WithBlockHeight(suite.ctx.BlockHeight() + 1).WithBlockTime(suite.ctx.BlockTime().Add(time.Second))
@@ -221,6 +233,7 @@ func (suite *KeeperTestSuite) advanceHeight(height int) {
 		suite.NoError(err)
 		feeCollectorBalances := suite.app.BankKeeper.GetAllBalances(suite.ctx, feeCollector.GetAddress())
 		rewardsToBeDistributed := feeCollectorBalances.AmountOf(suite.denom)
+		suite.rewardEpochCount += 1
 
 		// Mimic distribution.BeginBlock (AllocateTokens, get rewards from feeCollector, AllocateTokensToValidator, add remaining to feePool)
 		suite.NoError(suite.app.BankKeeper.SendCoinsFromModuleToModule(suite.ctx, authtypes.FeeCollectorName, distrtypes.ModuleName, feeCollectorBalances))
@@ -259,4 +272,9 @@ func (suite *KeeperTestSuite) advanceEpoch() {
 	epoch := suite.app.LiquidStakingKeeper.GetEpoch(suite.ctx)
 	// Lets pass epoch
 	suite.ctx = suite.ctx.WithBlockTime(epoch.StartTime.Add(epoch.Duration))
+	suite.lsEpochCount += 1
+
+	fmt.Println("===============================================================================")
+	fmt.Println("lsEpoch is reached, endblocker will be executed at following block")
+	fmt.Println("===============================================================================")
 }

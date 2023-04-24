@@ -25,6 +25,13 @@ func (k Keeper) DistributeReward(ctx sdk.Context) {
 			if !found {
 				panic(types.ErrNotFoundInsurance.Error())
 			}
+			// Check Delegation obj exists or not related with chunk
+			// This case can occur by HandleQueuedLiquidUnstakes which
+			// only changes state of chunk and insurance (undelegate is not called yet)
+			_, found = k.stakingKeeper.GetDelegation(ctx, chunk.DerivedAddress(), insurance.GetValidator())
+			if !found {
+				return false, nil
+			}
 		default:
 			return false, nil
 		}
