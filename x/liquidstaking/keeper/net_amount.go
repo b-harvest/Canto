@@ -46,7 +46,10 @@ func (k Keeper) GetNetAmountState(ctx sdk.Context) (nas types.NetAmountState) {
 			cachedCtx, _ := ctx.CacheContext()
 			endingPeriod := k.distributionKeeper.IncrementValidatorPeriod(cachedCtx, validator)
 			delReward := k.distributionKeeper.CalculateDelegationRewards(cachedCtx, validator, delegation, endingPeriod)
-			totalRemainingRewards = totalRemainingRewards.Add(delReward.AmountOf(bondDenom))
+			insuranceCommission := delReward.MulDec(pairedInsurance.FeeRate)
+			// insuranceCommission is not reward of module
+			pureReward := delReward.Sub(insuranceCommission)
+			totalRemainingRewards = totalRemainingRewards.Add(pureReward.AmountOf(bondDenom))
 		} else {
 			k.stakingKeeper.IterateDelegatorUnbondingDelegations(ctx, chunk.DerivedAddress(), func(ubd stakingtypes.UnbondingDelegation) (stop bool) {
 				for _, entry := range ubd.Entries {

@@ -148,6 +148,7 @@ func (suite *KeeperTestSuite) TestInsuranceProvide() {
 }
 
 func (suite *KeeperTestSuite) TestLiquidStakeSuccess() {
+	suite.resetEpochs()
 	valAddrs := suite.CreateValidators([]int64{10, 10, 10})
 	minimumRequirement, minimumCoverage := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
 	providers, balances := suite.AddTestAddrs(10, minimumCoverage.Amount)
@@ -184,11 +185,10 @@ func (suite *KeeperTestSuite) TestLiquidStakeSuccess() {
 	suite.True(nas.TotalLiquidTokens.Add(amt1.Amount).Equal(afterNas.TotalLiquidTokens))
 	suite.True(nas.NetAmount.Add(amt1.Amount.ToDec()).Equal(afterNas.NetAmount))
 	suite.True(afterNas.MintRate.Equal(sdk.OneDec()), "no rewards yet, so mint rate should be 1")
-
-	// TODO: Should test multiple liquidstake and advance blocks and chekc mintrate is right or not
 }
 
 func (suite *KeeperTestSuite) TestLiquidStakeFail() {
+	suite.resetEpochs()
 	valAddrs := suite.CreateValidators([]int64{10, 10, 10})
 	minimumRequirement, minimumCoverage := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
 
@@ -245,6 +245,7 @@ func (suite *KeeperTestSuite) TestLiquidStakeFail() {
 
 func (suite *KeeperTestSuite) TestLiquidStakeWithAdvanceBlocks() {
 	// SETUP TEST ---------------------------------------------------
+	suite.resetEpochs()
 	// 3 validators we have
 	valAddrs := suite.CreateValidators([]int64{1, 1, 1})
 	oneChunk, oneInsurance := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
@@ -321,10 +322,10 @@ Initial state of TC
 	fmt.Println(nas)
 	{
 		suite.Equal(
-			unitDelegationRewardPerEpoch.Mul(pairedChunksInt).String(),
+			pureUnitRewardPerEpoch.Mul(pairedChunksInt).String(),
 			nas.TotalRemainingRewards.Sub(beforeNas.TotalRemainingRewards).TruncateInt().String(),
 		)
-		suite.Equal("0.999994000037199769", nas.MintRate.String())
+		suite.Equal("0.999994600030239830", nas.MintRate.String())
 	}
 
 	suite.advanceEpoch()
@@ -347,9 +348,9 @@ Initial state of TC
 	}
 }
 
-// TODO: Update liquid unstake scenario test with updated code
 func (suite *KeeperTestSuite) TestLiquidUnstakeWithAdvanceBlocks() {
 	// SETUP TEST ---------------------------------------------------
+	suite.resetEpochs()
 	// 3 validators we have
 	valAddrs := suite.CreateValidators([]int64{1, 1, 1})
 	oneChunk, oneInsurance := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
@@ -426,7 +427,7 @@ Initial state of TC
 
 	// each delegation reward per epoch(=1 block in test) * number of paired chunks
 	// = 29999994000000000000 * 3
-	notClaimedRewards := unitDelegationRewardPerEpoch.Mul(pairedChunksInt)
+	notClaimedRewards := pureUnitRewardPerEpoch.Mul(pairedChunksInt)
 	beforeNas := nas
 	nas = suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
 	fmt.Println(nas)
@@ -437,7 +438,7 @@ Initial state of TC
 			"one epoch(=1 block in test) passed, so remaining rewards must be increased",
 		)
 		suite.Equal(notClaimedRewards.ToDec(), nas.NetAmount.Sub(beforeNas.NetAmount), "net amount must be increased by not claimed rewards")
-		suite.Equal("0.999994000037199769", nas.MintRate.String(), "mint rate increased because of reward accumulation")
+		suite.Equal("0.999994600030239830", nas.MintRate.String(), "mint rate increased because of reward accumulation")
 	}
 
 	// Queue liquid unstake 1 chunk
@@ -673,10 +674,6 @@ func (suite *KeeperTestSuite) TestCancelInsuranceProvideFail() {
 		types.NewMsgCancelInsuranceProvide(insurance.ProviderAddress, insurance.Id),
 	)
 	suite.ErrorIs(err, types.ErrPairingInsuranceNotFound, "only pairing insurances can be canceled")
-}
-
-func (suite *KeeperTestSuite) TestQueueLiquidUnstake() {
-
 }
 
 func (suite *KeeperTestSuite) getUnitDistribution(

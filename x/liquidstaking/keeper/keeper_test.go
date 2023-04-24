@@ -278,3 +278,8 @@ func (suite *KeeperTestSuite) advanceEpoch() {
 	fmt.Println("lsEpoch is reached, endblocker will be executed at following block")
 	fmt.Println("===============================================================================")
 }
+
+func (suite *KeeperTestSuite) resetEpochs() {
+	suite.lsEpochCount = 0
+	suite.rewardEpochCount = 0
+}
