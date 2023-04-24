@@ -20,6 +20,7 @@ func (k Keeper) DistributeReward(ctx sdk.Context) {
 			if !found {
 				panic(types.ErrNotFoundInsurance.Error())
 			}
+		// TODO: This case can possible? Need to check here.
 		case types.CHUNK_STATUS_UNPAIRING_FOR_UNSTAKE:
 			// Chunk got reward already when it was undelegated by HandleQueuedLiquidUnstake
 			insurance, found = k.GetInsurance(ctx, chunk.UnpairingInsuranceId)
@@ -503,6 +504,7 @@ func (k Keeper) CollectReward(ctx sdk.Context, chunk types.Chunk, insurance type
 	}
 
 	if pureRewards.Len() == 1 {
+		// TODO: Must be atomic, use InputOutputCoins
 		// Send pairedInsurance fee to the pairedInsurance fee pool
 		if err := k.bankKeeper.SendCoins(
 			ctx,
@@ -524,6 +526,7 @@ func (k Keeper) CollectReward(ctx sdk.Context, chunk types.Chunk, insurance type
 	} else {
 		var inputs []banktypes.Input
 		var outputs []banktypes.Output
+		// TODO: We don't need for loop
 		for _, commission := range insuranceCommissions {
 			inputs = append(inputs, banktypes.NewInput(chunk.DerivedAddress(), sdk.Coins{commission}))
 			outputs = append(outputs, banktypes.NewOutput(insurance.FeePoolAddress(), sdk.Coins{commission}))
@@ -700,8 +703,54 @@ func (k Keeper) completeLiquidUnstake(ctx sdk.Context, chunk types.Chunk) error 
 	return nil
 }
 
+// TODO: Complete implementation
 func (k Keeper) handleUnpairingChunk(ctx sdk.Context, chunk types.Chunk) error {
-	// TODO: Implement
+	var err error
+	bondDenom := k.stakingKeeper.BondDenom(ctx)
+
+	// get paired insurance from chunk
+	unpairingInsurance, found := k.GetInsurance(ctx, chunk.UnpairingInsuranceId)
+	if !found {
+		return sdkerrors.Wrapf(types.ErrNotFoundInsurance, "insurance id: %d", chunk.UnpairingInsuranceId)
+	}
+
+	if chunk.PairedInsuranceId != 0 {
+		return sdkerrors.Wrapf(types.ErrUnpairingChunkHavePairedChunk, "paired insurance id: %d", chunk.PairedInsuranceId)
+	}
+
+	chunkBalance := k.bankKeeper.GetBalance(ctx, chunk.DerivedAddress(), bondDenom).Amount
+	penalty := types.ChunkSize.Sub(chunkBalance)
+	if penalty.IsPositive() {
+		// send penalty to chunk
+		// unpairing chunk must be not damaged
+		if err = k.bankKeeper.SendCoins(
+			ctx,
+			unpairingInsurance.DerivedAddress(),
+			types.RewardPool,
+			sdk.NewCoins(sdk.NewCoin(bondDenom, penalty)),
+		); err != nil {
+			return err
+		}
+		chunkBalance = k.bankKeeper.GetBalance(ctx, chunk.DerivedAddress(), bondDenom).Amount
+	}
+
+	// Check chunk balance is greater than ChunkSize tokens
+	if chunkBalance.LT(types.ChunkSize) {
+		allBalances := k.bankKeeper.GetAllBalances(ctx, chunk.DerivedAddress())
+		var inputs []banktypes.Input
+		var outputs []banktypes.Output
+		for _, balance := range allBalances {
+			inputs = append(inputs, banktypes.NewInput(chunk.DerivedAddress(), sdk.Coins{balance}))
+			outputs = append(outputs, banktypes.NewOutput(types.RewardPool, sdk.Coins{balance}))
+		}
+		if err = k.bankKeeper.InputOutputCoins(ctx, inputs, outputs); err != nil {
+			return err
+		}
+		k.DeleteUnpairingForUnstakeChunkInfo(ctx, chunk.Id)
+		k.DeleteChunk(ctx, chunk.Id)
+		return nil
+	}
+
 	return nil
 }
 

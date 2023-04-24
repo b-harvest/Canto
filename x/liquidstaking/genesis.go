@@ -11,6 +11,8 @@ import (
 func InitGenesis(ctx sdk.Context, k keeper.Keeper, genState types.GenesisState) {
 	k.SetLiquidBondDenom(ctx, genState.LiquidBondDenom)
 	k.SetParams(ctx, genState.Params)
+	// TODO: Need to set fields of genesis (Must check exportGenesis too)
+	// and also need to add validation logic for fields. take a look Crescent InitGenesis
 }
 
 // ExportGenesis returns the capability module's exported genesis.
