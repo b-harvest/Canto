@@ -660,6 +660,14 @@ func (k Keeper) completeLiquidUnstake(ctx sdk.Context, chunk types.Chunk) error 
 	if err = k.burnEscrowedLsTokens(ctx, lsTokensToBurn); err != nil {
 		return err
 	}
+	if err = k.bankKeeper.SendCoins(
+		ctx,
+		chunk.DerivedAddress(),
+		info.GetDelegator(),
+		sdk.NewCoins(sdk.NewCoin(bondDenom, types.ChunkSize)),
+	); err != nil {
+		return err
+	}
 	k.DeleteUnpairingForUnstakeChunkInfo(ctx, chunk.Id)
 	k.DeleteChunk(ctx, chunk.Id)
 	return nil

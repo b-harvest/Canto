@@ -553,7 +553,8 @@ Initial state of TC
 	beforeNas = nas
 	nas = suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
 	fmt.Println(nas)
-
+	afterBondDenomBalance := suite.app.BankKeeper.GetBalance(suite.ctx, undelegator, bondDenom).Amount
+	// Get bondDeno balance of undelegator
 	{
 		suite.Equal(
 			oneInsurance.Amount.String(),
@@ -577,6 +578,11 @@ Initial state of TC
 		suite.Equal(
 			unitInsuranceCommissionPerEpoch.Mul(pairedChunksInt).String(),
 			nas.TotalPairedInsuranceCommissions.Sub(beforeNas.TotalPairedInsuranceCommissions).String(),
+		)
+		suite.Equal(
+			afterBondDenomBalance.String(),
+			oneChunk.Amount.String(),
+			"got chunk tokens back after unstaking",
 		)
 	}
 }
