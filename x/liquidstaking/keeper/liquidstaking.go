@@ -4,6 +4,7 @@ import (
 	"github.com/Canto-Network/Canto/v6/x/liquidstaking/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
@@ -486,28 +487,54 @@ func (k Keeper) GetLiquidBondDenom(ctx sdk.Context) string {
 // 1. Send commission to insurance based on chunk reward
 // 2. Send rest of rewards to reward module account
 func (k Keeper) CollectReward(ctx sdk.Context, chunk types.Chunk, insurance types.Insurance) {
-	bondDenom := k.stakingKeeper.BondDenom(ctx)
-	chunkBalance := k.bankKeeper.GetBalance(ctx, chunk.DerivedAddress(), bondDenom)
-	insuranceFee := chunkBalance.Amount.ToDec().Mul(insurance.FeeRate).TruncateInt()
-
-	// Send pairedInsurance fee to the pairedInsurance fee pool
-	if err := k.bankKeeper.SendCoins(
-		ctx,
-		chunk.DerivedAddress(),
-		insurance.FeePoolAddress(),
-		sdk.NewCoins(sdk.NewCoin(bondDenom, insuranceFee)),
-	); err != nil {
-		panic(err)
+	delegationRewards := k.bankKeeper.GetAllBalances(ctx, chunk.DerivedAddress())
+	insuranceCommissions := make(sdk.Coins, delegationRewards.Len())
+	pureRewards := make(sdk.Coins, delegationRewards.Len())
+	for i, delReward := range delegationRewards {
+		insuranceCommission := delReward.Amount.ToDec().Mul(insurance.FeeRate).TruncateInt()
+		insuranceCommissions[i] = sdk.NewCoin(
+			delReward.Denom,
+			insuranceCommission,
+		)
+		pureRewards[i] = sdk.NewCoin(
+			delReward.Denom,
+			delReward.Amount.Sub(insuranceCommission),
+		)
 	}
 
-	remained := chunkBalance.Amount.Sub(insuranceFee)
-	if err := k.bankKeeper.SendCoins(
-		ctx,
-		chunk.DerivedAddress(),
-		types.RewardPool,
-		sdk.NewCoins(sdk.NewCoin(bondDenom, remained)),
-	); err != nil {
-		panic(err)
+	if pureRewards.Len() == 1 {
+		// Send pairedInsurance fee to the pairedInsurance fee pool
+		if err := k.bankKeeper.SendCoins(
+			ctx,
+			chunk.DerivedAddress(),
+			insurance.FeePoolAddress(),
+			sdk.NewCoins(insuranceCommissions[0]),
+		); err != nil {
+			panic(err)
+		}
+
+		if err := k.bankKeeper.SendCoins(
+			ctx,
+			chunk.DerivedAddress(),
+			types.RewardPool,
+			sdk.NewCoins(pureRewards[0]),
+		); err != nil {
+			panic(err)
+		}
+	} else {
+		var inputs []banktypes.Input
+		var outputs []banktypes.Output
+		for _, commission := range insuranceCommissions {
+			inputs = append(inputs, banktypes.NewInput(chunk.DerivedAddress(), sdk.Coins{commission}))
+			outputs = append(outputs, banktypes.NewOutput(insurance.FeePoolAddress(), sdk.Coins{commission}))
+		}
+		for _, reward := range pureRewards {
+			inputs = append(inputs, banktypes.NewInput(chunk.DerivedAddress(), sdk.Coins{reward}))
+			outputs = append(outputs, banktypes.NewOutput(types.RewardPool, sdk.Coins{reward}))
+		}
+		if err := k.bankKeeper.InputOutputCoins(ctx, inputs, outputs); err != nil {
+			panic(err)
+		}
 	}
 }
 
