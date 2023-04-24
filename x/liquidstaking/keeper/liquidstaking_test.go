@@ -8,7 +8,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/types/simulation"
-	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	ethermint "github.com/evmos/ethermint/types"
 )
@@ -244,50 +243,108 @@ func (suite *KeeperTestSuite) TestLiquidStakeFail() {
 	suite.ErrorIs(err, types.ErrMaxPairedChunkSizeExceeded)
 }
 
-// TODO: Must upgarde this TC with actual numbers, currently it just prints out without checking.
 func (suite *KeeperTestSuite) TestLiquidStakeWithAdvanceBlocks() {
+	// SETUP TEST ---------------------------------------------------
+	// 3 validators we have
 	valAddrs := suite.CreateValidators([]int64{1, 1, 1})
-	minimumRequirement, minimumCoverage := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
-	providers, balances := suite.AddTestAddrs(10, minimumCoverage.Amount)
-	suite.provideInsurances(providers, valAddrs, balances, sdk.ZeroDec())
+	oneChunk, oneInsurance := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
+	providers, providerBalances := suite.AddTestAddrs(10, oneInsurance.Amount)
+	fixedInsuranceFeeRate := sdk.NewDecWithPrec(10, 2)
+	suite.provideInsurances(providers, valAddrs, providerBalances, fixedInsuranceFeeRate)
 
-	nas1 := suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
-	delegators, delegatorBalances := suite.AddTestAddrs(3, minimumRequirement.Amount)
-	_ = suite.liquidStakes(delegators, delegatorBalances)
-	nas2 := suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
+	// 3 delegators
+	delegators, delegatorBalances := suite.AddTestAddrs(3, oneChunk.Amount)
+	nas := suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
+	suite.True(nas.IsZeroState(), "nothing happened yet so it must be zero state")
+
+	// liquid stake 3 chunks (each delegator liquid stakes 1 chunk)
+	pairedChunks := suite.liquidStakes(delegators, delegatorBalances)
+	pairedChunksInt := sdk.NewInt(int64(len(pairedChunks)))
+
+	bondDenom := suite.app.StakingKeeper.BondDenom(suite.ctx)
+	liquidBondDenom := suite.app.LiquidStakingKeeper.GetLiquidBondDenom(suite.ctx)
+	fmt.Printf(`
+===============================================================================
+Initial state of TC
+- num of validators: %d
+- fixed validator fee rate: %s
+- num of delegators: %d
+- num of insurances: %d
+- fixed insurance fee rate: %s
+- bonded denom: %s
+- liquid bond denom: %s
+===============================================================================
+`,
+		len(valAddrs),
+		"10%",
+		len(delegators),
+		len(providers),
+		fixedInsuranceFeeRate,
+		bondDenom,
+		liquidBondDenom,
+	)
+	// ---------------------------------------------------
+
+	unitDelegationRewardPerEpoch, _ := sdk.NewIntFromString("29999994000000000000")
+	unitInsuranceCommissionPerEpoch, pureUnitRewardPerEpoch := suite.getUnitDistribution(unitDelegationRewardPerEpoch, fixedInsuranceFeeRate)
+
+	nas = suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
+	fmt.Println(nas)
+	// 1 chunk size * number of paired chunks (=3) tokens are liquidated
+	currentLiquidatedTokens := types.ChunkSize.Mul(pairedChunksInt)
+	currentInsuranceTokens := oneInsurance.Amount.Mul(pairedChunksInt)
+	{
+		suite.True(nas.Equal(types.NetAmountState{
+			MintRate:                           sdk.OneDec(),
+			LsTokensTotalSupply:                currentLiquidatedTokens,
+			NetAmount:                          currentLiquidatedTokens.ToDec(),
+			TotalDelShares:                     currentLiquidatedTokens.ToDec(),
+			TotalRemainingRewards:              sdk.ZeroDec(),
+			TotalChunksBalance:                 sdk.ZeroInt(),
+			TotalLiquidTokens:                  currentLiquidatedTokens,
+			TotalInsuranceTokens:               oneInsurance.Amount.Mul(sdk.NewInt(int64(len(providers)))),
+			TotalInsuranceCommissions:          sdk.ZeroInt(),
+			TotalPairedInsuranceTokens:         currentInsuranceTokens,
+			TotalPairedInsuranceCommissions:    sdk.ZeroInt(),
+			TotalUnpairingInsuranceTokens:      sdk.ZeroInt(),
+			TotalUnpairingInsuranceCommissions: sdk.ZeroInt(),
+			TotalUnpairedInsuranceTokens:       sdk.ZeroInt(),
+			TotalUnpairedInsuranceCommissions:  sdk.ZeroInt(),
+			TotalUnbondingBalance:              sdk.ZeroInt(),
+			RewardModuleAccBalance:             sdk.ZeroInt(),
+		}), "no epoch(=1 block in test) processed yet, so there are no mint rate change and remaining rewards yet")
+	}
 
 	suite.advanceHeight(1, "")
-	nas3 := suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
+	beforeNas := nas
+	nas = suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
+	fmt.Println(nas)
+	{
+		suite.Equal(
+			unitDelegationRewardPerEpoch.Mul(pairedChunksInt).String(),
+			nas.TotalRemainingRewards.Sub(beforeNas.TotalRemainingRewards).TruncateInt().String(),
+		)
+		suite.Equal("0.999994000037199769", nas.MintRate.String())
+	}
 
-	// Check NetAmountState while incrementing blocks by one
-	suite.advanceHeight(1, "")
-	nas4 := suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
-
-	fmt.Println(nas1)
-	fmt.Println(nas2)
-	fmt.Println(nas3)
-	fmt.Println(nas4)
-
-	suite.app.StakingKeeper.IterateAllDelegations(suite.ctx, func(delegation stakingtypes.Delegation) bool {
-		fmt.Println(delegation)
-		return false
-	})
-
-	suite.app.StakingKeeper.IterateBondedValidatorsByPower(suite.ctx, func(index int64, validator stakingtypes.ValidatorI) bool {
-		fmt.Println("validator.address: ", validator.GetOperator())
-		fmt.Println("validator.minSelfDelegation: ", validator.GetMinSelfDelegation())
-		fmt.Println("validator.tokens: ", validator.GetTokens().ToDec())
-		fmt.Println("validator.delegatorShares: ", validator.GetDelegatorShares())
-		return false
-	})
-	suite.app.StakingKeeper.IterateHistoricalInfo(suite.ctx, func(info stakingtypes.HistoricalInfo) bool {
-		fmt.Println(info)
-		return false
-	})
-	suite.app.DistrKeeper.IterateValidatorAccumulatedCommissions(suite.ctx, func(validatorAddr sdk.ValAddress, commission distrtypes.ValidatorAccumulatedCommission) bool {
-		fmt.Println(validatorAddr, commission)
-		return false
-	})
+	suite.advanceEpoch()
+	suite.advanceHeight(1, "delegation reward are distributed to insurance and reward module")
+	beforeNas = nas
+	nas = suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
+	fmt.Println(nas)
+	{
+		suite.True(nas.TotalRemainingRewards.IsZero(), "remaining rewards are distributed")
+		suite.Equal(
+			pureUnitRewardPerEpoch.Mul(pairedChunksInt).Mul(sdk.NewInt(suite.rewardEpochCount)).String(),
+			nas.RewardModuleAccBalance.String(),
+		)
+		suite.Equal(
+			unitInsuranceCommissionPerEpoch.Mul(pairedChunksInt).Mul(sdk.NewInt(suite.rewardEpochCount)).String(),
+			nas.TotalPairedInsuranceCommissions.String(),
+		)
+		suite.Equal("0.999989200118798693", nas.MintRate.String())
+		suite.True(nas.MintRate.LT(beforeNas.MintRate))
+	}
 }
 
 // TODO: Update liquid unstake scenario test with updated code
@@ -336,6 +393,7 @@ Initial state of TC
 	// ---------------------------------------------------
 
 	nas = suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
+	fmt.Println(nas)
 	// 1 chunk size * number of paired chunks (=3) tokens are liquidated
 	currentLiquidatedTokens := types.ChunkSize.Mul(pairedChunksInt)
 	currentInsuranceTokens := oneInsurance.Amount.Mul(pairedChunksInt)
@@ -359,7 +417,6 @@ Initial state of TC
 			TotalUnbondingBalance:              sdk.ZeroInt(),
 			RewardModuleAccBalance:             sdk.ZeroInt(),
 		}), "no epoch(=1 block in test) processed yet, so there are no mint rate change and remaining rewards yet")
-		fmt.Println(nas)
 	}
 	// advance 1 block(= epoch period in test environment) so reward is accumulated which means mint rate is changed
 	suite.advanceHeight(1, "")
@@ -372,6 +429,7 @@ Initial state of TC
 	notClaimedRewards := unitDelegationRewardPerEpoch.Mul(pairedChunksInt)
 	beforeNas := nas
 	nas = suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
+	fmt.Println(nas)
 	{
 		suite.Equal(
 			notClaimedRewards.ToDec(),
