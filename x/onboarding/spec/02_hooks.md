@@ -10,7 +10,7 @@ The `x/onboarding` module implements an IBC Middleware in order to swap and conv
 2. Check that the onboarding conditions are met and skip to the next middleware if any condition is not satisfied:
    1. onboarding is enabled globally
    2. channel is authorized 
-   3. check if sender/recipient address is blocked by the `x/bank` module and throw an acknowledgment error to prevent further execution along with the IBC middleware stack
-   4. the recipient account is a not vesting or module account
+   3. check if recipient address is blocked by the `x/bank` module and throw an acknowledgment error to prevent further execution along with the IBC middleware stack
+   4. the recipient account is not a module account
 3. Check the recipient's Canto balance and if the balance is less than the `AutoSwapThreshold`, swap the assets to Canto. Amount of the swapped Canto is always equal to the `AutoSwapThreshold` and the price is determined by the liquidity pool.
 4. Check if the transferred asset is registered in the `x/erc20` module as a ERC20 token pair and the token pair is enabled. If so, convert the remaining assets to ERC20 tokens.
