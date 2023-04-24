@@ -504,36 +504,25 @@ func (k Keeper) CollectReward(ctx sdk.Context, chunk types.Chunk, insurance type
 	}
 
 	if pureRewards.Len() == 1 {
-		// TODO: Must be atomic, use InputOutputCoins
-		// Send pairedInsurance fee to the pairedInsurance fee pool
-		if err := k.bankKeeper.SendCoins(
-			ctx,
-			chunk.DerivedAddress(),
-			insurance.FeePoolAddress(),
-			sdk.NewCoins(insuranceCommissions[0]),
-		); err != nil {
-			panic(err)
+		inputs := []banktypes.Input{
+			banktypes.NewInput(chunk.DerivedAddress(), sdk.Coins{insuranceCommissions[0]}),
+			banktypes.NewInput(chunk.DerivedAddress(), sdk.Coins{pureRewards[0]}),
 		}
-
-		if err := k.bankKeeper.SendCoins(
-			ctx,
-			chunk.DerivedAddress(),
-			types.RewardPool,
-			sdk.NewCoins(pureRewards[0]),
-		); err != nil {
+		outputs := []banktypes.Output{
+			banktypes.NewOutput(insurance.FeePoolAddress(), sdk.Coins{insuranceCommissions[0]}),
+			banktypes.NewOutput(types.RewardPool, sdk.Coins{pureRewards[0]}),
+		}
+		if err := k.bankKeeper.InputOutputCoins(ctx, inputs, outputs); err != nil {
 			panic(err)
 		}
 	} else {
-		var inputs []banktypes.Input
-		var outputs []banktypes.Output
-		// TODO: We don't need for loop
-		for _, commission := range insuranceCommissions {
-			inputs = append(inputs, banktypes.NewInput(chunk.DerivedAddress(), sdk.Coins{commission}))
-			outputs = append(outputs, banktypes.NewOutput(insurance.FeePoolAddress(), sdk.Coins{commission}))
+		inputs := []banktypes.Input{
+			banktypes.NewInput(chunk.DerivedAddress(), insuranceCommissions),
+			banktypes.NewInput(chunk.DerivedAddress(), pureRewards),
 		}
-		for _, reward := range pureRewards {
-			inputs = append(inputs, banktypes.NewInput(chunk.DerivedAddress(), sdk.Coins{reward}))
-			outputs = append(outputs, banktypes.NewOutput(types.RewardPool, sdk.Coins{reward}))
+		outputs := []banktypes.Output{
+			banktypes.NewOutput(insurance.FeePoolAddress(), insuranceCommissions),
+			banktypes.NewOutput(types.RewardPool, pureRewards),
 		}
 		if err := k.bankKeeper.InputOutputCoins(ctx, inputs, outputs); err != nil {
 			panic(err)
