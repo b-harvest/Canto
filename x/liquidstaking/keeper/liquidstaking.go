@@ -279,7 +279,8 @@ func (k Keeper) RePairRankedInsurances(
 				// CRITICAL: Must be unpairing status
 				return sdkerrors.Wrapf(types.ErrInvalidChunkStatus, "chunkId: %d", outInsurance.ChunkId)
 			}
-			shares, err := k.stakingKeeper.ValidateUnbondAmount(ctx, chunk.DerivedAddress(), outInsurance.GetValidator(), types.ChunkSize)
+			var shares sdk.Dec
+			shares, err = k.stakingKeeper.ValidateUnbondAmount(ctx, chunk.DerivedAddress(), outInsurance.GetValidator(), types.ChunkSize)
 			if err != nil {
 				return
 			}
@@ -390,7 +391,7 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (chunk
 			ctx,
 			chunk.DerivedAddress(),
 			amount.Amount,
-			validator.GetStatus(),
+			stakingtypes.Unbonded,
 			validator,
 			true,
 		)
@@ -692,7 +693,7 @@ func (k Keeper) IsValidValidator(ctx sdk.Context, validator stakingtypes.Validat
 		return types.ErrTombstonedValidator
 	}
 
-	if validator.GetStatus() != stakingtypes.Unspecified ||
+	if validator.GetStatus() == stakingtypes.Unspecified ||
 		validator.GetTokens().IsNil() ||
 		validator.GetDelegatorShares().IsNil() ||
 		validator.InvalidExRate() {
@@ -978,7 +979,7 @@ func (k Keeper) handlePairedChunk(ctx sdk.Context, chunk types.Chunk) error {
 				ctx,
 				chunk.DerivedAddress(),
 				penaltyCoin.Amount,
-				validator.GetStatus(),
+				stakingtypes.Unbonded,
 				validator,
 				true,
 			); err != nil {
