@@ -41,6 +41,8 @@ func (i *Insurance) GetValidator() sdk.ValAddress {
 	return valAddr
 }
 
+// SortInsurances sorts insurances by fee rate and id
+// If descending is true, it sorts in descending order which means the highest fee rate comes first.
 // TODO: Need memory profiling
 // This can be called multiple times and there are local assignments for i, j Insurance
 // readable but worried for memory usage

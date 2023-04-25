@@ -24,7 +24,7 @@ func (k Keeper) DistributeReward(ctx sdk.Context) {
 			return false, nil
 		}
 		validator, found := k.stakingKeeper.GetValidator(ctx, insurance.GetValidator())
-		_, err := k.IsValidValidator(ctx, validator, found)
+		err := k.IsValidValidator(ctx, validator, found)
 		if err == types.ErrNotFoundValidator {
 			panic(err)
 		}
@@ -164,6 +164,150 @@ func (k Keeper) HandleQueuedWithdrawInsuranceRequests(ctx sdk.Context) ([]types.
 		withdrawnInsurances = append(withdrawnInsurances, insurance)
 	}
 	return withdrawnInsurances, nil
+}
+
+func (k Keeper) RankInsurances(ctx sdk.Context) (
+	newlyRankedInInsurances []types.Insurance,
+	rankOutInsurances []types.Insurance,
+	err error,
+) {
+	candidatesValidatorMap := make(map[string]stakingtypes.Validator)
+	activeChunks, pairedInsuranceMap, currentOutInsurances, err := k.GetAllActiveChunksAndOutInsurances(ctx)
+
+	// candidateInsurances will be ranked
+	var candidateInsurances []types.Insurance
+	if err = k.IterateAllInsurances(ctx, func(insurance types.Insurance) (stop bool, err error) {
+		// Only pairing or paired insurances are candidates to be ranked
+		if insurance.Status != types.INSURANCE_STATUS_PAIRED &&
+			insurance.Status != types.INSURANCE_STATUS_PAIRING {
+			return false, nil
+		}
+		candidateInsurances = append(candidateInsurances, insurance)
+
+		if _, ok := candidatesValidatorMap[insurance.ValidatorAddress]; !ok {
+			validator, found := k.stakingKeeper.GetValidator(ctx, insurance.GetValidator())
+			err := k.IsValidValidator(ctx, validator, found)
+			if err != nil {
+				// CRITICAL & EDGE CASE:
+				// paired insurance must have valid validator
+				if insurance.Status == types.INSURANCE_STATUS_PAIRED {
+					return false, err
+				} else if insurance.Status == types.INSURANCE_STATUS_PAIRING {
+					// EDGE CASE:
+					// Skip pairing insurance which have invalid validator
+					// TODO: Delete pairing insurance?
+					return false, nil
+				}
+			}
+			candidatesValidatorMap[insurance.ValidatorAddress] = validator
+		}
+		return false, nil
+	}); err != nil {
+		return
+	}
+
+	types.SortInsurances(candidatesValidatorMap, candidateInsurances, false)
+	rankInInsurances := candidateInsurances[:len(activeChunks)]
+	for _, insurance := range candidateInsurances[len(activeChunks):] {
+		if insurance.Status == types.INSURANCE_STATUS_PAIRED {
+			rankOutInsurances = append(rankOutInsurances, insurance)
+		}
+	}
+	rankOutInsurances = append(rankOutInsurances, currentOutInsurances...)
+
+	for _, insurance := range rankInInsurances {
+		if _, ok := pairedInsuranceMap[insurance.Id]; !ok {
+			newlyRankedInInsurances = append(newlyRankedInInsurances, insurance)
+		}
+	}
+	return
+}
+
+func (k Keeper) RePairRankedInsurances(
+	ctx sdk.Context,
+	newlyRankedInInsurances,
+	rankOutInsurances []types.Insurance,
+) (err error) {
+	var rankOutInsuranceChunkMap = make(map[uint64]types.Chunk)
+	for _, outInsurance := range rankOutInsurances {
+		chunk, found := k.GetChunk(ctx, outInsurance.ChunkId)
+		if !found {
+			panic("chunk not found")
+		}
+		rankOutInsuranceChunkMap[outInsurance.Id] = chunk
+	}
+
+	// newlyInInsurances will be replaced by re-delegate
+	// because there are no rankout insurances which have same validator
+	var newlyInInsurances []types.Insurance
+	// Short circuit
+	// Try to replace outInsurance with inInsurance which has same validator.
+	for _, newRankInInsurance := range newlyRankedInInsurances {
+		hasSameValidator := false
+		for oi, outInsurance := range rankOutInsurances {
+			// Happy case. Same validator so we can skip re-delegation
+			if newRankInInsurance.GetValidator().Equals(outInsurance.GetValidator()) {
+				// get chunk by outInsurance.ChunkId
+				chunk, found := k.GetChunk(ctx, outInsurance.ChunkId)
+				if !found {
+					panic("chunk not found")
+				}
+				chunk.PairedInsuranceId = newRankInInsurance.Id
+				chunk.UnpairingInsuranceId = outInsurance.Id
+				k.SetChunk(ctx, chunk)
+				hasSameValidator = true
+				// Remove already checked outInsurance
+				rankOutInsurances = append(rankOutInsurances[:oi], rankOutInsurances[oi+1:]...)
+				break
+			}
+		}
+		if !hasSameValidator {
+			newlyInInsurances = append(newlyInInsurances, newRankInInsurance)
+		}
+	}
+
+	// rest of rankOutInsurances are replaced with newlyInInsurances
+	for _, outInsurance := range rankOutInsurances {
+		if len(newlyInInsurances) == 0 {
+			// TODO: Start unpairing
+			chunk, found := k.GetChunk(ctx, outInsurance.ChunkId)
+			if !found {
+				err = sdkerrors.Wrapf(types.ErrNotFoundChunk, "chunkId: %d", outInsurance.ChunkId)
+				return
+			}
+			if chunk.Status != types.CHUNK_STATUS_UNPAIRING {
+				// CRITICAL: Must be unpairing status
+				return sdkerrors.Wrapf(types.ErrInvalidChunkStatus, "chunkId: %d", outInsurance.ChunkId)
+			}
+			shares, err := k.stakingKeeper.ValidateUnbondAmount(ctx, chunk.DerivedAddress(), outInsurance.GetValidator(), types.ChunkSize)
+			if err != nil {
+				return
+			}
+			if _, err = k.stakingKeeper.Undelegate(ctx, chunk.DerivedAddress(), outInsurance.GetValidator(), shares); err != nil {
+				return
+			}
+			continue
+		}
+
+		newInsurance := newlyInInsurances[0] // Cheapest insurance
+		chunk := rankOutInsuranceChunkMap[outInsurance.Id]
+
+		// get delegation shares of srcValidator
+		delegation, found := k.stakingKeeper.GetDelegation(ctx, chunk.DerivedAddress(), outInsurance.GetValidator())
+		if !found {
+			panic("delegation not found")
+		}
+		if _, err = k.stakingKeeper.BeginRedelegation(
+			ctx,
+			chunk.DerivedAddress(),
+			outInsurance.GetValidator(),
+			newInsurance.GetValidator(),
+			delegation.GetShares(),
+		); err != nil {
+			panic(err)
+		}
+	}
+	return
 }
 
 func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (chunks []types.Chunk, newShares sdk.Dec, lsTokenMintAmount sdk.Int, err error) {
@@ -316,15 +460,11 @@ func (k Keeper) QueueLiquidUnstake(ctx sdk.Context, msg *types.MsgLiquidUnstake)
 		if _, ok := validatorMap[pairedInsurance.ValidatorAddress]; !ok {
 			// If validator is not in map, get validator from staking keeper
 			validator, found := k.stakingKeeper.GetValidator(ctx, pairedInsurance.GetValidator())
-			valid, err := k.IsValidValidator(ctx, validator, found)
+			err := k.IsValidValidator(ctx, validator, found)
 			if err != nil {
 				return false, nil
 			}
-			if valid {
-				validatorMap[pairedInsurance.ValidatorAddress] = validator
-			} else {
-				return false, nil
-			}
+			validatorMap[pairedInsurance.ValidatorAddress] = validator
 		}
 		insurances = append(insurances, pairedInsurance)
 		chunksWithInsuranceId[chunk.PairedInsuranceId] = chunk
@@ -397,7 +537,7 @@ func (k Keeper) DoInsuranceProvide(ctx sdk.Context, msg *types.MsgInsuranceProvi
 
 	// Check if the validator is valid
 	validator, found := k.stakingKeeper.GetValidator(ctx, valAddr)
-	_, err = k.IsValidValidator(ctx, validator, found)
+	err = k.IsValidValidator(ctx, validator, found)
 	if err != nil {
 		return
 	}
@@ -540,25 +680,25 @@ func (k Keeper) CollectReward(ctx sdk.Context, chunk types.Chunk, insurance type
 	}
 }
 
-func (k Keeper) IsValidValidator(ctx sdk.Context, validator stakingtypes.Validator, found bool) (bool, error) {
+func (k Keeper) IsValidValidator(ctx sdk.Context, validator stakingtypes.Validator, found bool) error {
 	if !found {
-		return false, types.ErrNotFoundValidator
+		return types.ErrNotFoundValidator
 	}
 	pubKey, err := validator.ConsPubKey()
 	if err != nil {
-		return false, err
+		return err
 	}
 	if k.slashingKeeper.IsTombstoned(ctx, sdk.ConsAddress(pubKey.Address())) {
-		return false, types.ErrTombstonedValidator
+		return types.ErrTombstonedValidator
 	}
 
 	if validator.GetStatus() != stakingtypes.Unspecified ||
 		validator.GetTokens().IsNil() ||
 		validator.GetDelegatorShares().IsNil() ||
 		validator.InvalidExRate() {
-		return false, types.ErrInvalidValidatorStatus
+		return types.ErrInvalidValidatorStatus
 	}
-	return true, nil
+	return nil
 }
 
 // Get minimum requirements for liquid staking
@@ -790,7 +930,7 @@ func (k Keeper) handlePairedChunk(ctx sdk.Context, chunk types.Chunk) error {
 	}
 
 	validator, found := k.stakingKeeper.GetValidator(ctx, pairedInsurance.GetValidator())
-	_, err = k.IsValidValidator(ctx, validator, found)
+	err = k.IsValidValidator(ctx, validator, found)
 	if err == types.ErrNotFoundValidator {
 		return sdkerrors.Wrapf(err, "validator: %s", pairedInsurance.GetValidator())
 	}
@@ -878,6 +1018,47 @@ func (k Keeper) handlePairedChunk(ctx sdk.Context, chunk types.Chunk) error {
 	return nil
 }
 
+// GetAllActiveChunksAndOutInsurances returns all active chunks and related insurances.
+// Active chunks are chunks which are paired or not unpairing.
+// Not unpairing chunk have no un-bonding info.
+func (k Keeper) GetAllActiveChunksAndOutInsurances(ctx sdk.Context) (
+	activeChunks []types.Chunk,
+	pairedInsuranceMap map[uint64]struct{},
+	outInsurances []types.Insurance,
+	err error,
+) {
+	pairedInsuranceMap = make(map[uint64]struct{})
+	if err = k.IterateAllChunks(ctx, func(chunk types.Chunk) (bool, error) {
+		switch chunk.Status {
+		case types.CHUNK_STATUS_UNPAIRING:
+			insurance, found := k.GetInsurance(ctx, chunk.UnpairingInsuranceId)
+			if !found {
+				return false, sdkerrors.Wrapf(types.ErrNotFoundInsurance, "insurance id: %d", chunk.UnpairingInsuranceId)
+			}
+			_, found = k.stakingKeeper.GetUnbondingDelegation(ctx, chunk.DerivedAddress(), insurance.GetValidator())
+			if found {
+				return false, nil
+			}
+			outInsurances = append(outInsurances, insurance)
+		case types.CHUNK_STATUS_PAIRING:
+			activeChunks = append(activeChunks, chunk)
+		case types.CHUNK_STATUS_PAIRED:
+			insurance, found := k.GetInsurance(ctx, chunk.UnpairingInsuranceId)
+			if !found {
+				return false, sdkerrors.Wrapf(types.ErrNotFoundInsurance, "insurance id: %d", chunk.UnpairingInsuranceId)
+			}
+			pairedInsuranceMap[insurance.Id] = struct{}{}
+			activeChunks = append(activeChunks, chunk)
+		default:
+			return false, nil
+		}
+		return false, nil
+	}); err != nil {
+		return
+	}
+	return
+}
+
 func (k Keeper) withdrawInsurance(ctx sdk.Context, insurance types.Insurance) error {
 	insuranceTokens := k.bankKeeper.GetAllBalances(ctx, insurance.DerivedAddress())
 	if err := k.bankKeeper.SendCoins(ctx, insurance.DerivedAddress(), insurance.GetProvider(), insuranceTokens); err != nil {
@@ -904,7 +1085,7 @@ func (k Keeper) IsSufficientInsurance(ctx sdk.Context, insurance types.Insurance
 // IsInvalidInsurance checks whether the validator of insurance is tombstoned or not
 func (k Keeper) IsInvalidInsurance(ctx sdk.Context, insurance types.Insurance) bool {
 	validator, found := k.stakingKeeper.GetValidator(ctx, insurance.GetValidator())
-	_, err := k.IsValidValidator(ctx, validator, found)
+	err := k.IsValidValidator(ctx, validator, found)
 	if err == types.ErrTombstonedValidator {
 		return true
 	}
