@@ -69,6 +69,14 @@ func (k Keeper) CoverSlashingAndHandleMatureUnbondings(ctx sdk.Context) {
 }
 
 // HandleQueuedLiquidUnstakes processes unstaking requests that were queued before the epoch.
+// 1. Get all pending liquid unstakes
+// 2. For each pending liquid unstake, get chunk and insurance
+// 3. Validate unbond amount
+// 4. Un-delegate chunk
+// 5. Update chunk status
+// 6. Update insurance status
+// 7. Set unpairing for unstake chunk info which will be used by CoverSlashingAndHandleMatureUnbondings
+// 8. Delete pending liquid unstake
 func (k Keeper) HandleQueuedLiquidUnstakes(ctx sdk.Context) ([]types.Chunk, error) {
 	var unstakedChunks []types.Chunk
 	// TODO: Should use Queue for processing in sequence? MintRate is ok?, insurance issue? etc...
@@ -118,9 +126,16 @@ func (k Keeper) HandleQueuedLiquidUnstakes(ctx sdk.Context) ([]types.Chunk, erro
 }
 
 // HandleQueuedWithdrawInsuranceRequests processes withdraw insurance requests that were queued before the epoch.
-// It will unpair the chunk and insurance.
-// Unpairing insurances will be unpaired in the next epoch.
-// After insurance is unpaired, it can be withdrawn by MsgWithdrawInsurance immediately.
+// Unpairing insurances will be unpaired in the next epoch.is unpaired.
+// 1. Get all pending withdraw insurance requests
+// 2. For each pending withdraw insurance request, get insurance
+// 3. Validate insurance status
+// 4. Get chunk from insurance
+// 5. Validate chunk status
+// 6. Unpair chunk and insurance
+// 7. Update chunk status
+// 8. Update insurance status
+// 9. Delete pending withdraw insurance request
 func (k Keeper) HandleQueuedWithdrawInsuranceRequests(ctx sdk.Context) ([]types.Insurance, error) {
 	var withdrawnInsurances []types.Insurance
 	reqs := k.GetAllWithdrawInsuranceRequests(ctx)
@@ -139,14 +154,16 @@ func (k Keeper) HandleQueuedWithdrawInsuranceRequests(ctx sdk.Context) ([]types.
 		if !found {
 			return nil, sdkerrors.Wrapf(types.ErrNotFoundChunk, "id: %d", insurance.ChunkId)
 		}
-		insurance.SetStatus(types.INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAW)
+		chunk.SetStatus(types.CHUNK_STATUS_UNPAIRING)
 		chunk.UnpairingInsuranceId = chunk.PairedInsuranceId
 		chunk.PairedInsuranceId = 0
+		insurance.SetStatus(types.INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAW)
 		k.SetInsurance(ctx, insurance)
 		k.SetChunk(ctx, chunk)
+		k.DeleteWithdrawInsuranceRequest(ctx, insurance.Id)
 		withdrawnInsurances = append(withdrawnInsurances, insurance)
 	}
-	return nil, nil
+	return withdrawnInsurances, nil
 }
 
 func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (chunks []types.Chunk, newShares sdk.Dec, lsTokenMintAmount sdk.Int, err error) {
