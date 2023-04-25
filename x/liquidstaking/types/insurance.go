@@ -2,9 +2,10 @@ package types
 
 import (
 	"fmt"
+	"sort"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	"sort"
 )
 
 const (
