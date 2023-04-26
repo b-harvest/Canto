@@ -884,7 +884,7 @@ func (k Keeper) handleUnpairingChunk(ctx sdk.Context, chunk types.Chunk) error {
 		if err = k.bankKeeper.SendCoins(
 			ctx,
 			unpairingInsurance.DerivedAddress(),
-			types.RewardPool,
+			chunk.DerivedAddress(),
 			sdk.NewCoins(sdk.NewCoin(bondDenom, penalty)),
 		); err != nil {
 			return err
@@ -900,10 +900,9 @@ func (k Keeper) handleUnpairingChunk(ctx sdk.Context, chunk types.Chunk) error {
 		allBalances := k.bankKeeper.GetAllBalances(ctx, chunk.DerivedAddress())
 		var inputs []banktypes.Input
 		var outputs []banktypes.Output
-		for _, balance := range allBalances {
-			inputs = append(inputs, banktypes.NewInput(chunk.DerivedAddress(), sdk.Coins{balance}))
-			outputs = append(outputs, banktypes.NewOutput(types.RewardPool, sdk.Coins{balance}))
-		}
+		inputs = append(inputs, banktypes.NewInput(chunk.DerivedAddress(), allBalances))
+		outputs = append(outputs, banktypes.NewOutput(types.RewardPool, allBalances))
+
 		if err = k.bankKeeper.InputOutputCoins(ctx, inputs, outputs); err != nil {
 			return err
 		}
