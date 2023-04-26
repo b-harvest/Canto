@@ -685,6 +685,63 @@ func (suite *KeeperTestSuite) TestCancelInsuranceProvideFail() {
 	suite.ErrorIs(err, types.ErrPairingInsuranceNotFound, "only pairing insurances can be canceled")
 }
 
+func (suite *KeeperTestSuite) TestDoWithdrawInsurance() {
+	// SETUP TEST ---------------------------------------------------
+	suite.resetEpochs()
+	// 3 validators we have
+	valAddrs := suite.CreateValidators([]int64{10, 10, 10})
+	oneChunk, oneInsurance := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
+	providers, providerBalances := suite.AddTestAddrs(3, oneInsurance.Amount)
+	// 3 insurances (insurance fee rates are all same as 10%)
+	insurances := suite.provideInsurances(providers, valAddrs, providerBalances, sdk.NewDecWithPrec(10, 2), nil)
+	var idsOfPairedInsurances []uint64
+	for _, insurance := range insurances {
+		idsOfPairedInsurances = append(idsOfPairedInsurances, insurance.Id)
+	}
+	// 3 delegators
+	delegators, delegatorBalances := suite.AddTestAddrs(3, oneChunk.Amount)
+	// liquid stakes 3 chunks
+	suite.liquidStakes(delegators, delegatorBalances)
+	// ---------------------------------------------------
+
+	toBeWithdrawnInsurance, _ := suite.app.LiquidStakingKeeper.GetInsurance(suite.ctx, insurances[0].Id)
+	_, err := suite.app.LiquidStakingKeeper.DoWithdrawInsurance(
+		suite.ctx,
+		types.NewMsgWithdrawInsurance(
+			toBeWithdrawnInsurance.ProviderAddress,
+			toBeWithdrawnInsurance.Id,
+		),
+	)
+	suite.NoError(err)
+	suite.advanceEpoch()
+	suite.advanceHeight(1, "queued withdraw insurance request is handled and there are no additional insurances yet so unpairing triggered")
+
+	suite.advanceHeight(1, "")
+
+	suite.advanceEpoch()
+	suite.advanceHeight(1, "unpairing is done")
+
+	unpairedInsurance, _ := suite.app.LiquidStakingKeeper.GetInsurance(suite.ctx, insurances[0].Id)
+	suite.Equal(types.INSURANCE_STATUS_UNPAIRED, unpairedInsurance.Status)
+
+	beforeProviderBalance := suite.app.BankKeeper.GetBalance(suite.ctx, unpairedInsurance.GetProvider(), suite.denom)
+	unpairedInsuranceBalance := suite.app.BankKeeper.GetBalance(suite.ctx, unpairedInsurance.DerivedAddress(), suite.denom)
+	unpairedInsuranceCommission := suite.app.BankKeeper.GetBalance(suite.ctx, unpairedInsurance.FeePoolAddress(), suite.denom)
+	_, err = suite.app.LiquidStakingKeeper.DoWithdrawInsurance(
+		suite.ctx,
+		types.NewMsgWithdrawInsurance(
+			unpairedInsurance.ProviderAddress,
+			unpairedInsurance.Id,
+		),
+	)
+	suite.NoError(err)
+	afterProviderBalance := suite.app.BankKeeper.GetBalance(suite.ctx, unpairedInsurance.GetProvider(), suite.denom)
+	suite.Equal(
+		beforeProviderBalance.Amount.Add(unpairedInsuranceBalance.Amount).Add(unpairedInsuranceCommission.Amount).String(),
+		afterProviderBalance.Amount.String(),
+	)
+}
+
 func (suite *KeeperTestSuite) TestRankInsurances() {
 	// SETUP TEST ---------------------------------------------------
 	suite.resetEpochs()

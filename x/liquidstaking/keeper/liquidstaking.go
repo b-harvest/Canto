@@ -304,14 +304,15 @@ func (k Keeper) RankInsurances(ctx sdk.Context) (
 
 	types.SortInsurances(candidatesValidatorMap, candidateInsurances, false)
 	var rankInInsurances []types.Insurance
+	var rankOutCandidates []types.Insurance
 	if len(rePairableChunks) > len(candidateInsurances) {
 		rankInInsurances = candidateInsurances
 	} else {
 		rankInInsurances = candidateInsurances[:len(rePairableChunks)]
-		rankOutInsurances = candidateInsurances[len(rePairableChunks):]
+		rankOutCandidates = candidateInsurances[len(rePairableChunks):]
 	}
 
-	for _, insurance := range rankOutInsurances {
+	for _, insurance := range rankOutCandidates {
 		if insurance.Status == types.INSURANCE_STATUS_PAIRED {
 			rankOutInsurances = append(rankOutInsurances, insurance)
 		}
@@ -395,7 +396,7 @@ func (k Keeper) RePairRankedInsurances(
 			continue
 		}
 
-		// Poop cheapest insurance
+		// Pop cheapest insurance
 		newInsurance := newInsurancesWithDifferentValidators[0]
 		newInsurancesWithDifferentValidators = newInsurancesWithDifferentValidators[1:]
 		chunk := rankOutInsuranceChunkMap[outInsurance.Id]
