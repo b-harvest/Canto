@@ -8,35 +8,35 @@ func NewGenesisState(
 	chunks []Chunk,
 	insurances []Insurance,
 	pendingUnstakes []PendingLiquidUnstake,
-	infos []UnpairingForUnstakeChunkInfo,
+	infos []UnpairingForUnstakingChunkInfo,
 	reqs []WithdrawInsuranceRequest,
 ) GenesisState {
 	return GenesisState{
-		LiquidBondDenom:               DefaultLiquidBondDenom,
-		Params:                        params,
-		Epoch:                         epoch,
-		LastChunkId:                   lastChunkId,
-		LastInsuranceId:               lastInsuranceId,
-		Chunks:                        chunks,
-		Insurances:                    insurances,
-		PendingLiquidUnstakes:         pendingUnstakes,
-		UnpairingForUnstakeChunkInfos: infos,
-		WithdrawInsuranceRequests:     reqs,
+		LiquidBondDenom:                 DefaultLiquidBondDenom,
+		Params:                          params,
+		Epoch:                           epoch,
+		LastChunkId:                     lastChunkId,
+		LastInsuranceId:                 lastInsuranceId,
+		Chunks:                          chunks,
+		Insurances:                      insurances,
+		PendingLiquidUnstakes:           pendingUnstakes,
+		UnpairingForUnstakingChunkInfos: infos,
+		WithdrawInsuranceRequests:       reqs,
 	}
 }
 
 func DefaultGenesisState() *GenesisState {
 	return &GenesisState{
-		LiquidBondDenom:               DefaultLiquidBondDenom,
-		Params:                        DefaultParams(),
-		Epoch:                         Epoch{},
-		LastChunkId:                   0,
-		LastInsuranceId:               0,
-		Chunks:                        []Chunk{},
-		Insurances:                    []Insurance{},
-		PendingLiquidUnstakes:         []PendingLiquidUnstake{},
-		UnpairingForUnstakeChunkInfos: []UnpairingForUnstakeChunkInfo{},
-		WithdrawInsuranceRequests:     []WithdrawInsuranceRequest{},
+		LiquidBondDenom:                 DefaultLiquidBondDenom,
+		Params:                          DefaultParams(),
+		Epoch:                           Epoch{},
+		LastChunkId:                     0,
+		LastInsuranceId:                 0,
+		Chunks:                          []Chunk{},
+		Insurances:                      []Insurance{},
+		PendingLiquidUnstakes:           []PendingLiquidUnstake{},
+		UnpairingForUnstakingChunkInfos: []UnpairingForUnstakingChunkInfo{},
+		WithdrawInsuranceRequests:       []WithdrawInsuranceRequest{},
 	}
 }
 
@@ -71,7 +71,7 @@ func (gs GenesisState) Validate() error {
 			return err
 		}
 	}
-	for _, info := range gs.UnpairingForUnstakeChunkInfos {
+	for _, info := range gs.UnpairingForUnstakingChunkInfos {
 		if err := info.Validate(chunkMap); err != nil {
 			return err
 		}

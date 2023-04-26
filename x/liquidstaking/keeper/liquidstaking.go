@@ -46,7 +46,7 @@ func (k Keeper) CoverSlashingAndHandleMatureUnbondings(ctx sdk.Context) {
 	err = k.IterateAllChunks(ctx, func(chunk types.Chunk) (bool, error) {
 		switch chunk.Status {
 		// Finish mature unbondings triggered in previous epoch
-		case types.CHUNK_STATUS_UNPAIRING_FOR_UNSTAKE:
+		case types.CHUNK_STATUS_UNPAIRING_FOR_UNSTAKING:
 			if err := k.completeLiquidUnstake(ctx, chunk); err != nil {
 				panic(err)
 			}
@@ -108,7 +108,7 @@ func (k Keeper) HandleQueuedLiquidUnstakes(ctx sdk.Context) ([]types.Chunk, erro
 		if err != nil {
 			return nil, err
 		}
-		chunk.SetStatus(types.CHUNK_STATUS_UNPAIRING_FOR_UNSTAKE)
+		chunk.SetStatus(types.CHUNK_STATUS_UNPAIRING_FOR_UNSTAKING)
 		chunk.UnpairingInsuranceId = chunk.PairedInsuranceId
 		chunk.PairedInsuranceId = 0
 		insurance.SetStatus(types.INSURANCE_STATUS_UNPAIRING)
@@ -116,9 +116,9 @@ func (k Keeper) HandleQueuedLiquidUnstakes(ctx sdk.Context) ([]types.Chunk, erro
 		k.SetInsurance(ctx, insurance)
 		unstakedChunks = append(unstakedChunks, chunk)
 		// Set tracking obj
-		k.SetUnpairingForUnstakeChunkInfo(
+		k.SetUnpairingForUnstakingChunkInfo(
 			ctx,
-			types.NewUnpairingForUnstakeChunkInfo(chunk.Id, plu.DelegatorAddress, plu.EscrowedLstokens),
+			types.NewUnpairingForUnstakingChunkInfo(chunk.Id, plu.DelegatorAddress, plu.EscrowedLstokens),
 		)
 		k.DeletePendingLiquidUnstake(ctx, plu)
 	}
@@ -157,7 +157,7 @@ func (k Keeper) HandleQueuedWithdrawInsuranceRequests(ctx sdk.Context) ([]types.
 		chunk.SetStatus(types.CHUNK_STATUS_UNPAIRING)
 		chunk.UnpairingInsuranceId = chunk.PairedInsuranceId
 		chunk.PairedInsuranceId = 0
-		insurance.SetStatus(types.INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAW)
+		insurance.SetStatus(types.INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAWAL)
 		k.SetInsurance(ctx, insurance)
 		k.SetChunk(ctx, chunk)
 		k.DeleteWithdrawInsuranceRequest(ctx, insurance.Id)
@@ -770,7 +770,7 @@ func (k Keeper) completeInsuranceDuty(ctx sdk.Context, insurance types.Insurance
 	insurance.SetStatus(types.INSURANCE_STATUS_UNPAIRED)
 
 	switch chunk.Status {
-	case types.CHUNK_STATUS_UNPAIRING_FOR_UNSTAKE:
+	case types.CHUNK_STATUS_UNPAIRING_FOR_UNSTAKING:
 	case types.CHUNK_STATUS_UNPAIRING:
 		chunk.UnpairingInsuranceId = 0
 	}
@@ -781,7 +781,7 @@ func (k Keeper) completeInsuranceDuty(ctx sdk.Context, insurance types.Insurance
 }
 
 func (k Keeper) completeLiquidUnstake(ctx sdk.Context, chunk types.Chunk) error {
-	if chunk.Status != types.CHUNK_STATUS_UNPAIRING_FOR_UNSTAKE {
+	if chunk.Status != types.CHUNK_STATUS_UNPAIRING_FOR_UNSTAKING {
 		return sdkerrors.Wrapf(types.ErrInvalidChunkStatus, "chunk status: %s", chunk.Status)
 	}
 	var err error
@@ -807,9 +807,9 @@ func (k Keeper) completeLiquidUnstake(ctx sdk.Context, chunk types.Chunk) error 
 		return sdkerrors.Wrapf(types.ErrUnbondingDelegationNotRemoved, "chunk id: %d", chunk.Id)
 	}
 	// handle mature unbondings
-	info, found := k.GetUnpairingForUnstakeChunkInfo(ctx, chunk.Id)
+	info, found := k.GetUnpairingForUnstakingChunkInfo(ctx, chunk.Id)
 	if !found {
-		return sdkerrors.Wrapf(types.ErrNotFoundUnpairingForUnstakeChunkInfo, "chunk id: %d", chunk.Id)
+		return sdkerrors.Wrapf(types.ErrNotFoundUnpairingForUnstakingChunkInfo, "chunk id: %d", chunk.Id)
 	}
 	lsTokensToBurn := info.EscrowedLstokens
 	penalty := types.ChunkSize.Sub(k.bankKeeper.GetBalance(ctx, chunk.DerivedAddress(), bondDenom).Amount)
@@ -853,7 +853,7 @@ func (k Keeper) completeLiquidUnstake(ctx sdk.Context, chunk types.Chunk) error 
 	); err != nil {
 		return err
 	}
-	k.DeleteUnpairingForUnstakeChunkInfo(ctx, chunk.Id)
+	k.DeleteUnpairingForUnstakingChunkInfo(ctx, chunk.Id)
 	k.DeleteChunk(ctx, chunk.Id)
 	return nil
 }
@@ -906,7 +906,7 @@ func (k Keeper) handleUnpairingChunk(ctx sdk.Context, chunk types.Chunk) error {
 		if err = k.bankKeeper.InputOutputCoins(ctx, inputs, outputs); err != nil {
 			return err
 		}
-		k.DeleteUnpairingForUnstakeChunkInfo(ctx, chunk.Id)
+		k.DeleteUnpairingForUnstakingChunkInfo(ctx, chunk.Id)
 		k.DeleteChunk(ctx, chunk.Id)
 		return nil
 	}
@@ -940,6 +940,7 @@ func (k Keeper) handlePairedChunk(ctx sdk.Context, chunk types.Chunk) error {
 	if !found {
 		return sdkerrors.Wrapf(types.ErrNotFoundDelegation, "delegator: %s, validator: %s", chunk.DerivedAddress(), validator.GetOperator())
 	}
+	// TODO: Consider ReDelegation
 
 	insuranceOutOfBalance := false
 	// Check whether delegation value is decreased by slashing

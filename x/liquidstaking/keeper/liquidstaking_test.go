@@ -23,15 +23,15 @@ func (suite *KeeperTestSuite) getPairedChunks() []types.Chunk {
 	return pairedChunks
 }
 
-func (suite *KeeperTestSuite) getUnpairingForUnstakeChunks() []types.Chunk {
-	var unpairingForUnstakeChunks []types.Chunk
+func (suite *KeeperTestSuite) getUnpairingForUnstakingChunks() []types.Chunk {
+	var UnpairingForUnstakingChunks []types.Chunk
 	suite.app.LiquidStakingKeeper.IterateAllChunks(suite.ctx, func(chunk types.Chunk) (bool, error) {
-		if chunk.Status == types.CHUNK_STATUS_UNPAIRING_FOR_UNSTAKE {
-			unpairingForUnstakeChunks = append(unpairingForUnstakeChunks, chunk)
+		if chunk.Status == types.CHUNK_STATUS_UNPAIRING_FOR_UNSTAKING {
+			UnpairingForUnstakingChunks = append(UnpairingForUnstakingChunks, chunk)
 		}
 		return false, nil
 	})
-	return unpairingForUnstakeChunks
+	return UnpairingForUnstakingChunks
 }
 
 // getMostExpensivePairedChunk returns the paired chunk which have most expensive insurance
@@ -531,15 +531,15 @@ Initial state of TC
 	// Check status of chunks
 	{
 		suite.True(found)
-		suite.Equal(unstakedChunk.Status, types.CHUNK_STATUS_UNPAIRING_FOR_UNSTAKE)
+		suite.Equal(unstakedChunk.Status, types.CHUNK_STATUS_UNPAIRING_FOR_UNSTAKING)
 		suite.Equal(unstakedChunk.UnpairingInsuranceId, toBeUnstakedChunks[0].PairedInsuranceId)
 	}
 	// check states after liquid unstake
 	pairedChunksAfterUnstake := suite.getPairedChunks()
-	// check unpairingForUnstake chunks
-	unpairingForUnstakeChunks := suite.getUnpairingForUnstakeChunks()
+	// check UnpairingForUnstaking chunks
+	UnpairingForUnstakingChunks := suite.getUnpairingForUnstakingChunks()
 	// paired chunk count should be decreased by number of unstaked chunks
-	suite.Equal(len(pairedChunks)-len(unpairingForUnstakeChunks), len(pairedChunksAfterUnstake))
+	suite.Equal(len(pairedChunks)-len(UnpairingForUnstakingChunks), len(pairedChunksAfterUnstake))
 	pairedChunksInt = sdk.NewInt(int64(len(pairedChunksAfterUnstake)))
 
 	suite.advanceEpoch()
