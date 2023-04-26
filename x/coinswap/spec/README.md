@@ -10,7 +10,7 @@ parent:
 ## Abstract
 
 This specification describes the coinswap module.
-This module is a hard-forked modification of IRISNET's [Coinswap module v1.6](https://github.com/irisnet/irismod/tree/v1.6.0/modules/coinswap). The changes include:
+This module is a forked modification of IRISNET's [Coinswap module v1.6](https://github.com/irisnet/irismod/tree/v1.6.0/modules/coinswap). The changes include:
 1. Remove functions related to double swap
 2. Limit the quantity of max standard coin in the liquidity pool
 3. Limit the quantity of swappable coins

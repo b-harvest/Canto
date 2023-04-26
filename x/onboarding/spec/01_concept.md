@@ -30,7 +30,6 @@ The IBC middleware adds custom logic between the core IBC and the underlying app
 
 For Canto the middleware stack ordering is defined as follows (from top to bottom):
 1. IBC Transfer 
-2. Claims Middleware
 3. Recovery Middleware
 4. Onboarding Middleware
 
