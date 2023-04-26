@@ -8,6 +8,53 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
+// CollectReward collects reward of chunk and
+// distribute to reward module account and insurance
+// 1. Send commission to insurance based on chunk reward
+// 2. Send rest of rewards to reward module account
+func (k Keeper) CollectReward(ctx sdk.Context, chunk types.Chunk, insurance types.Insurance) {
+	delegationRewards := k.bankKeeper.GetAllBalances(ctx, chunk.DerivedAddress())
+	insuranceCommissions := make(sdk.Coins, delegationRewards.Len())
+	pureRewards := make(sdk.Coins, delegationRewards.Len())
+	for i, delReward := range delegationRewards {
+		insuranceCommission := delReward.Amount.ToDec().Mul(insurance.FeeRate).TruncateInt()
+		insuranceCommissions[i] = sdk.NewCoin(
+			delReward.Denom,
+			insuranceCommission,
+		)
+		pureRewards[i] = sdk.NewCoin(
+			delReward.Denom,
+			delReward.Amount.Sub(insuranceCommission),
+		)
+	}
+
+	if pureRewards.Len() == 1 {
+		inputs := []banktypes.Input{
+			banktypes.NewInput(chunk.DerivedAddress(), sdk.Coins{insuranceCommissions[0]}),
+			banktypes.NewInput(chunk.DerivedAddress(), sdk.Coins{pureRewards[0]}),
+		}
+		outputs := []banktypes.Output{
+			banktypes.NewOutput(insurance.FeePoolAddress(), sdk.Coins{insuranceCommissions[0]}),
+			banktypes.NewOutput(types.RewardPool, sdk.Coins{pureRewards[0]}),
+		}
+		if err := k.bankKeeper.InputOutputCoins(ctx, inputs, outputs); err != nil {
+			panic(err)
+		}
+	} else {
+		inputs := []banktypes.Input{
+			banktypes.NewInput(chunk.DerivedAddress(), insuranceCommissions),
+			banktypes.NewInput(chunk.DerivedAddress(), pureRewards),
+		}
+		outputs := []banktypes.Output{
+			banktypes.NewOutput(insurance.FeePoolAddress(), insuranceCommissions),
+			banktypes.NewOutput(types.RewardPool, pureRewards),
+		}
+		if err := k.bankKeeper.InputOutputCoins(ctx, inputs, outputs); err != nil {
+			panic(err)
+		}
+	}
+}
+
 // DistributeReward withdraws delegation rewards from all paired chunks
 // Keeper.CollectReward will be called during withdrawing process.
 func (k Keeper) DistributeReward(ctx sdk.Context) {
@@ -165,6 +212,48 @@ func (k Keeper) HandleQueuedWithdrawInsuranceRequests(ctx sdk.Context) ([]types.
 		withdrawnInsurances = append(withdrawnInsurances, insurance)
 	}
 	return withdrawnInsurances, nil
+}
+
+// GetAllRePairableChunksAndOutInsurances returns all active chunks and related insurances.
+// Active chunks are chunks which are paired or not unpairing.
+// Not unpairing chunk have no un-bonding info.
+func (k Keeper) GetAllRePairableChunksAndOutInsurances(ctx sdk.Context) (
+	rePairableChunks []types.Chunk,
+	outInsurances []types.Insurance,
+	pairedInsuranceMap map[uint64]struct{},
+	err error,
+) {
+	pairedInsuranceMap = make(map[uint64]struct{})
+	if err = k.IterateAllChunks(ctx, func(chunk types.Chunk) (bool, error) {
+		switch chunk.Status {
+		case types.CHUNK_STATUS_UNPAIRING:
+			insurance, found := k.GetInsurance(ctx, chunk.UnpairingInsuranceId)
+			if !found {
+				return false, sdkerrors.Wrapf(types.ErrNotFoundInsurance, "insurance id: %d", chunk.UnpairingInsuranceId)
+			}
+			_, found = k.stakingKeeper.GetUnbondingDelegation(ctx, chunk.DerivedAddress(), insurance.GetValidator())
+			if found {
+				return false, nil
+			}
+			outInsurances = append(outInsurances, insurance)
+			rePairableChunks = append(rePairableChunks, chunk)
+		case types.CHUNK_STATUS_PAIRING:
+			rePairableChunks = append(rePairableChunks, chunk)
+		case types.CHUNK_STATUS_PAIRED:
+			insurance, found := k.GetInsurance(ctx, chunk.PairedInsuranceId)
+			if !found {
+				return false, sdkerrors.Wrapf(types.ErrNotFoundInsurance, "insurance id: %d", chunk.UnpairingInsuranceId)
+			}
+			pairedInsuranceMap[insurance.Id] = struct{}{}
+			rePairableChunks = append(rePairableChunks, chunk)
+		default:
+			return false, nil
+		}
+		return false, nil
+	}); err != nil {
+		return
+	}
+	return
 }
 
 // RankInsurances ranks insurances and returns following:
@@ -639,6 +728,69 @@ func (k Keeper) DoWithdrawInsurance(ctx sdk.Context, msg *types.MsgWithdrawInsur
 	return
 }
 
+// DoWithdrawInsuranceCommission withdraws insurance commission immediately.
+func (k Keeper) DoWithdrawInsuranceCommission(ctx sdk.Context, msg *types.MsgWithdrawInsuranceCommission) (err error) {
+	providerAddr := msg.GetProvider()
+	insuranceId := msg.Id
+
+	// Check if the insurance exists
+	insurance, found := k.GetPairingInsurance(ctx, insuranceId)
+	if !found {
+		err = sdkerrors.Wrapf(types.ErrPairingInsuranceNotFound, "insurance id: %d", insuranceId)
+		return
+	}
+
+	// Check if the provider is the same
+	if insurance.ProviderAddress != providerAddr.String() {
+		err = sdkerrors.Wrapf(types.ErrNotProviderOfInsurance, "insurance id: %d", insuranceId)
+		return
+	}
+
+	// Get all balances of the insurance
+	balances := k.bankKeeper.GetAllBalances(ctx, insurance.FeePoolAddress())
+	inputs := []banktypes.Input{
+		banktypes.NewInput(insurance.FeePoolAddress(), balances),
+	}
+	outputs := []banktypes.Output{
+		banktypes.NewOutput(providerAddr, balances),
+	}
+	if err = k.bankKeeper.InputOutputCoins(ctx, inputs, outputs); err != nil {
+		return
+	}
+	return
+}
+
+// DoDepositInsurance deposits more coin to insurance.
+func (k Keeper) DoDepositInsurance(ctx sdk.Context, msg *types.MsgDepositInsurance) (err error) {
+	providerAddr := msg.GetProvider()
+	insuranceId := msg.Id
+	amount := msg.Amount
+
+	// Check if the insurance exists
+	insurance, found := k.GetPairingInsurance(ctx, insuranceId)
+	if !found {
+		err = sdkerrors.Wrapf(types.ErrPairingInsuranceNotFound, "insurance id: %d", insuranceId)
+		return
+	}
+
+	// Check if the provider is the same
+	if insurance.ProviderAddress != providerAddr.String() {
+		err = sdkerrors.Wrapf(types.ErrNotProviderOfInsurance, "insurance id: %d", insuranceId)
+		return
+	}
+
+	// Escrow provider's balance
+	if err = k.bankKeeper.SendCoins(
+		ctx,
+		providerAddr,
+		insurance.DerivedAddress(),
+		sdk.NewCoins(amount),
+	); err != nil {
+		return
+	}
+	return
+}
+
 func (k Keeper) SetLiquidBondDenom(ctx sdk.Context, denom string) {
 	store := ctx.KVStore(k.storeKey)
 	store.Set(types.KeyLiquidBondDenom, []byte(denom))
@@ -647,53 +799,6 @@ func (k Keeper) SetLiquidBondDenom(ctx sdk.Context, denom string) {
 func (k Keeper) GetLiquidBondDenom(ctx sdk.Context) string {
 	store := ctx.KVStore(k.storeKey)
 	return string(store.Get(types.KeyLiquidBondDenom))
-}
-
-// CollectReward collects reward of chunk and
-// distribute to reward module account and insurance
-// 1. Send commission to insurance based on chunk reward
-// 2. Send rest of rewards to reward module account
-func (k Keeper) CollectReward(ctx sdk.Context, chunk types.Chunk, insurance types.Insurance) {
-	delegationRewards := k.bankKeeper.GetAllBalances(ctx, chunk.DerivedAddress())
-	insuranceCommissions := make(sdk.Coins, delegationRewards.Len())
-	pureRewards := make(sdk.Coins, delegationRewards.Len())
-	for i, delReward := range delegationRewards {
-		insuranceCommission := delReward.Amount.ToDec().Mul(insurance.FeeRate).TruncateInt()
-		insuranceCommissions[i] = sdk.NewCoin(
-			delReward.Denom,
-			insuranceCommission,
-		)
-		pureRewards[i] = sdk.NewCoin(
-			delReward.Denom,
-			delReward.Amount.Sub(insuranceCommission),
-		)
-	}
-
-	if pureRewards.Len() == 1 {
-		inputs := []banktypes.Input{
-			banktypes.NewInput(chunk.DerivedAddress(), sdk.Coins{insuranceCommissions[0]}),
-			banktypes.NewInput(chunk.DerivedAddress(), sdk.Coins{pureRewards[0]}),
-		}
-		outputs := []banktypes.Output{
-			banktypes.NewOutput(insurance.FeePoolAddress(), sdk.Coins{insuranceCommissions[0]}),
-			banktypes.NewOutput(types.RewardPool, sdk.Coins{pureRewards[0]}),
-		}
-		if err := k.bankKeeper.InputOutputCoins(ctx, inputs, outputs); err != nil {
-			panic(err)
-		}
-	} else {
-		inputs := []banktypes.Input{
-			banktypes.NewInput(chunk.DerivedAddress(), insuranceCommissions),
-			banktypes.NewInput(chunk.DerivedAddress(), pureRewards),
-		}
-		outputs := []banktypes.Output{
-			banktypes.NewOutput(insurance.FeePoolAddress(), insuranceCommissions),
-			banktypes.NewOutput(types.RewardPool, pureRewards),
-		}
-		if err := k.bankKeeper.InputOutputCoins(ctx, inputs, outputs); err != nil {
-			panic(err)
-		}
-	}
 }
 
 func (k Keeper) IsValidValidator(ctx sdk.Context, validator stakingtypes.Validator, found bool) error {
@@ -1034,67 +1139,6 @@ func (k Keeper) handlePairedChunk(ctx sdk.Context, chunk types.Chunk) error {
 	return nil
 }
 
-// GetAllRePairableChunksAndOutInsurances returns all active chunks and related insurances.
-// Active chunks are chunks which are paired or not unpairing.
-// Not unpairing chunk have no un-bonding info.
-func (k Keeper) GetAllRePairableChunksAndOutInsurances(ctx sdk.Context) (
-	rePairableChunks []types.Chunk,
-	outInsurances []types.Insurance,
-	pairedInsuranceMap map[uint64]struct{},
-	err error,
-) {
-	pairedInsuranceMap = make(map[uint64]struct{})
-	if err = k.IterateAllChunks(ctx, func(chunk types.Chunk) (bool, error) {
-		switch chunk.Status {
-		case types.CHUNK_STATUS_UNPAIRING:
-			insurance, found := k.GetInsurance(ctx, chunk.UnpairingInsuranceId)
-			if !found {
-				return false, sdkerrors.Wrapf(types.ErrNotFoundInsurance, "insurance id: %d", chunk.UnpairingInsuranceId)
-			}
-			_, found = k.stakingKeeper.GetUnbondingDelegation(ctx, chunk.DerivedAddress(), insurance.GetValidator())
-			if found {
-				return false, nil
-			}
-			outInsurances = append(outInsurances, insurance)
-			rePairableChunks = append(rePairableChunks, chunk)
-		case types.CHUNK_STATUS_PAIRING:
-			rePairableChunks = append(rePairableChunks, chunk)
-		case types.CHUNK_STATUS_PAIRED:
-			insurance, found := k.GetInsurance(ctx, chunk.PairedInsuranceId)
-			if !found {
-				return false, sdkerrors.Wrapf(types.ErrNotFoundInsurance, "insurance id: %d", chunk.UnpairingInsuranceId)
-			}
-			pairedInsuranceMap[insurance.Id] = struct{}{}
-			rePairableChunks = append(rePairableChunks, chunk)
-		default:
-			return false, nil
-		}
-		return false, nil
-	}); err != nil {
-		return
-	}
-	return
-}
-
-// withdrawInsurance withdraws insurance and commissions from insurance account immediately.
-func (k Keeper) withdrawInsurance(ctx sdk.Context, insurance types.Insurance) error {
-	insuranceTokens := k.bankKeeper.GetAllBalances(ctx, insurance.DerivedAddress())
-	commissions := k.bankKeeper.GetAllBalances(ctx, insurance.FeePoolAddress())
-	inputs := []banktypes.Input{
-		banktypes.NewInput(insurance.DerivedAddress(), insuranceTokens),
-		banktypes.NewInput(insurance.FeePoolAddress(), commissions),
-	}
-	outpus := []banktypes.Output{
-		banktypes.NewOutput(insurance.GetProvider(), insuranceTokens),
-		banktypes.NewOutput(insurance.GetProvider(), commissions),
-	}
-	if err := k.bankKeeper.InputOutputCoins(ctx, inputs, outpus); err != nil {
-		return err
-	}
-	k.DeleteInsurance(ctx, insurance.Id)
-	return nil
-}
-
 // IsSufficientInsurance checks whether insurance has sufficient balance to cover slashing or not.
 func (k Keeper) IsSufficientInsurance(ctx sdk.Context, insurance types.Insurance) bool {
 	insuranceBalance := k.bankKeeper.GetBalance(ctx, insurance.DerivedAddress(), k.stakingKeeper.BondDenom(ctx))
@@ -1124,4 +1168,23 @@ func (k Keeper) startUnpairing(ctx sdk.Context, insurance types.Insurance, chunk
 	chunk.SetStatus(types.CHUNK_STATUS_UNPAIRING)
 	k.SetChunk(ctx, chunk)
 	k.SetInsurance(ctx, insurance)
+}
+
+// withdrawInsurance withdraws insurance and commissions from insurance account immediately.
+func (k Keeper) withdrawInsurance(ctx sdk.Context, insurance types.Insurance) error {
+	insuranceTokens := k.bankKeeper.GetAllBalances(ctx, insurance.DerivedAddress())
+	commissions := k.bankKeeper.GetAllBalances(ctx, insurance.FeePoolAddress())
+	inputs := []banktypes.Input{
+		banktypes.NewInput(insurance.DerivedAddress(), insuranceTokens),
+		banktypes.NewInput(insurance.FeePoolAddress(), commissions),
+	}
+	outpus := []banktypes.Output{
+		banktypes.NewOutput(insurance.GetProvider(), insuranceTokens),
+		banktypes.NewOutput(insurance.GetProvider(), commissions),
+	}
+	if err := k.bankKeeper.InputOutputCoins(ctx, inputs, outpus); err != nil {
+		return err
+	}
+	k.DeleteInsurance(ctx, insurance.Id)
+	return nil
 }

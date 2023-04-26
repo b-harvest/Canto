@@ -53,12 +53,18 @@ func (k Keeper) CancelInsuranceProvide(goCtx context.Context, msg *types.MsgCanc
 }
 
 func (k Keeper) DepositInsurance(goCtx context.Context, msg *types.MsgDepositInsurance) (*types.MsgDepositInsuranceResponse, error) {
-	// ctx := sdk.UnwrapSDKContext(goCtx)
-	panic("implement me")
+	ctx := sdk.UnwrapSDKContext(goCtx)
+	err := k.DoDepositInsurance(ctx, msg)
+	if err != nil {
+		return nil, err
+	}
+	return &types.MsgDepositInsuranceResponse{}, nil
 }
 
 func (k Keeper) WithdrawInsurance(goCtx context.Context, msg *types.MsgWithdrawInsurance) (*types.MsgWithdrawInsuranceResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	// TODO: Publish events using returned values
 	_, err := k.DoWithdrawInsurance(ctx, msg)
 	if err != nil {
 		return nil, err
@@ -67,6 +73,10 @@ func (k Keeper) WithdrawInsurance(goCtx context.Context, msg *types.MsgWithdrawI
 }
 
 func (k Keeper) WithdrawInsuranceCommission(goCtx context.Context, msg *types.MsgWithdrawInsuranceCommission) (*types.MsgWithdrawInsuranceCommissionResponse, error) {
-	// ctx := sdk.UnwrapSDKContext(goCtx)
-	panic("implement me")
+	ctx := sdk.UnwrapSDKContext(goCtx)
+	err := k.DoWithdrawInsuranceCommission(ctx, msg)
+	if err != nil {
+		return nil, err
+	}
+	return &types.MsgWithdrawInsuranceCommissionResponse{}, nil
 }
