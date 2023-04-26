@@ -172,7 +172,7 @@ func (k Keeper) RankInsurances(ctx sdk.Context) (
 	err error,
 ) {
 	candidatesValidatorMap := make(map[string]stakingtypes.Validator)
-	activeChunks, pairedInsuranceMap, currentOutInsurances, err := k.GetAllActiveChunksAndOutInsurances(ctx)
+	activeChunks, currentOutInsurances, pairedInsuranceMap, err := k.GetAllActiveChunksAndOutInsurances(ctx)
 
 	// candidateInsurances will be ranked
 	var candidateInsurances []types.Insurance
@@ -1024,8 +1024,8 @@ func (k Keeper) handlePairedChunk(ctx sdk.Context, chunk types.Chunk) error {
 // Not unpairing chunk have no un-bonding info.
 func (k Keeper) GetAllActiveChunksAndOutInsurances(ctx sdk.Context) (
 	activeChunks []types.Chunk,
-	pairedInsuranceMap map[uint64]struct{},
 	outInsurances []types.Insurance,
+	pairedInsuranceMap map[uint64]struct{},
 	err error,
 ) {
 	pairedInsuranceMap = make(map[uint64]struct{})
@@ -1044,7 +1044,7 @@ func (k Keeper) GetAllActiveChunksAndOutInsurances(ctx sdk.Context) (
 		case types.CHUNK_STATUS_PAIRING:
 			activeChunks = append(activeChunks, chunk)
 		case types.CHUNK_STATUS_PAIRED:
-			insurance, found := k.GetInsurance(ctx, chunk.UnpairingInsuranceId)
+			insurance, found := k.GetInsurance(ctx, chunk.PairedInsuranceId)
 			if !found {
 				return false, sdkerrors.Wrapf(types.ErrNotFoundInsurance, "insurance id: %d", chunk.UnpairingInsuranceId)
 			}
