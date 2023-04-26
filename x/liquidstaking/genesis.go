@@ -9,10 +9,29 @@ import (
 // InitGenesis initializes the capability module's state from a provided genesis
 // state.
 func InitGenesis(ctx sdk.Context, k keeper.Keeper, genState types.GenesisState) {
-	k.SetLiquidBondDenom(ctx, genState.LiquidBondDenom)
+	if err := genState.Validate(); err != nil {
+		panic(err)
+	}
 	k.SetParams(ctx, genState.Params)
-	// TODO: Need to set fields of genesis (Must check exportGenesis too)
-	// and also need to add validation logic for fields. take a look Crescent InitGenesis
+	k.SetEpoch(ctx, genState.Epoch)
+	k.SetLiquidBondDenom(ctx, genState.LiquidBondDenom)
+	k.SetLastChunkId(ctx, genState.LastChunkId)
+	k.SetLastInsuranceId(ctx, genState.LastInsuranceId)
+	for _, chunk := range genState.Chunks {
+		k.SetChunk(ctx, chunk)
+	}
+	for _, insurance := range genState.Insurances {
+		k.SetInsurance(ctx, insurance)
+	}
+	for _, pendingLiquidUnstake := range genState.PendingLiquidUnstakes {
+		k.SetPendingLiquidUnstake(ctx, pendingLiquidUnstake)
+	}
+	for _, unpairingForUnstakeChunkInfo := range genState.UnpairingForUnstakeChunkInfos {
+		k.SetUnpairingForUnstakeChunkInfo(ctx, unpairingForUnstakeChunkInfo)
+	}
+	for _, request := range genState.WithdrawInsuranceRequests {
+		k.SetWithdrawInsuranceRequest(ctx, request)
+	}
 }
 
 // ExportGenesis returns the capability module's exported genesis.

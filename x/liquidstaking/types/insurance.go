@@ -2,6 +2,7 @@ package types
 
 import (
 	"fmt"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"sort"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -81,4 +82,14 @@ func (i *Insurance) Equal(other Insurance) bool {
 
 func (i *Insurance) SetStatus(status InsuranceStatus) {
 	i.Status = status
+}
+
+func (i *Insurance) Validate(lastInsuranceId uint64) error {
+	if i.Id > lastInsuranceId {
+		return sdkerrors.Wrapf(ErrInvalidInsuranceId, "insurance id must be %d or less", lastInsuranceId)
+	}
+	if i.Status == INSURANCE_STATUS_UNSPECIFIED {
+		return ErrInvalidInsuranceStatus
+	}
+	return nil
 }
