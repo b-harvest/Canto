@@ -313,6 +313,7 @@ func (k Keeper) RePairRankedInsurances(
 		chunk.UnpairingInsuranceId = outInsurance.Id
 		chunk.PairedInsuranceId = newInsurance.Id
 		chunk.SetStatus(types.CHUNK_STATUS_PAIRED)
+		k.SetChunk(ctx, chunk)
 	}
 	return
 }
