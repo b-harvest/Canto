@@ -58,8 +58,12 @@ func (k Keeper) DepositInsurance(goCtx context.Context, msg *types.MsgDepositIns
 }
 
 func (k Keeper) WithdrawInsurance(goCtx context.Context, msg *types.MsgWithdrawInsurance) (*types.MsgWithdrawInsuranceResponse, error) {
-	// ctx := sdk.UnwrapSDKContext(goCtx)
-	panic("implement me")
+	ctx := sdk.UnwrapSDKContext(goCtx)
+	_, err := k.DoWithdrawInsurance(ctx, msg)
+	if err != nil {
+		return nil, err
+	}
+	return &types.MsgWithdrawInsuranceResponse{}, nil
 }
 
 func (k Keeper) WithdrawInsuranceCommission(goCtx context.Context, msg *types.MsgWithdrawInsuranceCommission) (*types.MsgWithdrawInsuranceCommissionResponse, error) {

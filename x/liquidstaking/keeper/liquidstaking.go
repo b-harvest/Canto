@@ -41,6 +41,7 @@ func (k Keeper) DistributeReward(ctx sdk.Context) {
 	}
 }
 
+// CoverSlashingAndHandleMatureUnbondings covers slashing and handles mature unbondings.
 func (k Keeper) CoverSlashingAndHandleMatureUnbondings(ctx sdk.Context) {
 	var err error
 	err = k.IterateAllChunks(ctx, func(chunk types.Chunk) (bool, error) {
@@ -166,6 +167,12 @@ func (k Keeper) HandleQueuedWithdrawInsuranceRequests(ctx sdk.Context) ([]types.
 	return withdrawnInsurances, nil
 }
 
+// RankInsurances ranks insurances and returns following:
+// 1. newly ranked insurances
+// - rank in insurance which is not paired currently
+// - no change is needed for already ranked in and paired insurances
+// 2. Ranked out insurances
+// - current unpairing insurances + paired insurances which is failed to rank in
 func (k Keeper) RankInsurances(ctx sdk.Context) (
 	newlyRankedInInsurances []types.Insurance,
 	rankOutInsurances []types.Insurance,
@@ -223,6 +230,7 @@ func (k Keeper) RankInsurances(ctx sdk.Context) (
 	return
 }
 
+// RePairRankedInsurances re-pairs ranked insurances.
 func (k Keeper) RePairRankedInsurances(
 	ctx sdk.Context,
 	newlyRankedInInsurances,
@@ -1068,13 +1076,19 @@ func (k Keeper) GetAllRePairableChunksAndOutInsurances(ctx sdk.Context) (
 	return
 }
 
+// withdrawInsurance withdraws insurance and commissions from insurance account immediately.
 func (k Keeper) withdrawInsurance(ctx sdk.Context, insurance types.Insurance) error {
 	insuranceTokens := k.bankKeeper.GetAllBalances(ctx, insurance.DerivedAddress())
-	if err := k.bankKeeper.SendCoins(ctx, insurance.DerivedAddress(), insurance.GetProvider(), insuranceTokens); err != nil {
-		return err
-	}
 	commissions := k.bankKeeper.GetAllBalances(ctx, insurance.FeePoolAddress())
-	if err := k.bankKeeper.SendCoins(ctx, insurance.DerivedAddress(), insurance.GetProvider(), commissions); err != nil {
+	inputs := []banktypes.Input{
+		banktypes.NewInput(insurance.DerivedAddress(), insuranceTokens),
+		banktypes.NewInput(insurance.FeePoolAddress(), commissions),
+	}
+	outpus := []banktypes.Output{
+		banktypes.NewOutput(insurance.GetProvider(), insuranceTokens),
+		banktypes.NewOutput(insurance.GetProvider(), commissions),
+	}
+	if err := k.bankKeeper.InputOutputCoins(ctx, inputs, outpus); err != nil {
 		return err
 	}
 	k.DeleteInsurance(ctx, insurance.Id)
