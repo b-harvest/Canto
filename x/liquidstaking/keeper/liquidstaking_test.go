@@ -59,6 +59,7 @@ func (suite *KeeperTestSuite) provideInsurances(
 	valAddrs []sdk.ValAddress,
 	amounts []sdk.Coin,
 	fixedFeeRate sdk.Dec,
+	feeRates []sdk.Dec,
 ) []types.Insurance {
 	s := rand.NewSource(0)
 	r := rand.New(s)
@@ -70,6 +71,8 @@ func (suite *KeeperTestSuite) provideInsurances(
 		msg.ValidatorAddress = valAddrs[i%valNum].String()
 		if fixedFeeRate.IsPositive() {
 			msg.FeeRate = fixedFeeRate
+		} else if feeRates != nil && len(feeRates) > 0 {
+			msg.FeeRate = feeRates[i]
 		} else {
 			// 1 ~ 10% insurance fee
 			msg.FeeRate = sdk.NewDecWithPrec(int64(simulation.RandIntBetween(r, 1, 10)), 2)
@@ -150,11 +153,11 @@ func (suite *KeeperTestSuite) TestInsuranceProvide() {
 func (suite *KeeperTestSuite) TestLiquidStakeSuccess() {
 	suite.resetEpochs()
 	valAddrs := suite.CreateValidators([]int64{10, 10, 10})
-	minimumRequirement, minimumCoverage := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
-	providers, balances := suite.AddTestAddrs(10, minimumCoverage.Amount)
-	suite.provideInsurances(providers, valAddrs, balances, sdk.ZeroDec())
+	oneChunk, oneInsurance := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
+	providers, balances := suite.AddTestAddrs(10, oneInsurance.Amount)
+	suite.provideInsurances(providers, valAddrs, balances, sdk.ZeroDec(), nil)
 
-	delegators, balances := suite.AddTestAddrs(10, minimumRequirement.Amount)
+	delegators, balances := suite.AddTestAddrs(10, oneChunk.Amount)
 	nas := suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
 
 	liquidBondDenom := suite.app.LiquidStakingKeeper.GetLiquidBondDenom(suite.ctx)
@@ -201,7 +204,7 @@ func (suite *KeeperTestSuite) TestLiquidStakeFail() {
 	suite.ErrorContains(err, types.ErrNoPairingInsurance.Error())
 
 	providers, providerBalances := suite.AddTestAddrs(10, minimumCoverage.Amount)
-	suite.provideInsurances(providers, valAddrs, providerBalances, sdk.ZeroDec())
+	suite.provideInsurances(providers, valAddrs, providerBalances, sdk.ZeroDec(), nil)
 
 	// TC: Not enough amount to liquid stake
 	// acc1 tries to liquid stake 2 * ChunkSize tokens, but he has only ChunkSize tokens
@@ -251,7 +254,7 @@ func (suite *KeeperTestSuite) TestLiquidStakeWithAdvanceBlocks() {
 	oneChunk, oneInsurance := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
 	providers, providerBalances := suite.AddTestAddrs(10, oneInsurance.Amount)
 	fixedInsuranceFeeRate := sdk.NewDecWithPrec(10, 2)
-	suite.provideInsurances(providers, valAddrs, providerBalances, fixedInsuranceFeeRate)
+	suite.provideInsurances(providers, valAddrs, providerBalances, fixedInsuranceFeeRate, nil)
 
 	// 3 delegators
 	delegators, delegatorBalances := suite.AddTestAddrs(3, oneChunk.Amount)
@@ -356,7 +359,7 @@ func (suite *KeeperTestSuite) TestLiquidUnstakeWithAdvanceBlocks() {
 	oneChunk, oneInsurance := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
 	providers, providerBalances := suite.AddTestAddrs(10, oneInsurance.Amount)
 	fixedInsuranceFeeRate := sdk.NewDecWithPrec(10, 2)
-	suite.provideInsurances(providers, valAddrs, providerBalances, fixedInsuranceFeeRate)
+	suite.provideInsurances(providers, valAddrs, providerBalances, fixedInsuranceFeeRate, nil)
 
 	// 3 delegators
 	delegators, delegatorBalances := suite.AddTestAddrs(3, oneChunk.Amount)
@@ -591,7 +594,7 @@ func (suite *KeeperTestSuite) TestLiquidUnstakeFail() {
 	valAddrs := suite.CreateValidators([]int64{10, 10, 10})
 	minimumRequirement, minimumCoverage := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
 	providers, providerBalances := suite.AddTestAddrs(10, minimumCoverage.Amount)
-	suite.provideInsurances(providers, valAddrs, providerBalances, sdk.ZeroDec())
+	suite.provideInsurances(providers, valAddrs, providerBalances, sdk.ZeroDec(), nil)
 
 	// Now we have 1 paired chunks
 	delegators, delegatorBalances := suite.AddTestAddrs(3, minimumRequirement.Amount)
@@ -636,7 +639,7 @@ func (suite *KeeperTestSuite) TestCancelInsuranceProvideSuccess() {
 	valAddrs := suite.CreateValidators([]int64{10, 10, 10})
 	_, minimumCoverage := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
 	providers, balances := suite.AddTestAddrs(10, minimumCoverage.Amount)
-	insurances := suite.provideInsurances(providers, valAddrs, balances, sdk.ZeroDec())
+	insurances := suite.provideInsurances(providers, valAddrs, balances, sdk.ZeroDec(), nil)
 
 	provider := providers[0]
 	insurance := insurances[0]
@@ -654,7 +657,7 @@ func (suite *KeeperTestSuite) TestCancelInsuranceProvideFail() {
 	valAddrs := suite.CreateValidators([]int64{10, 10, 10})
 	minimumRequirement, minimumCoverage := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
 	providers, balances := suite.AddTestAddrs(10, minimumCoverage.Amount)
-	suite.provideInsurances(providers, valAddrs, balances, sdk.ZeroDec())
+	suite.provideInsurances(providers, valAddrs, balances, sdk.ZeroDec(), nil)
 
 	// TC: No insurance to cancel
 	var notExistingInsuranceId uint64 = 9999
@@ -680,6 +683,28 @@ func (suite *KeeperTestSuite) TestCancelInsuranceProvideFail() {
 		types.NewMsgCancelInsuranceProvide(insurance.ProviderAddress, insurance.Id),
 	)
 	suite.ErrorIs(err, types.ErrPairingInsuranceNotFound, "only pairing insurances can be canceled")
+}
+
+func (suite *KeeperTestSuite) TestRankInsurances() {
+	// SETUP TEST ---------------------------------------------------
+	suite.resetEpochs()
+	// 3 validators we have
+	valAddrs := suite.CreateValidators([]int64{10, 10, 10})
+	oneChunk, oneInsurance := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
+	providers, providerBalances := suite.AddTestAddrs(3, oneInsurance.Amount)
+	// 3 insurances (insurance fee rates are all same)
+	_ = suite.provideInsurances(providers, valAddrs, providerBalances, sdk.NewDecWithPrec(10, 2), nil)
+	// 3 delegators
+	delegators, delegatorBalances := suite.AddTestAddrs(3, oneChunk.Amount)
+	// liquid stakes 3 chunks
+	suite.liquidStakes(delegators, delegatorBalances)
+	// ---------------------------------------------------
+
+	// INITIAL STATE: all paired chunks are working fine and there are no additional insurances yet
+	newlyRankedInInsurances, rankOutInsurances, err := suite.app.LiquidStakingKeeper.RankInsurances(suite.ctx)
+	suite.NoError(err)
+	suite.Len(newlyRankedInInsurances, 0)
+	suite.Len(rankOutInsurances, 0)
 }
 
 func (suite *KeeperTestSuite) getUnitDistribution(
