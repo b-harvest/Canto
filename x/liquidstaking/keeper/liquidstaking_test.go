@@ -692,8 +692,12 @@ func (suite *KeeperTestSuite) TestRankInsurances() {
 	valAddrs := suite.CreateValidators([]int64{10, 10, 10})
 	oneChunk, oneInsurance := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
 	providers, providerBalances := suite.AddTestAddrs(3, oneInsurance.Amount)
-	// 3 insurances (insurance fee rates are all same)
-	_ = suite.provideInsurances(providers, valAddrs, providerBalances, sdk.NewDecWithPrec(10, 2), nil)
+	// 3 insurances (insurance fee rates are all same as 10%)
+	insurances := suite.provideInsurances(providers, valAddrs, providerBalances, sdk.NewDecWithPrec(10, 2), nil)
+	var idsOfPairedInsurances []uint64
+	for _, insurance := range insurances {
+		idsOfPairedInsurances = append(idsOfPairedInsurances, insurance.Id)
+	}
 	// 3 delegators
 	delegators, delegatorBalances := suite.AddTestAddrs(3, oneChunk.Amount)
 	// liquid stakes 3 chunks
@@ -705,6 +709,50 @@ func (suite *KeeperTestSuite) TestRankInsurances() {
 	suite.NoError(err)
 	suite.Len(newlyRankedInInsurances, 0)
 	suite.Len(rankOutInsurances, 0)
+
+	suite.advanceHeight(1, "")
+
+	// Cheap insurances which are competitive than current paired insurances are provided
+	otherProviders, otherProviderBalances := suite.AddTestAddrs(3, oneInsurance.Amount)
+	newInsurances := suite.provideInsurances(
+		otherProviders,
+		valAddrs,
+		otherProviderBalances,
+		sdk.ZeroDec(),
+		// fee rates(1~3%) of new insurances are all lower than current paired insurances (10%)
+		[]sdk.Dec{sdk.NewDecWithPrec(1, 2), sdk.NewDecWithPrec(2, 2), sdk.NewDecWithPrec(3, 2)},
+	)
+	var idsOfNewInsurances []uint64
+	for _, insurance := range newInsurances {
+		idsOfNewInsurances = append(idsOfNewInsurances, insurance.Id)
+	}
+
+	newlyRankedInInsurances, rankOutInsurances, err = suite.app.LiquidStakingKeeper.RankInsurances(suite.ctx)
+	suite.NoError(err)
+	suite.Len(newlyRankedInInsurances, 3)
+	suite.Len(rankOutInsurances, 3)
+	// make sure idsOfNewInsurances are all in newlyRankedInInsurances
+	for _, id := range idsOfNewInsurances {
+		found := false
+		for _, newlyRankedInInsurance := range newlyRankedInInsurances {
+			if newlyRankedInInsurance.Id == id {
+				found = true
+				break
+			}
+		}
+		suite.True(found)
+	}
+	// make sure idsOfPairedInsurances are all in rankOutInsurances
+	for _, id := range idsOfPairedInsurances {
+		found := false
+		for _, rankOutInsurance := range rankOutInsurances {
+			if rankOutInsurance.Id == id {
+				found = true
+				break
+			}
+		}
+		suite.True(found)
+	}
 }
 
 func (suite *KeeperTestSuite) getUnitDistribution(
