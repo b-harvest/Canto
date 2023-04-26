@@ -172,7 +172,7 @@ func (k Keeper) RankInsurances(ctx sdk.Context) (
 	err error,
 ) {
 	candidatesValidatorMap := make(map[string]stakingtypes.Validator)
-	activeChunks, currentOutInsurances, pairedInsuranceMap, err := k.GetAllActiveChunksAndOutInsurances(ctx)
+	rePairableChunks, currentOutInsurances, pairedInsuranceMap, err := k.GetAllRePairableChunksAndOutInsurances(ctx)
 
 	// candidateInsurances will be ranked
 	var candidateInsurances []types.Insurance
@@ -207,8 +207,8 @@ func (k Keeper) RankInsurances(ctx sdk.Context) (
 	}
 
 	types.SortInsurances(candidatesValidatorMap, candidateInsurances, false)
-	rankInInsurances := candidateInsurances[:len(activeChunks)]
-	for _, insurance := range candidateInsurances[len(activeChunks):] {
+	rankInInsurances := candidateInsurances[:len(rePairableChunks)]
+	for _, insurance := range candidateInsurances[len(rePairableChunks):] {
 		if insurance.Status == types.INSURANCE_STATUS_PAIRED {
 			rankOutInsurances = append(rankOutInsurances, insurance)
 		}
@@ -237,9 +237,9 @@ func (k Keeper) RePairRankedInsurances(
 		rankOutInsuranceChunkMap[outInsurance.Id] = chunk
 	}
 
-	// newlyInInsurances will be replaced by re-delegate
+	// newInsurancesWithDifferentValidators will be replaced by re-delegate
 	// because there are no rankout insurances which have same validator
-	var newlyInInsurances []types.Insurance
+	var newInsurancesWithDifferentValidators []types.Insurance
 	// Short circuit
 	// Try to replace outInsurance with inInsurance which has same validator.
 	for _, newRankInInsurance := range newlyRankedInInsurances {
@@ -254,6 +254,7 @@ func (k Keeper) RePairRankedInsurances(
 				}
 				chunk.PairedInsuranceId = newRankInInsurance.Id
 				chunk.UnpairingInsuranceId = outInsurance.Id
+				chunk.SetStatus(types.CHUNK_STATUS_PAIRED)
 				k.SetChunk(ctx, chunk)
 				hasSameValidator = true
 				// Remove already checked outInsurance
@@ -262,13 +263,13 @@ func (k Keeper) RePairRankedInsurances(
 			}
 		}
 		if !hasSameValidator {
-			newlyInInsurances = append(newlyInInsurances, newRankInInsurance)
+			newInsurancesWithDifferentValidators = append(newInsurancesWithDifferentValidators, newRankInInsurance)
 		}
 	}
 
-	// rest of rankOutInsurances are replaced with newlyInInsurances
+	// rest of rankOutInsurances are replaced with newInsurancesWithDifferentValidators
 	for _, outInsurance := range rankOutInsurances {
-		if len(newlyInInsurances) == 0 {
+		if len(newInsurancesWithDifferentValidators) == 0 {
 			// TODO: Start unpairing
 			chunk, found := k.GetChunk(ctx, outInsurance.ChunkId)
 			if !found {
@@ -290,7 +291,9 @@ func (k Keeper) RePairRankedInsurances(
 			continue
 		}
 
-		newInsurance := newlyInInsurances[0] // Cheapest insurance
+		// Poop cheapest insurance
+		newInsurance := newInsurancesWithDifferentValidators[0]
+		newInsurancesWithDifferentValidators = newInsurancesWithDifferentValidators[1:]
 		chunk := rankOutInsuranceChunkMap[outInsurance.Id]
 
 		// get delegation shares of srcValidator
@@ -307,6 +310,9 @@ func (k Keeper) RePairRankedInsurances(
 		); err != nil {
 			panic(err)
 		}
+		chunk.UnpairingInsuranceId = outInsurance.Id
+		chunk.PairedInsuranceId = newInsurance.Id
+		chunk.SetStatus(types.CHUNK_STATUS_PAIRED)
 	}
 	return
 }
@@ -1019,11 +1025,11 @@ func (k Keeper) handlePairedChunk(ctx sdk.Context, chunk types.Chunk) error {
 	return nil
 }
 
-// GetAllActiveChunksAndOutInsurances returns all active chunks and related insurances.
+// GetAllRePairableChunksAndOutInsurances returns all active chunks and related insurances.
 // Active chunks are chunks which are paired or not unpairing.
 // Not unpairing chunk have no un-bonding info.
-func (k Keeper) GetAllActiveChunksAndOutInsurances(ctx sdk.Context) (
-	activeChunks []types.Chunk,
+func (k Keeper) GetAllRePairableChunksAndOutInsurances(ctx sdk.Context) (
+	rePairableChunks []types.Chunk,
 	outInsurances []types.Insurance,
 	pairedInsuranceMap map[uint64]struct{},
 	err error,
@@ -1041,15 +1047,16 @@ func (k Keeper) GetAllActiveChunksAndOutInsurances(ctx sdk.Context) (
 				return false, nil
 			}
 			outInsurances = append(outInsurances, insurance)
+			rePairableChunks = append(rePairableChunks, chunk)
 		case types.CHUNK_STATUS_PAIRING:
-			activeChunks = append(activeChunks, chunk)
+			rePairableChunks = append(rePairableChunks, chunk)
 		case types.CHUNK_STATUS_PAIRED:
 			insurance, found := k.GetInsurance(ctx, chunk.PairedInsuranceId)
 			if !found {
 				return false, sdkerrors.Wrapf(types.ErrNotFoundInsurance, "insurance id: %d", chunk.UnpairingInsuranceId)
 			}
 			pairedInsuranceMap[insurance.Id] = struct{}{}
-			activeChunks = append(activeChunks, chunk)
+			rePairableChunks = append(rePairableChunks, chunk)
 		default:
 			return false, nil
 		}
