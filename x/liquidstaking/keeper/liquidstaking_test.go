@@ -755,6 +755,49 @@ func (suite *KeeperTestSuite) TestRankInsurances() {
 	}
 }
 
+func (suite *KeeperTestSuite) TestEndBlocker() {
+	// SETUP TEST ---------------------------------------------------
+	suite.resetEpochs()
+	// 3 validators we have
+	valAddrs := suite.CreateValidators([]int64{10, 10, 10})
+	oneChunk, oneInsurance := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
+	providers, providerBalances := suite.AddTestAddrs(3, oneInsurance.Amount)
+	// 3 insurances (insurance fee rates are all same as 10%)
+	insurances := suite.provideInsurances(providers, valAddrs, providerBalances, sdk.NewDecWithPrec(10, 2), nil)
+	var idsOfPairedInsurances []uint64
+	for _, insurance := range insurances {
+		idsOfPairedInsurances = append(idsOfPairedInsurances, insurance.Id)
+	}
+	// 3 delegators
+	delegators, delegatorBalances := suite.AddTestAddrs(3, oneChunk.Amount)
+	// liquid stakes 3 chunks
+	suite.liquidStakes(delegators, delegatorBalances)
+	// ---------------------------------------------------
+
+	// Queue withdraw insurance request
+	toBeWithdrawnInsurance, _ := suite.app.LiquidStakingKeeper.GetInsurance(suite.ctx, insurances[0].Id)
+	chunkToBeUnpairing, _ := suite.app.LiquidStakingKeeper.GetChunk(suite.ctx, toBeWithdrawnInsurance.ChunkId)
+	_, err := suite.app.LiquidStakingKeeper.DoWithdrawInsurance(
+		suite.ctx,
+		types.NewMsgWithdrawInsurance(
+			toBeWithdrawnInsurance.ProviderAddress,
+			toBeWithdrawnInsurance.Id,
+		),
+	)
+	suite.NoError(err)
+	suite.advanceEpoch()
+	suite.advanceHeight(1, "queued withdraw insurance request is handled and there are no additional insurances yet so unpairing triggered")
+
+	// Check unbonding obj exists
+	unbondingObj, found := suite.app.StakingKeeper.GetUnbondingDelegation(
+		suite.ctx,
+		chunkToBeUnpairing.DerivedAddress(),
+		toBeWithdrawnInsurance.GetValidator(),
+	)
+	suite.True(found)
+	suite.Equal(toBeWithdrawnInsurance.GetValidator().String(), unbondingObj.ValidatorAddress)
+}
+
 func (suite *KeeperTestSuite) getUnitDistribution(
 	unitDelegationRewardPerEpoch sdk.Int,
 	fixedInsuranceFeeRate sdk.Dec,

@@ -303,8 +303,15 @@ func (k Keeper) RankInsurances(ctx sdk.Context) (
 	}
 
 	types.SortInsurances(candidatesValidatorMap, candidateInsurances, false)
-	rankInInsurances := candidateInsurances[:len(rePairableChunks)]
-	for _, insurance := range candidateInsurances[len(rePairableChunks):] {
+	var rankInInsurances []types.Insurance
+	if len(rePairableChunks) > len(candidateInsurances) {
+		rankInInsurances = candidateInsurances
+	} else {
+		rankInInsurances = candidateInsurances[:len(rePairableChunks)]
+		rankOutInsurances = candidateInsurances[len(rePairableChunks):]
+	}
+
+	for _, insurance := range rankOutInsurances {
 		if insurance.Status == types.INSURANCE_STATUS_PAIRED {
 			rankOutInsurances = append(rankOutInsurances, insurance)
 		}
@@ -704,7 +711,7 @@ func (k Keeper) DoCancelInsuranceProvide(ctx sdk.Context, msg *types.MsgCancelIn
 // If it is paired then it will be queued and unpaired at the epoch.
 func (k Keeper) DoWithdrawInsurance(ctx sdk.Context, msg *types.MsgWithdrawInsurance) (withdrawnInsurance types.Insurance, err error) {
 	// Get insurance
-	insurance, found := k.GetPairingInsurance(ctx, msg.Id)
+	insurance, found := k.GetInsurance(ctx, msg.Id)
 	if !found {
 		err = sdkerrors.Wrapf(types.ErrPairingInsuranceNotFound, "insurance id: %d", msg.Id)
 		return
