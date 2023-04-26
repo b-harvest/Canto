@@ -45,6 +45,7 @@ func (gs GenesisState) Validate() error {
 		return err
 	}
 	if err := gs.Epoch.Validate(); err != nil {
+		return err
 	}
 	if gs.LastChunkId < 0 {
 		return ErrInvalidLastChunkId

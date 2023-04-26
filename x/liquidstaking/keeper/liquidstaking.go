@@ -278,7 +278,6 @@ func (k Keeper) RankInsurances(ctx sdk.Context) (
 			insurance.Status != types.INSURANCE_STATUS_PAIRING {
 			return false, nil
 		}
-		candidateInsurances = append(candidateInsurances, insurance)
 
 		if _, ok := candidatesValidatorMap[insurance.ValidatorAddress]; !ok {
 			validator, found := k.stakingKeeper.GetValidator(ctx, insurance.GetValidator())
@@ -297,6 +296,7 @@ func (k Keeper) RankInsurances(ctx sdk.Context) (
 			}
 			candidatesValidatorMap[insurance.ValidatorAddress] = validator
 		}
+		candidateInsurances = append(candidateInsurances, insurance)
 		return false, nil
 	}); err != nil {
 		return
@@ -358,11 +358,13 @@ func (k Keeper) RePairRankedInsurances(
 					panic("chunk not found")
 				}
 				chunk.PairedInsuranceId = newRankInInsurance.Id
+				// TODO: outInsurance is removed at next epoch? and also it covers penalty if slashing happened after?
 				chunk.UnpairingInsuranceId = outInsurance.Id
 				chunk.SetStatus(types.CHUNK_STATUS_PAIRED)
 				k.SetChunk(ctx, chunk)
 				hasSameValidator = true
 				// Remove already checked outInsurance
+				// TODO: Is this ok to fix array in during for loop?
 				rankOutInsurances = append(rankOutInsurances[:oi], rankOutInsurances[oi+1:]...)
 				break
 			}
@@ -372,10 +374,8 @@ func (k Keeper) RePairRankedInsurances(
 		}
 	}
 
-	// rest of rankOutInsurances are replaced with newInsurancesWithDifferentValidators
-	for _, outInsurance := range rankOutInsurances {
-		if len(newInsurancesWithDifferentValidators) == 0 {
-			// TODO: Start unpairing
+	if len(newInsurancesWithDifferentValidators) == 0 {
+		for _, outInsurance := range rankOutInsurances {
 			chunk, found := k.GetChunk(ctx, outInsurance.ChunkId)
 			if !found {
 				err = sdkerrors.Wrapf(types.ErrNotFoundChunk, "chunkId: %d", outInsurance.ChunkId)
@@ -395,10 +395,14 @@ func (k Keeper) RePairRankedInsurances(
 			}
 			continue
 		}
+		return
+	}
 
+	// rest of rankOutInsurances are replaced with newInsurancesWithDifferentValidators
+	for _, outInsurance := range rankOutInsurances {
 		// Pop cheapest insurance
 		newInsurance := newInsurancesWithDifferentValidators[0]
-		newInsurancesWithDifferentValidators = newInsurancesWithDifferentValidators[1:]
+		newInsurancesWithDifferentValidators = newInsurancesWithDifferentValidators[1:] // TODO: check out of index can be happen or not
 		chunk := rankOutInsuranceChunkMap[outInsurance.Id]
 
 		// get delegation shares of srcValidator
