@@ -639,7 +639,7 @@ func (k Keeper) QueueLiquidUnstake(ctx sdk.Context, msg *types.MsgLiquidUnstake)
 	return
 }
 
-func (k Keeper) DoInsuranceProvide(ctx sdk.Context, msg *types.MsgInsuranceProvide) (insurance types.Insurance, err error) {
+func (k Keeper) DoProvideInsurance(ctx sdk.Context, msg *types.MsgProvideInsurance) (insurance types.Insurance, err error) {
 	providerAddr := msg.GetProvider()
 	valAddr := msg.GetValidator()
 	feeRate := msg.FeeRate
@@ -679,7 +679,7 @@ func (k Keeper) DoInsuranceProvide(ctx sdk.Context, msg *types.MsgInsuranceProvi
 	return
 }
 
-func (k Keeper) DoCancelInsuranceProvide(ctx sdk.Context, msg *types.MsgCancelInsuranceProvide) (insurance types.Insurance, err error) {
+func (k Keeper) DoCancelProvideInsurance(ctx sdk.Context, msg *types.MsgCancelProvideInsurance) (insurance types.Insurance, err error) {
 	providerAddr := msg.GetProvider()
 	insuranceId := msg.Id
 

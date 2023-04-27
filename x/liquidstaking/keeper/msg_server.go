@@ -30,26 +30,26 @@ func (k Keeper) LiquidUnstake(goCtx context.Context, msg *types.MsgLiquidUnstake
 	return &types.MsgLiquidUnstakeResponse{}, nil
 }
 
-func (k Keeper) InsuranceProvide(goCtx context.Context, msg *types.MsgInsuranceProvide) (*types.MsgInsuranceProvideResponse, error) {
+func (k Keeper) ProvideInsurance(goCtx context.Context, msg *types.MsgProvideInsurance) (*types.MsgProvideInsuranceResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	// TODO: Publish events using returned values
-	_, err := k.DoInsuranceProvide(ctx, msg)
+	_, err := k.DoProvideInsurance(ctx, msg)
 	if err != nil {
 		return nil, err
 	}
-	return &types.MsgInsuranceProvideResponse{}, nil
+	return &types.MsgProvideInsuranceResponse{}, nil
 }
 
-func (k Keeper) CancelInsuranceProvide(goCtx context.Context, msg *types.MsgCancelInsuranceProvide) (*types.MsgCancelInsuranceProvideResponse, error) {
+func (k Keeper) CancelProvideInsurance(goCtx context.Context, msg *types.MsgCancelProvideInsurance) (*types.MsgCancelProvideInsuranceResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	// TODO: Publish events using returned values
-	_, err := k.DoCancelInsuranceProvide(ctx, msg)
+	_, err := k.DoCancelProvideInsurance(ctx, msg)
 	if err != nil {
 		return nil, err
 	}
-	return &types.MsgCancelInsuranceProvideResponse{}, nil
+	return &types.MsgCancelProvideInsuranceResponse{}, nil
 }
 
 func (k Keeper) DepositInsurance(goCtx context.Context, msg *types.MsgDepositInsurance) (*types.MsgDepositInsuranceResponse, error) {

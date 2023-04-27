@@ -67,7 +67,7 @@ func (suite *KeeperTestSuite) provideInsurances(
 	valNum := len(valAddrs)
 	var providedInsurances []types.Insurance
 	for i, provider := range providers {
-		msg := types.NewMsgInsuranceProvide(provider.String(), amounts[i])
+		msg := types.NewMsgProvideInsurance(provider.String(), amounts[i])
 		msg.ValidatorAddress = valAddrs[i%valNum].String()
 		if fixedFeeRate.IsPositive() {
 			msg.FeeRate = fixedFeeRate
@@ -78,7 +78,7 @@ func (suite *KeeperTestSuite) provideInsurances(
 			msg.FeeRate = sdk.NewDecWithPrec(int64(simulation.RandIntBetween(r, 1, 10)), 2)
 		}
 		msg.Amount = amounts[i]
-		insurance, err := suite.app.LiquidStakingKeeper.DoInsuranceProvide(suite.ctx, msg)
+		insurance, err := suite.app.LiquidStakingKeeper.DoProvideInsurance(suite.ctx, msg)
 		suite.NoError(err)
 		providedInsurances = append(providedInsurances, insurance)
 	}
@@ -98,20 +98,20 @@ func (suite *KeeperTestSuite) liquidStakes(delegators []sdk.AccAddress, amounts 
 	return chunks
 }
 
-func (suite *KeeperTestSuite) TestInsuranceProvide() {
+func (suite *KeeperTestSuite) TestProvideInsurance() {
 	valAddrs := suite.CreateValidators([]int64{10, 10, 10})
 	_, minimumCoverage := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
 	providers, _ := suite.AddTestAddrs(10, minimumCoverage.Amount)
 
 	for _, tc := range []struct {
 		name        string
-		msg         *types.MsgInsuranceProvide
+		msg         *types.MsgProvideInsurance
 		validate    func(ctx sdk.Context, insurance types.Insurance)
 		expectedErr string
 	}{
 		{
 			"success",
-			&types.MsgInsuranceProvide{
+			&types.MsgProvideInsurance{
 				ProviderAddress:  providers[0].String(),
 				ValidatorAddress: valAddrs[0].String(),
 				Amount:           minimumCoverage,
@@ -126,7 +126,7 @@ func (suite *KeeperTestSuite) TestInsuranceProvide() {
 		},
 		{
 			"insurance is smaller than minimum coverage",
-			&types.MsgInsuranceProvide{
+			&types.MsgProvideInsurance{
 				ProviderAddress:  providers[0].String(),
 				ValidatorAddress: valAddrs[0].String(),
 				Amount:           minimumCoverage.SubAmount(sdk.NewInt(1)),
@@ -139,7 +139,7 @@ func (suite *KeeperTestSuite) TestInsuranceProvide() {
 		suite.Run(tc.name, func() {
 			s.Require().NoError(tc.msg.ValidateBasic())
 			cachedCtx, _ := s.ctx.CacheContext()
-			insurance, err := suite.app.LiquidStakingKeeper.DoInsuranceProvide(cachedCtx, tc.msg)
+			insurance, err := suite.app.LiquidStakingKeeper.DoProvideInsurance(cachedCtx, tc.msg)
 			if tc.expectedErr != "" {
 				suite.ErrorContains(err, tc.expectedErr)
 			} else {
@@ -635,7 +635,7 @@ func (suite *KeeperTestSuite) TestLiquidUnstakeFail() {
 	suite.ErrorContains(err, sdkerrors.ErrInsufficientFunds.Error())
 }
 
-func (suite *KeeperTestSuite) TestCancelInsuranceProvideSuccess() {
+func (suite *KeeperTestSuite) TestCancelProvideInsuranceSuccess() {
 	valAddrs := suite.CreateValidators([]int64{10, 10, 10})
 	_, minimumCoverage := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
 	providers, balances := suite.AddTestAddrs(10, minimumCoverage.Amount)
@@ -645,15 +645,15 @@ func (suite *KeeperTestSuite) TestCancelInsuranceProvideSuccess() {
 	insurance := insurances[0]
 	escrowed := suite.app.BankKeeper.GetBalance(suite.ctx, insurance.DerivedAddress(), suite.denom)
 	beforeProviderBalance := suite.app.BankKeeper.GetBalance(suite.ctx, provider, suite.denom)
-	msg := types.NewMsgCancelInsuranceProvide(provider.String(), insurance.Id)
-	canceledInsurance, err := suite.app.LiquidStakingKeeper.DoCancelInsuranceProvide(suite.ctx, msg)
+	msg := types.NewMsgCancelProvideInsurance(provider.String(), insurance.Id)
+	canceledInsurance, err := suite.app.LiquidStakingKeeper.DoCancelProvideInsurance(suite.ctx, msg)
 	suite.NoError(err)
 	suite.True(insurance.Equal(canceledInsurance))
 	afterProviderBalance := suite.app.BankKeeper.GetBalance(suite.ctx, provider, suite.denom)
 	suite.True(afterProviderBalance.Amount.Equal(beforeProviderBalance.Amount.Add(escrowed.Amount)), "provider should get back escrowed amount")
 }
 
-func (suite *KeeperTestSuite) TestCancelInsuranceProvideFail() {
+func (suite *KeeperTestSuite) TestCancelProvideInsuranceFail() {
 	valAddrs := suite.CreateValidators([]int64{10, 10, 10})
 	minimumRequirement, minimumCoverage := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
 	providers, balances := suite.AddTestAddrs(10, minimumCoverage.Amount)
@@ -663,9 +663,9 @@ func (suite *KeeperTestSuite) TestCancelInsuranceProvideFail() {
 	var notExistingInsuranceId uint64 = 9999
 	provider := providers[0]
 
-	_, err := suite.app.LiquidStakingKeeper.DoCancelInsuranceProvide(
+	_, err := suite.app.LiquidStakingKeeper.DoCancelProvideInsurance(
 		suite.ctx,
-		types.NewMsgCancelInsuranceProvide(provider.String(), notExistingInsuranceId),
+		types.NewMsgCancelProvideInsurance(provider.String(), notExistingInsuranceId),
 	)
 	suite.ErrorIs(err, types.ErrPairingInsuranceNotFound, "only pairing insurances can be canceled")
 
@@ -678,9 +678,9 @@ func (suite *KeeperTestSuite) TestCancelInsuranceProvideFail() {
 	insurance, found := suite.app.LiquidStakingKeeper.GetInsurance(suite.ctx, chunk.PairedInsuranceId)
 	suite.True(found)
 
-	_, err = suite.app.LiquidStakingKeeper.DoCancelInsuranceProvide(
+	_, err = suite.app.LiquidStakingKeeper.DoCancelProvideInsurance(
 		suite.ctx,
-		types.NewMsgCancelInsuranceProvide(insurance.ProviderAddress, insurance.Id),
+		types.NewMsgCancelProvideInsurance(insurance.ProviderAddress, insurance.Id),
 	)
 	suite.ErrorIs(err, types.ErrPairingInsuranceNotFound, "only pairing insurances can be canceled")
 }

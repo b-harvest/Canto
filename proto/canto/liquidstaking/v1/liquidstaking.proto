@@ -64,11 +64,11 @@ enum InsuranceStatus {
 
   INSURANCE_STATUS_UNSPECIFIED = 0;
   // This is the default status of an insurance when an insurance provider sends
-  // a MsgInsuranceProvide. This status indicates that the insurance is ready to be
+  // a MsgProvideInsurance. This status indicates that the insurance is ready to be
   // paired with a chunk. When an empty slot is available and either
   // msgLiquidStake is received or pairing chunks have been created in the recent epoch,
   // the insurance with the lowest fee will be paired with the chunk.
-  // Once paired, the insurance contract can be cancelled using MsgCancelInsuranceProvide.
+  // Once paired, the insurance contract can be cancelled using MsgCancelProvideInsurance.
   INSURANCE_STATUS_PAIRING = 1;
   // An insurance is paired with a chunk. While the insurance is in this status,
   // it serves as a form of protection for the chunk by insuring it against unexpected loss
