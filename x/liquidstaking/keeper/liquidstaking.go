@@ -73,11 +73,11 @@ func (k Keeper) DistributeReward(ctx sdk.Context) {
 		validator, found := k.stakingKeeper.GetValidator(ctx, insurance.GetValidator())
 		err := k.IsValidValidator(ctx, validator, found)
 		if err == types.ErrNotFoundValidator {
-			panic(err)
+			return true, err
 		}
 		_, err = k.distributionKeeper.WithdrawDelegationRewards(ctx, chunk.DerivedAddress(), validator.GetOperator())
 		if err != nil {
-			panic(err.Error())
+			return true, err
 		}
 
 		k.CollectReward(ctx, chunk, insurance)
