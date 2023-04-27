@@ -30,26 +30,27 @@ var _ = time.Kitchen
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-// TODO: Update comments for each statuses
 // ChunkStatus defines the status of the chunk.
 type ChunkStatus int32
 
 const (
 	CHUNK_STATUS_UNSPECIFIED ChunkStatus = 0
-	// Default status of a chunk when a msgServer receives MsgLiquidStake.
-	// This status indicates that the chunk is ready to be paired
-	// with an insurance.
+	// This status indicates that the chunk is ready to be paired with an insurance.
 	CHUNK_STATUS_PAIRING ChunkStatus = 1
-	// This status indicates that the chunk is paired with an insurance
-	// which has the lowest fee rate.
+	// A chunk is paired with an insurance that has the lowest fee rate.
+	// The fee rate is determined by the sum of the insurance fee rate set by
+	// the insurance provider and the commission fee rate set by the validator
+	// designated by the insurance provider.
 	CHUNK_STATUS_PAIRED ChunkStatus = 2
-	// For various reasons, the insurance paired to Chunk can be un-paired.
-	// At this time, if there is no insurance candidate,
-	// a chunk enters this status.
+	// A paired chunk enters this status when paired insurance is started to be withdrawn or
+	// is insufficient (meaning the insurance balance is below the minimum requirement
+	// to be considered valid insurance) or the validator of the insurance becomes tombstoned.
 	CHUNK_STATUS_UNPAIRING ChunkStatus = 3
-	// When a delegator(= liquid staker) sends a MsgLiquidUnstake, the last ranked
-	// paired chunk enters this status and waits until the un-bonding period times
-	// out.
+	// When a delegator (also known as a liquid staker) sends a MsgLiquidUnstake,
+	// it is queued as a PendingLiquidUnstake. At the end of the epoch,
+	// the actual undelegation is triggered and the chunk enters this state.
+	// Once the unbonding period is over in next epoch, the staked tokens are returned to
+	// the delegator's account and the associated chunk object is removed.
 	CHUNK_STATUS_UNPAIRING_FOR_UNSTAKING ChunkStatus = 4
 )
 
@@ -77,32 +78,33 @@ func (ChunkStatus) EnumDescriptor() ([]byte, []int) {
 	return fileDescriptor_d5ab11aad71f7b33, []int{0}
 }
 
-// TODO: Update comments for each statuses
 // InsuranceStatus defines the status of the insurance.
 type InsuranceStatus int32
 
 const (
 	INSURANCE_STATUS_UNSPECIFIED InsuranceStatus = 0
-	// Default status of an insurance when a msgServer receives
-	// MsgInsuranceProvide. This status indicates that
-	// the insurance is ready to be paired with a chunk.
+	// This is the default status of an insurance when an insurance provider sends
+	// a MsgInsuranceProvide. This status indicates that the insurance is ready to be
+	// paired with a chunk. When an empty slot is available and either
+	// msgLiquidStake is received or pairing chunks have been created in the recent epoch,
+	// the insurance with the lowest fee will be paired with the chunk.
+	// Once paired, the insurance contract can be cancelled using MsgCancelInsuranceProvide.
 	INSURANCE_STATUS_PAIRING InsuranceStatus = 1
-	// This status indicates that the insurance is paired with a chunk.
-	// While the insurance is in this status, it serves as a form of protection
-	// for the chunk by insuring it against unexpected loss that may occur due to
-	// validator slashing.
+	// An insurance is paired with a chunk. While the insurance is in this status,
+	// it serves as a form of protection for the chunk by insuring it against unexpected loss
+	// that may occur due to validator slashing.
+	// This ensures that the chunk remains same size and maximize its staking rewards.
 	INSURANCE_STATUS_PAIRED InsuranceStatus = 2
-	// For various reasons, the insurance paired to Chunk can enters this status.
-	// The insurance in this status wait until
-	// the paired chunk's un-bonding period times out.
+	// A paired insurance enters this status when it no longer has enough balance
+	// to cover slashing penalties, when the validator is tombstoned, or
+	// when the paired chunk is started to be undelegated.
+	// At the next epoch, unpairing will be unpaired.
 	INSURANCE_STATUS_UNPAIRING InsuranceStatus = 3
-	// Insurance enters this status when msgServer receives MsgWithdrawInsurance.
-	// The insurance waits until the paired chunk's un-bonding period times out.
+	// A paired insurance enters this status when there are
+	// queued withdrawal insurance requests created by MsgWithdrawInsurance at the epoch.
 	INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAWAL InsuranceStatus = 4
-	// Every begin block, the module checks all insurances have enough balance to
-	// cover slash. If not, the insurance enters this status. Insurance provider
-	// can re-fill token amount of the insurance by sending MsgRefillInsurance or
-	// cancel the insurance by sending MsgCancelInsuranceProvide.
+	// Unpairing insurances from previous epoch enters this status.
+	// Unpaired insurance can be withdrawn immediately by MsgWithdrawInsurance.
 	INSURANCE_STATUS_UNPAIRED InsuranceStatus = 5
 )
 
@@ -292,7 +294,7 @@ type Insurance struct {
 	ProviderAddress string `protobuf:"bytes,3,opt,name=provider_address,json=providerAddress,proto3" json:"provider_address,omitempty"`
 	// Fee rate of the insurance
 	FeeRate github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,4,opt,name=fee_rate,json=feeRate,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"fee_rate"`
-	// Id of Paired chunk, 0 means no chunk
+	// Id of the chunk for which the insurance has a duty
 	ChunkId uint64 `protobuf:"varint,5,opt,name=chunk_id,json=chunkId,proto3" json:"chunk_id,omitempty"`
 	// Status of the insurance
 	Status InsuranceStatus `protobuf:"varint,6,opt,name=status,proto3,enum=canto.liquidstaking.v1.InsuranceStatus" json:"status,omitempty"`
