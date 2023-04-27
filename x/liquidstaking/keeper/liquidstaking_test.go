@@ -743,6 +743,7 @@ func (suite *KeeperTestSuite) TestDoWithdrawInsurance() {
 }
 
 func (suite *KeeperTestSuite) TestDoWithdrawInsuranceFail() {
+	suite.resetEpochs()
 	// create valAddrs
 	valAddrs := suite.CreateValidators([]int64{1, 1, 1})
 	_, oneInsurance := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
@@ -750,6 +751,16 @@ func (suite *KeeperTestSuite) TestDoWithdrawInsuranceFail() {
 	providers, providerBalances := suite.AddTestAddrs(3, oneInsurance.Amount.Add(sdk.NewInt(100)))
 	// provide insurances
 	insurances := suite.provideInsurances(providers, valAddrs, providerBalances, sdk.NewDecWithPrec(10, 2), nil)
+	// withdraw insurances[0]
+	suite.app.LiquidStakingKeeper.DoWithdrawInsurance(
+		suite.ctx,
+		types.NewMsgWithdrawInsurance(
+			insurances[0].ProviderAddress,
+			insurances[0].Id,
+		),
+	)
+	suite.advanceEpoch()
+	suite.advanceHeight(1, "insurance enters into UnpairingForWithdrawal status")
 
 	tcs := []struct {
 		name        string
@@ -771,6 +782,14 @@ func (suite *KeeperTestSuite) TestDoWithdrawInsuranceFail() {
 				120,
 			),
 			expectedErr: types.ErrNotFoundInsurance,
+		},
+		{
+			name: "invalid insurance status",
+			msg: types.NewMsgWithdrawInsurance(
+				providers[0].String(),
+				insurances[0].Id,
+			),
+			expectedErr: types.ErrNotInWithdrawableStatus,
 		},
 	}
 
