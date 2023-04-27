@@ -742,11 +742,66 @@ func (suite *KeeperTestSuite) TestDoWithdrawInsurance() {
 	)
 }
 
+func (suite *KeeperTestSuite) TestDoWithdrawInsuranceCommission() {
+	suite.resetEpochs()
+	valAddrs := suite.CreateValidators([]int64{1, 1, 1})
+	oneChunk, oneInsurance := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
+	providers, providerBalances := suite.AddTestAddrs(3, oneInsurance.Amount)
+	// 3 insurances (insurance fee rates are all same as 10%)
+	fixedInsuranceFeeRate := sdk.NewDecWithPrec(10, 2)
+	insurances := suite.provideInsurances(providers, valAddrs, providerBalances, fixedInsuranceFeeRate, nil)
+	// 3 delegators
+	delegators, delegatorBalances := suite.AddTestAddrs(3, oneChunk.Amount)
+	// liquid stakes 3 chunks
+	suite.liquidStakes(delegators, delegatorBalances)
+
+	unitDelegationRewardPerEpoch, _ := sdk.NewIntFromString("29999994000000000000")
+	// unitInsuranceCommissionPerEpoch, _ := suite.getUnitDistribution(unitDelegationRewardPerEpoch, fixedInsuranceFeeRate)
+	unitInsuranceCommissionPerEpoch, _ := suite.getUnitDistribution(unitDelegationRewardPerEpoch, fixedInsuranceFeeRate)
+
+	provider := providers[0]
+	targetInsurance := insurances[0]
+	beforeInsuranceCommission := suite.app.BankKeeper.GetBalance(suite.ctx, targetInsurance.FeePoolAddress(), suite.denom)
+	suite.advanceHeight(1, "")
+	afterInsuranceCommission := suite.app.BankKeeper.GetBalance(suite.ctx, targetInsurance.FeePoolAddress(), suite.denom)
+	suite.Equal(
+		afterInsuranceCommission.String(),
+		beforeInsuranceCommission.String(),
+		"epoch is not reached yet so no insurance commission is distributed",
+	)
+
+	suite.advanceEpoch()
+	suite.advanceHeight(1, "cumulated delegation reward is distributed to withdraw fee pool")
+	afterInsuranceCommission = suite.app.BankKeeper.GetBalance(suite.ctx, targetInsurance.FeePoolAddress(), suite.denom)
+	suite.Equal(
+		unitInsuranceCommissionPerEpoch.Mul(sdk.NewInt(suite.rewardEpochCount)).String(),
+		afterInsuranceCommission.Amount.String(),
+		"cumulated delegation reward is distributed to withdraw fee pool",
+	)
+
+	beforeProviderBalance := suite.app.BankKeeper.GetBalance(suite.ctx, provider, suite.denom)
+	// withdraw insurance commission
+	err := suite.app.LiquidStakingKeeper.DoWithdrawInsuranceCommission(
+		suite.ctx,
+		types.NewMsgWithdrawInsuranceCommission(
+			targetInsurance.ProviderAddress,
+			targetInsurance.Id,
+		),
+	)
+	suite.NoError(err)
+	afterProviderBalance := suite.app.BankKeeper.GetBalance(suite.ctx, provider, suite.denom)
+	suite.Equal(
+		afterInsuranceCommission.String(),
+		afterProviderBalance.Sub(beforeProviderBalance).String(),
+		"provider did withdraw insurance commission",
+	)
+}
+
 func (suite *KeeperTestSuite) TestRankInsurances() {
 	// SETUP TEST ---------------------------------------------------
 	suite.resetEpochs()
 	// 3 validators we have
-	valAddrs := suite.CreateValidators([]int64{10, 10, 10})
+	valAddrs := suite.CreateValidators([]int64{1, 1, 1})
 	oneChunk, oneInsurance := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
 	providers, providerBalances := suite.AddTestAddrs(3, oneInsurance.Amount)
 	// 3 insurances (insurance fee rates are all same as 10%)
@@ -816,7 +871,7 @@ func (suite *KeeperTestSuite) TestEndBlocker() {
 	// SETUP TEST ---------------------------------------------------
 	suite.resetEpochs()
 	// 3 validators we have
-	valAddrs := suite.CreateValidators([]int64{10, 10, 10})
+	valAddrs := suite.CreateValidators([]int64{1, 1, 1})
 	oneChunk, oneInsurance := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
 	providers, providerBalances := suite.AddTestAddrs(3, oneInsurance.Amount)
 	// 3 insurances (insurance fee rates are all same as 10%)
@@ -857,7 +912,7 @@ func (suite *KeeperTestSuite) TestEndBlocker() {
 
 func (suite *KeeperTestSuite) TestDoDepositInsurance() {
 	// create validators
-	validators := suite.CreateValidators([]int64{10, 10, 10})
+	validators := suite.CreateValidators([]int64{1, 1, 1})
 	_, oneInsurance := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
 	// create providers
 	providers, _ := suite.AddTestAddrs(3, oneInsurance.Amount.Add(sdk.NewInt(100)))
@@ -882,13 +937,13 @@ func (suite *KeeperTestSuite) TestDoDepositInsurance() {
 }
 
 func (suite *KeeperTestSuite) TestDoDepositInsuranceFail() {
-	// create validators
-	validators := suite.CreateValidators([]int64{10, 10, 10})
+	// create valAddrs
+	valAddrs := suite.CreateValidators([]int64{1, 1, 1})
 	_, oneInsurance := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
 	// create providers
 	providers, providerBalances := suite.AddTestAddrs(3, oneInsurance.Amount.Add(sdk.NewInt(100)))
 	// provide insurances
-	insurances := suite.provideInsurances(providers, validators, providerBalances, sdk.NewDecWithPrec(10, 2), nil)
+	insurances := suite.provideInsurances(providers, valAddrs, providerBalances, sdk.NewDecWithPrec(10, 2), nil)
 
 	tcs := []struct {
 		name                string
