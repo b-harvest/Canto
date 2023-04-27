@@ -780,16 +780,18 @@ func (k Keeper) DoDepositInsurance(ctx sdk.Context, msg *types.MsgDepositInsuran
 	insuranceId := msg.Id
 	amount := msg.Amount
 
-	// Check if the insurance exists
 	insurance, found := k.GetInsurance(ctx, insuranceId)
 	if !found {
 		err = sdkerrors.Wrapf(types.ErrPairingInsuranceNotFound, "insurance id: %d", insuranceId)
 		return
 	}
 
-	// Check if the provider is the same
 	if insurance.ProviderAddress != providerAddr.String() {
 		err = sdkerrors.Wrapf(types.ErrNotProviderOfInsurance, "insurance id: %d", insuranceId)
+		return
+	}
+
+	if err = k.ShouldBeBondDenom(ctx, amount.Denom); err != nil {
 		return
 	}
 

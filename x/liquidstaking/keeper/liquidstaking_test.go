@@ -881,6 +881,58 @@ func (suite *KeeperTestSuite) TestDoDepositInsurance() {
 	suite.NoError(err)
 }
 
+func (suite *KeeperTestSuite) TestDoDepositInsuranceFail() {
+	// create validators
+	validators := suite.CreateValidators([]int64{10, 10, 10})
+	_, oneInsurance := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
+	// create providers
+	providers, providerBalances := suite.AddTestAddrs(3, oneInsurance.Amount.Add(sdk.NewInt(100)))
+	// provide insurances
+	insurances := suite.provideInsurances(providers, validators, providerBalances, sdk.NewDecWithPrec(10, 2), nil)
+
+	tcs := []struct {
+		name                string
+		msgDepositInsurance *types.MsgDepositInsurance
+		expectedErr         error
+	}{
+		{
+			name: "invalid provider",
+			msgDepositInsurance: types.NewMsgDepositInsurance(
+				providers[1].String(),
+				insurances[0].Id,
+				sdk.NewCoin(oneInsurance.Denom, sdk.NewInt(100)),
+			),
+			expectedErr: types.ErrNotProviderOfInsurance,
+		},
+		{
+			name: "invalid insurance id",
+			msgDepositInsurance: types.NewMsgDepositInsurance(
+				providers[0].String(),
+				120,
+				sdk.NewCoin(oneInsurance.Denom, sdk.NewInt(100)),
+			),
+			expectedErr: types.ErrNotFoundInsurance,
+		},
+		{
+			name: "invalid insurance denom",
+			msgDepositInsurance: types.NewMsgDepositInsurance(
+				providers[0].String(),
+				insurances[0].Id,
+				sdk.NewCoin("invalidDenom", sdk.NewInt(100)),
+			),
+			expectedErr: types.ErrInvalidBondDenom,
+		},
+	}
+
+	for _, tc := range tcs {
+		err := suite.app.LiquidStakingKeeper.DoDepositInsurance(suite.ctx, tc.msgDepositInsurance)
+		if tc.expectedErr == nil {
+			suite.NoError(err)
+		}
+		suite.ErrorContains(err, tc.expectedErr.Error())
+	}
+}
+
 func (suite *KeeperTestSuite) getUnitDistribution(
 	unitDelegationRewardPerEpoch sdk.Int,
 	fixedInsuranceFeeRate sdk.Dec,
