@@ -1232,6 +1232,7 @@ func (k Keeper) withdrawInsurance(ctx sdk.Context, insurance types.Insurance) er
 	return nil
 }
 
+// pairChunkAndInsurance pairs chunk and insurance.
 func (k Keeper) pairChunkAndInsurance(
 	ctx sdk.Context,
 	chunk types.Chunk,
