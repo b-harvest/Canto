@@ -793,7 +793,6 @@ func (k Keeper) DoDepositInsurance(ctx sdk.Context, msg *types.MsgDepositInsuran
 		return
 	}
 
-	// Escrow provider's balance
 	if err = k.bankKeeper.SendCoins(
 		ctx,
 		providerAddr,

@@ -855,6 +855,32 @@ func (suite *KeeperTestSuite) TestEndBlocker() {
 	suite.Equal(toBeWithdrawnInsurance.GetValidator().String(), unbondingObj.ValidatorAddress)
 }
 
+func (suite *KeeperTestSuite) TestDoDepositInsurance() {
+	// create validators
+	validators := suite.CreateValidators([]int64{10, 10, 10})
+	_, oneInsurance := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
+	// create providers
+	providers, _ := suite.AddTestAddrs(3, oneInsurance.Amount.Add(sdk.NewInt(100)))
+	// provide insurances
+	insurances := suite.provideInsurances(
+		providers,
+		validators,
+		[]sdk.Coin{oneInsurance, oneInsurance, oneInsurance},
+		sdk.NewDecWithPrec(10, 2),
+		nil,
+	)
+	// all providers still have 100 acanto after provide insurance
+
+	msgDepositInsurance := types.NewMsgDepositInsurance(
+		providers[0].String(),
+		insurances[0].Id,
+		sdk.NewCoin(oneInsurance.Denom, sdk.NewInt(100)),
+	)
+
+	err := suite.app.LiquidStakingKeeper.DoDepositInsurance(suite.ctx, msgDepositInsurance)
+	suite.NoError(err)
+}
+
 func (suite *KeeperTestSuite) getUnitDistribution(
 	unitDelegationRewardPerEpoch sdk.Int,
 	fixedInsuranceFeeRate sdk.Dec,
