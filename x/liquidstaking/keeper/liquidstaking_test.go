@@ -797,6 +797,47 @@ func (suite *KeeperTestSuite) TestDoWithdrawInsuranceCommission() {
 	)
 }
 
+func (suite *KeeperTestSuite) TestDoWithdrawInsuranceCommissionFail() {
+	// create valAddrs
+	valAddrs := suite.CreateValidators([]int64{1, 1, 1})
+	_, oneInsurance := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
+	// create providers
+	providers, providerBalances := suite.AddTestAddrs(3, oneInsurance.Amount.Add(sdk.NewInt(100)))
+	// provide insurances
+	insurances := suite.provideInsurances(providers, valAddrs, providerBalances, sdk.NewDecWithPrec(10, 2), nil)
+
+	tcs := []struct {
+		name        string
+		msg         *types.MsgWithdrawInsuranceCommission
+		expectedErr error
+	}{
+		{
+			name: "invalid provider",
+			msg: types.NewMsgWithdrawInsuranceCommission(
+				providers[1].String(),
+				insurances[0].Id,
+			),
+			expectedErr: types.ErrNotProviderOfInsurance,
+		},
+		{
+			name: "invalid insurance id",
+			msg: types.NewMsgWithdrawInsuranceCommission(
+				providers[0].String(),
+				120,
+			),
+			expectedErr: types.ErrNotFoundInsurance,
+		},
+	}
+
+	for _, tc := range tcs {
+		err := suite.app.LiquidStakingKeeper.DoWithdrawInsuranceCommission(suite.ctx, tc.msg)
+		if tc.expectedErr == nil {
+			suite.NoError(err)
+		}
+		suite.ErrorContains(err, tc.expectedErr.Error())
+	}
+}
+
 func (suite *KeeperTestSuite) TestRankInsurances() {
 	// SETUP TEST ---------------------------------------------------
 	suite.resetEpochs()
