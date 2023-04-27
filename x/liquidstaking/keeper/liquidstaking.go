@@ -733,7 +733,7 @@ func (k Keeper) DoCancelProvideInsurance(ctx sdk.Context, msg *types.MsgCancelPr
 	// Check if the insurance exists
 	insurance, found := k.GetPairingInsurance(ctx, insuranceId)
 	if !found {
-		err = sdkerrors.Wrapf(types.ErrPairingInsuranceNotFound, "insurance id: %d", insuranceId)
+		err = sdkerrors.Wrapf(types.ErrNotFoundPairingInsurance, "insurance id: %d", insuranceId)
 		return
 	}
 
@@ -764,7 +764,7 @@ func (k Keeper) DoWithdrawInsurance(ctx sdk.Context, msg *types.MsgWithdrawInsur
 	// Get insurance
 	insurance, found := k.GetInsurance(ctx, msg.Id)
 	if !found {
-		err = sdkerrors.Wrapf(types.ErrPairingInsuranceNotFound, "insurance id: %d", msg.Id)
+		err = sdkerrors.Wrapf(types.ErrNotFoundPairingInsurance, "insurance id: %d", msg.Id)
 		return
 	}
 	if msg.ProviderAddress != insurance.ProviderAddress {
@@ -794,7 +794,7 @@ func (k Keeper) DoWithdrawInsuranceCommission(ctx sdk.Context, msg *types.MsgWit
 	// Check if the insurance exists
 	insurance, found := k.GetInsurance(ctx, insuranceId)
 	if !found {
-		err = sdkerrors.Wrapf(types.ErrPairingInsuranceNotFound, "insurance id: %d", insuranceId)
+		err = sdkerrors.Wrapf(types.ErrNotFoundPairingInsurance, "insurance id: %d", insuranceId)
 		return
 	}
 
@@ -826,7 +826,7 @@ func (k Keeper) DoDepositInsurance(ctx sdk.Context, msg *types.MsgDepositInsuran
 
 	insurance, found := k.GetInsurance(ctx, insuranceId)
 	if !found {
-		err = sdkerrors.Wrapf(types.ErrPairingInsuranceNotFound, "insurance id: %d", insuranceId)
+		err = sdkerrors.Wrapf(types.ErrNotFoundPairingInsurance, "insurance id: %d", insuranceId)
 		return
 	}
 
