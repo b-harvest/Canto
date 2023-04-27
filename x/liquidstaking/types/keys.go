@@ -27,9 +27,7 @@ const (
 	prefixChunk
 	prefixInsurance
 	prefixPairingInsuranceIndex
-	prefixInsurancesByProviderIndex
 	prefixWithdrawInsuranceRequest
-	prefixPreviousInsuranceIndex
 	prefixUnpairingForUnstakingChunkInfo
 	prefixLiquidUnstakeKey
 	prefixEpoch
@@ -42,7 +40,6 @@ var (
 	KeyPrefixChunk                          = []byte{prefixChunk}
 	KeyPrefixInsurance                      = []byte{prefixInsurance}
 	KeyPrefixPairingInsuranceIndex          = []byte{prefixPairingInsuranceIndex}
-	KeyPrefixInsurancesByProviderIndex      = []byte{prefixInsurancesByProviderIndex}
 	KeyPrefixWithdrawInsuranceRequest       = []byte{prefixWithdrawInsuranceRequest}
 	KeyPrefixUnpairingForUnstakingChunkInfo = []byte{prefixUnpairingForUnstakingChunkInfo}
 	KeyPrefixLiquidUnstakeKey               = []byte{prefixLiquidUnstakeKey}
@@ -62,27 +59,12 @@ func GetPairingInsuranceIndexKey(insuranceId uint64) []byte {
 	return append(KeyPrefixPairingInsuranceIndex, sdk.Uint64ToBigEndian(insuranceId)...)
 }
 
-func GetInsurancesByProviderIndexKey(providerAddress sdk.AccAddress, insuranceId uint64) []byte {
-	return append(append(KeyPrefixInsurancesByProviderIndex, address.MustLengthPrefix(providerAddress)...), sdk.Uint64ToBigEndian(insuranceId)...)
-}
-
 func GetWithdrawInsuranceRequestKey(insuranceId uint64) []byte {
 	return append(KeyPrefixWithdrawInsuranceRequest, sdk.Uint64ToBigEndian(insuranceId)...)
 }
 
 func GetUnpairingForUnstakingChunkInfoKey(chunkId uint64) []byte {
 	return append(KeyPrefixUnpairingForUnstakingChunkInfo, sdk.Uint64ToBigEndian(chunkId)...)
-}
-
-func ParseInsurancesByProviderIndexKey(key []byte) (providerAddress sdk.AccAddress, insuranceId uint64) {
-	if !bytes.HasPrefix(key, KeyPrefixInsurancesByProviderIndex) {
-		panic("invalid insurances by provider index key")
-	}
-
-	providerAddressLength := key[1]
-	providerAddress = key[2 : 2+providerAddressLength]
-	insuranceId = sdk.BigEndianToUint64(key[2+providerAddressLength:])
-	return
 }
 
 func ParsePairingInsuranceIndexKey(key []byte) (insuranceId uint64) {

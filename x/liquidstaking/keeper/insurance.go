@@ -3,7 +3,6 @@ package keeper
 import (
 	"github.com/Canto-Network/Canto/v6/x/liquidstaking/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/address"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	gogotypes "github.com/gogo/protobuf/types"
 )
@@ -33,16 +32,6 @@ func (k Keeper) DeletePairingInsuranceIndex(ctx sdk.Context, insurance types.Ins
 	store.Delete(types.GetPairingInsuranceIndexKey(insurance.Id))
 }
 
-func (k Keeper) SetInsurancesByProviderIndex(ctx sdk.Context, insurance types.Insurance) {
-	store := ctx.KVStore(k.storeKey)
-	store.Set(types.GetInsurancesByProviderIndexKey(insurance.GetProvider(), insurance.Id), []byte{})
-}
-
-func (k Keeper) DeleteInsurancesByProviderIndex(ctx sdk.Context, insurance types.Insurance) {
-	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.GetInsurancesByProviderIndexKey(insurance.GetProvider(), insurance.Id))
-}
-
 func (k Keeper) GetInsurance(ctx sdk.Context, id uint64) (insurance types.Insurance, found bool) {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.GetInsuranceKey(id))
@@ -57,7 +46,6 @@ func (k Keeper) DeleteInsurance(ctx sdk.Context, id uint64) {
 	store := ctx.KVStore(k.storeKey)
 	insurance, _ := k.GetInsurance(ctx, id)
 	store.Delete(types.GetInsuranceKey(insurance.Id))
-	store.Delete(types.GetInsurancesByProviderIndexKey(sdk.AccAddress(insurance.ProviderAddress), insurance.Id))
 }
 
 func (k Keeper) getPairingInsurances(ctx sdk.Context) (
@@ -120,22 +108,6 @@ func (k Keeper) IteratePairingInsurances(ctx sdk.Context, cb func(insurance type
 		}
 	}
 	return nil
-}
-
-func (k Keeper) GetInsurancesFromProviderAddress(ctx sdk.Context, providerAddress sdk.AccAddress) []types.Insurance {
-	var insurances []types.Insurance
-
-	store := ctx.KVStore(k.storeKey)
-	iterator := sdk.KVStorePrefixIterator(store, append(types.KeyPrefixInsurancesByProviderIndex, address.MustLengthPrefix(providerAddress)...))
-	defer iterator.Close()
-
-	for ; iterator.Valid(); iterator.Next() {
-		_, insuranceId := types.ParseInsurancesByProviderIndexKey(iterator.Key())
-		insurance, _ := k.GetInsurance(ctx, insuranceId)
-		insurances = append(insurances, insurance)
-	}
-
-	return insurances
 }
 
 func (k Keeper) SetLastInsuranceId(ctx sdk.Context, id uint64) {

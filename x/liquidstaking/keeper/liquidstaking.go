@@ -678,7 +678,6 @@ func (k Keeper) DoProvideInsurance(ctx sdk.Context, msg *types.MsgProvideInsuran
 	}
 	k.SetInsurance(ctx, insurance)
 	k.SetPairingInsuranceIndex(ctx, insurance)
-	k.SetInsurancesByProviderIndex(ctx, insurance)
 
 	return
 }
@@ -711,7 +710,6 @@ func (k Keeper) DoCancelProvideInsurance(ctx sdk.Context, msg *types.MsgCancelPr
 		return
 	}
 	k.DeleteInsurance(ctx, insuranceId)
-	k.DeleteInsurancesByProviderIndex(ctx, insurance)
 	k.DeletePairingInsuranceIndex(ctx, insurance)
 	return
 }
