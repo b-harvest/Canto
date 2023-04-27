@@ -901,13 +901,40 @@ func (suite *KeeperTestSuite) TestEndBlocker() {
 	suite.advanceHeight(1, "queued withdraw insurance request is handled and there are no additional insurances yet so unpairing triggered")
 
 	// Check unbonding obj exists
-	unbondingObj, found := suite.app.StakingKeeper.GetUnbondingDelegation(
+	unbondingDelegation, found := suite.app.StakingKeeper.GetUnbondingDelegation(
 		suite.ctx,
 		chunkToBeUnpairing.DerivedAddress(),
 		toBeWithdrawnInsurance.GetValidator(),
 	)
 	suite.True(found)
-	suite.Equal(toBeWithdrawnInsurance.GetValidator().String(), unbondingObj.ValidatorAddress)
+	suite.Equal(toBeWithdrawnInsurance.GetValidator().String(), unbondingDelegation.ValidatorAddress)
+
+	suite.advanceHeight(1, "")
+
+	suite.advanceEpoch()
+	suite.advanceHeight(1, "withdrawal and unbonding of chunkToBeUnpairing is finished")
+	withdrawnInsurance, _ := suite.app.LiquidStakingKeeper.GetInsurance(suite.ctx, toBeWithdrawnInsurance.Id)
+	pairingChunk, _ := suite.app.LiquidStakingKeeper.GetChunk(suite.ctx, chunkToBeUnpairing.Id)
+	suite.Equal(types.CHUNK_STATUS_PAIRING, pairingChunk.Status)
+	suite.Equal(uint64(0), pairingChunk.UnpairingInsuranceId)
+	suite.Equal(types.INSURANCE_STATUS_UNPAIRED, withdrawnInsurance.Status)
+
+	suite.advanceHeight(1, "")
+
+	newValAddrs := suite.CreateValidators([]int64{1, 1, 1})
+	newProviders, newProviderBalances := suite.AddTestAddrs(3, oneInsurance.Amount)
+	_ = suite.provideInsurances(
+		newProviders,
+		newValAddrs,
+		newProviderBalances,
+		sdk.NewDecWithPrec(1, 2), // much cheap than current paired insurances
+		nil,
+	)
+
+	suite.advanceEpoch()
+	suite.advanceHeight(1, "pairing chunk is paired now")
+	pairedChunk, _ := suite.app.LiquidStakingKeeper.GetChunk(suite.ctx, pairingChunk.Id)
+	suite.Equal(types.CHUNK_STATUS_PAIRED, pairedChunk.Status)
 }
 
 func (suite *KeeperTestSuite) TestDoDepositInsurance() {
