@@ -193,23 +193,27 @@ func (suite *KeeperTestSuite) TestLiquidStakeSuccess() {
 func (suite *KeeperTestSuite) TestLiquidStakeFail() {
 	suite.resetEpochs()
 	valAddrs := suite.CreateValidators([]int64{10, 10, 10})
-	minimumRequirement, minimumCoverage := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
+	oneChunk, oneInsurance := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
 
-	addrs, balances := suite.AddTestAddrs(types.MaxPairedChunks-1, minimumRequirement.Amount)
+	addrs, balances := suite.AddTestAddrs(types.MaxPairedChunks-1, oneChunk.Amount)
 
 	// TC: There are no pairing insurances yet. Insurances must be provided to liquid stake
 	acc1 := addrs[0]
-	msg := types.NewMsgLiquidStake(acc1.String(), minimumRequirement)
+	msg := types.NewMsgLiquidStake(acc1.String(), oneChunk)
 	_, _, _, err := suite.app.LiquidStakingKeeper.DoLiquidStake(suite.ctx, msg)
 	suite.ErrorContains(err, types.ErrNoPairingInsurance.Error())
 
-	providers, providerBalances := suite.AddTestAddrs(10, minimumCoverage.Amount)
+	providers, providerBalances := suite.AddTestAddrs(10, oneInsurance.Amount)
 	suite.provideInsurances(providers, valAddrs, providerBalances, sdk.ZeroDec(), nil)
 
 	// TC: Not enough amount to liquid stake
 	// acc1 tries to liquid stake 2 * ChunkSize tokens, but he has only ChunkSize tokens
-	msg = types.NewMsgLiquidStake(acc1.String(), minimumRequirement.AddAmount(types.ChunkSize))
-	_, _, _, err = suite.app.LiquidStakingKeeper.DoLiquidStake(suite.ctx, msg)
+	msg = types.NewMsgLiquidStake(acc1.String(), oneChunk.AddAmount(types.ChunkSize))
+	cachedCtx, writeCache := suite.ctx.CacheContext()
+	_, _, _, err = suite.app.LiquidStakingKeeper.DoLiquidStake(cachedCtx, msg)
+	if err == nil {
+		writeCache()
+	}
 	suite.ErrorContains(err, sdkerrors.ErrInsufficientFunds.Error())
 
 	msg.Amount.Denom = "unknown"
@@ -237,10 +241,10 @@ func (suite *KeeperTestSuite) TestLiquidStakeFail() {
 	msg.Amount = msg.Amount.AddAmount(oneTokenAmount)
 
 	// liquid stake ChunkSize tokens so maximum chunk size is reached
-	suite.liquidStakes([]sdk.AccAddress{acc1}, []sdk.Coin{minimumRequirement})
+	suite.liquidStakes([]sdk.AccAddress{acc1}, []sdk.Coin{oneChunk})
 
 	// TC: MaxPairedChunks is reached, no more chunks can be paired
-	newAddrs, newBalances := suite.AddTestAddrs(1, minimumRequirement.Amount)
+	newAddrs, newBalances := suite.AddTestAddrs(1, oneChunk.Amount)
 	msg = types.NewMsgLiquidStake(newAddrs[0].String(), newBalances[0])
 	_, _, _, err = suite.app.LiquidStakingKeeper.DoLiquidStake(suite.ctx, msg)
 	suite.ErrorIs(err, types.ErrMaxPairedChunkSizeExceeded)

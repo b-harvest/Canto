@@ -337,7 +337,7 @@ func (k Keeper) RePairRankedInsurances(
 	for _, outInsurance := range rankOutInsurances {
 		chunk, found := k.GetChunk(ctx, outInsurance.ChunkId)
 		if !found {
-			panic("chunk not found")
+			return sdkerrors.Wrapf(types.ErrNotFoundChunk, "chunk id: %d", outInsurance.ChunkId)
 		}
 		rankOutInsuranceChunkMap[outInsurance.Id] = chunk
 	}
@@ -376,13 +376,8 @@ func (k Keeper) RePairRankedInsurances(
 
 	// pairing chunks are immediately pairable
 	var pairingChunks []types.Chunk
-	if err = k.IterateAllChunks(ctx, func(chunk types.Chunk) (stop bool, err error) {
-		if chunk.Status == types.CHUNK_STATUS_PAIRING {
-			pairingChunks = append(pairingChunks, chunk)
-		}
-		return false, nil
-	}); err != nil {
-		return err
+	if pairingChunks, err = k.GetAllPairingChunks(ctx); err != nil {
+		return
 	}
 	for len(pairingChunks) > 0 && len(newInsurancesWithDifferentValidators) > 0 {
 		chunk := pairingChunks[0]
@@ -400,23 +395,9 @@ func (k Keeper) RePairRankedInsurances(
 			return
 		}
 
-		if _, err = k.stakingKeeper.Delegate(
-			ctx,
-			chunk.DerivedAddress(),
-			types.ChunkSize,
-			stakingtypes.Unbonded,
-			validator,
-			true,
-		); err != nil {
+		if _, _, _, err = k.pairChunkAndInsurance(ctx, chunk, newInsurance, validator); err != nil {
 			return
 		}
-		chunk.SetStatus(types.CHUNK_STATUS_PAIRED)
-		if newInsurance.Status == types.INSURANCE_STATUS_PAIRING {
-			k.DeletePairingInsuranceIndex(ctx, newInsurance)
-		}
-		newInsurance.SetStatus(types.INSURANCE_STATUS_PAIRED)
-		k.SetChunk(ctx, chunk)
-		k.SetInsurance(ctx, newInsurance)
 	}
 	if len(newInsurancesWithDifferentValidators) == 0 {
 		for _, outInsurance := range rankOutInsurances {
@@ -467,6 +448,7 @@ func (k Keeper) RePairRankedInsurances(
 		chunk.PairedInsuranceId = newInsurance.Id
 		chunk.SetStatus(types.CHUNK_STATUS_PAIRED)
 		k.SetChunk(ctx, chunk)
+		k.DeletePairingInsuranceIndex(ctx, newInsurance)
 	}
 	return
 }
@@ -535,25 +517,21 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (chunk
 			ctx,
 			delAddr,
 			chunk.DerivedAddress(),
-			sdk.NewCoins(amount),
+			sdk.NewCoins(sdk.NewCoin(amount.Denom, types.ChunkSize)),
 		); err != nil {
 			return
 		}
-		chunk.PairedInsuranceId = cheapestInsurance.Id
-		cheapestInsurance.ChunkId = chunk.Id
 		validator := validatorMap[cheapestInsurance.ValidatorAddress]
 
 		// Delegate to the validator
 		// Delegator: DerivedAddress(chunk.Id)
 		// Validator: insurance.ValidatorAddress
 		// Amount: msg.Amount
-		newShares, err = k.stakingKeeper.Delegate(
+		chunk, cheapestInsurance, newShares, err = k.pairChunkAndInsurance(
 			ctx,
-			chunk.DerivedAddress(),
-			amount.Amount,
-			stakingtypes.Unbonded,
+			chunk,
+			cheapestInsurance,
 			validator,
-			true,
 		)
 		if err != nil {
 			return
@@ -578,11 +556,6 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (chunk
 		if err = k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, delAddr, sdk.NewCoins(mintedCoin)); err != nil {
 			return
 		}
-		chunk.SetStatus(types.CHUNK_STATUS_PAIRED)
-		cheapestInsurance.SetStatus(types.INSURANCE_STATUS_PAIRED)
-		k.SetChunk(ctx, chunk)
-		k.SetInsurance(ctx, cheapestInsurance)
-		k.DeletePairingInsuranceIndex(ctx, cheapestInsurance)
 		chunks = append(chunks, chunk)
 	}
 	return
@@ -1257,4 +1230,31 @@ func (k Keeper) withdrawInsurance(ctx sdk.Context, insurance types.Insurance) er
 	}
 	k.DeleteInsurance(ctx, insurance.Id)
 	return nil
+}
+
+func (k Keeper) pairChunkAndInsurance(
+	ctx sdk.Context,
+	chunk types.Chunk,
+	insurance types.Insurance,
+	validator stakingtypes.Validator,
+) (types.Chunk, types.Insurance, sdk.Dec, error) {
+	newShares, err := k.stakingKeeper.Delegate(
+		ctx,
+		chunk.DerivedAddress(),
+		types.ChunkSize,
+		stakingtypes.Unbonded,
+		validator,
+		true,
+	)
+	if err != nil {
+		return types.Chunk{}, types.Insurance{}, sdk.Dec{}, err
+	}
+	chunk.PairedInsuranceId = insurance.Id
+	insurance.ChunkId = chunk.Id
+	chunk.SetStatus(types.CHUNK_STATUS_PAIRED)
+	insurance.SetStatus(types.INSURANCE_STATUS_PAIRED)
+	k.SetChunk(ctx, chunk)
+	k.SetInsurance(ctx, insurance)
+	k.DeletePairingInsuranceIndex(ctx, insurance)
+	return chunk, insurance, newShares, nil
 }
