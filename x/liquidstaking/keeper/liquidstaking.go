@@ -906,6 +906,7 @@ func (k Keeper) completeInsuranceDuty(ctx sdk.Context, insurance types.Insurance
 	switch chunk.Status {
 	case types.CHUNK_STATUS_UNPAIRING_FOR_UNSTAKING:
 	case types.CHUNK_STATUS_UNPAIRING:
+	case types.CHUNK_STATUS_PAIRED: // In this case, chunk got re-delegated at previous Epoch
 		chunk.UnpairingInsuranceId = 0
 	}
 
@@ -914,6 +915,8 @@ func (k Keeper) completeInsuranceDuty(ctx sdk.Context, insurance types.Insurance
 	return nil
 }
 
+// completeLiquidStake completes liquid stake.
+// TODO: write TC for penalty situation
 func (k Keeper) completeLiquidUnstake(ctx sdk.Context, chunk types.Chunk) error {
 	if chunk.Status != types.CHUNK_STATUS_UNPAIRING_FOR_UNSTAKING {
 		return sdkerrors.Wrapf(types.ErrInvalidChunkStatus, "chunk status: %s", chunk.Status)
@@ -928,7 +931,6 @@ func (k Keeper) completeLiquidUnstake(ctx sdk.Context, chunk types.Chunk) error 
 	if !found {
 		return sdkerrors.Wrapf(types.ErrNotFoundInsurance, "insurance id: %d", chunk.UnpairingInsuranceId)
 	}
-
 	if chunk.PairedInsuranceId != 0 {
 		return sdkerrors.Wrapf(types.ErrUnpairingChunkHavePairedChunk, "paired insurance id: %d", chunk.PairedInsuranceId)
 	}
@@ -993,6 +995,7 @@ func (k Keeper) completeLiquidUnstake(ctx sdk.Context, chunk types.Chunk) error 
 }
 
 // handleUnpairingChunk handles unpairing chunk which created previous epoch.
+// TODO: write TC for penalty situation
 func (k Keeper) handleUnpairingChunk(ctx sdk.Context, chunk types.Chunk) error {
 	if chunk.Status != types.CHUNK_STATUS_UNPAIRING {
 		return sdkerrors.Wrapf(types.ErrInvalidChunkStatus, "chunk id: %d, status: %s", chunk.Id, chunk.Status)
@@ -1005,7 +1008,6 @@ func (k Keeper) handleUnpairingChunk(ctx sdk.Context, chunk types.Chunk) error {
 	if !found {
 		return sdkerrors.Wrapf(types.ErrNotFoundInsurance, "insurance id: %d", chunk.UnpairingInsuranceId)
 	}
-
 	if chunk.PairedInsuranceId != 0 {
 		return sdkerrors.Wrapf(types.ErrUnpairingChunkHavePairedChunk, "paired insurance id: %d", chunk.PairedInsuranceId)
 	}
@@ -1082,6 +1084,7 @@ func (k Keeper) handlePairedChunk(ctx sdk.Context, chunk types.Chunk) error {
 	tokens := validator.TokensFromShares(delegation.GetShares())
 	penalty := types.ChunkSize.ToDec().Sub(tokens)
 	if penalty.IsPositive() {
+		// TODO: Check when slashing happened and decide which insurances (unpairing or paired) should cover penalty.
 		// check penalty is bigger than insurance balance
 		insuranceBalance := k.bankKeeper.GetBalance(
 			ctx,
@@ -1150,6 +1153,12 @@ func (k Keeper) handlePairedChunk(ctx sdk.Context, chunk types.Chunk) error {
 		}
 	}
 
+	unpairingInsurance, found := k.GetInsurance(ctx, chunk.UnpairingInsuranceId)
+	if found {
+		if err = k.completeInsuranceDuty(ctx, unpairingInsurance); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
