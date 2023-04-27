@@ -554,12 +554,13 @@ func (k Keeper) QueueLiquidUnstake(ctx sdk.Context, msg *types.MsgLiquidUnstake)
 	delAddr := msg.GetDelegator()
 	amount := msg.Amount
 
-	if err = k.ShouldBeMultipleOfChunkSize(amount.Amount); err != nil {
-		return
-	}
 	if err = k.ShouldBeBondDenom(ctx, amount.Denom); err != nil {
 		return
 	}
+	if err = k.ShouldBeMultipleOfChunkSize(amount.Amount); err != nil {
+		return
+	}
+
 	chunksToLiquidUnstake := amount.Amount.Quo(types.ChunkSize).Int64()
 
 	chunksWithInsuranceId := make(map[uint64]types.Chunk)
@@ -645,6 +646,9 @@ func (k Keeper) DoProvideInsurance(ctx sdk.Context, msg *types.MsgProvideInsuran
 	feeRate := msg.FeeRate
 	amount := msg.Amount
 
+	if err = k.ShouldBeBondDenom(ctx, amount.Denom); err != nil {
+		return
+	}
 	// Check if the amount is greater than minimum coverage
 	_, minimumCoverage := k.GetMinimumRequirements(ctx)
 	if amount.Amount.LT(minimumCoverage.Amount) {
@@ -746,7 +750,7 @@ func (k Keeper) DoWithdrawInsuranceCommission(ctx sdk.Context, msg *types.MsgWit
 	insuranceId := msg.Id
 
 	// Check if the insurance exists
-	insurance, found := k.GetPairingInsurance(ctx, insuranceId)
+	insurance, found := k.GetInsurance(ctx, insuranceId)
 	if !found {
 		err = sdkerrors.Wrapf(types.ErrPairingInsuranceNotFound, "insurance id: %d", insuranceId)
 		return
@@ -779,7 +783,7 @@ func (k Keeper) DoDepositInsurance(ctx sdk.Context, msg *types.MsgDepositInsuran
 	amount := msg.Amount
 
 	// Check if the insurance exists
-	insurance, found := k.GetPairingInsurance(ctx, insuranceId)
+	insurance, found := k.GetInsurance(ctx, insuranceId)
 	if !found {
 		err = sdkerrors.Wrapf(types.ErrPairingInsuranceNotFound, "insurance id: %d", insuranceId)
 		return
