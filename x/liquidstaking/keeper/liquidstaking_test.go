@@ -742,6 +742,47 @@ func (suite *KeeperTestSuite) TestDoWithdrawInsurance() {
 	)
 }
 
+func (suite *KeeperTestSuite) TestDoWithdrawInsuranceFail() {
+	// create valAddrs
+	valAddrs := suite.CreateValidators([]int64{1, 1, 1})
+	_, oneInsurance := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
+	// create providers
+	providers, providerBalances := suite.AddTestAddrs(3, oneInsurance.Amount.Add(sdk.NewInt(100)))
+	// provide insurances
+	insurances := suite.provideInsurances(providers, valAddrs, providerBalances, sdk.NewDecWithPrec(10, 2), nil)
+
+	tcs := []struct {
+		name        string
+		msg         *types.MsgWithdrawInsurance
+		expectedErr error
+	}{
+		{
+			name: "invalid provider",
+			msg: types.NewMsgWithdrawInsurance(
+				providers[1].String(),
+				insurances[0].Id,
+			),
+			expectedErr: types.ErrNotProviderOfInsurance,
+		},
+		{
+			name: "invalid insurance id",
+			msg: types.NewMsgWithdrawInsurance(
+				providers[0].String(),
+				120,
+			),
+			expectedErr: types.ErrNotFoundInsurance,
+		},
+	}
+
+	for _, tc := range tcs {
+		_, err := suite.app.LiquidStakingKeeper.DoWithdrawInsurance(suite.ctx, tc.msg)
+		if tc.expectedErr == nil {
+			suite.NoError(err)
+		}
+		suite.ErrorContains(err, tc.expectedErr.Error())
+	}
+}
+
 func (suite *KeeperTestSuite) TestDoWithdrawInsuranceCommission() {
 	suite.resetEpochs()
 	valAddrs := suite.CreateValidators([]int64{1, 1, 1})
@@ -831,6 +872,84 @@ func (suite *KeeperTestSuite) TestDoWithdrawInsuranceCommissionFail() {
 
 	for _, tc := range tcs {
 		err := suite.app.LiquidStakingKeeper.DoWithdrawInsuranceCommission(suite.ctx, tc.msg)
+		if tc.expectedErr == nil {
+			suite.NoError(err)
+		}
+		suite.ErrorContains(err, tc.expectedErr.Error())
+	}
+}
+
+func (suite *KeeperTestSuite) TestDoDepositInsurance() {
+	// create validators
+	validators := suite.CreateValidators([]int64{1, 1, 1})
+	_, oneInsurance := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
+	// create providers
+	providers, _ := suite.AddTestAddrs(3, oneInsurance.Amount.Add(sdk.NewInt(100)))
+	// provide insurances
+	insurances := suite.provideInsurances(
+		providers,
+		validators,
+		[]sdk.Coin{oneInsurance, oneInsurance, oneInsurance},
+		sdk.NewDecWithPrec(10, 2),
+		nil,
+	)
+	// all providers still have 100 acanto after provide insurance
+
+	msgDepositInsurance := types.NewMsgDepositInsurance(
+		providers[0].String(),
+		insurances[0].Id,
+		sdk.NewCoin(oneInsurance.Denom, sdk.NewInt(100)),
+	)
+
+	err := suite.app.LiquidStakingKeeper.DoDepositInsurance(suite.ctx, msgDepositInsurance)
+	suite.NoError(err)
+}
+
+func (suite *KeeperTestSuite) TestDoDepositInsuranceFail() {
+	// create valAddrs
+	valAddrs := suite.CreateValidators([]int64{1, 1, 1})
+	_, oneInsurance := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
+	// create providers
+	providers, providerBalances := suite.AddTestAddrs(3, oneInsurance.Amount.Add(sdk.NewInt(100)))
+	// provide insurances
+	insurances := suite.provideInsurances(providers, valAddrs, providerBalances, sdk.NewDecWithPrec(10, 2), nil)
+
+	tcs := []struct {
+		name        string
+		msg         *types.MsgDepositInsurance
+		expectedErr error
+	}{
+		{
+			name: "invalid provider",
+			msg: types.NewMsgDepositInsurance(
+				providers[1].String(),
+				insurances[0].Id,
+				sdk.NewCoin(oneInsurance.Denom, sdk.NewInt(100)),
+			),
+			expectedErr: types.ErrNotProviderOfInsurance,
+		},
+		{
+			name: "invalid insurance id",
+			msg: types.NewMsgDepositInsurance(
+				providers[0].String(),
+				120,
+				sdk.NewCoin(oneInsurance.Denom, sdk.NewInt(100)),
+			),
+			expectedErr: types.ErrNotFoundInsurance,
+		},
+		{
+			name: "invalid insurance denom",
+			msg: types.NewMsgDepositInsurance(
+				providers[0].String(),
+				insurances[0].Id,
+				sdk.NewCoin("invalidDenom", sdk.NewInt(100)),
+			),
+			expectedErr: types.ErrInvalidBondDenom,
+		},
+	}
+
+	for _, tc := range tcs {
+		err := suite.app.LiquidStakingKeeper.DoDepositInsurance(suite.ctx, tc.msg)
 		if tc.expectedErr == nil {
 			suite.NoError(err)
 		}
@@ -976,84 +1095,6 @@ func (suite *KeeperTestSuite) TestEndBlocker() {
 	suite.advanceHeight(1, "pairing chunk is paired now")
 	pairedChunk, _ := suite.app.LiquidStakingKeeper.GetChunk(suite.ctx, pairingChunk.Id)
 	suite.Equal(types.CHUNK_STATUS_PAIRED, pairedChunk.Status)
-}
-
-func (suite *KeeperTestSuite) TestDoDepositInsurance() {
-	// create validators
-	validators := suite.CreateValidators([]int64{1, 1, 1})
-	_, oneInsurance := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
-	// create providers
-	providers, _ := suite.AddTestAddrs(3, oneInsurance.Amount.Add(sdk.NewInt(100)))
-	// provide insurances
-	insurances := suite.provideInsurances(
-		providers,
-		validators,
-		[]sdk.Coin{oneInsurance, oneInsurance, oneInsurance},
-		sdk.NewDecWithPrec(10, 2),
-		nil,
-	)
-	// all providers still have 100 acanto after provide insurance
-
-	msgDepositInsurance := types.NewMsgDepositInsurance(
-		providers[0].String(),
-		insurances[0].Id,
-		sdk.NewCoin(oneInsurance.Denom, sdk.NewInt(100)),
-	)
-
-	err := suite.app.LiquidStakingKeeper.DoDepositInsurance(suite.ctx, msgDepositInsurance)
-	suite.NoError(err)
-}
-
-func (suite *KeeperTestSuite) TestDoDepositInsuranceFail() {
-	// create valAddrs
-	valAddrs := suite.CreateValidators([]int64{1, 1, 1})
-	_, oneInsurance := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
-	// create providers
-	providers, providerBalances := suite.AddTestAddrs(3, oneInsurance.Amount.Add(sdk.NewInt(100)))
-	// provide insurances
-	insurances := suite.provideInsurances(providers, valAddrs, providerBalances, sdk.NewDecWithPrec(10, 2), nil)
-
-	tcs := []struct {
-		name                string
-		msgDepositInsurance *types.MsgDepositInsurance
-		expectedErr         error
-	}{
-		{
-			name: "invalid provider",
-			msgDepositInsurance: types.NewMsgDepositInsurance(
-				providers[1].String(),
-				insurances[0].Id,
-				sdk.NewCoin(oneInsurance.Denom, sdk.NewInt(100)),
-			),
-			expectedErr: types.ErrNotProviderOfInsurance,
-		},
-		{
-			name: "invalid insurance id",
-			msgDepositInsurance: types.NewMsgDepositInsurance(
-				providers[0].String(),
-				120,
-				sdk.NewCoin(oneInsurance.Denom, sdk.NewInt(100)),
-			),
-			expectedErr: types.ErrNotFoundInsurance,
-		},
-		{
-			name: "invalid insurance denom",
-			msgDepositInsurance: types.NewMsgDepositInsurance(
-				providers[0].String(),
-				insurances[0].Id,
-				sdk.NewCoin("invalidDenom", sdk.NewInt(100)),
-			),
-			expectedErr: types.ErrInvalidBondDenom,
-		},
-	}
-
-	for _, tc := range tcs {
-		err := suite.app.LiquidStakingKeeper.DoDepositInsurance(suite.ctx, tc.msgDepositInsurance)
-		if tc.expectedErr == nil {
-			suite.NoError(err)
-		}
-		suite.ErrorContains(err, tc.expectedErr.Error())
-	}
 }
 
 func (suite *KeeperTestSuite) getUnitDistribution(
