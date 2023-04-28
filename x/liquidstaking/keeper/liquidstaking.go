@@ -128,15 +128,16 @@ func (k Keeper) CoverSlashingAndHandleMatureUnbondings(ctx sdk.Context) {
 func (k Keeper) HandleQueuedLiquidUnstakes(ctx sdk.Context) ([]types.Chunk, error) {
 	var unstakedChunks []types.Chunk
 	// TODO: Should use Queue for processing in sequence? MintRate is ok?, insurance issue? etc...
-	pendingLiquidUnstakes := k.GetAllPendingLiquidUnstake(ctx)
-	for _, plu := range pendingLiquidUnstakes {
+	infos := k.GetAllUnpairingForUnstakingChunkInfos(ctx)
+	for _, info := range infos {
 		// Get chunk
-		chunk, found := k.GetChunk(ctx, plu.ChunkId)
+		chunk, found := k.GetChunk(ctx, info.ChunkId)
 		if !found {
-			return nil, sdkerrors.Wrapf(types.ErrNotFoundChunk, "id: %d", plu.ChunkId)
+			return nil, sdkerrors.Wrapf(types.ErrNotFoundChunk, "id: %d", info.ChunkId)
 		}
 		if chunk.Status != types.CHUNK_STATUS_PAIRED {
-			return nil, sdkerrors.Wrapf(types.ErrInvalidChunkStatus, "id: %d, status: %s", chunk.Id, chunk.Status)
+			// Chunk is already in unstaking process, so we skip it
+			continue
 		}
 		// get insurance
 		insurance, found := k.GetInsurance(ctx, chunk.PairedInsuranceId)
@@ -163,12 +164,6 @@ func (k Keeper) HandleQueuedLiquidUnstakes(ctx sdk.Context) ([]types.Chunk, erro
 		k.SetChunk(ctx, chunk)
 		k.SetInsurance(ctx, insurance)
 		unstakedChunks = append(unstakedChunks, chunk)
-		// Set tracking obj
-		k.SetUnpairingForUnstakingChunkInfo(
-			ctx,
-			types.NewUnpairingForUnstakingChunkInfo(chunk.Id, plu.DelegatorAddress, plu.EscrowedLstokens),
-		)
-		k.DeletePendingLiquidUnstake(ctx, plu)
 	}
 	return unstakedChunks, nil
 }
@@ -564,7 +559,7 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (chunk
 // Actual unstaking will be done in the next epoch.
 func (k Keeper) QueueLiquidUnstake(ctx sdk.Context, msg *types.MsgLiquidUnstake) (
 	toBeUnstakedChunks []types.Chunk,
-	pendingLiquidUnstakes []types.PendingLiquidUnstake,
+	infos []types.UnpairingForUnstakingChunkInfo,
 	err error,
 ) {
 	delAddr := msg.GetDelegator()
@@ -643,15 +638,25 @@ func (k Keeper) QueueLiquidUnstake(ctx sdk.Context, msg *types.MsgLiquidUnstake)
 
 		mostExpensiveInsurance := insurances[i]
 		chunkToBeUndelegated := chunksWithInsuranceId[mostExpensiveInsurance.Id]
-		// TODO: Check if the chunk is not already in the queue
-		plu := types.NewPendingLiquidUnstake(
+		_, found := k.GetUnpairingForUnstakingChunkInfo(ctx, chunkToBeUndelegated.Id)
+		if found {
+			err = sdkerrors.Wrapf(
+				types.ErrAlreadyInQueue,
+				"chunk id: %d, delegator address: %s",
+				chunkToBeUndelegated.Id,
+				msg.DelegatorAddress,
+			)
+			return
+		}
+
+		info := types.NewUnpairingForUnstakingChunkInfo(
 			chunkToBeUndelegated.Id,
 			msg.DelegatorAddress,
 			lsTokensToBurn,
 		)
 		toBeUnstakedChunks = append(toBeUnstakedChunks, chunksWithInsuranceId[insurances[i].Id])
-		pendingLiquidUnstakes = append(pendingLiquidUnstakes, plu)
-		k.SetPendingLiquidUnstake(ctx, plu)
+		infos = append(infos, info)
+		k.SetUnpairingForUnstakingChunkInfo(ctx, info)
 	}
 	return
 }

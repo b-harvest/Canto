@@ -30,4 +30,5 @@ var (
 	ErrNotFoundWithdrawInsuranceRequestInsuranceId   = sdkerrors.Register(ModuleName, 30027, "insurance corresponding withdraw insurance request must exists")
 	ErrInvalidLastChunkId                            = sdkerrors.Register(ModuleName, 30028, "last chunk id must positive")
 	ErrInvalidLastInsuranceId                        = sdkerrors.Register(ModuleName, 30029, "last insurance id must positive")
+	ErrAlreadyInQueue                                = sdkerrors.Register(ModuleName, 30030, "liquid ustaking is already in queue")
 )
