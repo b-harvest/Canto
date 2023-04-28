@@ -377,9 +377,6 @@ func (k Keeper) RePairRankedInsurances(
 		newInsurance := newInsurancesWithDifferentValidators[0]
 		newInsurancesWithDifferentValidators = newInsurancesWithDifferentValidators[1:]
 
-		chunk.PairedInsuranceId = newInsurance.Id
-		newInsurance.ChunkId = chunk.Id
-
 		validator, found := k.stakingKeeper.GetValidator(ctx, newInsurance.GetValidator())
 		if !found {
 			err = sdkerrors.Wrapf(types.ErrNotFoundValidator, "validator: %s", newInsurance.GetValidator())

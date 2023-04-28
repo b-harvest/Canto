@@ -1081,10 +1081,6 @@ func (suite *KeeperTestSuite) TestEndBlocker() {
 	providers, providerBalances := suite.AddTestAddrs(3, oneInsurance.Amount)
 	// 3 insurances (insurance fee rates are all same as 10%)
 	insurances := suite.provideInsurances(providers, valAddrs, providerBalances, sdk.NewDecWithPrec(10, 2), nil)
-	var idsOfPairedInsurances []uint64
-	for _, insurance := range insurances {
-		idsOfPairedInsurances = append(idsOfPairedInsurances, insurance.Id)
-	}
 	// 3 delegators
 	delegators, delegatorBalances := suite.AddTestAddrs(3, oneChunk.Amount)
 	// liquid stakes 3 chunks
@@ -1104,15 +1100,16 @@ func (suite *KeeperTestSuite) TestEndBlocker() {
 	suite.NoError(err)
 	suite.advanceEpoch()
 	suite.advanceHeight(1, "queued withdraw insurance request is handled and there are no additional insurances yet so unpairing triggered")
-
-	// Check unbonding obj exists
-	unbondingDelegation, found := suite.app.StakingKeeper.GetUnbondingDelegation(
-		suite.ctx,
-		chunkToBeUnpairing.DerivedAddress(),
-		toBeWithdrawnInsurance.GetValidator(),
-	)
-	suite.True(found)
-	suite.Equal(toBeWithdrawnInsurance.GetValidator().String(), unbondingDelegation.ValidatorAddress)
+	{
+		// Check unbonding obj exists
+		unbondingDelegation, found := suite.app.StakingKeeper.GetUnbondingDelegation(
+			suite.ctx,
+			chunkToBeUnpairing.DerivedAddress(),
+			toBeWithdrawnInsurance.GetValidator(),
+		)
+		suite.True(found)
+		suite.Equal(toBeWithdrawnInsurance.GetValidator().String(), unbondingDelegation.ValidatorAddress)
+	}
 
 	suite.advanceHeight(1, "")
 
@@ -1120,9 +1117,11 @@ func (suite *KeeperTestSuite) TestEndBlocker() {
 	suite.advanceHeight(1, "withdrawal and unbonding of chunkToBeUnpairing is finished")
 	withdrawnInsurance, _ := suite.app.LiquidStakingKeeper.GetInsurance(suite.ctx, toBeWithdrawnInsurance.Id)
 	pairingChunk, _ := suite.app.LiquidStakingKeeper.GetChunk(suite.ctx, chunkToBeUnpairing.Id)
-	suite.Equal(types.CHUNK_STATUS_PAIRING, pairingChunk.Status)
-	suite.Equal(uint64(0), pairingChunk.UnpairingInsuranceId)
-	suite.Equal(types.INSURANCE_STATUS_UNPAIRED, withdrawnInsurance.Status)
+	{
+		suite.Equal(types.CHUNK_STATUS_PAIRING, pairingChunk.Status)
+		suite.Equal(uint64(0), pairingChunk.UnpairingInsuranceId)
+		suite.Equal(types.INSURANCE_STATUS_UNPAIRED, withdrawnInsurance.Status)
+	}
 
 	suite.advanceHeight(1, "")
 
@@ -1138,31 +1137,49 @@ func (suite *KeeperTestSuite) TestEndBlocker() {
 
 	suite.advanceEpoch()
 	suite.advanceHeight(1, "pairing chunk is paired now")
-	pairedChunk, _ := suite.app.LiquidStakingKeeper.GetChunk(suite.ctx, pairingChunk.Id)
-	suite.Equal(types.CHUNK_STATUS_PAIRED, pairedChunk.Status)
-	// new insurances must be paired with paired chunks
-	suite.NoError(suite.app.LiquidStakingKeeper.IterateAllChunks(suite.ctx, func(chunk types.Chunk) (bool, error) {
-		if chunk.Status == types.CHUNK_STATUS_PAIRED {
-			var shouldBeFound bool
-			for _, newInsurance := range newInsurances {
-				if chunk.PairedInsuranceId == newInsurance.Id {
-					shouldBeFound = true
-					break
-				}
-			}
-			suite.True(shouldBeFound)
-
-			var shouldNotBeFound bool
-			for _, insurance := range insurances {
-				if chunk.PairedInsuranceId == insurance.Id {
-					shouldBeFound = true
-					break
-				}
-			}
-			suite.False(shouldNotBeFound)
+	{
+		// get newInsurances from module so it presents latest state of insurances
+		var updatedNewInsurances []types.Insurance
+		for _, newInsurance := range newInsurances {
+			insurance, _ := suite.app.LiquidStakingKeeper.GetInsurance(suite.ctx, newInsurance.Id)
+			updatedNewInsurances = append(updatedNewInsurances, insurance)
 		}
-		return false, nil
-	}))
+
+		var updatedOldInsurances []types.Insurance
+		for _, insurance := range insurances {
+			insurance, _ := suite.app.LiquidStakingKeeper.GetInsurance(suite.ctx, insurance.Id)
+			updatedOldInsurances = append(updatedOldInsurances, insurance)
+		}
+
+		pairedChunk, _ := suite.app.LiquidStakingKeeper.GetChunk(suite.ctx, pairingChunk.Id)
+		suite.Equal(types.CHUNK_STATUS_PAIRED, pairedChunk.Status)
+		suite.NoError(suite.app.LiquidStakingKeeper.IterateAllChunks(suite.ctx, func(chunk types.Chunk) (bool, error) {
+			if chunk.Status == types.CHUNK_STATUS_PAIRED {
+				found := false
+				for _, newInsurance := range updatedNewInsurances {
+					if chunk.PairedInsuranceId == newInsurance.Id &&
+						newInsurance.ChunkId == chunk.Id &&
+						newInsurance.Status == types.INSURANCE_STATUS_PAIRED {
+						found = true
+						break
+					}
+				}
+				suite.True(found, "chunk must be paired with one of new insurances(ranked-in)")
+
+				found = false
+				// old insurances(= ranked-out) must not be paired with chunks
+				for _, oldInsurance := range updatedOldInsurances {
+					if chunk.PairedInsuranceId == oldInsurance.Id {
+						found = true
+						break
+					}
+					suite.True(oldInsurance.Status != types.INSURANCE_STATUS_PAIRED, "ranked-out oldInsurance must not be paired")
+				}
+				suite.False(found, "chunk must not be paired with one of old insurances(ranked-out)")
+			}
+			return false, nil
+		}))
+	}
 
 	suite.advanceHeight(1, "")
 
@@ -1178,29 +1195,45 @@ func (suite *KeeperTestSuite) TestEndBlocker() {
 
 	suite.advanceEpoch()
 	suite.advanceHeight(1, "all paired chunks are started to be re-paired with new insurances")
-
-	suite.NoError(suite.app.LiquidStakingKeeper.IterateAllChunks(suite.ctx, func(chunk types.Chunk) (bool, error) {
-		if chunk.Status == types.CHUNK_STATUS_PAIRED {
-			var shouldBeFound bool
-			for _, newInsurance := range newInsurances {
-				if chunk.PairedInsuranceId == newInsurance.Id {
-					shouldBeFound = true
-					break
-				}
-			}
-			suite.True(shouldBeFound)
-
-			var shouldNotBeFound bool
-			for _, insurance := range pairedInsurances {
-				if chunk.PairedInsuranceId == insurance.Id {
-					shouldBeFound = true
-					break
-				}
-			}
-			suite.False(shouldNotBeFound)
+	{
+		// get newInsurances from module so it presents latest state of insurances
+		var updatedNewInsurances []types.Insurance
+		for _, newInsurance := range newInsurances {
+			insurance, _ := suite.app.LiquidStakingKeeper.GetInsurance(suite.ctx, newInsurance.Id)
+			updatedNewInsurances = append(updatedNewInsurances, insurance)
 		}
-		return false, nil
-	}))
+
+		var updatedOldInsurances []types.Insurance
+		for _, insurance := range pairedInsurances {
+			insurance, _ := suite.app.LiquidStakingKeeper.GetInsurance(suite.ctx, insurance.Id)
+			updatedOldInsurances = append(updatedOldInsurances, insurance)
+		}
+
+		suite.NoError(suite.app.LiquidStakingKeeper.IterateAllChunks(suite.ctx, func(chunk types.Chunk) (bool, error) {
+			if chunk.Status == types.CHUNK_STATUS_PAIRED {
+				found := false
+				for _, newInsurance := range updatedNewInsurances {
+					if chunk.PairedInsuranceId == newInsurance.Id &&
+						newInsurance.ChunkId == chunk.Id &&
+						newInsurance.Status == types.INSURANCE_STATUS_PAIRED {
+						found = true
+						break
+					}
+				}
+				suite.True(found, "chunk must be paired with one of new insurances(ranked-in)")
+
+				found = false
+				for _, oldInsurance := range updatedOldInsurances {
+					if chunk.PairedInsuranceId == oldInsurance.Id {
+						found = true
+						break
+					}
+				}
+				suite.False(found, "chunk must not be paired with one of old insurances(ranked-out)")
+			}
+			return false, nil
+		}))
+	}
 
 }
 
