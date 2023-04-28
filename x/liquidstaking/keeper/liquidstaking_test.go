@@ -1128,7 +1128,7 @@ func (suite *KeeperTestSuite) TestEndBlocker() {
 
 	newValAddrs := suite.CreateValidators([]int64{1, 1, 1})
 	newProviders, newProviderBalances := suite.AddTestAddrs(3, oneInsurance.Amount)
-	_ = suite.provideInsurances(
+	newInsurances := suite.provideInsurances(
 		newProviders,
 		newValAddrs,
 		newProviderBalances,
@@ -1140,6 +1140,29 @@ func (suite *KeeperTestSuite) TestEndBlocker() {
 	suite.advanceHeight(1, "pairing chunk is paired now")
 	pairedChunk, _ := suite.app.LiquidStakingKeeper.GetChunk(suite.ctx, pairingChunk.Id)
 	suite.Equal(types.CHUNK_STATUS_PAIRED, pairedChunk.Status)
+	// new insurances must be paired with paired chunks
+	suite.app.LiquidStakingKeeper.IterateAllChunks(suite.ctx, func(chunk types.Chunk) (bool, error) {
+		if chunk.Status == types.CHUNK_STATUS_PAIRED {
+			var shouldBeFound bool
+			for _, newInsurance := range newInsurances {
+				if chunk.PairedInsuranceId == newInsurance.Id {
+					shouldBeFound = true
+					break
+				}
+			}
+			suite.True(shouldBeFound)
+
+			var shouldNotBeFound bool
+			for _, insurance := range insurances {
+				if chunk.PairedInsuranceId == insurance.Id {
+					shouldBeFound = true
+					break
+				}
+			}
+			suite.False(shouldNotBeFound)
+		}
+		return false, nil
+	})
 }
 
 func (suite *KeeperTestSuite) getUnitDistribution(

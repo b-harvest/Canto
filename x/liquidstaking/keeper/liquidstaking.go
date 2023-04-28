@@ -394,6 +394,7 @@ func (k Keeper) RePairRankedInsurances(
 			return
 		}
 	}
+
 	if len(newInsurancesWithDifferentValidators) == 0 {
 		for _, outInsurance := range rankOutInsurances {
 			chunk, found := k.GetChunk(ctx, outInsurance.ChunkId)
@@ -406,8 +407,12 @@ func (k Keeper) RePairRankedInsurances(
 				return sdkerrors.Wrapf(types.ErrInvalidChunkStatus, "chunkId: %d", outInsurance.ChunkId)
 			}
 			var shares sdk.Dec
-			shares, err = k.stakingKeeper.ValidateUnbondAmount(ctx, chunk.DerivedAddress(), outInsurance.GetValidator(), types.ChunkSize)
-			if err != nil {
+			if shares, err = k.stakingKeeper.ValidateUnbondAmount(
+				ctx,
+				chunk.DerivedAddress(),
+				outInsurance.GetValidator(),
+				types.ChunkSize,
+			); err != nil {
 				return
 			}
 			if _, err = k.stakingKeeper.Undelegate(ctx, chunk.DerivedAddress(), outInsurance.GetValidator(), shares); err != nil {
