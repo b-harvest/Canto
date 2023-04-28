@@ -690,15 +690,15 @@ func (suite *KeeperTestSuite) TestDoCancelProvideInsuranceFail() {
 				providers[1].String(),
 				120,
 			),
-			expectedErr: types.ErrNotFoundPairingInsurance,
+			expectedErr: types.ErrNotFoundInsurance,
 		},
 		{
-			name: "no pairing insurance matching with id",
+			name: "this is no pairing insurance",
 			msg: types.NewMsgCancelProvideInsurance(
 				onlyPairedInsurance.ProviderAddress,
 				onlyPairedInsurance.Id,
 			),
-			expectedErr: types.ErrNotFoundPairingInsurance,
+			expectedErr: types.ErrInvalidInsuranceStatus,
 		},
 	}
 

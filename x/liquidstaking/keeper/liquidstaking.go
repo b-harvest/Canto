@@ -448,7 +448,6 @@ func (k Keeper) RePairRankedInsurances(
 		chunk.PairedInsuranceId = newInsurance.Id
 		chunk.SetStatus(types.CHUNK_STATUS_PAIRED)
 		k.SetChunk(ctx, chunk)
-		k.DeletePairingInsuranceIndex(ctx, newInsurance)
 	}
 	return
 }
@@ -694,7 +693,6 @@ func (k Keeper) DoProvideInsurance(ctx sdk.Context, msg *types.MsgProvideInsuran
 		return
 	}
 	k.SetInsurance(ctx, insurance)
-	k.SetPairingInsuranceIndex(ctx, insurance)
 
 	return
 }
@@ -704,9 +702,14 @@ func (k Keeper) DoCancelProvideInsurance(ctx sdk.Context, msg *types.MsgCancelPr
 	insuranceId := msg.Id
 
 	// Check if the insurance exists
-	insurance, found := k.GetPairingInsurance(ctx, insuranceId)
+	insurance, found := k.GetInsurance(ctx, insuranceId)
 	if !found {
-		err = sdkerrors.Wrapf(types.ErrNotFoundPairingInsurance, "insurance id: %d", insuranceId)
+		err = sdkerrors.Wrapf(types.ErrNotFoundInsurance, "insurance id: %d", insuranceId)
+		return
+	}
+
+	if insurance.Status != types.INSURANCE_STATUS_PAIRING {
+		err = sdkerrors.Wrapf(types.ErrInvalidInsuranceStatus, "insurance id: %d", insuranceId)
 		return
 	}
 
@@ -727,7 +730,6 @@ func (k Keeper) DoCancelProvideInsurance(ctx sdk.Context, msg *types.MsgCancelPr
 		return
 	}
 	k.DeleteInsurance(ctx, insuranceId)
-	k.DeletePairingInsuranceIndex(ctx, insurance)
 	return
 }
 
@@ -737,7 +739,7 @@ func (k Keeper) DoWithdrawInsurance(ctx sdk.Context, msg *types.MsgWithdrawInsur
 	// Get insurance
 	insurance, found := k.GetInsurance(ctx, msg.Id)
 	if !found {
-		err = sdkerrors.Wrapf(types.ErrNotFoundPairingInsurance, "insurance id: %d", msg.Id)
+		err = sdkerrors.Wrapf(types.ErrNotFoundInsurance, "insurance id: %d", msg.Id)
 		return
 	}
 	if msg.ProviderAddress != insurance.ProviderAddress {
@@ -767,7 +769,7 @@ func (k Keeper) DoWithdrawInsuranceCommission(ctx sdk.Context, msg *types.MsgWit
 	// Check if the insurance exists
 	insurance, found := k.GetInsurance(ctx, insuranceId)
 	if !found {
-		err = sdkerrors.Wrapf(types.ErrNotFoundPairingInsurance, "insurance id: %d", insuranceId)
+		err = sdkerrors.Wrapf(types.ErrNotFoundInsurance, "insurance id: %d", insuranceId)
 		return
 	}
 
@@ -799,7 +801,7 @@ func (k Keeper) DoDepositInsurance(ctx sdk.Context, msg *types.MsgDepositInsuran
 
 	insurance, found := k.GetInsurance(ctx, insuranceId)
 	if !found {
-		err = sdkerrors.Wrapf(types.ErrNotFoundPairingInsurance, "insurance id: %d", insuranceId)
+		err = sdkerrors.Wrapf(types.ErrNotFoundInsurance, "insurance id: %d", insuranceId)
 		return
 	}
 
@@ -1256,6 +1258,5 @@ func (k Keeper) pairChunkAndInsurance(
 	insurance.SetStatus(types.INSURANCE_STATUS_PAIRED)
 	k.SetChunk(ctx, chunk)
 	k.SetInsurance(ctx, insurance)
-	k.DeletePairingInsuranceIndex(ctx, insurance)
 	return chunk, insurance, newShares, nil
 }

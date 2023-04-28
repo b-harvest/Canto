@@ -8,7 +8,6 @@ var (
 	ErrInvalidAmount                                 = sdkerrors.Register(ModuleName, 30003, "amount of coin must be multiple of the chunk size")
 	ErrTombstonedValidator                           = sdkerrors.Register(ModuleName, 30005, "validator is tombstoned")
 	ErrInvalidValidatorStatus                        = sdkerrors.Register(ModuleName, 30006, "invalid validator status")
-	ErrNotFoundPairingInsurance                      = sdkerrors.Register(ModuleName, 30007, "pairing insurance not found")
 	ErrNotProviderOfInsurance                        = sdkerrors.Register(ModuleName, 30008, "not provider of insurance")
 	ErrNotFoundInsurance                             = sdkerrors.Register(ModuleName, 30009, "insurance not found")
 	ErrNoPairedChunk                                 = sdkerrors.Register(ModuleName, 30010, "no paired chunk")
