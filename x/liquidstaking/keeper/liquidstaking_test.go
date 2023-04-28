@@ -1132,7 +1132,7 @@ func (suite *KeeperTestSuite) TestEndBlocker() {
 		newProviders,
 		newValAddrs,
 		newProviderBalances,
-		sdk.NewDecWithPrec(1, 2), // much cheap than current paired insurances
+		sdk.NewDecWithPrec(1, 2), // much cheaper than current paired insurances
 		nil,
 	)
 
@@ -1141,7 +1141,7 @@ func (suite *KeeperTestSuite) TestEndBlocker() {
 	pairedChunk, _ := suite.app.LiquidStakingKeeper.GetChunk(suite.ctx, pairingChunk.Id)
 	suite.Equal(types.CHUNK_STATUS_PAIRED, pairedChunk.Status)
 	// new insurances must be paired with paired chunks
-	suite.app.LiquidStakingKeeper.IterateAllChunks(suite.ctx, func(chunk types.Chunk) (bool, error) {
+	suite.NoError(suite.app.LiquidStakingKeeper.IterateAllChunks(suite.ctx, func(chunk types.Chunk) (bool, error) {
 		if chunk.Status == types.CHUNK_STATUS_PAIRED {
 			var shouldBeFound bool
 			for _, newInsurance := range newInsurances {
@@ -1162,7 +1162,46 @@ func (suite *KeeperTestSuite) TestEndBlocker() {
 			suite.False(shouldNotBeFound)
 		}
 		return false, nil
-	})
+	}))
+
+	suite.advanceHeight(1, "")
+
+	pairedInsurances := newInsurances
+	newProviders, newProviderBalances = suite.AddTestAddrs(3, oneInsurance.Amount)
+	newInsurances = suite.provideInsurances(
+		newProviders,
+		newValAddrs,
+		newProviderBalances,
+		sdk.NewDecWithPrec(1, 3), // much cheaper than current paired insurances
+		nil,
+	)
+
+	suite.advanceEpoch()
+	suite.advanceHeight(1, "all paired chunks are started to be re-paired with new insurances")
+
+	suite.NoError(suite.app.LiquidStakingKeeper.IterateAllChunks(suite.ctx, func(chunk types.Chunk) (bool, error) {
+		if chunk.Status == types.CHUNK_STATUS_PAIRED {
+			var shouldBeFound bool
+			for _, newInsurance := range newInsurances {
+				if chunk.PairedInsuranceId == newInsurance.Id {
+					shouldBeFound = true
+					break
+				}
+			}
+			suite.True(shouldBeFound)
+
+			var shouldNotBeFound bool
+			for _, insurance := range pairedInsurances {
+				if chunk.PairedInsuranceId == insurance.Id {
+					shouldBeFound = true
+					break
+				}
+			}
+			suite.False(shouldNotBeFound)
+		}
+		return false, nil
+	}))
+
 }
 
 func (suite *KeeperTestSuite) getUnitDistribution(

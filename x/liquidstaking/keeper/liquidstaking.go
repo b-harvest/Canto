@@ -352,14 +352,18 @@ func (k Keeper) RePairRankedInsurances(
 				if !found {
 					panic("chunk not found")
 				}
+				newRankInInsurance.ChunkId = chunk.Id
 				chunk.PairedInsuranceId = newRankInInsurance.Id
 				// TODO: outInsurance is removed at next epoch? and also it covers penalty if slashing happened after?
 				chunk.UnpairingInsuranceId = outInsurance.Id
+				newRankInInsurance.SetStatus(types.INSURANCE_STATUS_PAIRED)
 				chunk.SetStatus(types.CHUNK_STATUS_PAIRED)
+				outInsurance.SetStatus(types.INSURANCE_STATUS_UNPAIRING)
 				k.SetChunk(ctx, chunk)
+				k.SetInsurance(ctx, newRankInInsurance)
+				k.SetInsurance(ctx, outInsurance)
 				hasSameValidator = true
 				// Remove already checked outInsurance
-				// TODO: Is this ok to fix array in during for loop?
 				rankOutInsurances = append(rankOutInsurances[:oi], rankOutInsurances[oi+1:]...)
 				break
 			}
@@ -444,9 +448,14 @@ func (k Keeper) RePairRankedInsurances(
 		); err != nil {
 			return err
 		}
+		outInsurance.SetStatus(types.INSURANCE_STATUS_UNPAIRING)
 		chunk.UnpairingInsuranceId = outInsurance.Id
+		newInsurance.ChunkId = chunk.Id
+		newInsurance.SetStatus(types.INSURANCE_STATUS_PAIRED)
 		chunk.PairedInsuranceId = newInsurance.Id
 		chunk.SetStatus(types.CHUNK_STATUS_PAIRED)
+		k.SetInsurance(ctx, outInsurance)
+		k.SetInsurance(ctx, newInsurance)
 		k.SetChunk(ctx, chunk)
 	}
 	return
