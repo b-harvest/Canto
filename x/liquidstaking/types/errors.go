@@ -25,7 +25,6 @@ var (
 	ErrNotFoundValidator                             = sdkerrors.Register(ModuleName, 30022, "validator not found")
 	ErrInvalidChunkId                                = sdkerrors.Register(ModuleName, 30023, "invalid chunk id")
 	ErrInvalidInsuranceId                            = sdkerrors.Register(ModuleName, 30024, "invalid insurance id")
-	ErrNotFoundPendingLiquidUnstakeChunkId           = sdkerrors.Register(ModuleName, 30025, "paired chunk corresponding pending liquid unstake must exists")
 	ErrNotFoundUnpairingForUnstakingChunkInfoChunkId = sdkerrors.Register(ModuleName, 30026, "unpairing for unstake chunk corresponding unpairing for unstaking info must exists")
 	ErrNotFoundWithdrawInsuranceRequestInsuranceId   = sdkerrors.Register(ModuleName, 30027, "insurance corresponding withdraw insurance request must exists")
 	ErrInvalidLastChunkId                            = sdkerrors.Register(ModuleName, 30028, "last chunk id must positive")
