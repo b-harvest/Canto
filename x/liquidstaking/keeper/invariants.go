@@ -191,6 +191,13 @@ func InsurancesInvariant(k Keeper) sdk.Invariant {
 					brokenCount++
 					return false, nil
 				}
+				_, found := k.GetChunk(ctx, insurance.ChunkId)
+				if !found {
+					msg += fmt.Sprintf("not found chunk to protect for unpairing insurance(id: %d)\n", insurance.Id)
+					brokenCount++
+					return false, nil
+				}
+
 			case types.INSURANCE_STATUS_UNPAIRED:
 				// must have empty chunk
 				if insurance.ChunkId != 0 {
@@ -202,6 +209,12 @@ func InsurancesInvariant(k Keeper) sdk.Invariant {
 				// must have chunk to protect
 				if insurance.ChunkId == 0 {
 					msg += fmt.Sprintf("unpairing for withdrawal insurance(id: %d) have empty chunk to protect\n", insurance.Id)
+					brokenCount++
+					return false, nil
+				}
+				_, found := k.GetChunk(ctx, insurance.ChunkId)
+				if !found {
+					msg += fmt.Sprintf("not found chunk to protect for unpairing for withdrawal insurance(id: %d)\n", insurance.Id)
 					brokenCount++
 					return false, nil
 				}
