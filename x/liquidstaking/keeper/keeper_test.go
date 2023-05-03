@@ -279,3 +279,9 @@ func (suite *KeeperTestSuite) resetEpochs() {
 	suite.lsEpochCount = 0
 	suite.rewardEpochCount = 0
 }
+
+func (suite *KeeperTestSuite) mustPassInvariants() {
+	res, broken := liquidstakingkeeper.AllInvariants(suite.app.LiquidStakingKeeper)(suite.ctx)
+	suite.False(broken)
+	suite.Len(res, 0)
+}

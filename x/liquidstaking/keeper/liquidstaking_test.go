@@ -82,6 +82,7 @@ func (suite *KeeperTestSuite) provideInsurances(
 		suite.NoError(err)
 		providedInsurances = append(providedInsurances, insurance)
 	}
+	suite.mustPassInvariants()
 	return providedInsurances
 }
 
@@ -95,6 +96,7 @@ func (suite *KeeperTestSuite) liquidStakes(delegators []sdk.AccAddress, amounts 
 			chunks = append(chunks, chunk)
 		}
 	}
+	suite.mustPassInvariants()
 	return chunks
 }
 
