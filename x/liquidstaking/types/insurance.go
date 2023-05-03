@@ -10,6 +10,8 @@ import (
 )
 
 const (
+	// TODO: use slashing module parameter
+	// TODO: limit changing slashing module parameter (it shouldn't be easy to change, maybe in AnteHandler which catch param change message and make it fail?)
 	// 5%
 	SlashFraction = "0.05"
 )

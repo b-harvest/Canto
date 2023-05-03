@@ -6,6 +6,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
+// TODO: Add invariants_test
 func RegisterInvariants(ir sdk.InvariantRegistry, k Keeper) {
 	ir.RegisterRoute(types.ModuleName, "net-account",
 		NetAmountInvariant(k))
@@ -40,6 +41,7 @@ func AllInvariants(k Keeper) sdk.Invariant {
 func NetAmountInvariant(k Keeper) sdk.Invariant {
 	return func(ctx sdk.Context) (string, bool) {
 		nas := k.GetNetAmountState(ctx)
+		// TOOD: nas already have field
 		lsTokenTotalSupply := k.bankKeeper.GetSupply(ctx, k.GetLiquidBondDenom(ctx))
 		if lsTokenTotalSupply.IsPositive() && !nas.NetAmount.IsPositive() {
 			return "found positive lsToken supply with non-positive net amount", true
@@ -60,6 +62,7 @@ func ChunksInvariant(k Keeper) sdk.Invariant {
 			switch chunk.Status {
 			case types.CHUNK_STATUS_PAIRING:
 				// must have empty paired insurance
+				// TODO: instead of using 0, use Constant
 				if chunk.PairedInsuranceId != 0 {
 					msg += fmt.Sprintf("pairing chunk(id: %d) have non-empty paired insurance\n", chunk.Id)
 					brokenCount++
@@ -104,9 +107,7 @@ func ChunksInvariant(k Keeper) sdk.Invariant {
 					brokenCount++
 					return false, nil
 				}
-			case types.CHUNK_STATUS_UNPAIRING:
-				fallthrough
-			case types.CHUNK_STATUS_UNPAIRING_FOR_UNSTAKING:
+			case types.CHUNK_STATUS_UNPAIRING, types.CHUNK_STATUS_UNPAIRING_FOR_UNSTAKING:
 				// must have unpairing insurance
 				if chunk.UnpairingInsuranceId == 0 {
 					msg += fmt.Sprintf("unpairing chunk(id: %d) have empty unpairing insurance\n", chunk.Id)
