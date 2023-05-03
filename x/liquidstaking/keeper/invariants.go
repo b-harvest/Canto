@@ -39,7 +39,15 @@ func AllInvariants(k Keeper) sdk.Invariant {
 
 func NetAmountInvariant(k Keeper) sdk.Invariant {
 	return func(ctx sdk.Context) (string, bool) {
-		// TODO: implement
+		nas := k.GetNetAmountState(ctx)
+		lsTokenTotalSupply := k.bankKeeper.GetSupply(ctx, k.GetLiquidBondDenom(ctx))
+		if lsTokenTotalSupply.IsPositive() && !nas.NetAmount.IsPositive() {
+			return "found positive lsToken supply with non-positive net amount", true
+		}
+		if !lsTokenTotalSupply.IsPositive() && nas.NetAmount.IsPositive() {
+			return "found positive net amount with non-positive lsToken supply", true
+		}
+
 		return "", false
 	}
 }
@@ -187,6 +195,13 @@ func InsurancesInvariant(k Keeper) sdk.Invariant {
 				// must have empty chunk
 				if insurance.ChunkId != 0 {
 					msg += fmt.Sprintf("unpaired insurance(id: %d) have non-empty paired chunk\n", insurance.Id)
+					brokenCount++
+					return false, nil
+				}
+			case types.INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAWAL:
+				// must have chunk to protect
+				if insurance.ChunkId == 0 {
+					msg += fmt.Sprintf("unpairing for withdrawal insurance(id: %d) have empty chunk to protect\n", insurance.Id)
 					brokenCount++
 					return false, nil
 				}

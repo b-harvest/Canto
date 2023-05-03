@@ -7,7 +7,6 @@ import (
 )
 
 func (nas NetAmountState) CalcNetAmount(rewardPoolBalance sdk.Int) sdk.Dec {
-	// TODO: Add reward module account's balance
 	return rewardPoolBalance.Add(nas.TotalChunksBalance).
 		Add(nas.TotalLiquidTokens).
 		Add(nas.TotalUnbondingBalance).ToDec().

@@ -260,6 +260,7 @@ func (suite *KeeperTestSuite) advanceHeight(height int, msg string) {
 		suite.app.DistrKeeper.SetFeePool(suite.ctx, feePool)
 		staking.EndBlocker(suite.ctx, suite.app.StakingKeeper)
 		liquidstakingkeeper.EndBlocker(suite.ctx, suite.app.LiquidStakingKeeper)
+		suite.mustPassInvariants()
 	}
 }
 

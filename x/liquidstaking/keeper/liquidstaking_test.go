@@ -190,6 +190,8 @@ func (suite *KeeperTestSuite) TestLiquidStakeSuccess() {
 	suite.True(nas.TotalLiquidTokens.Add(amt1.Amount).Equal(afterNas.TotalLiquidTokens))
 	suite.True(nas.NetAmount.Add(amt1.Amount.ToDec()).Equal(afterNas.NetAmount))
 	suite.True(afterNas.MintRate.Equal(sdk.OneDec()), "no rewards yet, so mint rate should be 1")
+
+	suite.mustPassInvariants()
 }
 
 func (suite *KeeperTestSuite) TestLiquidStakeFail() {
@@ -250,6 +252,8 @@ func (suite *KeeperTestSuite) TestLiquidStakeFail() {
 	msg = types.NewMsgLiquidStake(newAddrs[0].String(), newBalances[0])
 	_, _, _, err = suite.app.LiquidStakingKeeper.DoLiquidStake(suite.ctx, msg)
 	suite.ErrorIs(err, types.ErrMaxPairedChunkSizeExceeded)
+
+	suite.mustPassInvariants()
 }
 
 func (suite *KeeperTestSuite) TestLiquidStakeWithAdvanceBlocks() {
@@ -657,6 +661,7 @@ func (suite *KeeperTestSuite) TestCancelProvideInsuranceSuccess() {
 	suite.True(insurance.Equal(canceledInsurance))
 	afterProviderBalance := suite.app.BankKeeper.GetBalance(suite.ctx, provider, suite.denom)
 	suite.True(afterProviderBalance.Amount.Equal(beforeProviderBalance.Amount.Add(escrowed.Amount)), "provider should get back escrowed amount")
+	suite.mustPassInvariants()
 }
 
 func (suite *KeeperTestSuite) TestDoCancelProvideInsuranceFail() {
@@ -711,6 +716,7 @@ func (suite *KeeperTestSuite) TestDoCancelProvideInsuranceFail() {
 		}
 		suite.ErrorContains(err, tc.expectedErr.Error())
 	}
+	suite.mustPassInvariants()
 }
 
 func (suite *KeeperTestSuite) TestDoWithdrawInsurance() {
@@ -828,6 +834,7 @@ func (suite *KeeperTestSuite) TestDoWithdrawInsuranceFail() {
 		}
 		suite.ErrorContains(err, tc.expectedErr.Error())
 	}
+	suite.mustPassInvariants()
 }
 
 func (suite *KeeperTestSuite) TestDoWithdrawInsuranceCommission() {
@@ -924,6 +931,7 @@ func (suite *KeeperTestSuite) TestDoWithdrawInsuranceCommissionFail() {
 		}
 		suite.ErrorContains(err, tc.expectedErr.Error())
 	}
+	suite.mustPassInvariants()
 }
 
 func (suite *KeeperTestSuite) TestDoDepositInsurance() {
@@ -950,6 +958,7 @@ func (suite *KeeperTestSuite) TestDoDepositInsurance() {
 
 	err := suite.app.LiquidStakingKeeper.DoDepositInsurance(suite.ctx, msgDepositInsurance)
 	suite.NoError(err)
+	suite.mustPassInvariants()
 }
 
 func (suite *KeeperTestSuite) TestDoDepositInsuranceFail() {
@@ -1002,6 +1011,7 @@ func (suite *KeeperTestSuite) TestDoDepositInsuranceFail() {
 		}
 		suite.ErrorContains(err, tc.expectedErr.Error())
 	}
+	suite.mustPassInvariants()
 }
 
 func (suite *KeeperTestSuite) TestRankInsurances() {
@@ -1072,6 +1082,7 @@ func (suite *KeeperTestSuite) TestRankInsurances() {
 		}
 		suite.True(found)
 	}
+	suite.mustPassInvariants()
 }
 
 func (suite *KeeperTestSuite) TestEndBlocker() {
