@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"fmt"
+
 	"github.com/Canto-Network/Canto/v6/x/liquidstaking/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
@@ -41,13 +42,15 @@ func AllInvariants(k Keeper) sdk.Invariant {
 func NetAmountInvariant(k Keeper) sdk.Invariant {
 	return func(ctx sdk.Context) (string, bool) {
 		nas := k.GetNetAmountState(ctx)
-		// TOOD: nas already have field
-		lsTokenTotalSupply := k.bankKeeper.GetSupply(ctx, k.GetLiquidBondDenom(ctx))
-		if lsTokenTotalSupply.IsPositive() && !nas.NetAmount.IsPositive() {
+		// if net amount is positive, it means that there are paired chunks.
+		if nas.LsTokensTotalSupply.IsPositive() && !nas.NetAmount.IsPositive() {
 			return "found positive lsToken supply with non-positive net amount", true
 		}
-		if !lsTokenTotalSupply.IsPositive() && nas.NetAmount.IsPositive() {
-			return "found positive net amount with non-positive lsToken supply", true
+		// if ls tokens supply is not positive, it means that all chunks are un-paired.
+		// any unbonding balance or liquid tokens must not exist.
+		if !nas.LsTokensTotalSupply.IsPositive() &&
+			(nas.TotalUnbondingBalance.IsPositive() || nas.TotalLiquidTokens.IsPositive()) {
+			return "found non-positive lsToken supply with positive unbonding balance or liquid tokens", true
 		}
 
 		return "", false
@@ -62,8 +65,7 @@ func ChunksInvariant(k Keeper) sdk.Invariant {
 			switch chunk.Status {
 			case types.CHUNK_STATUS_PAIRING:
 				// must have empty paired insurance
-				// TODO: instead of using 0, use Constant
-				if chunk.PairedInsuranceId != 0 {
+				if chunk.PairedInsuranceId != types.Empty {
 					msg += fmt.Sprintf("pairing chunk(id: %d) have non-empty paired insurance\n", chunk.Id)
 					brokenCount++
 					return false, nil
@@ -78,7 +80,7 @@ func ChunksInvariant(k Keeper) sdk.Invariant {
 				}
 			case types.CHUNK_STATUS_PAIRED:
 				// must have paired insurance
-				if chunk.PairedInsuranceId == 0 {
+				if chunk.PairedInsuranceId == types.Empty {
 					msg += fmt.Sprintf("paired chunk(id: %d) have empty paired insurance\n", chunk.Id)
 					return false, nil
 				}
@@ -100,16 +102,15 @@ func ChunksInvariant(k Keeper) sdk.Invariant {
 					brokenCount++
 					return false, nil
 				}
-				val, _ := k.stakingKeeper.GetValidator(ctx, insurance.GetValidator())
-				delegatedTokens := val.TokensFromShares(delegation.GetShares())
-				if delegatedTokens.LT(types.ChunkSize.ToDec()) {
-					msg += fmt.Sprintf("delegation tokens of paired chunk(id: %d) is less than chunk size tokens: %s\n", chunk.Id, delegatedTokens.String())
+				delShares := delegation.GetShares()
+				if delShares.LT(types.ChunkSize.ToDec()) {
+					msg += fmt.Sprintf("delegation tokens of paired chunk(id: %d) is less than chunk size tokens: %s\n", chunk.Id, delShares.String())
 					brokenCount++
 					return false, nil
 				}
 			case types.CHUNK_STATUS_UNPAIRING, types.CHUNK_STATUS_UNPAIRING_FOR_UNSTAKING:
 				// must have unpairing insurance
-				if chunk.UnpairingInsuranceId == 0 {
+				if chunk.UnpairingInsuranceId == types.Empty {
 					msg += fmt.Sprintf("unpairing chunk(id: %d) have empty unpairing insurance\n", chunk.Id)
 					brokenCount++
 					return false, nil
@@ -118,6 +119,12 @@ func ChunksInvariant(k Keeper) sdk.Invariant {
 				if !found {
 					msg += fmt.Sprintf("not found unpairing insurance for unpairing chunk(id: %d)\n", chunk.Id)
 					brokenCount++
+					return false, nil
+				}
+				if k.IsEpochReached(ctx) {
+					// skip in this case to check unbonding delegation entry it because
+					// mature unbonding delegation is deleted in the begin blocker of staking module
+					// and invariant checks will begin at the end blocker of crisis module.
 					return false, nil
 				}
 				// must have unbonding delegation
@@ -162,14 +169,14 @@ func InsurancesInvariant(k Keeper) sdk.Invariant {
 			switch insurance.Status {
 			case types.INSURANCE_STATUS_PAIRING:
 				// must have empty chunk
-				if insurance.ChunkId != 0 {
+				if insurance.ChunkId != types.Empty {
 					msg += fmt.Sprintf("pairing insurance(id: %d) have non-empty paired chunk\n", insurance.Id)
 					brokenCount++
 					return false, nil
 				}
 			case types.INSURANCE_STATUS_PAIRED:
 				// must have paired chunk
-				if insurance.ChunkId == 0 {
+				if insurance.ChunkId == types.Empty {
 					msg += fmt.Sprintf("paired insurance(id: %d) have empty paired chunk\n", insurance.Id)
 					brokenCount++
 					return false, nil
@@ -187,7 +194,7 @@ func InsurancesInvariant(k Keeper) sdk.Invariant {
 				}
 			case types.INSURANCE_STATUS_UNPAIRING:
 				// must have chunk to protect
-				if insurance.ChunkId == 0 {
+				if insurance.ChunkId == types.Empty {
 					msg += fmt.Sprintf("unpairing insurance(id: %d) have empty chunk to protect\n", insurance.Id)
 					brokenCount++
 					return false, nil
@@ -201,21 +208,26 @@ func InsurancesInvariant(k Keeper) sdk.Invariant {
 
 			case types.INSURANCE_STATUS_UNPAIRED:
 				// must have empty chunk
-				if insurance.ChunkId != 0 {
+				if insurance.ChunkId != types.Empty {
 					msg += fmt.Sprintf("unpaired insurance(id: %d) have non-empty paired chunk\n", insurance.Id)
 					brokenCount++
 					return false, nil
 				}
 			case types.INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAWAL:
 				// must have chunk to protect
-				if insurance.ChunkId == 0 {
+				if insurance.ChunkId == types.Empty {
 					msg += fmt.Sprintf("unpairing for withdrawal insurance(id: %d) have empty chunk to protect\n", insurance.Id)
 					brokenCount++
 					return false, nil
 				}
-				_, found := k.GetChunk(ctx, insurance.ChunkId)
+				chunk, found := k.GetChunk(ctx, insurance.ChunkId)
 				if !found {
 					msg += fmt.Sprintf("not found chunk to protect for unpairing for withdrawal insurance(id: %d)\n", insurance.Id)
+					brokenCount++
+					return false, nil
+				}
+				if chunk.Status == types.CHUNK_STATUS_PAIRING {
+					msg += fmt.Sprintf("unpairing for withdrawal insurance(id: %d) have invalid chunk status: %s\n", insurance.Id, chunk.Status)
 					brokenCount++
 					return false, nil
 				}
@@ -279,7 +291,7 @@ func WithdrawInsuranceRequestsInvariant(k Keeper) sdk.Invariant {
 				brokenCount++
 				continue
 			}
-			if insurance.Status != types.INSURANCE_STATUS_PAIRING {
+			if insurance.Status != types.INSURANCE_STATUS_PAIRED {
 				msg += fmt.Sprintf("insurance(id: %d) have invalid status: %s\n", insurance.Id, insurance.Status)
 				brokenCount++
 				continue
