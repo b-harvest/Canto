@@ -946,6 +946,42 @@ paths:
                       format: byte
       tags:
         - Query
+  /canto/liquidstaking/v1/chunk_size:
+    get:
+      operationId: ChunkSize
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              chunk_size:
+                type: string
+                format: uint64
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    type_url:
+                      type: string
+                    value:
+                      type: string
+                      format: byte
+      tags:
+        - Query
   /canto/liquidstaking/v1/chunks:
     get:
       summary: Chunk returns all chunks on the module.
@@ -2183,6 +2219,42 @@ paths:
           required: true
           type: string
           format: uint64
+      tags:
+        - Query
+  /canto/liquidstaking/v1/max_paired_chunks:
+    get:
+      operationId: MaxPairedChunks
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              max_paired_chunks:
+                type: string
+                format: uint64
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    type_url:
+                      type: string
+                    value:
+                      type: string
+                      format: byte
       tags:
         - Query
   /canto/liquidstaking/v1/params:
@@ -36681,6 +36753,12 @@ definitions:
               object is
 
               removed.
+  canto.liquidstaking.v1.QueryChunkSizeResponse:
+    type: object
+    properties:
+      chunk_size:
+        type: string
+        format: uint64
   canto.liquidstaking.v1.QueryChunksResponse:
     type: object
     properties:
@@ -37284,6 +37362,12 @@ definitions:
                    repeated Bar results = 1;
                    PageResponse page = 2;
            }
+  canto.liquidstaking.v1.QueryMaxPairedChunksResponse:
+    type: object
+    properties:
+      max_paired_chunks:
+        type: string
+        format: uint64
   canto.liquidstaking.v1.QueryParamsResponse:
     type: object
     properties:
