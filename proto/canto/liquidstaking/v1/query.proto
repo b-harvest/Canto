@@ -198,9 +198,9 @@ message ResponseUnpairingForUnstakingChunkInfo {
 
 message QueryWithdrawInsuranceRequestsRequest {
   // Query all withdraw insurance requests requested by ProviderAddress
-  string provider_address = 3;
+  string provider_address = 1;
 
-  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
 }
 
 message QueryWithdrawInsuranceRequestsResponse {
@@ -214,9 +214,9 @@ message QueryWithdrawInsuranceRequestResponse {
 }
 
 message QueryUnpairingForUnstakingChunkInfosRequest {
-  string delegator_address = 3;
+  string delegator_address = 1;
 
-  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
 }
 
 message QueryUnpairingForUnstakingChunkInfosResponse {

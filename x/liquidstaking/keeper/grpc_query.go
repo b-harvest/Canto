@@ -177,6 +177,7 @@ func (k Keeper) UnpairingForUnstakingChunkInfos(c context.Context, req *types.Qu
 		if !found {
 			return false, fmt.Errorf("no chunk is associated with Chunk Id %d", info.ChunkId)
 		}
+		// TODO: Optional field but it handled like required, check other queries also
 		if req.DelegatorAddress != info.DelegatorAddress {
 			return false, nil
 		}
@@ -217,13 +218,19 @@ func (k Keeper) ChunkSize(_ context.Context, _ *types.QueryChunkSizeRequest) (*t
 func chunkToResponseChunk(ctx sdk.Context, k Keeper, chunk types.Chunk) types.ResponseChunk {
 	pairedInsurance, _ := k.GetInsurance(ctx, chunk.PairedInsuranceId)
 	unpairingInsurance, _ := k.GetInsurance(ctx, chunk.UnpairingInsuranceId)
+	// TODO: Add validation for nil insurances
+	// TODO: Handle chunks which have no delegation obj
 	del, _ := k.stakingKeeper.GetDelegation(ctx, chunk.DerivedAddress(), sdk.ValAddress(pairedInsurance.ValidatorAddress))
 	val, _ := k.stakingKeeper.GetValidator(ctx, sdk.ValAddress(pairedInsurance.ValidatorAddress))
 
 	return types.ResponseChunk{
-		Id:                 chunk.Id,
-		Tokens:             val.TokensFromShares(del.Shares),
-		Shares:             del.Shares,
+		Id: chunk.Id,
+		// TODO: Need following fields?
+		Tokens: val.TokensFromShares(del.Shares),
+		Shares: del.Shares,
+		// TODO: Meaningless field and it is temporary value because reward goes to module account, so need to re-name it or remove it
+		// TODO: or Balance + Unclaimed reward (delegation reward)
+		// TODO: It will be ok to use native state to service
 		AccumulatedReward:  k.bankKeeper.GetBalance(ctx, chunk.DerivedAddress(), k.stakingKeeper.BondDenom(ctx)),
 		PairedInsurance:    pairedInsurance,
 		UnpairingInsurance: unpairingInsurance,
