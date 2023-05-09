@@ -10,6 +10,7 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/types/simulation"
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
+	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	ethermint "github.com/evmos/ethermint/types"
 )
@@ -1253,7 +1254,8 @@ func (suite *KeeperTestSuite) TestPairedChunkTombstonedCase() {
 
 	toBeTombstonedValidator := env.valAddrs[0]
 	toBeTombstonedValidatorPubKey := env.pubKeys[0]
-	selfDelegationToken := suite.app.StakingKeeper.TokensFromConsensusPower(suite.ctx, 1)
+	toBeTombstonedChunk := env.pairedChunks[0]
+	selfDelegationToken := suite.app.StakingKeeper.TokensFromConsensusPower(suite.ctx, onePower)
 	// handle a signature to set signing info
 	suite.app.SlashingKeeper.HandleValidatorSignature(
 		suite.ctx,
@@ -1262,19 +1264,42 @@ func (suite *KeeperTestSuite) TestPairedChunkTombstonedCase() {
 		true,
 	)
 
+	val := suite.app.StakingKeeper.Validator(suite.ctx, toBeTombstonedValidator)
+	power := val.GetConsensusPower(suite.app.StakingKeeper.PowerReduction(suite.ctx))
 	evidence := &evidencetypes.Equivocation{
 		Height:           0,
 		Time:             time.Unix(0, 0),
-		Power:            onePower,
+		Power:            power,
 		ConsensusAddress: sdk.ConsAddress(toBeTombstonedValidatorPubKey.Address()).String(),
 	}
 
-	valTokensBeforeTombstoned := suite.app.StakingKeeper.Validator(suite.ctx, toBeTombstonedValidator).GetTokens()
+	del, _ := suite.app.StakingKeeper.GetDelegation(
+		suite.ctx,
+		toBeTombstonedChunk.DerivedAddress(),
+		toBeTombstonedValidator,
+	)
+	valTokensBeforeTombstoned := val.GetTokens()
+	delTokens := val.TokensFromShares(del.GetShares())
+
 	suite.app.EvidenceKeeper.HandleEquivocationEvidence(suite.ctx, evidence)
-	valTokensAfterTombstoned := suite.app.StakingKeeper.Validator(suite.ctx, toBeTombstonedValidator).GetTokens()
-	diff := valTokensBeforeTombstoned.Sub(valTokensAfterTombstoned)
-	fmt.Println(diff.String())
+
+	valTombstoned := suite.app.StakingKeeper.Validator(suite.ctx, toBeTombstonedValidator)
+	valTokensAfterTombstoned := valTombstoned.GetTokens()
+	delTokensAfterTombstoned := valTombstoned.TokensFromShares(del.GetShares())
+
+	valTokensDiff := valTokensBeforeTombstoned.Sub(valTokensAfterTombstoned)
 	{
+		suite.Equal("250000050000000000000000", valTokensDiff.String())
+		suite.Equal(
+			valTokensBeforeTombstoned.ToDec().Mul(
+				slashingtypes.DefaultSlashFractionDoubleSign,
+			).TruncateInt(),
+			valTokensDiff,
+		)
+		suite.Equal(
+			types.ChunkSize.ToDec().Mul(slashingtypes.DefaultSlashFractionDoubleSign),
+			delTokens.Sub(delTokensAfterTombstoned),
+		)
 		suite.True(
 			suite.app.StakingKeeper.Validator(suite.ctx, toBeTombstonedValidator).IsJailed(),
 			"validator must be jailed because it is tombstoned",
@@ -1295,6 +1320,34 @@ func (suite *KeeperTestSuite) TestPairedChunkTombstonedCase() {
 	suite.advanceHeight(1, "epoch reached after validator is tombstoned")
 	nas = suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
 	fmt.Println(nas)
+
+	// check chunk is started to be re-paired with new insurances
+	// and chunk delegation token value is recovered or not
+	tombstonedChunk, _ := suite.app.LiquidStakingKeeper.GetChunk(suite.ctx, toBeTombstonedChunk.Id)
+	{
+		suite.Equal(env.insurances[4].Id, tombstonedChunk.PairedInsuranceId)
+		suite.Equal(types.CHUNK_STATUS_PAIRED, tombstonedChunk.Status)
+		suite.Equal(toBeTombstonedChunk.PairedInsuranceId, tombstonedChunk.UnpairingInsuranceId)
+	}
+	newInsurance, _ := suite.app.LiquidStakingKeeper.GetInsurance(suite.ctx, tombstonedChunk.PairedInsuranceId)
+	reDelegatedVal := suite.app.StakingKeeper.Validator(suite.ctx, newInsurance.GetValidator())
+	// re-delegation obj must exist
+	reDelegation, found := suite.app.StakingKeeper.GetRedelegation(
+		suite.ctx,
+		tombstonedChunk.DerivedAddress(),
+		toBeTombstonedValidator,
+		newInsurance.GetValidator(),
+	)
+	suite.True(found, "re-delegation obj must exist")
+	suite.Equal(types.ChunkSize.String(), reDelegation.Entries[0].InitialBalance.String())
+	suite.Equal(types.ChunkSize.ToDec().String(), reDelegation.Entries[0].SharesDst.String())
+	del, _ = suite.app.StakingKeeper.GetDelegation(
+		suite.ctx,
+		tombstonedChunk.DerivedAddress(),
+		newInsurance.GetValidator(),
+	)
+	afterCovered := reDelegatedVal.TokensFromShares(del.GetShares())
+	suite.Equal(types.ChunkSize.ToDec().String(), afterCovered.String())
 }
 
 func (suite *KeeperTestSuite) getUnitDistribution(

@@ -1122,7 +1122,12 @@ func (k Keeper) handlePairedChunk(ctx sdk.Context, chunk types.Chunk) error {
 			// 1. Send penalty to chunk
 			// 2. chunk delegate additional tokens to validator
 
-			penaltyCoin := sdk.NewCoin(bondDenom, penalty.TruncateInt().Add(sdk.OneInt()))
+			var penaltyCoin sdk.Coin
+			if penalty.GT(penalty.TruncateDec()) {
+				penaltyCoin = sdk.NewCoin(bondDenom, penalty.TruncateInt().AddRaw(1))
+			} else {
+				penaltyCoin = sdk.NewCoin(bondDenom, penalty.TruncateInt())
+			}
 			// send penalty to chunk
 			if err = k.bankKeeper.SendCoins(
 				ctx,
