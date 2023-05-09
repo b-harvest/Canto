@@ -2,8 +2,9 @@ package types
 
 import (
 	"fmt"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"sort"
+
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -12,8 +13,8 @@ import (
 const (
 	// TODO: use slashing module parameter
 	// TODO: limit changing slashing module parameter (it shouldn't be easy to change, maybe in AnteHandler which catch param change message and make it fail?)
-	// 5%
-	SlashFraction = "0.05"
+	// 7%
+	SlashFraction = "0.07"
 )
 
 func NewInsurance(id uint64, providerAddress, validatorAddress string, feeRate sdk.Dec) Insurance {

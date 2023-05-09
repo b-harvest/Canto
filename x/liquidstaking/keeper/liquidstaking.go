@@ -1122,8 +1122,7 @@ func (k Keeper) handlePairedChunk(ctx sdk.Context, chunk types.Chunk) error {
 			// 1. Send penalty to chunk
 			// 2. chunk delegate additional tokens to validator
 
-			// TODO: penalty should be truncated or rounded?
-			penaltyCoin := sdk.NewCoin(bondDenom, penalty.TruncateInt())
+			penaltyCoin := sdk.NewCoin(bondDenom, penalty.TruncateInt().Add(sdk.OneInt()))
 			// send penalty to chunk
 			if err = k.bankKeeper.SendCoins(
 				ctx,
@@ -1154,7 +1153,6 @@ func (k Keeper) handlePairedChunk(ctx sdk.Context, chunk types.Chunk) error {
 	if k.IsInvalidInsurance(ctx, pairedInsurance) {
 		// Find all insurances which have same validator with this
 		var invalidInsurances []types.Insurance
-		invalidInsurances = append(invalidInsurances, pairedInsurance)
 		if err = k.IterateAllInsurances(ctx, func(insurance types.Insurance) (bool, error) {
 			if insurance.Status != types.INSURANCE_STATUS_PAIRED {
 				return false, nil

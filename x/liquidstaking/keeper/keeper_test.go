@@ -7,6 +7,7 @@ import (
 	"time"
 
 	liquidstakingkeeper "github.com/Canto-Network/Canto/v6/x/liquidstaking/keeper"
+	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -48,6 +49,31 @@ type KeeperTestSuite struct {
 	rewardEpochCount int64
 	// EpochCount counted by liquidstaking module
 	lsEpochCount int64
+}
+
+// testingEnvOptions is used to configure the testing environment for liquidstaking
+type testingEnvOptions struct {
+	numVals               int
+	fixedValFeeRate       sdk.Dec
+	valFeeRates           []sdk.Dec
+	fixedPower            int64
+	powers                []int64
+	numInsurances         int
+	fixedInsuranceFeeRate sdk.Dec
+	insuranceFeeRates     []sdk.Dec
+	numPairedChunks       int
+}
+
+// testingEnv is used to store the testing environment for liquidstaking
+type testingEnv struct {
+	delegators      []sdk.AccAddress
+	providers       []sdk.AccAddress
+	pairedChunks    []types.Chunk
+	insurances      []types.Insurance
+	valAddrs        []sdk.ValAddress
+	pubKeys         []cryptotypes.PubKey
+	bondDenom       string
+	liquidBondDenom string
 }
 
 var s *KeeperTestSuite
@@ -149,16 +175,30 @@ func (suite *KeeperTestSuite) CommitAfter(t time.Duration) {
 	suite.ctx = suite.app.BaseApp.NewContext(false, header)
 }
 
-func (suite *KeeperTestSuite) CreateValidators(powers []int64) (valAddrs []sdk.ValAddress) {
+func (suite *KeeperTestSuite) CreateValidators(
+	powers []int64,
+	fixedFeeRate sdk.Dec,
+	feeRates []sdk.Dec,
+) (valAddrs []sdk.ValAddress, pubKeys []cryptotypes.PubKey) {
+	if feeRates != nil && len(feeRates) > 0 {
+		suite.Equal(len(powers), len(feeRates))
+	}
 	notBondedPool := suite.app.StakingKeeper.GetNotBondedPool(suite.ctx)
 
-	for _, power := range powers {
+	for i, power := range powers {
 		priv := ed25519.GenPrivKey()
+		pubKeys = append(pubKeys, priv.PubKey())
 		valAddr := sdk.ValAddress(priv.PubKey().Address().Bytes())
 		validator, err := stakingtypes.NewValidator(valAddr, priv.PubKey(), stakingtypes.Description{})
 		suite.NoError(err)
 
-		validator, err = validator.SetInitialCommission(stakingtypes.NewCommission(sdk.NewDecWithPrec(10, 2), sdk.NewDecWithPrec(10, 2), sdk.NewDecWithPrec(10, 2)))
+		var feeRate sdk.Dec
+		if fixedFeeRate != sdk.ZeroDec() {
+			feeRate = fixedFeeRate
+		} else {
+			feeRate = feeRates[i]
+		}
+		validator, err = validator.SetInitialCommission(stakingtypes.NewCommission(feeRate, feeRate, feeRate))
 		if err != nil {
 			return
 		}
@@ -285,4 +325,65 @@ func (suite *KeeperTestSuite) mustPassInvariants() {
 	res, broken := liquidstakingkeeper.AllInvariants(suite.app.LiquidStakingKeeper)(suite.ctx)
 	suite.False(broken)
 	suite.Len(res, 0)
+}
+
+// unique delegator for each chunks
+// - balance of delegator is oneChunk amount of tokens
+// unique provider for each insurances
+// - balance of provider is oneInsurance amount of tokens
+func (suite *KeeperTestSuite) setupLiquidStakeTestingEnv(env testingEnvOptions) testingEnv {
+	suite.resetEpochs()
+	if env.fixedPower > 0 {
+		env.powers = make([]int64, env.numVals)
+		for i := range env.powers {
+			env.powers[i] = env.fixedPower
+		}
+	}
+	valAddrs, pubKeys := suite.CreateValidators(env.powers, env.fixedValFeeRate, env.valFeeRates)
+	oneChunk, oneInsurance := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
+	providers, providerBalances := suite.AddTestAddrs(env.numInsurances, oneInsurance.Amount)
+	insurances := suite.provideInsurances(providers, valAddrs, providerBalances, env.fixedInsuranceFeeRate, env.insuranceFeeRates)
+
+	// create numPairedChunks delegators
+	delegators, delegatorBalances := suite.AddTestAddrs(env.numPairedChunks, oneChunk.Amount)
+	nas := suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
+	suite.True(nas.IsZeroState(), "nothing happened yet so it must be zero state")
+	pairedChunks := suite.liquidStakes(delegators, delegatorBalances)
+
+	bondDenom := suite.app.StakingKeeper.BondDenom(suite.ctx)
+	liquidBondDenom := suite.app.LiquidStakingKeeper.GetLiquidBondDenom(suite.ctx)
+	fmt.Printf(`
+===============================================================================
+Initial state of TC
+- num of validators: %d
+- fixed validator fee rate: %s
+- validator fee rates: %s
+- num of delegators: %d
+- num of insurances: %d
+- fixed insurance fee rate: %s
+- insurance fee ratesS: %s
+- bonded denom: %s
+- liquid bond denom: %s
+===============================================================================
+`,
+		len(valAddrs),
+		env.fixedValFeeRate.String(),
+		env.valFeeRates,
+		len(delegators),
+		len(providers),
+		env.fixedInsuranceFeeRate,
+		env.insuranceFeeRates,
+		bondDenom,
+		liquidBondDenom,
+	)
+	return testingEnv{
+		delegators,
+		providers,
+		pairedChunks,
+		insurances,
+		valAddrs,
+		pubKeys,
+		bondDenom,
+		liquidBondDenom,
+	}
 }
