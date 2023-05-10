@@ -1279,6 +1279,9 @@ func (suite *KeeperTestSuite) TestEndBlocker() {
 
 }
 
+// TODO: Blocks go on (many numbers of block) and tombstone happens, then insurance commission is ok?
+// TODO: Re-delegating validator has down-time slashing history, then shares are not equal to chunk size?
+// But it should have same value with chunk size when converted to tokens. This part should be verified.
 func (suite *KeeperTestSuite) TestPairedChunkTombstonedAndRedelegated() {
 	env := suite.setupLiquidStakeTestingEnv(
 		testingEnvOptions{
@@ -1311,6 +1314,8 @@ func (suite *KeeperTestSuite) TestPairedChunkTombstonedAndRedelegated() {
 
 	val := suite.app.StakingKeeper.Validator(suite.ctx, toBeTombstonedValidator)
 	power := val.GetConsensusPower(suite.app.StakingKeeper.PowerReduction(suite.ctx))
+	// TODO: We can control block height so we can check unpairing insurance covers the slashing or not in other TC.
+	// infraction height should be before re-delegation to see it.
 	evidence := &evidencetypes.Equivocation{
 		Height:           0,
 		Time:             time.Unix(0, 0),
@@ -1369,7 +1374,11 @@ func (suite *KeeperTestSuite) TestPairedChunkTombstonedAndRedelegated() {
 	// and chunk delegation token value is recovered or not
 	tombstonedChunk, _ := suite.app.LiquidStakingKeeper.GetChunk(suite.ctx, toBeTombstonedChunk.Id)
 	{
-		suite.Equal(env.insurances[4].Id, tombstonedChunk.PairedInsuranceId)
+		suite.Equal(
+			env.insurances[4].Id,
+			tombstonedChunk.PairedInsuranceId,
+			"insurances[3] cannot be ranked in because it points to the tombstoned validator",
+		)
 		suite.Equal(types.CHUNK_STATUS_PAIRED, tombstonedChunk.Status)
 		suite.Equal(toBeTombstonedChunk.PairedInsuranceId, tombstonedChunk.UnpairingInsuranceId)
 	}
@@ -1401,7 +1410,12 @@ func (suite *KeeperTestSuite) TestPairedChunkTombstonedAndRedelegated() {
 	fmt.Println(suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx))
 
 	unpairedInsurance, _ := suite.app.LiquidStakingKeeper.GetInsurance(suite.ctx, tombstonedChunk.UnpairingInsuranceId)
+	unpairedInsuranceVal, found := suite.app.StakingKeeper.GetValidator(suite.ctx, unpairedInsurance.GetValidator())
 	suite.Equal(types.INSURANCE_STATUS_UNPAIRED, unpairedInsurance.Status)
+	suite.Error(
+		suite.app.LiquidStakingKeeper.IsValidValidator(suite.ctx, unpairedInsuranceVal, found),
+		"validator of unpaired insurance is tombstoned",
+	)
 }
 
 func (suite *KeeperTestSuite) TestPairedChunkTombstonedAndUnpaired() {
@@ -1648,6 +1662,42 @@ func (suite *KeeperTestSuite) TestMultiplePairedChunksTombstonedAndUnpaired() {
 
 }
 
+// TODO: TestMultiplePairedChunksTombstonedAndRepaired
+// Some chunks can be re-paired but others can't which means there are some standards and we need to test it
+//
+//	func (suite *KeeperTestSuite) TestUnpairingForUnstakingChunkTombstoned() {
+//		env := suite.setupLiquidStakeTestingEnv(
+//			testingEnvOptions{
+//				"TestMultiplePairedChunksTombstonedAndUnpaired",
+//				3,
+//				sdk.NewDecWithPrec(10, 2),
+//				nil,
+//				onePower,
+//				nil,
+//				3,
+//				sdk.NewDecWithPrec(10, 2),
+//				nil,
+//				3,
+//			},
+//		)
+//		suite.advanceHeight(1, "liquid staking started")
+//		fmt.Println(suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx))
+//
+//		toBeTombstonedValidator := env.valAddrs[0]
+//		toBeTombstonedValidatorPubKey := env.pubKeys[0]
+//		toBeTombstonedChunk := env.pairedChunks[0]
+//
+//		oneChunk, _ := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
+//		undelegator := env.delegators[0]
+//		msg := types.NewMsgLiquidUnstake(undelegator.String(), oneChunk)
+//		suite.app.LiquidStakingKeeper.QueueLiquidUnstake(suite.ctx, msg)
+//
+//		suite.advanceEpoch()
+//		suite.advanceHeight(1, "unstaking started")
+//
+//		suite.advanceHeight(1, "")
+//
+// }
 func (suite *KeeperTestSuite) getUnitDistribution(
 	unitDelegationRewardPerEpoch sdk.Int,
 	fixedInsuranceFeeRate sdk.Dec,

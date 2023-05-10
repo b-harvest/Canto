@@ -1070,6 +1070,7 @@ func (k Keeper) handleUnpairingChunk(ctx sdk.Context, chunk types.Chunk) error {
 	return nil
 }
 
+// TODO: Unpairing insurance should cover infraction height before replacing.
 func (k Keeper) handlePairedChunk(ctx sdk.Context, chunk types.Chunk) error {
 	if chunk.Status != types.CHUNK_STATUS_PAIRED {
 		return sdkerrors.Wrapf(types.ErrInvalidChunkStatus, "chunk id: %d, status: %s", chunk.Id, chunk.Status)
@@ -1085,6 +1086,7 @@ func (k Keeper) handlePairedChunk(ctx sdk.Context, chunk types.Chunk) error {
 
 	validator, found := k.stakingKeeper.GetValidator(ctx, pairedInsurance.GetValidator())
 	err = k.IsValidValidator(ctx, validator, found)
+	// TODO: Should we un-pair insurances which have invalid validator?
 	if err == types.ErrNotFoundValidator {
 		return sdkerrors.Wrapf(err, "validator: %s", pairedInsurance.GetValidator())
 	}
@@ -1120,7 +1122,7 @@ func (k Keeper) handlePairedChunk(ctx sdk.Context, chunk types.Chunk) error {
 
 			var penaltyCoin sdk.Coin
 			if penalty.GT(penalty.TruncateDec()) {
-				penaltyCoin = sdk.NewCoin(bondDenom, penalty.TruncateInt().AddRaw(1))
+				penaltyCoin = sdk.NewCoin(bondDenom, penalty.Ceil().TruncateInt())
 			} else {
 				penaltyCoin = sdk.NewCoin(bondDenom, penalty.TruncateInt())
 			}
@@ -1151,7 +1153,8 @@ func (k Keeper) handlePairedChunk(ctx sdk.Context, chunk types.Chunk) error {
 		k.startUnpairing(ctx, pairedInsurance, chunk)
 	}
 
-	if k.IsInvalidInsurance(ctx, pairedInsurance) {
+	// TODO: use IsValidValidator but should it be handled above?
+	if err := k.IsValidValidator(ctx, validator, found); err != nil {
 		// Find all insurances which have same validator with this
 		var invalidInsurances []types.Insurance
 		if err = k.IterateAllInsurances(ctx, func(insurance types.Insurance) (bool, error) {
