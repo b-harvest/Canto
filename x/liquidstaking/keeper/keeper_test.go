@@ -53,6 +53,7 @@ type KeeperTestSuite struct {
 
 // testingEnvOptions is used to configure the testing environment for liquidstaking
 type testingEnvOptions struct {
+	desc                  string
 	numVals               int
 	fixedValFeeRate       sdk.Dec
 	valFeeRates           []sdk.Dec
@@ -354,7 +355,7 @@ func (suite *KeeperTestSuite) setupLiquidStakeTestingEnv(env testingEnvOptions) 
 	liquidBondDenom := suite.app.LiquidStakingKeeper.GetLiquidBondDenom(suite.ctx)
 	fmt.Printf(`
 ===============================================================================
-Initial state of TC
+Initial state of %s 
 - num of validators: %d
 - fixed validator fee rate: %s
 - validator fee rates: %s
@@ -366,6 +367,7 @@ Initial state of TC
 - liquid bond denom: %s
 ===============================================================================
 `,
+		env.desc,
 		len(valAddrs),
 		env.fixedValFeeRate.String(),
 		env.valFeeRates,

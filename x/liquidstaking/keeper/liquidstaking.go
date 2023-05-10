@@ -278,14 +278,13 @@ func (k Keeper) RankInsurances(ctx sdk.Context) (
 			validator, found := k.stakingKeeper.GetValidator(ctx, insurance.GetValidator())
 			err := k.IsValidValidator(ctx, validator, found)
 			if err != nil {
-				// CRITICAL & EDGE CASE:
-				// paired insurance must have valid validator
 				if insurance.Status == types.INSURANCE_STATUS_PAIRED {
+					// CRITICAL & EDGE CASE:
+					// paired insurance must have valid validator
 					return false, err
 				} else if insurance.Status == types.INSURANCE_STATUS_PAIRING {
 					// EDGE CASE:
 					// Skip pairing insurance which have invalid validator
-					// TODO: Delete pairing insurance?
 					return false, nil
 				}
 			}

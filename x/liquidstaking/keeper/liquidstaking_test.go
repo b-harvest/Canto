@@ -284,6 +284,7 @@ func (suite *KeeperTestSuite) TestLiquidStakeFail() {
 func (suite *KeeperTestSuite) TestLiquidStakeWithAdvanceBlocks() {
 	fixedInsuranceFeeRate := tenPercentFeeRate
 	env := suite.setupLiquidStakeTestingEnv(testingEnvOptions{
+		desc:                  "TestLiquidStakeWithAdvanceBlocks",
 		numVals:               3,
 		fixedValFeeRate:       tenPercentFeeRate,
 		valFeeRates:           nil,
@@ -362,6 +363,7 @@ func (suite *KeeperTestSuite) TestLiquidStakeWithAdvanceBlocks() {
 func (suite *KeeperTestSuite) TestLiquidUnstakeWithAdvanceBlocks() {
 	fixedInsuranceFeeRate := tenPercentFeeRate
 	env := suite.setupLiquidStakeTestingEnv(testingEnvOptions{
+		desc:                  "TestLiquidUnstakeWithAdvanceBlocks",
 		numVals:               3,
 		fixedValFeeRate:       tenPercentFeeRate,
 		valFeeRates:           nil,
@@ -645,6 +647,7 @@ func (suite *KeeperTestSuite) TestCancelProvideInsuranceSuccess() {
 
 func (suite *KeeperTestSuite) TestDoCancelProvideInsuranceFail() {
 	env := suite.setupLiquidStakeTestingEnv(testingEnvOptions{
+		desc:                  "TestDoCancelProvideInsuranceFail",
 		numVals:               3,
 		fixedValFeeRate:       tenPercentFeeRate,
 		valFeeRates:           nil,
@@ -700,6 +703,7 @@ func (suite *KeeperTestSuite) TestDoCancelProvideInsuranceFail() {
 
 func (suite *KeeperTestSuite) TestDoWithdrawInsurance() {
 	env := suite.setupLiquidStakeTestingEnv(testingEnvOptions{
+		desc:                  "TestDoWithdrawInsurance",
 		numVals:               3,
 		fixedValFeeRate:       tenPercentFeeRate,
 		valFeeRates:           nil,
@@ -805,6 +809,7 @@ func (suite *KeeperTestSuite) TestDoWithdrawInsuranceFail() {
 func (suite *KeeperTestSuite) TestDoWithdrawInsuranceCommission() {
 	fixedInsuranceFeeRate := tenPercentFeeRate
 	env := suite.setupLiquidStakeTestingEnv(testingEnvOptions{
+		desc:                  "TestDoWithdrawInsuranceCommission",
 		numVals:               3,
 		fixedValFeeRate:       tenPercentFeeRate,
 		valFeeRates:           nil,
@@ -998,6 +1003,7 @@ func (suite *KeeperTestSuite) TestDoDepositInsuranceFail() {
 
 func (suite *KeeperTestSuite) TestRankInsurances() {
 	env := suite.setupLiquidStakeTestingEnv(testingEnvOptions{
+		desc:                  "TestRankInsurances",
 		numVals:               3,
 		fixedValFeeRate:       tenPercentFeeRate,
 		valFeeRates:           nil,
@@ -1068,6 +1074,7 @@ func (suite *KeeperTestSuite) TestRankInsurances() {
 
 func (suite *KeeperTestSuite) TestEndBlocker() {
 	env := suite.setupLiquidStakeTestingEnv(testingEnvOptions{
+		desc:                  "TestEndBlocker",
 		numVals:               3,
 		fixedValFeeRate:       tenPercentFeeRate,
 		valFeeRates:           nil,
@@ -1234,9 +1241,10 @@ func (suite *KeeperTestSuite) TestEndBlocker() {
 
 }
 
-func (suite *KeeperTestSuite) TestPairedChunkTombstonedCase() {
+func (suite *KeeperTestSuite) TestPairedChunkTombstonedAndRedelegated() {
 	env := suite.setupLiquidStakeTestingEnv(
 		testingEnvOptions{
+			"TestPairedChunkTombstonedAndRedelegated",
 			3,
 			sdk.NewDecWithPrec(10, 2),
 			nil,
@@ -1249,8 +1257,7 @@ func (suite *KeeperTestSuite) TestPairedChunkTombstonedCase() {
 		},
 	)
 	suite.advanceHeight(1, "liquid staking started")
-	nas := suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
-	fmt.Println(nas)
+	fmt.Println(suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx))
 
 	toBeTombstonedValidator := env.valAddrs[0]
 	toBeTombstonedValidatorPubKey := env.pubKeys[0]
@@ -1283,12 +1290,12 @@ func (suite *KeeperTestSuite) TestPairedChunkTombstonedCase() {
 
 	suite.app.EvidenceKeeper.HandleEquivocationEvidence(suite.ctx, evidence)
 
-	valTombstoned := suite.app.StakingKeeper.Validator(suite.ctx, toBeTombstonedValidator)
-	valTokensAfterTombstoned := valTombstoned.GetTokens()
-	delTokensAfterTombstoned := valTombstoned.TokensFromShares(del.GetShares())
-
-	valTokensDiff := valTokensBeforeTombstoned.Sub(valTokensAfterTombstoned)
 	{
+		valTombstoned := suite.app.StakingKeeper.Validator(suite.ctx, toBeTombstonedValidator)
+		valTokensAfterTombstoned := valTombstoned.GetTokens()
+		delTokensAfterTombstoned := valTombstoned.TokensFromShares(del.GetShares())
+		valTokensDiff := valTokensBeforeTombstoned.Sub(valTokensAfterTombstoned)
+
 		suite.Equal("250000050000000000000000", valTokensDiff.String())
 		suite.Equal(
 			valTokensBeforeTombstoned.ToDec().Mul(
@@ -1318,8 +1325,7 @@ func (suite *KeeperTestSuite) TestPairedChunkTombstonedCase() {
 
 	suite.advanceEpoch()
 	suite.advanceHeight(1, "epoch reached after validator is tombstoned")
-	nas = suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
-	fmt.Println(nas)
+	fmt.Println(suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx))
 
 	// check chunk is started to be re-paired with new insurances
 	// and chunk delegation token value is recovered or not
@@ -1348,6 +1354,122 @@ func (suite *KeeperTestSuite) TestPairedChunkTombstonedCase() {
 	)
 	afterCovered := reDelegatedVal.TokensFromShares(del.GetShares())
 	suite.Equal(types.ChunkSize.ToDec().String(), afterCovered.String())
+
+	suite.advanceHeight(1, "delegation rewards are accumulated")
+	fmt.Println(suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx))
+
+	suite.advanceEpoch()
+	suite.advanceHeight(1, "unpairing insurance because of tombstoned is unpaired now")
+	fmt.Println(suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx))
+
+	unpairedInsurance, _ := suite.app.LiquidStakingKeeper.GetInsurance(suite.ctx, tombstonedChunk.UnpairingInsuranceId)
+	suite.Equal(types.INSURANCE_STATUS_UNPAIRED, unpairedInsurance.Status)
+}
+
+func (suite *KeeperTestSuite) TestPairedChunkTombstonedAndUnpaired() {
+	env := suite.setupLiquidStakeTestingEnv(
+		testingEnvOptions{
+			"TestPairedChunkTombstonedAndUnpaired",
+			3,
+			sdk.NewDecWithPrec(10, 2),
+			nil,
+			onePower,
+			nil,
+			4,
+			sdk.NewDecWithPrec(10, 2),
+			nil,
+			3,
+		},
+	)
+	suite.advanceHeight(1, "liquid staking started")
+	fmt.Println(suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx))
+	toBeTombstonedValidator := env.valAddrs[0]
+	toBeTombstonedValidatorPubKey := env.pubKeys[0]
+	toBeTombstonedChunk := env.pairedChunks[0]
+	pairedInsurance, _ := suite.app.LiquidStakingKeeper.GetInsurance(suite.ctx, toBeTombstonedChunk.PairedInsuranceId)
+	{
+		suite.Equal(
+			toBeTombstonedValidator,
+			env.insurances[0].GetValidator(),
+			"insurance 0 will be unpaired",
+		)
+		suite.Equal(
+			env.insurances[0].GetValidator(),
+			env.insurances[3].GetValidator(),
+			"in re-pairing process insurance 3 will never be ranked in because it also points to tombstoned validator",
+		)
+	}
+	selfDelegationToken := suite.app.StakingKeeper.TokensFromConsensusPower(suite.ctx, onePower)
+	// handle a signature to set signing info
+	suite.app.SlashingKeeper.HandleValidatorSignature(
+		suite.ctx,
+		toBeTombstonedValidatorPubKey.Address(),
+		selfDelegationToken.Int64(),
+		true,
+	)
+	val := suite.app.StakingKeeper.Validator(suite.ctx, toBeTombstonedValidator)
+	power := val.GetConsensusPower(suite.app.StakingKeeper.PowerReduction(suite.ctx))
+	evidence := &evidencetypes.Equivocation{
+		Height:           0,
+		Time:             time.Unix(0, 0),
+		Power:            power,
+		ConsensusAddress: sdk.ConsAddress(toBeTombstonedValidatorPubKey.Address()).String(),
+	}
+	pairedInsuranceBalance := suite.app.BankKeeper.GetBalance(suite.ctx, pairedInsurance.DerivedAddress(), env.bondDenom)
+	suite.app.EvidenceKeeper.HandleEquivocationEvidence(suite.ctx, evidence)
+	suite.advanceHeight(1, "one block passed afetr validator is tombstoned because of double signing")
+	fmt.Println(suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx))
+
+	suite.advanceEpoch()
+	suite.advanceHeight(1, "chunk started to be unpairing")
+	pairedInsuranceBalanceAfterCoveringSlash := suite.app.BankKeeper.GetBalance(suite.ctx, pairedInsurance.DerivedAddress(), env.bondDenom)
+	fmt.Println(suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx))
+	tombstonedChunk, _ := suite.app.LiquidStakingKeeper.GetChunk(suite.ctx, toBeTombstonedChunk.Id)
+	pairedInsuranceBeforeSlashed, _ := suite.app.LiquidStakingKeeper.GetInsurance(suite.ctx, env.insurances[0].Id)
+	candidateInsurance, _ := suite.app.LiquidStakingKeeper.GetInsurance(suite.ctx, env.insurances[3].Id)
+	{
+		suite.Equal(
+			types.CHUNK_STATUS_UNPAIRING, tombstonedChunk.Status,
+			"even though there was a one candidate insurance but that insurance also pointed to tombstoned validator",
+		)
+		suite.Equal(
+			types.INSURANCE_STATUS_UNPAIRING, pairedInsuranceBeforeSlashed.Status,
+			"insurance 0 is unpairing because it points to tombstoned validator",
+		)
+		suite.True(pairedInsuranceBalanceAfterCoveringSlash.IsLT(pairedInsuranceBalance))
+		suite.Equal(
+			types.INSURANCE_STATUS_PAIRING, candidateInsurance.Status,
+			"insurance 3 is still in pairing status because it points to tombstoned validator, so it couldn't join as a new paired insurance",
+		)
+		// get undelegation obj
+		unbondingDelegation, _ := suite.app.StakingKeeper.GetUnbondingDelegation(
+			suite.ctx,
+			tombstonedChunk.DerivedAddress(),
+			val.GetOperator(),
+		)
+		suite.Len(
+			unbondingDelegation.Entries,
+			1,
+		)
+		suite.Equal(
+			unbondingDelegation.Entries[0].InitialBalance.String(),
+			types.ChunkSize.String(),
+		)
+	}
+
+	suite.advanceHeight(1, "")
+	fmt.Println(suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx))
+
+	suite.advanceEpoch()
+	suite.advanceHeight(1, "unpairing of chunk is finished")
+
+	tombstonedChunkAfterUnpairing, _ := suite.app.LiquidStakingKeeper.GetChunk(suite.ctx, toBeTombstonedChunk.Id)
+	suite.Equal(types.CHUNK_STATUS_PAIRING, tombstonedChunkAfterUnpairing.Status)
+	suite.Equal(
+		suite.app.BankKeeper.GetBalance(suite.ctx, tombstonedChunk.DerivedAddress(), env.bondDenom).Amount.String(),
+		types.ChunkSize.String(),
+		"chunk's balance must be equal to chunk size",
+	)
 }
 
 func (suite *KeeperTestSuite) getUnitDistribution(
