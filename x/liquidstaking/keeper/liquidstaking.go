@@ -923,11 +923,7 @@ func (k Keeper) completeInsuranceDuty(ctx sdk.Context, insurance types.Insurance
 	insurance.SetStatus(types.INSURANCE_STATUS_UNPAIRED)
 
 	switch chunk.Status {
-	case types.CHUNK_STATUS_UNPAIRING_FOR_UNSTAKING:
-		fallthrough
-	case types.CHUNK_STATUS_UNPAIRING:
-		fallthrough
-	case types.CHUNK_STATUS_PAIRED: // In this case, chunk got re-delegated at previous Epoch
+	case types.CHUNK_STATUS_UNPAIRING_FOR_UNSTAKING, types.CHUNK_STATUS_UNPAIRING, types.CHUNK_STATUS_PAIRED:
 		chunk.UnpairingInsuranceId = 0
 	}
 
@@ -1069,6 +1065,7 @@ func (k Keeper) handleUnpairingChunk(ctx sdk.Context, chunk types.Chunk) error {
 	}
 	chunk.SetStatus(types.CHUNK_STATUS_PAIRING)
 	k.SetChunk(ctx, chunk)
+	k.SetInsurance(ctx, unpairingInsurance)
 
 	return nil
 }

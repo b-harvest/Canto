@@ -1501,13 +1501,22 @@ func (suite *KeeperTestSuite) TestPairedChunkTombstonedAndUnpaired() {
 	suite.advanceEpoch()
 	suite.advanceHeight(1, "unpairing of chunk is finished")
 
-	tombstonedChunkAfterUnpairing, _ := suite.app.LiquidStakingKeeper.GetChunk(suite.ctx, toBeTombstonedChunk.Id)
-	suite.Equal(types.CHUNK_STATUS_PAIRING, tombstonedChunkAfterUnpairing.Status)
-	suite.Equal(
-		suite.app.BankKeeper.GetBalance(suite.ctx, tombstonedChunk.DerivedAddress(), env.bondDenom).Amount.String(),
-		types.ChunkSize.String(),
-		"chunk's balance must be equal to chunk size",
-	)
+	{
+		tombstonedChunkAfterUnpairing, _ := suite.app.LiquidStakingKeeper.GetChunk(suite.ctx, toBeTombstonedChunk.Id)
+		suite.Equal(types.CHUNK_STATUS_PAIRING, tombstonedChunkAfterUnpairing.Status)
+		suite.Equal(
+			suite.app.BankKeeper.GetBalance(suite.ctx, tombstonedChunk.DerivedAddress(), env.bondDenom).Amount.String(),
+			types.ChunkSize.String(),
+			"chunk's balance must be equal to chunk size",
+		)
+		suite.Equal(
+			types.Empty,
+			tombstonedChunkAfterUnpairing.UnpairingInsuranceId,
+			"unpairing insurance already finished its duty before chunk is unpaired",
+		)
+		unpairedInsurance, _ := suite.app.LiquidStakingKeeper.GetInsurance(suite.ctx, pairedInsurance.Id)
+		suite.Equal(types.INSURANCE_STATUS_UNPAIRED, unpairedInsurance.Status)
+	}
 }
 
 func (suite *KeeperTestSuite) getUnitDistribution(
