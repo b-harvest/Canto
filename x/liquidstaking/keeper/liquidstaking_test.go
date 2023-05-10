@@ -1519,6 +1519,135 @@ func (suite *KeeperTestSuite) TestPairedChunkTombstonedAndUnpaired() {
 	}
 }
 
+func (suite *KeeperTestSuite) TestMultiplePairedChunksTombstonedAndUnpaired() {
+	env := suite.setupLiquidStakeTestingEnv(
+		testingEnvOptions{
+			"TestMultiplePairedChunksTombstonedAndUnpaired",
+			3,
+			sdk.NewDecWithPrec(10, 2),
+			nil,
+			onePower,
+			nil,
+			9,
+			sdk.NewDecWithPrec(10, 2),
+			nil,
+			9,
+		},
+	)
+	suite.advanceHeight(1, "liquid staking started")
+	fmt.Println(suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx))
+	toBeTombstonedValidator := env.valAddrs[0]
+	toBeTombstonedValidatorPubKey := env.pubKeys[0]
+	toBeTombstonedChunks := []types.Chunk{env.pairedChunks[0], env.pairedChunks[3], env.pairedChunks[6]}
+	pairedInsurances := []types.Insurance{env.insurances[0], env.insurances[3], env.insurances[6]}
+	{
+		for i := 0; i < len(pairedInsurances); i++ {
+			suite.Equal(pairedInsurances[i].Id, toBeTombstonedChunks[i].PairedInsuranceId)
+			suite.Equal(toBeTombstonedValidator, pairedInsurances[i].GetValidator())
+		}
+	}
+
+	selfDelegationToken := suite.app.StakingKeeper.TokensFromConsensusPower(suite.ctx, onePower)
+	// handle a signature to set signing info
+	suite.app.SlashingKeeper.HandleValidatorSignature(
+		suite.ctx,
+		toBeTombstonedValidatorPubKey.Address(),
+		selfDelegationToken.Int64(),
+		true,
+	)
+	val := suite.app.StakingKeeper.Validator(suite.ctx, toBeTombstonedValidator)
+	power := val.GetConsensusPower(suite.app.StakingKeeper.PowerReduction(suite.ctx))
+	evidence := &evidencetypes.Equivocation{
+		Height:           0,
+		Time:             time.Unix(0, 0),
+		Power:            power,
+		ConsensusAddress: sdk.ConsAddress(toBeTombstonedValidatorPubKey.Address()).String(),
+	}
+	var pairedInsuranceBalances []sdk.Coin
+	for _, pairedInsurance := range pairedInsurances {
+		pairedInsuranceBalances = append(
+			pairedInsuranceBalances,
+			suite.app.BankKeeper.GetBalance(suite.ctx, pairedInsurance.DerivedAddress(), env.bondDenom),
+		)
+	}
+
+	suite.app.EvidenceKeeper.HandleEquivocationEvidence(suite.ctx, evidence)
+	suite.advanceHeight(1, "one block passed afetr validator is tombstoned because of double signing")
+	fmt.Println(suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx))
+
+	suite.advanceEpoch()
+	suite.advanceHeight(1, "chunks started to be unpairing")
+
+	var tombstonedChunks []types.Chunk
+	for _, toBeTombstonedChunk := range toBeTombstonedChunks {
+		tombstonedChunk, _ := suite.app.LiquidStakingKeeper.GetChunk(suite.ctx, toBeTombstonedChunk.Id)
+		tombstonedChunks = append(tombstonedChunks, tombstonedChunk)
+	}
+
+	var pairedInsuranceBalancesAfterCoveringSlash []sdk.Coin
+	for _, pairedInsurance := range pairedInsurances {
+		pairedInsuranceBalancesAfterCoveringSlash = append(
+			pairedInsuranceBalancesAfterCoveringSlash,
+			suite.app.BankKeeper.GetBalance(suite.ctx, pairedInsurance.DerivedAddress(), env.bondDenom),
+		)
+	}
+
+	for i, tombstonedChunk := range tombstonedChunks {
+		pairedInsuranceBeforeSlashed, _ := suite.app.LiquidStakingKeeper.GetInsurance(suite.ctx, toBeTombstonedChunks[i].PairedInsuranceId)
+		{
+			suite.Equal(
+				types.CHUNK_STATUS_UNPAIRING, tombstonedChunk.Status,
+				"there are no candidate insurances so it started unpairing",
+			)
+			suite.Equal(
+				types.INSURANCE_STATUS_UNPAIRING, pairedInsuranceBeforeSlashed.Status,
+				fmt.Sprintf("insurance %d is unpairing because it points to tombstoned validator", i),
+			)
+			suite.True(pairedInsuranceBalancesAfterCoveringSlash[i].IsLT(pairedInsuranceBalances[i]))
+			// get undelegation obj
+			unbondingDelegation, _ := suite.app.StakingKeeper.GetUnbondingDelegation(
+				suite.ctx,
+				tombstonedChunk.DerivedAddress(),
+				val.GetOperator(),
+			)
+			suite.Len(
+				unbondingDelegation.Entries,
+				1,
+			)
+			suite.Equal(
+				unbondingDelegation.Entries[0].InitialBalance.String(),
+				types.ChunkSize.String(),
+			)
+		}
+	}
+
+	suite.advanceHeight(1, "")
+	fmt.Println(suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx))
+
+	suite.advanceEpoch()
+	suite.advanceHeight(1, "unpairing of chunk is finished")
+
+	{
+		for i, toBeTombstonedChunk := range toBeTombstonedChunks {
+			tombstonedChunkAfterUnpairing, _ := suite.app.LiquidStakingKeeper.GetChunk(suite.ctx, toBeTombstonedChunk.Id)
+			suite.Equal(types.CHUNK_STATUS_PAIRING, tombstonedChunkAfterUnpairing.Status)
+			suite.Equal(
+				suite.app.BankKeeper.GetBalance(suite.ctx, tombstonedChunks[i].DerivedAddress(), env.bondDenom).Amount.String(),
+				types.ChunkSize.String(),
+				"chunk's balance must be equal to chunk size",
+			)
+			suite.Equal(
+				types.Empty,
+				tombstonedChunkAfterUnpairing.UnpairingInsuranceId,
+				"unpairing insurance already finished its duty before chunk is unpaired",
+			)
+			unpairedInsurance, _ := suite.app.LiquidStakingKeeper.GetInsurance(suite.ctx, pairedInsurances[i].Id)
+			suite.Equal(types.INSURANCE_STATUS_UNPAIRED, unpairedInsurance.Status)
+		}
+	}
+
+}
+
 func (suite *KeeperTestSuite) getUnitDistribution(
 	unitDelegationRewardPerEpoch sdk.Int,
 	fixedInsuranceFeeRate sdk.Dec,
