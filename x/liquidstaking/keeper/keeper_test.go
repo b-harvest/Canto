@@ -343,13 +343,13 @@ func (suite *KeeperTestSuite) setupLiquidStakeTestingEnv(env testingEnvOptions) 
 	valAddrs, pubKeys := suite.CreateValidators(env.powers, env.fixedValFeeRate, env.valFeeRates)
 	oneChunk, oneInsurance := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
 	providers, providerBalances := suite.AddTestAddrs(env.numInsurances, oneInsurance.Amount)
-	insurances := suite.provideInsurances(providers, valAddrs, providerBalances, env.fixedInsuranceFeeRate, env.insuranceFeeRates)
+	insurances := suite.provideInsurances(suite.ctx, providers, valAddrs, providerBalances, env.fixedInsuranceFeeRate, env.insuranceFeeRates)
 
 	// create numPairedChunks delegators
 	delegators, delegatorBalances := suite.AddTestAddrs(env.numPairedChunks, oneChunk.Amount)
 	nas := suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
 	suite.True(nas.IsZeroState(), "nothing happened yet so it must be zero state")
-	pairedChunks := suite.liquidStakes(delegators, delegatorBalances)
+	pairedChunks := suite.liquidStakes(suite.ctx, delegators, delegatorBalances)
 
 	bondDenom := suite.app.StakingKeeper.BondDenom(suite.ctx)
 	liquidBondDenom := suite.app.LiquidStakingKeeper.GetLiquidBondDenom(suite.ctx)
