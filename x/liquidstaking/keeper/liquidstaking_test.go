@@ -298,8 +298,8 @@ func (suite *KeeperTestSuite) TestLiquidStakeWithAdvanceBlocks() {
 	})
 
 	_, oneInsurance := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
-	unitDelegationRewardPerEpoch, _ := sdk.NewIntFromString("29999994000000000000")
-	unitInsuranceCommissionPerEpoch, pureUnitRewardPerEpoch := suite.getUnitDistribution(unitDelegationRewardPerEpoch, fixedInsuranceFeeRate)
+	unitDelegationRewardPerRewardEpoch, _ := sdk.NewIntFromString("29999994000000000000")
+	unitInsuranceCommissionPerRewardEpoch, pureUnitRewardPerRewardEpoch := suite.getUnitDistribution(unitDelegationRewardPerRewardEpoch, fixedInsuranceFeeRate)
 
 	nas := suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
 	fmt.Println(nas)
@@ -335,7 +335,7 @@ func (suite *KeeperTestSuite) TestLiquidStakeWithAdvanceBlocks() {
 	fmt.Println(nas)
 	{
 		suite.Equal(
-			pureUnitRewardPerEpoch.Mul(pairedChunksInt).String(),
+			pureUnitRewardPerRewardEpoch.Mul(pairedChunksInt).String(),
 			nas.TotalRemainingRewards.Sub(beforeNas.TotalRemainingRewards).TruncateInt().String(),
 		)
 		suite.Equal("0.999994600030239830", nas.MintRate.String())
@@ -349,11 +349,11 @@ func (suite *KeeperTestSuite) TestLiquidStakeWithAdvanceBlocks() {
 	{
 		suite.True(nas.TotalRemainingRewards.IsZero(), "remaining rewards are distributed")
 		suite.Equal(
-			pureUnitRewardPerEpoch.Mul(pairedChunksInt).Mul(sdk.NewInt(suite.rewardEpochCount)).String(),
+			pureUnitRewardPerRewardEpoch.Mul(pairedChunksInt).Mul(sdk.NewInt(suite.rewardEpochCount)).String(),
 			nas.RewardModuleAccBalance.String(),
 		)
 		suite.Equal(
-			unitInsuranceCommissionPerEpoch.Mul(pairedChunksInt).Mul(sdk.NewInt(suite.rewardEpochCount)).String(),
+			unitInsuranceCommissionPerRewardEpoch.Mul(pairedChunksInt).Mul(sdk.NewInt(suite.rewardEpochCount)).String(),
 			nas.TotalPairedInsuranceCommissions.String(),
 		)
 		suite.Equal("0.999989200118798693", nas.MintRate.String())
@@ -407,12 +407,12 @@ func (suite *KeeperTestSuite) TestLiquidUnstakeWithAdvanceBlocks() {
 	// advance 1 block(= epoch period in test environment) so reward is accumulated which means mint rate is changed
 	suite.advanceHeight(1, "")
 
-	unitDelegationRewardPerEpoch, _ := sdk.NewIntFromString("29999994000000000000")
-	unitInsuranceCommissionPerEpoch, pureUnitRewardPerEpoch := suite.getUnitDistribution(unitDelegationRewardPerEpoch, fixedInsuranceFeeRate)
+	unitDelegationRewardPerRewardEpoch, _ := sdk.NewIntFromString("29999994000000000000")
+	unitInsuranceCommissionPerRewardEpoch, pureUnitRewardPerRewardEpoch := suite.getUnitDistribution(unitDelegationRewardPerRewardEpoch, fixedInsuranceFeeRate)
 
 	// each delegation reward per epoch(=1 block in test) * number of paired chunks
 	// = 29999994000000000000 * 3
-	notClaimedRewards := pureUnitRewardPerEpoch.Mul(pairedChunksInt)
+	notClaimedRewards := pureUnitRewardPerRewardEpoch.Mul(pairedChunksInt)
 	beforeNas := nas
 	nas = suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
 	fmt.Println(nas)
@@ -487,16 +487,16 @@ func (suite *KeeperTestSuite) TestLiquidUnstakeWithAdvanceBlocks() {
 		)
 		suite.True(nas.TotalRemainingRewards.IsZero(), "all rewards are claimed")
 		suite.Equal(
-			pureUnitRewardPerEpoch.Mul(pairedChunksInt).Mul(sdk.NewInt(suite.rewardEpochCount)).String(),
+			pureUnitRewardPerRewardEpoch.Mul(pairedChunksInt).Mul(sdk.NewInt(suite.rewardEpochCount)).String(),
 			nas.RewardModuleAccBalance.String(),
 			fmt.Sprintf("before unstaking triggered there are collecting reward process so reward module got %d chunk's rewards", pairedChunksInt.Int64()),
 		)
 		suite.Equal(
-			unitInsuranceCommissionPerEpoch.Mul(sdk.NewInt(suite.rewardEpochCount)).String(),
+			unitInsuranceCommissionPerRewardEpoch.Mul(sdk.NewInt(suite.rewardEpochCount)).String(),
 			nas.TotalUnpairingInsuranceCommissions.String(),
 		)
 		suite.Equal(
-			unitInsuranceCommissionPerEpoch.Mul(sdk.NewInt(suite.rewardEpochCount).Mul(sdk.NewInt(2))).String(),
+			unitInsuranceCommissionPerRewardEpoch.Mul(sdk.NewInt(suite.rewardEpochCount).Mul(sdk.NewInt(2))).String(),
 			nas.TotalPairedInsuranceCommissions.Sub(beforeNas.TotalPairedInsuranceCommissions).String(),
 		)
 		suite.Equal(
@@ -505,7 +505,7 @@ func (suite *KeeperTestSuite) TestLiquidUnstakeWithAdvanceBlocks() {
 			"",
 		)
 		suite.Equal(
-			unitInsuranceCommissionPerEpoch.Mul(sdk.NewInt(suite.rewardEpochCount)).String(),
+			unitInsuranceCommissionPerRewardEpoch.Mul(sdk.NewInt(suite.rewardEpochCount)).String(),
 			nas.TotalUnpairingInsuranceCommissions.Sub(beforeNas.TotalUnpairingInsuranceCommissions).String(),
 			"TotalUnpairingInsuranceTokens must be increased by insurance commission per epoch",
 		)
@@ -533,8 +533,8 @@ func (suite *KeeperTestSuite) TestLiquidUnstakeWithAdvanceBlocks() {
 
 	// Now number of paired chunk is decreased and still reward is fixed,
 	// so the unit reward per epoch is increased.
-	unitDelegationRewardPerEpoch, _ = sdk.NewIntFromString("44999986500000000000")
-	unitInsuranceCommissionPerEpoch, pureUnitRewardPerEpoch = suite.getUnitDistribution(unitDelegationRewardPerEpoch, fixedInsuranceFeeRate)
+	unitDelegationRewardPerRewardEpoch, _ = sdk.NewIntFromString("44999986500000000000")
+	unitInsuranceCommissionPerRewardEpoch, pureUnitRewardPerRewardEpoch = suite.getUnitDistribution(unitDelegationRewardPerRewardEpoch, fixedInsuranceFeeRate)
 
 	beforeNas = nas
 	nas = suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
@@ -557,12 +557,12 @@ func (suite *KeeperTestSuite) TestLiquidUnstakeWithAdvanceBlocks() {
 		suite.True(nas.LsTokensTotalSupply.LT(beforeNas.LsTokensTotalSupply), "ls tokens are burned")
 		suite.True(nas.TotalRemainingRewards.IsZero(), "all rewards are claimed")
 		suite.Equal(
-			pureUnitRewardPerEpoch.Mul(pairedChunksInt).String(),
+			pureUnitRewardPerRewardEpoch.Mul(pairedChunksInt).String(),
 			nas.RewardModuleAccBalance.Sub(beforeNas.RewardModuleAccBalance).String(),
 			"reward module account balance must be increased by pure reward per epoch * reward epoch count",
 		)
 		suite.Equal(
-			unitInsuranceCommissionPerEpoch.Mul(pairedChunksInt).String(),
+			unitInsuranceCommissionPerRewardEpoch.Mul(pairedChunksInt).String(),
 			nas.TotalPairedInsuranceCommissions.Sub(beforeNas.TotalPairedInsuranceCommissions).String(),
 		)
 		suite.Equal(
@@ -858,9 +858,8 @@ func (suite *KeeperTestSuite) TestDoWithdrawInsuranceCommission() {
 		numPairedChunks:       3,
 	})
 
-	unitDelegationRewardPerEpoch, _ := sdk.NewIntFromString("29999994000000000000")
-	// unitInsuranceCommissionPerEpoch, _ := suite.getUnitDistribution(unitDelegationRewardPerEpoch, fixedInsuranceFeeRate)
-	unitInsuranceCommissionPerEpoch, _ := suite.getUnitDistribution(unitDelegationRewardPerEpoch, fixedInsuranceFeeRate)
+	unitDelegationRewardPerRewardEpoch, _ := sdk.NewIntFromString("29999994000000000000")
+	unitInsuranceCommissionPerRewardEpoch, _ := suite.getUnitDistribution(unitDelegationRewardPerRewardEpoch, fixedInsuranceFeeRate)
 
 	provider := env.providers[0]
 	targetInsurance := env.insurances[0]
@@ -877,7 +876,7 @@ func (suite *KeeperTestSuite) TestDoWithdrawInsuranceCommission() {
 	suite.advanceHeight(1, "cumulated delegation reward is distributed to withdraw fee pool")
 	afterInsuranceCommission = suite.app.BankKeeper.GetBalance(suite.ctx, targetInsurance.FeePoolAddress(), suite.denom)
 	suite.Equal(
-		unitInsuranceCommissionPerEpoch.Mul(sdk.NewInt(suite.rewardEpochCount)).String(),
+		unitInsuranceCommissionPerRewardEpoch.Mul(sdk.NewInt(suite.rewardEpochCount)).String(),
 		afterInsuranceCommission.Amount.String(),
 		"cumulated delegation reward is distributed to withdraw fee pool",
 	)
@@ -1296,8 +1295,8 @@ func (suite *KeeperTestSuite) TestPairedChunkTombstonedAndRedelegated() {
 			3,
 		},
 	)
-	unitDelegationRewardPerEpoch, _ := sdk.NewIntFromString("29999994000000000000")
-	unitInsuranceCommissionPerEpoch, _ := suite.getUnitDistribution(unitDelegationRewardPerEpoch, tenPercentFeeRate)
+	unitDelegationRewardPerRewardEpoch, _ := sdk.NewIntFromString("29999994000000000000")
+	unitInsuranceCommissionPerRewardEpoch, _ := suite.getUnitDistribution(unitDelegationRewardPerRewardEpoch, tenPercentFeeRate)
 
 	suite.advanceHeight(1, "liquid staking started")
 	fmt.Println(suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx))
@@ -1372,7 +1371,7 @@ func (suite *KeeperTestSuite) TestPairedChunkTombstonedAndRedelegated() {
 	suite.advanceEpoch()
 	suite.advanceHeight(1, "epoch reached after validator is tombstoned")
 	fmt.Println(suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx))
-	passedBlockAfterTombstoned := int64(1)
+	passedRewardsEpochAfterTombstoned := int64(1)
 
 	// check chunk is started to be re-paired with new insurances
 	// and chunk delegation token value is recovered or not
@@ -1387,7 +1386,7 @@ func (suite *KeeperTestSuite) TestPairedChunkTombstonedAndRedelegated() {
 		suite.Equal(toBeTombstonedChunk.PairedInsuranceId, tombstonedChunk.UnpairingInsuranceId)
 		unpairingInsurance, _ := suite.app.LiquidStakingKeeper.GetInsurance(suite.ctx, tombstonedChunk.UnpairingInsuranceId)
 		suite.Equal(
-			unitInsuranceCommissionPerEpoch.String(),
+			unitInsuranceCommissionPerRewardEpoch.String(),
 			suite.app.BankKeeper.GetBalance(
 				suite.ctx,
 				unpairingInsurance.FeePoolAddress(),
@@ -1395,15 +1394,15 @@ func (suite *KeeperTestSuite) TestPairedChunkTombstonedAndRedelegated() {
 			).Amount.String(),
 			fmt.Sprintf(
 				"tombstoned insurance got commission for %d reward epochs",
-				suite.rewardEpochCount-passedBlockAfterTombstoned,
+				suite.rewardEpochCount-passedRewardsEpochAfterTombstoned,
 			),
 		)
 		// Tombstoned validator got only 1 reward epoch commission because it is tombstoned before epoch is passed.
 		// So other validator's delegation rewards are increased by the amount of tombstoned validator's delegation reward.
 		numValidDels := int64(len(env.pairedChunks) - 1)
-		additionalCommission := unitInsuranceCommissionPerEpoch.Quo(sdk.NewInt(numValidDels))
+		additionalCommission := unitInsuranceCommissionPerRewardEpoch.Quo(sdk.NewInt(numValidDels))
 		suite.Equal(
-			unitInsuranceCommissionPerEpoch.Mul(sdk.NewInt(suite.rewardEpochCount)).Add(additionalCommission).String(),
+			unitInsuranceCommissionPerRewardEpoch.MulRaw(suite.rewardEpochCount).Add(additionalCommission).String(),
 			suite.app.BankKeeper.GetBalance(
 				suite.ctx,
 				env.insurances[1].FeePoolAddress(),
@@ -1472,8 +1471,12 @@ func (suite *KeeperTestSuite) TestPairedChunkTombstonedAndUnpaired() {
 			3,
 		},
 	)
+	unitDelegationRewardPerRewardEpoch, _ := sdk.NewIntFromString("29999994000000000000")
+	unitInsuranceCommissionPerRewardEpoch, _ := suite.getUnitDistribution(unitDelegationRewardPerRewardEpoch, tenPercentFeeRate)
+
 	suite.advanceHeight(1, "liquid staking started")
 	fmt.Println(suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx))
+
 	toBeTombstonedValidator := env.valAddrs[0]
 	toBeTombstonedValidatorPubKey := env.pubKeys[0]
 	toBeTombstonedChunk := env.pairedChunks[0]
@@ -1490,6 +1493,7 @@ func (suite *KeeperTestSuite) TestPairedChunkTombstonedAndUnpaired() {
 			"in re-pairing process insurance 3 will never be ranked in because it also points to tombstoned validator",
 		)
 	}
+
 	selfDelegationToken := suite.app.StakingKeeper.TokensFromConsensusPower(suite.ctx, onePower)
 	// handle a signature to set signing info
 	suite.app.SlashingKeeper.HandleValidatorSignature(
@@ -1498,6 +1502,7 @@ func (suite *KeeperTestSuite) TestPairedChunkTombstonedAndUnpaired() {
 		selfDelegationToken.Int64(),
 		true,
 	)
+
 	val := suite.app.StakingKeeper.Validator(suite.ctx, toBeTombstonedValidator)
 	power := val.GetConsensusPower(suite.app.StakingKeeper.PowerReduction(suite.ctx))
 	evidence := &evidencetypes.Equivocation{
@@ -1506,13 +1511,17 @@ func (suite *KeeperTestSuite) TestPairedChunkTombstonedAndUnpaired() {
 		Power:            power,
 		ConsensusAddress: sdk.ConsAddress(toBeTombstonedValidatorPubKey.Address()).String(),
 	}
+
 	pairedInsuranceBalance := suite.app.BankKeeper.GetBalance(suite.ctx, pairedInsurance.DerivedAddress(), env.bondDenom)
 	suite.app.EvidenceKeeper.HandleEquivocationEvidence(suite.ctx, evidence)
+
 	suite.advanceHeight(1, "one block passed afetr validator is tombstoned because of double signing")
 	fmt.Println(suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx))
 
 	suite.advanceEpoch()
 	suite.advanceHeight(1, "chunk started to be unpairing")
+	passedRewardsEpochAfterTombstoned := int64(2)
+
 	pairedInsuranceBalanceAfterCoveringSlash := suite.app.BankKeeper.GetBalance(suite.ctx, pairedInsurance.DerivedAddress(), env.bondDenom)
 	fmt.Println(suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx))
 	tombstonedChunk, _ := suite.app.LiquidStakingKeeper.GetChunk(suite.ctx, toBeTombstonedChunk.Id)
@@ -1520,19 +1529,43 @@ func (suite *KeeperTestSuite) TestPairedChunkTombstonedAndUnpaired() {
 	candidateInsurance, _ := suite.app.LiquidStakingKeeper.GetInsurance(suite.ctx, env.insurances[3].Id)
 	{
 		suite.Equal(
-			types.CHUNK_STATUS_UNPAIRING, tombstonedChunk.Status,
-			"even though there was a one candidate insurance but that insurance also pointed to tombstoned validator",
+			types.CHUNK_STATUS_UNPAIRING,
+			tombstonedChunk.Status,
+			"even though there was a one candidate insurance but + "+
+				"that insurance also pointed to tombstoned validator",
 		)
 		suite.Equal(
-			types.INSURANCE_STATUS_UNPAIRING, pairedInsuranceBeforeSlashed.Status,
+			types.INSURANCE_STATUS_UNPAIRING,
+			pairedInsuranceBeforeSlashed.Status,
 			"insurance 0 is unpairing because it points to tombstoned validator",
 		)
 		suite.True(pairedInsuranceBalanceAfterCoveringSlash.IsLT(pairedInsuranceBalance))
 		suite.Equal(
-			types.INSURANCE_STATUS_PAIRING, candidateInsurance.Status,
-			"insurance 3 is still in pairing status because it points to tombstoned validator, so it couldn't join as a new paired insurance",
+			types.INSURANCE_STATUS_PAIRING,
+			candidateInsurance.Status,
+			"insurance 3 is still in pairing status because it points to tombstoned validator, "+
+				"so it couldn't join as a new paired insurance",
 		)
-		// get undelegation obj
+		tombstonedInsurance, _ := suite.app.LiquidStakingKeeper.GetInsurance(suite.ctx, pairedInsuranceBeforeSlashed.Id)
+		suite.Equal(
+			unitInsuranceCommissionPerRewardEpoch.MulRaw(suite.rewardEpochCount-passedRewardsEpochAfterTombstoned).String(),
+			suite.app.BankKeeper.GetBalance(suite.ctx, tombstonedInsurance.FeePoolAddress(), env.bondDenom).Amount.String(),
+			fmt.Sprintf(
+				"after tombstoned, tombstoned insurance couldn't get commissions corresponding %d * unit commission",
+				passedRewardsEpochAfterTombstoned,
+			),
+		)
+		validInsurancesAfterTombstoned := int64(2) // 3 -> 2 because insurance 0 got tombstoned validator
+		additionalCommissionPerRewardEpoch := unitInsuranceCommissionPerRewardEpoch.QuoRaw(validInsurancesAfterTombstoned)
+		suite.Equal(
+			unitInsuranceCommissionPerRewardEpoch.MulRaw(suite.rewardEpochCount).Add(
+				additionalCommissionPerRewardEpoch.MulRaw(passedRewardsEpochAfterTombstoned),
+			).String(),
+			suite.app.BankKeeper.GetBalance(suite.ctx, env.insurances[1].FeePoolAddress(), env.bondDenom).Amount.String(),
+			"after tombstoned, valid insurance got additional commission because "+
+				"validator set becomes small but rewards are fixed as 100 canto in testing environment",
+		)
+
 		unbondingDelegation, _ := suite.app.StakingKeeper.GetUnbondingDelegation(
 			suite.ctx,
 			tombstonedChunk.DerivedAddress(),
@@ -1541,10 +1574,12 @@ func (suite *KeeperTestSuite) TestPairedChunkTombstonedAndUnpaired() {
 		suite.Len(
 			unbondingDelegation.Entries,
 			1,
+			"there were no candidate insurance to pair, so unbonding of chunk started",
 		)
 		suite.Equal(
 			unbondingDelegation.Entries[0].InitialBalance.String(),
 			types.ChunkSize.String(),
+			"there were no candidate insurance to pair, so unbonding of chunk started",
 		)
 	}
 
@@ -1738,13 +1773,13 @@ func (suite *KeeperTestSuite) TestMultiplePairedChunksTombstonedAndUnpaired() {
 //
 // }
 func (suite *KeeperTestSuite) getUnitDistribution(
-	unitDelegationRewardPerEpoch sdk.Int,
+	unitDelegationRewardPerRewardEpoch sdk.Int,
 	fixedInsuranceFeeRate sdk.Dec,
 ) (sdk.Int, sdk.Int) {
-	unitInsuranceCommissionPerEpoch := unitDelegationRewardPerEpoch.ToDec().Mul(fixedInsuranceFeeRate).TruncateInt()
-	pureUnitRewardPerEpoch := unitDelegationRewardPerEpoch.Sub(unitInsuranceCommissionPerEpoch)
-	fmt.Println("unitDelegationRewardPerEpoch: ", unitDelegationRewardPerEpoch.String())
-	fmt.Println("unitInsuranceCommissionPerEpoch: ", unitInsuranceCommissionPerEpoch.String())
-	fmt.Println("pureUnitRewardPerEpoch: ", pureUnitRewardPerEpoch.String())
-	return unitInsuranceCommissionPerEpoch, pureUnitRewardPerEpoch
+	unitInsuranceCommissionPerRewardEpoch := unitDelegationRewardPerRewardEpoch.ToDec().Mul(fixedInsuranceFeeRate).TruncateInt()
+	pureUnitRewardPerRewardEpoch := unitDelegationRewardPerRewardEpoch.Sub(unitInsuranceCommissionPerRewardEpoch)
+	fmt.Println("unitDelegationRewardPerRewardEpoch: ", unitDelegationRewardPerRewardEpoch.String())
+	fmt.Println("unitInsuranceCommissionPerRewardEpoch: ", unitInsuranceCommissionPerRewardEpoch.String())
+	fmt.Println("pureUnitRewardPerRewardEpoch: ", pureUnitRewardPerRewardEpoch.String())
+	return unitInsuranceCommissionPerRewardEpoch, pureUnitRewardPerRewardEpoch
 }
