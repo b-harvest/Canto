@@ -1279,7 +1279,6 @@ func (suite *KeeperTestSuite) TestEndBlocker() {
 
 }
 
-// TODO: Blocks go on (many numbers of block) and tombstone happens, then insurance commission is ok?
 // TODO: Re-delegating validator has down-time slashing history, then shares are not equal to chunk size?
 // But it should have same value with chunk size when converted to tokens. This part should be verified.
 func (suite *KeeperTestSuite) TestPairedChunkTombstonedAndRedelegated() {
@@ -1287,16 +1286,19 @@ func (suite *KeeperTestSuite) TestPairedChunkTombstonedAndRedelegated() {
 		testingEnvOptions{
 			"TestPairedChunkTombstonedAndRedelegated",
 			3,
-			sdk.NewDecWithPrec(10, 2),
+			tenPercentFeeRate,
 			nil,
 			onePower,
 			nil,
 			10,
-			sdk.NewDecWithPrec(10, 2),
+			tenPercentFeeRate,
 			nil,
 			3,
 		},
 	)
+	unitDelegationRewardPerEpoch, _ := sdk.NewIntFromString("29999994000000000000")
+	unitInsuranceCommissionPerEpoch, _ := suite.getUnitDistribution(unitDelegationRewardPerEpoch, tenPercentFeeRate)
+
 	suite.advanceHeight(1, "liquid staking started")
 	fmt.Println(suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx))
 
@@ -1331,6 +1333,7 @@ func (suite *KeeperTestSuite) TestPairedChunkTombstonedAndRedelegated() {
 	valTokensBeforeTombstoned := val.GetTokens()
 	delTokens := val.TokensFromShares(del.GetShares())
 
+	fmt.Println("DOUBLE SIGN SLASHING FOR VALIDATOR: " + toBeTombstonedValidator.String())
 	suite.app.EvidenceKeeper.HandleEquivocationEvidence(suite.ctx, evidence)
 
 	{
@@ -1369,6 +1372,7 @@ func (suite *KeeperTestSuite) TestPairedChunkTombstonedAndRedelegated() {
 	suite.advanceEpoch()
 	suite.advanceHeight(1, "epoch reached after validator is tombstoned")
 	fmt.Println(suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx))
+	passedBlockAfterTombstoned := int64(1)
 
 	// check chunk is started to be re-paired with new insurances
 	// and chunk delegation token value is recovered or not
@@ -1381,6 +1385,37 @@ func (suite *KeeperTestSuite) TestPairedChunkTombstonedAndRedelegated() {
 		)
 		suite.Equal(types.CHUNK_STATUS_PAIRED, tombstonedChunk.Status)
 		suite.Equal(toBeTombstonedChunk.PairedInsuranceId, tombstonedChunk.UnpairingInsuranceId)
+		unpairingInsurance, _ := suite.app.LiquidStakingKeeper.GetInsurance(suite.ctx, tombstonedChunk.UnpairingInsuranceId)
+		suite.Equal(
+			unitInsuranceCommissionPerEpoch.String(),
+			suite.app.BankKeeper.GetBalance(
+				suite.ctx,
+				unpairingInsurance.FeePoolAddress(),
+				env.bondDenom,
+			).Amount.String(),
+			fmt.Sprintf(
+				"tombstoned insurance got commission for %d reward epochs",
+				suite.rewardEpochCount-passedBlockAfterTombstoned,
+			),
+		)
+		// Tombstoned validator got only 1 reward epoch commission because it is tombstoned before epoch is passed.
+		// So, the unit delegation reward for valid delegations is increased by
+		// (delegation reward of tombstoned delegation / number of valid delegations).
+		numValidDels := int64(len(env.pairedChunks) - 1)
+		additionalCommission := unitInsuranceCommissionPerEpoch.Quo(sdk.NewInt(numValidDels))
+		suite.Equal(
+			unitInsuranceCommissionPerEpoch.Mul(sdk.NewInt(suite.rewardEpochCount)).Add(additionalCommission).String(),
+			suite.app.BankKeeper.GetBalance(
+				suite.ctx,
+				env.insurances[1].FeePoolAddress(),
+				env.bondDenom,
+			).Amount.String(),
+			fmt.Sprintf(
+				"normal insurance got commission for %d reward epochs",
+				suite.rewardEpochCount,
+			),
+		)
+
 	}
 	newInsurance, _ := suite.app.LiquidStakingKeeper.GetInsurance(suite.ctx, tombstonedChunk.PairedInsuranceId)
 	reDelegatedVal := suite.app.StakingKeeper.Validator(suite.ctx, newInsurance.GetValidator())
