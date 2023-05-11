@@ -1399,8 +1399,7 @@ func (suite *KeeperTestSuite) TestPairedChunkTombstonedAndRedelegated() {
 			),
 		)
 		// Tombstoned validator got only 1 reward epoch commission because it is tombstoned before epoch is passed.
-		// So, the unit delegation reward for valid delegations is increased by
-		// (delegation reward of tombstoned delegation / number of valid delegations).
+		// So other validator's delegation rewards are increased by the amount of tombstoned validator's delegation reward.
 		numValidDels := int64(len(env.pairedChunks) - 1)
 		additionalCommission := unitInsuranceCommissionPerEpoch.Quo(sdk.NewInt(numValidDels))
 		suite.Equal(
@@ -1411,11 +1410,14 @@ func (suite *KeeperTestSuite) TestPairedChunkTombstonedAndRedelegated() {
 				env.bondDenom,
 			).Amount.String(),
 			fmt.Sprintf(
-				"normal insurance got commission for %d reward epochs",
+				"normal insurance got (commission for %d reward epochs + "+
+					"tombstoned delegation reward / number of valid delegations) "+
+					"which means unit delegation reward is increased temporarily.\n"+
+					"this is temporary because in this liquidstaking epoch, re-delegation happened so "+
+					"every delegation reward will be same from now.",
 				suite.rewardEpochCount,
 			),
 		)
-
 	}
 	newInsurance, _ := suite.app.LiquidStakingKeeper.GetInsurance(suite.ctx, tombstonedChunk.PairedInsuranceId)
 	reDelegatedVal := suite.app.StakingKeeper.Validator(suite.ctx, newInsurance.GetValidator())
@@ -1426,31 +1428,33 @@ func (suite *KeeperTestSuite) TestPairedChunkTombstonedAndRedelegated() {
 		toBeTombstonedValidator,
 		newInsurance.GetValidator(),
 	)
-	suite.True(found, "re-delegation obj must exist")
-	suite.Equal(types.ChunkSize.String(), reDelegation.Entries[0].InitialBalance.String())
-	suite.Equal(types.ChunkSize.ToDec().String(), reDelegation.Entries[0].SharesDst.String())
-	del, _ = suite.app.StakingKeeper.GetDelegation(
-		suite.ctx,
-		tombstonedChunk.DerivedAddress(),
-		newInsurance.GetValidator(),
-	)
-	afterCovered := reDelegatedVal.TokensFromShares(del.GetShares())
-	suite.Equal(types.ChunkSize.ToDec().String(), afterCovered.String())
+	{
+		suite.True(found, "re-delegation obj must exist")
+		suite.Equal(types.ChunkSize.String(), reDelegation.Entries[0].InitialBalance.String())
+		suite.Equal(types.ChunkSize.ToDec().String(), reDelegation.Entries[0].SharesDst.String())
+		del, _ = suite.app.StakingKeeper.GetDelegation(
+			suite.ctx,
+			tombstonedChunk.DerivedAddress(),
+			newInsurance.GetValidator(),
+		)
+		afterCovered := reDelegatedVal.TokensFromShares(del.GetShares())
+		suite.Equal(types.ChunkSize.ToDec().String(), afterCovered.String())
 
-	suite.advanceHeight(1, "delegation rewards are accumulated")
-	fmt.Println(suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx))
+		suite.advanceHeight(1, "delegation rewards are accumulated")
+		fmt.Println(suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx))
 
-	suite.advanceEpoch()
-	suite.advanceHeight(1, "unpairing insurance because of tombstoned is unpaired now")
-	fmt.Println(suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx))
+		suite.advanceEpoch()
+		suite.advanceHeight(1, "unpairing insurance because of tombstoned is unpaired now")
+		fmt.Println(suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx))
 
-	unpairedInsurance, _ := suite.app.LiquidStakingKeeper.GetInsurance(suite.ctx, tombstonedChunk.UnpairingInsuranceId)
-	unpairedInsuranceVal, found := suite.app.StakingKeeper.GetValidator(suite.ctx, unpairedInsurance.GetValidator())
-	suite.Equal(types.INSURANCE_STATUS_UNPAIRED, unpairedInsurance.Status)
-	suite.Error(
-		suite.app.LiquidStakingKeeper.IsValidValidator(suite.ctx, unpairedInsuranceVal, found),
-		"validator of unpaired insurance is tombstoned",
-	)
+		unpairedInsurance, _ := suite.app.LiquidStakingKeeper.GetInsurance(suite.ctx, tombstonedChunk.UnpairingInsuranceId)
+		unpairedInsuranceVal, found := suite.app.StakingKeeper.GetValidator(suite.ctx, unpairedInsurance.GetValidator())
+		suite.Equal(types.INSURANCE_STATUS_UNPAIRED, unpairedInsurance.Status)
+		suite.Error(
+			suite.app.LiquidStakingKeeper.IsValidValidator(suite.ctx, unpairedInsuranceVal, found),
+			"validator of unpaired insurance is tombstoned",
+		)
+	}
 }
 
 func (suite *KeeperTestSuite) TestPairedChunkTombstonedAndUnpaired() {
