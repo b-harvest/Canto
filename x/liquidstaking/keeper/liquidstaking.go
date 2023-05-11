@@ -1,6 +1,8 @@
 package keeper
 
 import (
+	"fmt"
+
 	"github.com/Canto-Network/Canto/v6/x/liquidstaking/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -75,10 +77,15 @@ func (k Keeper) DistributeReward(ctx sdk.Context) {
 		if err == types.ErrNotFoundValidator {
 			return true, err
 		}
+		// TODO: remove print when go to production
+		fmt.Printf("Chunk %d Balance Before Withdraw Delegation Rewards\n", chunk.Id)
+		fmt.Println(k.bankKeeper.GetBalance(ctx, chunk.DerivedAddress(), "acanto").String())
 		_, err = k.distributionKeeper.WithdrawDelegationRewards(ctx, chunk.DerivedAddress(), validator.GetOperator())
 		if err != nil {
 			return true, err
 		}
+		fmt.Printf("Chunk %d Balance After Withdraw Delegation Rewards\n", chunk.Id)
+		fmt.Println(k.bankKeeper.GetBalance(ctx, chunk.DerivedAddress(), "acanto").String())
 
 		k.CollectReward(ctx, chunk, insurance)
 		return false, nil
@@ -965,6 +972,7 @@ func (k Keeper) completeLiquidUnstake(ctx sdk.Context, chunk types.Chunk) error 
 		return sdkerrors.Wrapf(types.ErrNotFoundUnpairingForUnstakingChunkInfo, "chunk id: %d", chunk.Id)
 	}
 	lsTokensToBurn := info.EscrowedLstokens
+	unstakedTokens := sdk.NewCoin(bondDenom, types.ChunkSize)
 	penalty := types.ChunkSize.Sub(k.bankKeeper.GetBalance(ctx, chunk.DerivedAddress(), bondDenom).Amount)
 	if penalty.IsPositive() {
 		// send penalty to reward pool
@@ -990,6 +998,7 @@ func (k Keeper) completeLiquidUnstake(ctx sdk.Context, chunk types.Chunk) error 
 			return err
 		}
 		lsTokensToBurn = lsTokensToBurn.Sub(refund)
+		unstakedTokens.Amount = unstakedTokens.Amount.Sub(penalty)
 	}
 	// insurance duty is over
 	if chunk, unpairingInsurance, err = k.completeInsuranceDuty(ctx, unpairingInsurance); err != nil {
@@ -1002,7 +1011,7 @@ func (k Keeper) completeLiquidUnstake(ctx sdk.Context, chunk types.Chunk) error 
 		ctx,
 		chunk.DerivedAddress(),
 		info.GetDelegator(),
-		sdk.NewCoins(sdk.NewCoin(bondDenom, types.ChunkSize)),
+		sdk.NewCoins(unstakedTokens),
 	); err != nil {
 		return err
 	}

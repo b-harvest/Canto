@@ -1611,7 +1611,7 @@ func (suite *KeeperTestSuite) TestPairedChunkTombstonedAndUnpaired() {
 func (suite *KeeperTestSuite) TestMultiplePairedChunksTombstonedAndRedelegated() {
 	env := suite.setupLiquidStakeTestingEnv(
 		testingEnvOptions{
-			"TestMultiplePairedChunksTombstonedAndUnpaired",
+			"TestMultiplePairedChunksTombstonedAndRedelegated",
 			3,
 			sdk.NewDecWithPrec(10, 2),
 			nil,
@@ -1859,40 +1859,177 @@ func (suite *KeeperTestSuite) TestMultiplePairedChunksTombstonedAndUnpaired() {
 
 // TODO: TestMultiplePairedChunksTombstonedAndRepaired
 // Some chunks can be re-paired but others can't which means there are some standards and we need to test it
-//
-//	func (suite *KeeperTestSuite) TestUnpairingForUnstakingChunkTombstoned() {
-//		env := suite.setupLiquidStakeTestingEnv(
-//			testingEnvOptions{
-//				"TestMultiplePairedChunksTombstonedAndUnpaired",
-//				3,
-//				sdk.NewDecWithPrec(10, 2),
-//				nil,
-//				onePower,
-//				nil,
-//				3,
-//				sdk.NewDecWithPrec(10, 2),
-//				nil,
-//				3,
-//			},
-//		)
-//		suite.advanceHeight(1, "liquid staking started")
-//		fmt.Println(suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx))
-//
-//		toBeTombstonedValidator := env.valAddrs[0]
-//		toBeTombstonedValidatorPubKey := env.pubKeys[0]
-//		toBeTombstonedChunk := env.pairedChunks[0]
-//
-//		oneChunk, _ := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
-//		undelegator := env.delegators[0]
-//		msg := types.NewMsgLiquidUnstake(undelegator.String(), oneChunk)
-//		suite.app.LiquidStakingKeeper.QueueLiquidUnstake(suite.ctx, msg)
-//
-//		suite.advanceEpoch()
-//		suite.advanceHeight(1, "unstaking started")
-//
-//		suite.advanceHeight(1, "")
-//
-// }
+func (suite *KeeperTestSuite) TestUnpairingForUnstakingChunkTombstoned() {
+	env := suite.setupLiquidStakeTestingEnv(
+		testingEnvOptions{
+			"TestUnpairingForUnstakingChunkTombstoned",
+			3,
+			tenPercentFeeRate,
+			nil,
+			onePower,
+			nil,
+			3,
+			tenPercentFeeRate,
+			nil,
+			3,
+		},
+	)
+	numPassedRewardEpochsBeforeUnstaked := int64(0)
+	suite.advanceHeight(1, "liquid staking started")
+	numPassedRewardEpochsBeforeUnstaked++
+	fmt.Println(suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx))
+
+	// Remember target chunk to be unstaked is a chunk which have most expensive insurance.
+	// All insurance fees are fixed so last insurance is the target insurnace so
+	// last chunk will be started to be unpairing for unstkaing.
+	toBeUnstakedChunk := env.pairedChunks[2]
+	toBeTombstonedValidator := env.valAddrs[2]
+	toBeTombstonedValidatorPubKey := env.pubKeys[2]
+
+	oneChunk, _ := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
+	undelegator := env.delegators[0]
+	undelegatorInitialBalance := suite.app.BankKeeper.GetBalance(suite.ctx, undelegator, env.bondDenom)
+	msg := types.NewMsgLiquidUnstake(undelegator.String(), oneChunk)
+	_, _, err := suite.app.LiquidStakingKeeper.QueueLiquidUnstake(suite.ctx, msg)
+	suite.NoError(err)
+
+	suite.advanceEpoch()
+	suite.advanceHeight(1, "unstaking started")
+	numPassedRewardEpochsBeforeUnstaked++
+	fmt.Println(suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx))
+
+	// 29999994 + 14999997(1 / num paired chunks)
+	unitDelegationRewardPerRewardEpoch, _ := sdk.NewIntFromString("44999991000000000000")
+	_, pureUnitRewardPerRewardEpoch := suite.getUnitDistribution(unitDelegationRewardPerRewardEpoch, tenPercentFeeRate)
+
+	var pairedInsuranceBalanceAfterUnstakingStarted sdk.Coin
+	var pairedInsuranceCommissionAfterUnstakingStarted sdk.Coin
+	var escrowedLsTokens sdk.Coin
+	{
+		// check whether liquid unstaking started or not
+		chunk, _ := suite.app.LiquidStakingKeeper.GetChunk(suite.ctx, toBeUnstakedChunk.Id)
+		suite.Equal(types.CHUNK_STATUS_UNPAIRING_FOR_UNSTAKING, chunk.Status)
+		info, _ := suite.app.LiquidStakingKeeper.GetUnpairingForUnstakingChunkInfo(suite.ctx, chunk.Id)
+		suite.Equal(chunk.Id, info.ChunkId)
+		escrowedLsTokens = info.EscrowedLstokens
+		insurance, _ := suite.app.LiquidStakingKeeper.GetInsurance(suite.ctx, toBeUnstakedChunk.PairedInsuranceId)
+		suite.Equal(types.INSURANCE_STATUS_UNPAIRING, insurance.Status)
+		pairedInsuranceBalanceAfterUnstakingStarted = suite.app.BankKeeper.GetBalance(
+			suite.ctx,
+			insurance.DerivedAddress(),
+			env.bondDenom,
+		)
+		pairedInsuranceCommissionAfterUnstakingStarted = suite.app.BankKeeper.GetBalance(
+			suite.ctx,
+			insurance.FeePoolAddress(),
+			env.bondDenom,
+		)
+
+		unbondingDelegation, _ := suite.app.StakingKeeper.GetUnbondingDelegation(
+			suite.ctx,
+			chunk.DerivedAddress(),
+			toBeTombstonedValidator,
+		)
+		suite.Len(unbondingDelegation.Entries, 1)
+		suite.Equal(unbondingDelegation.Entries[0].InitialBalance.String(), types.ChunkSize.String())
+	}
+
+	suite.advanceHeight(1, "")
+	fmt.Println(suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx))
+
+	selfDelegationToken := suite.app.StakingKeeper.TokensFromConsensusPower(suite.ctx, onePower)
+	// handle a signature to set signing info
+	suite.app.SlashingKeeper.HandleValidatorSignature(
+		suite.ctx,
+		toBeTombstonedValidatorPubKey.Address(),
+		selfDelegationToken.Int64(),
+		true,
+	)
+	val := suite.app.StakingKeeper.Validator(suite.ctx, toBeTombstonedValidator)
+	power := val.GetConsensusPower(suite.app.StakingKeeper.PowerReduction(suite.ctx))
+	evidence := &evidencetypes.Equivocation{
+		Height:           0,
+		Time:             time.Unix(0, 0),
+		Power:            power,
+		ConsensusAddress: sdk.ConsAddress(toBeTombstonedValidatorPubKey.Address()).String(),
+	}
+
+	fmt.Println("DOUBLE SIGN SLASHING FOR VALIDATOR: " + toBeTombstonedValidator.String())
+	suite.app.EvidenceKeeper.HandleEquivocationEvidence(suite.ctx, evidence)
+	suite.advanceHeight(1, "one block passed afetr validator is tombstoned because of double signing")
+	fmt.Println(suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx))
+
+	var penalty sdk.Int
+	{
+		chunk, _ := suite.app.LiquidStakingKeeper.GetChunk(suite.ctx, toBeUnstakedChunk.Id)
+		unbondingDelegation, _ := suite.app.StakingKeeper.GetUnbondingDelegation(
+			suite.ctx,
+			chunk.DerivedAddress(),
+			toBeTombstonedValidator,
+		)
+		penalty = unbondingDelegation.Entries[0].InitialBalance.Sub(unbondingDelegation.Entries[0].Balance)
+		suite.True(
+			penalty.GT(sdk.ZeroInt()),
+			"penalty applied to unbonding delegation "+
+				"but insurance not yet covered because epoch not yet reached",
+		)
+		insurance, _ := suite.app.LiquidStakingKeeper.GetInsurance(suite.ctx, chunk.UnpairingInsuranceId)
+		suite.Equal(
+			pairedInsuranceBalanceAfterUnstakingStarted,
+			suite.app.BankKeeper.GetBalance(suite.ctx, insurance.DerivedAddress(), env.bondDenom),
+			"insurance not yet covered penalty because epoch not yet reached",
+		)
+	}
+
+	rewardPoolBalanceBefore := suite.app.BankKeeper.GetBalance(suite.ctx, types.RewardPool, env.bondDenom)
+
+	suite.advanceEpoch()
+	suite.advanceHeight(1, "epoch reached after validator is tombstoned because of double signing")
+	fmt.Println(suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx))
+
+	rewardPoolBalanceAfter := suite.app.BankKeeper.GetBalance(suite.ctx, types.RewardPool, env.bondDenom)
+
+	{
+		_, found := suite.app.LiquidStakingKeeper.GetChunk(suite.ctx, toBeUnstakedChunk.Id)
+		suite.False(found, "liquid unstaking of chunk is finished")
+		undelegatorBalance := suite.app.BankKeeper.GetBalance(suite.ctx, undelegator, env.bondDenom)
+		suite.Equal(
+			types.ChunkSize.Sub(penalty).String(),
+			undelegatorBalance.Sub(undelegatorInitialBalance).Amount.String(),
+			"undelegator got (chunk size - penalty) tokens after unstaking",
+		)
+		suite.Equal(
+			penalty.Add(
+				pureUnitRewardPerRewardEpoch.MulRaw(2).MulRaw(suite.rewardEpochCount-numPassedRewardEpochsBeforeUnstaked),
+			).String(),
+			rewardPoolBalanceAfter.Sub(rewardPoolBalanceBefore).Amount.String(),
+			"penalty is sent to reward pool also",
+		)
+		insurance, _ := suite.app.LiquidStakingKeeper.GetInsurance(suite.ctx, toBeUnstakedChunk.PairedInsuranceId)
+		suite.Equal(types.INSURANCE_STATUS_UNPAIRED, insurance.Status)
+		balance := suite.app.BankKeeper.GetBalance(suite.ctx, insurance.DerivedAddress(), env.bondDenom)
+		suite.Equal(
+			penalty.String(),
+			pairedInsuranceBalanceAfterUnstakingStarted.Sub(balance).Amount.String(),
+			"insurance covered penalty after epoch reached",
+		)
+		penaltyRatio := penalty.ToDec().Quo(types.ChunkSize.ToDec())
+		discounted := penaltyRatio.Mul(escrowedLsTokens.Amount.ToDec())
+		suite.Equal(
+			discounted.TruncateInt().String(),
+			suite.app.BankKeeper.GetBalance(suite.ctx, undelegator, env.liquidBondDenom).Amount.String(),
+			"discounted liquid staking tokens are sent to undelegator",
+		)
+
+		commission := suite.app.BankKeeper.GetBalance(suite.ctx, insurance.FeePoolAddress(), env.bondDenom)
+		suite.Equal(
+			commission.String(),
+			pairedInsuranceCommissionAfterUnstakingStarted.String(),
+			"insurance commission is not affected by slashing",
+		)
+	}
+}
+
 func (suite *KeeperTestSuite) getUnitDistribution(
 	unitDelegationRewardPerRewardEpoch sdk.Int,
 	fixedInsuranceFeeRate sdk.Dec,
