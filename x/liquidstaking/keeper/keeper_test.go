@@ -283,11 +283,36 @@ func (suite *KeeperTestSuite) advanceHeight(height int, msg string) {
 
 		totalRewards := sdk.ZeroDec()
 		if totalPower != 0 {
+			fmt.Printf("totalPower: %d\n", totalPower)
 			suite.app.StakingKeeper.IterateBondedValidatorsByPower(suite.ctx, func(index int64, validator stakingtypes.ValidatorI) (stop bool) {
 				consPower := validator.GetConsensusPower(suite.app.StakingKeeper.PowerReduction(suite.ctx))
+				fmt.Printf("consPower of validator %s: %d\n", validator.GetOperator(), consPower)
 				powerFraction := sdk.NewDec(consPower).QuoTruncate(sdk.NewDec(totalPower))
+				fmt.Printf("\tpowerFraction: %s\n", powerFraction.String())
 				reward := rewardsToBeDistributed.ToDec().MulTruncate(powerFraction)
+				fmt.Printf("\tcalcualted reward: %s\n", reward.String())
+				fmt.Printf("\tbalance before: %s\n", suite.app.BankKeeper.GetAllBalances(suite.ctx, sdk.AccAddress(validator.GetOperator())).String())
+				fmt.Printf("\tcommission before: %s\n", suite.app.DistrKeeper.GetValidatorAccumulatedCommission(suite.ctx, validator.GetOperator()).Commission.String())
+				fmt.Printf("\tcurrent reward before: %s\n", suite.app.DistrKeeper.GetValidatorCurrentRewards(suite.ctx, validator.GetOperator()).Rewards.String())
+				fmt.Printf("\tcumulative ratio before: %s\n", suite.app.DistrKeeper.GetValidatorCurrentRewards(suite.ctx, validator.GetOperator()).Rewards.QuoDec(validator.GetTokens().ToDec()).String())
+				fmt.Printf("\tkkkbefore: %s\n",
+					suite.app.DistrKeeper.GetValidatorCurrentRewards(suite.ctx, validator.GetOperator()).Rewards.QuoDec(
+						validator.GetTokens().ToDec(),
+					).MulDec(
+						suite.app.DistrKeeper.GetValidatorCurrentRewards(suite.ctx, validator.GetOperator()).Rewards.AmountOf(suite.denom),
+					))
 				suite.app.DistrKeeper.AllocateTokensToValidator(suite.ctx, validator, sdk.DecCoins{{Denom: suite.denom, Amount: reward}})
+				fmt.Printf("\tbalance after: %s\n", suite.app.BankKeeper.GetAllBalances(suite.ctx, sdk.AccAddress(validator.GetOperator())).String())
+				fmt.Printf("\tcommission after: %s\n", suite.app.DistrKeeper.GetValidatorAccumulatedCommission(suite.ctx, validator.GetOperator()).Commission.String())
+				fmt.Printf("\tcurrent reward after: %s\n", suite.app.DistrKeeper.GetValidatorCurrentRewards(suite.ctx, validator.GetOperator()).Rewards.String())
+				fmt.Printf("\tcumulative ratio after: %s\n", suite.app.DistrKeeper.GetValidatorCurrentRewards(suite.ctx, validator.GetOperator()).Rewards.QuoDec(validator.GetTokens().ToDec()).String())
+				fmt.Printf("\tkkkbefore: %s\n",
+					suite.app.DistrKeeper.GetValidatorCurrentRewards(suite.ctx, validator.GetOperator()).Rewards.QuoDec(
+						validator.GetTokens().ToDec(),
+					).MulDec(
+						suite.app.DistrKeeper.GetValidatorCurrentRewards(suite.ctx, validator.GetOperator()).Rewards.AmountOf(suite.denom),
+					))
+
 				totalRewards = totalRewards.Add(reward)
 				return false
 			})

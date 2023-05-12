@@ -1278,6 +1278,7 @@ func (suite *KeeperTestSuite) TestEndBlocker() {
 
 }
 
+// TODO: 1. 여러 번의 down-time 이윽고 tombsonte이 되는 케이스를 작성
 // TODO: Re-delegating validator has down-time slashing history, then shares are not equal to chunk size?
 // But it should have same value with chunk size when converted to tokens. This part should be verified.
 func (suite *KeeperTestSuite) TestPairedChunkTombstonedAndRedelegated() {
@@ -1857,7 +1858,7 @@ func (suite *KeeperTestSuite) TestMultiplePairedChunksTombstonedAndUnpaired() {
 
 }
 
-// TODO: TestMultiplePairedChunksTombstonedAndRepaired
+// TODO: 2. TestMultiplePairedChunksTombstonedAndRepaired
 // Some chunks can be re-paired but others can't which means there are some standards and we need to test it
 func (suite *KeeperTestSuite) TestUnpairingForUnstakingChunkTombstoned() {
 	env := suite.setupLiquidStakeTestingEnv(
@@ -1892,6 +1893,7 @@ func (suite *KeeperTestSuite) TestUnpairingForUnstakingChunkTombstoned() {
 	msg := types.NewMsgLiquidUnstake(undelegator.String(), oneChunk)
 	_, _, err := suite.app.LiquidStakingKeeper.QueueLiquidUnstake(suite.ctx, msg)
 	suite.NoError(err)
+	afterEscrowLsTokens := suite.app.BankKeeper.GetBalance(suite.ctx, undelegator, env.liquidBondDenom)
 
 	suite.advanceEpoch()
 	suite.advanceHeight(1, "unstaking started")
@@ -1982,11 +1984,9 @@ func (suite *KeeperTestSuite) TestUnpairingForUnstakingChunkTombstoned() {
 	}
 
 	rewardPoolBalanceBefore := suite.app.BankKeeper.GetBalance(suite.ctx, types.RewardPool, env.bondDenom)
-
 	suite.advanceEpoch()
 	suite.advanceHeight(1, "epoch reached after validator is tombstoned because of double signing")
 	fmt.Println(suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx))
-
 	rewardPoolBalanceAfter := suite.app.BankKeeper.GetBalance(suite.ctx, types.RewardPool, env.bondDenom)
 
 	{
@@ -2015,9 +2015,10 @@ func (suite *KeeperTestSuite) TestUnpairingForUnstakingChunkTombstoned() {
 		)
 		penaltyRatio := penalty.ToDec().Quo(types.ChunkSize.ToDec())
 		discounted := penaltyRatio.Mul(escrowedLsTokens.Amount.ToDec())
+		afterFinishUnbonding := suite.app.BankKeeper.GetBalance(suite.ctx, undelegator, env.liquidBondDenom)
 		suite.Equal(
 			discounted.TruncateInt().String(),
-			suite.app.BankKeeper.GetBalance(suite.ctx, undelegator, env.liquidBondDenom).Amount.String(),
+			afterFinishUnbonding.Sub(afterEscrowLsTokens).Amount.String(),
 			"discounted liquid staking tokens are sent to undelegator",
 		)
 

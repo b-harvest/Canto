@@ -29,6 +29,8 @@ func (k Keeper) CollectReward(ctx sdk.Context, chunk types.Chunk, insurance type
 			delReward.Amount.Sub(insuranceCommission),
 		)
 	}
+	fmt.Printf("Collect Reward for validator: %s\n", insurance.GetValidator())
+	fmt.Printf("Pure Reward: %s\n", pureRewards.String())
 
 	if pureRewards.Len() == 1 {
 		inputs := []banktypes.Input{
@@ -1007,6 +1009,9 @@ func (k Keeper) completeLiquidUnstake(ctx sdk.Context, chunk types.Chunk) error 
 	if err = k.burnEscrowedLsTokens(ctx, lsTokensToBurn); err != nil {
 		return err
 	}
+	// TODO: 1. 이 때의 Chunk의 balance는 이미 penalty가 적용된 상태이기 때문에 Chunk의 balance를 unstaker한테 보내는 것이 좀 더 안전한 방법일 듯함
+	// TODO: 2. 검산하는 로직을 넣어두었다가 Fuzzing 테스트 후 안전한지 확인
+	// chunk balance가 과연 chunk size 토큰에서 penalty를 차감한 값인지 아닌지 확인
 	if err = k.bankKeeper.SendCoins(
 		ctx,
 		chunk.DerivedAddress(),
@@ -1015,6 +1020,9 @@ func (k Keeper) completeLiquidUnstake(ctx sdk.Context, chunk types.Chunk) error 
 	); err != nil {
 		return err
 	}
+	// check chunk balance
+	cbal := k.bankKeeper.GetBalance(ctx, chunk.DerivedAddress(), bondDenom)
+	fmt.Println("chunk balance after unstaking: ", cbal.String())
 	k.DeleteUnpairingForUnstakingChunkInfo(ctx, chunk.Id)
 	k.DeleteChunk(ctx, chunk.Id)
 	return nil
