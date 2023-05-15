@@ -2,6 +2,8 @@ package keeper_test
 
 import (
 	"fmt"
+	"github.com/Canto-Network/Canto/v6/x/liquidstaking"
+	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	"strconv"
 	"testing"
 	"time"
@@ -144,6 +146,17 @@ func (suite *KeeperTestSuite) SetupApp() {
 	stakingParams := suite.app.StakingKeeper.GetParams(suite.ctx)
 	stakingParams.BondDenom = suite.denom
 	suite.app.StakingKeeper.SetParams(suite.ctx, stakingParams)
+
+	// set current mainnet slahsing params
+	downtimeJailDuration, err := time.ParseDuration("1800s")
+	require.NoError(t, err)
+	suite.app.SlashingKeeper.SetParams(suite.ctx, slashingtypes.NewParams(
+		9000,
+		sdk.NewDecWithPrec(5, 1), // 0.5
+		downtimeJailDuration,
+		sdk.NewDecWithPrec(5, 2),  // 0.05
+		sdk.NewDecWithPrec(75, 4), // 0.0075
+	))
 
 	s.app.LiquidStakingKeeper.SetEpoch(
 		suite.ctx,
@@ -325,7 +338,7 @@ func (suite *KeeperTestSuite) advanceHeight(height int, msg string) {
 		)
 		suite.app.DistrKeeper.SetFeePool(suite.ctx, feePool)
 		staking.EndBlocker(suite.ctx, suite.app.StakingKeeper)
-		liquidstakingkeeper.EndBlocker(suite.ctx, suite.app.LiquidStakingKeeper)
+		liquidstaking.EndBlocker(suite.ctx, suite.app.LiquidStakingKeeper)
 		suite.mustPassInvariants()
 	}
 }
@@ -413,4 +426,13 @@ Initial state of %s
 		bondDenom,
 		liquidBondDenom,
 	}
+}
+
+func (suite *KeeperTestSuite) createTestPubKeys(numKeys int) []cryptotypes.PubKey {
+	pubKeys := make([]cryptotypes.PubKey, numKeys)
+	for i := 0; i < numKeys; i++ {
+		pk := ed25519.GenPrivKey()
+		pubKeys[i] = pk.PubKey()
+	}
+	return pubKeys
 }

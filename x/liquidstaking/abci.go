@@ -1,10 +1,11 @@
-package keeper
+package liquidstaking
 
 import (
+	"github.com/Canto-Network/Canto/v6/x/liquidstaking/keeper"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-func EndBlocker(ctx sdk.Context, k Keeper) {
+func EndBlocker(ctx sdk.Context, k keeper.Keeper) {
 	if k.IsEpochReached(ctx) {
 		k.DistributeReward(ctx)
 		k.CoverSlashingAndHandleMatureUnbondings(ctx)
