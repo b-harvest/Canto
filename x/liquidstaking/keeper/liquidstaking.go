@@ -403,16 +403,12 @@ func (k Keeper) RePairRankedInsurances(
 				// CRITICAL: Must be unpairing status
 				return sdkerrors.Wrapf(types.ErrInvalidChunkStatus, "chunkId: %d", outInsurance.ChunkId)
 			}
-			var shares sdk.Dec
-			if shares, err = k.stakingKeeper.ValidateUnbondAmount(
-				ctx,
-				chunk.DerivedAddress(),
-				outInsurance.GetValidator(),
-				types.ChunkSize,
-			); err != nil {
+			del, found := k.stakingKeeper.GetDelegation(ctx, chunk.DerivedAddress(), outInsurance.GetValidator())
+			if !found {
+				err = sdkerrors.Wrapf(types.ErrNotFoundDelegation, "delegator: %s, validator: %s", chunk.DerivedAddress(), outInsurance.GetValidator())
 				return
 			}
-			if _, err = k.stakingKeeper.Undelegate(ctx, chunk.DerivedAddress(), outInsurance.GetValidator(), shares); err != nil {
+			if _, err = k.stakingKeeper.Undelegate(ctx, chunk.DerivedAddress(), outInsurance.GetValidator(), del.GetShares()); err != nil {
 				return
 			}
 			continue
@@ -1045,6 +1041,7 @@ func (k Keeper) handleUnpairingChunk(ctx sdk.Context, chunk types.Chunk) error {
 	chunkBalance := k.bankKeeper.GetBalance(ctx, chunk.DerivedAddress(), bondDenom).Amount
 	penalty := types.ChunkSize.Sub(chunkBalance)
 	if penalty.IsPositive() {
+		// TODO: We should consider insurance cannot handle penalty
 		// Send penalty to chunk
 		// unpairing chunk must be not damaged to become pairing chunk
 		if err = k.bankKeeper.SendCoins(

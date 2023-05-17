@@ -2061,38 +2061,88 @@ func (suite *KeeperTestSuite) TestCumulativeDownTimeSlashingAndTombstone() {
 	providers, providerBalances := suite.AddTestAddrs(2, oneInsurance.Amount)
 	suite.provideInsurances(suite.ctx, providers, valAddrs, providerBalances, tenPercentFeeRate, nil)
 	delegators, delegatorBalances := suite.AddTestAddrs(2, oneChunk.Amount)
-	suite.liquidStakes(suite.ctx, delegators, delegatorBalances)
+	pairedChunks := suite.liquidStakes(suite.ctx, delegators, delegatorBalances)
 	suite.ctx = suite.ctx.WithBlockHeight(suite.ctx.BlockHeight() + 1)
 	staking.EndBlocker(suite.ctx, suite.app.StakingKeeper)
 
 	downValAddr := valAddrs[0]
 	downValPubKey := pubKeys[0]
+	toBeUnpairedChunk := pairedChunks[0]
+	toBeDrainedInsuranceId := pairedChunks[0].PairedInsuranceId
 
 	epoch := suite.app.LiquidStakingKeeper.GetEpoch(suite.ctx)
 	// assume 1 sec for 1 block
 	// change float64 to int64
-	epochBlocks := int64(epoch.Duration.Seconds()) + initialHeight
+	epochBlocks := int64(epoch.Duration.Seconds()) + suite.ctx.BlockHeight()
 	called := 0
+	cumulativePenalty := sdk.ZeroInt()
 	for {
 		validator, _ := suite.app.StakingKeeper.GetValidatorByConsAddr(suite.ctx, sdk.GetConsAddress(downValPubKey))
-		suite.downTimeSlashing(
+		cumulativePenalty = cumulativePenalty.Add(suite.downTimeSlashing(
 			suite.ctx,
 			downValPubKey,
 			validator.GetConsensusPower(suite.app.StakingKeeper.PowerReduction(suite.ctx)),
 			called,
-		)
+		))
 		suite.unjail(suite.ctx, downValAddr, downValPubKey)
 		called++
 
-		if epochBlocks > suite.ctx.BlockHeight() {
+		if epochBlocks < suite.ctx.BlockHeight() {
 			break
 		}
 	}
+	fmt.Printf("%d downtime slashing occurred during epoch(%0.f days)\n", called, epoch.Duration.Hours()/24)
+	fmt.Printf(
+		"accumulated penalty: %s | %d percent of ChunkSize tokens\n",
+		cumulativePenalty.String(),
+		cumulativePenalty.ToDec().Quo(types.ChunkSize.ToDec()).MulInt64(100).TruncateInt64(),
+	)
 	suite.advanceEpoch()
+	staking.EndBlocker(suite.ctx, suite.app.StakingKeeper)
 	liquidstakingkeeper.EndBlocker(suite.ctx, suite.app.LiquidStakingKeeper)
+	fmt.Println("chunk unbonding is started")
+	{
+		unPairingChunk, _ := suite.app.LiquidStakingKeeper.GetChunk(suite.ctx, toBeUnpairedChunk.Id)
+		unpairingInsurance, _ := suite.app.LiquidStakingKeeper.GetInsurance(suite.ctx, toBeDrainedInsuranceId)
+		suite.Equal(
+			types.CHUNK_STATUS_UNPAIRING,
+			unPairingChunk.Status,
+			"chunk unbonding is started",
+		)
+		ubd, _ := suite.app.StakingKeeper.GetUnbondingDelegation(
+			suite.ctx,
+			unPairingChunk.DerivedAddress(),
+			unpairingInsurance.GetValidator(),
+		)
+		suite.Len(ubd.Entries, 1)
+		suite.True(
+			ubd.Entries[0].InitialBalance.LT(types.ChunkSize),
+			"it is slashed so when unbonding, initial balance is less than chunk size tokens",
+		)
+		fmt.Printf("unbonding chunk initial balance: %s\n", ubd.Entries[0].InitialBalance.String())
+	}
+
+	rewardModuleAccBalance := suite.app.BankKeeper.GetBalance(suite.ctx, types.RewardPool, suite.denom)
+	suite.advanceEpoch()
+	staking.EndBlocker(suite.ctx, suite.app.StakingKeeper)
+	liquidstakingkeeper.EndBlocker(suite.ctx, suite.app.LiquidStakingKeeper)
+	fmt.Println("chunk unbonding is finished")
+	rewardModuleAccBalanceAfter := suite.app.BankKeeper.GetBalance(suite.ctx, types.RewardPool, suite.denom)
+	suite.True(
+		rewardModuleAccBalanceAfter.Amount.GT(rewardModuleAccBalance.Amount),
+	)
+	diff := rewardModuleAccBalanceAfter.Amount.Sub(rewardModuleAccBalance.Amount)
+	fmt.Printf("reward module account balance increased by %s\n", diff.String())
+	unpairingInsurance, _ := suite.app.LiquidStakingKeeper.GetInsurance(suite.ctx, toBeDrainedInsuranceId)
+	unpairingInsuranceBalance := suite.app.BankKeeper.GetBalance(suite.ctx, unpairingInsurance.DerivedAddress(), suite.denom)
+	suite.True(unpairingInsuranceBalance.IsZero(),
+		"unpairing insurance is used all of its balance to cover penalty by"+
+			"sending it to reward pool",
+	)
+
 }
 
-func (suite *KeeperTestSuite) downTimeSlashing(ctx sdk.Context, downValPubKey cryptotypes.PubKey, power int64, called int) {
+func (suite *KeeperTestSuite) downTimeSlashing(ctx sdk.Context, downValPubKey cryptotypes.PubKey, power int64, called int) (penalty sdk.Int) {
 	validator, _ := suite.app.StakingKeeper.GetValidatorByConsAddr(suite.ctx, sdk.GetConsAddress(downValPubKey))
 	valTokens := validator.GetTokens()
 	expectedPenalty := suite.expectedPenalty(
@@ -2129,8 +2179,9 @@ func (suite *KeeperTestSuite) downTimeSlashing(ctx sdk.Context, downValPubKey cr
 	validator, _ = suite.app.StakingKeeper.GetValidatorByConsAddr(suite.ctx, sdk.GetConsAddress(downValPubKey))
 	valTokensAfter := validator.GetTokens()
 	suite.Equal(stakingtypes.Unbonding, validator.GetStatus())
-	penalty := valTokens.Sub(valTokensAfter)
+	penalty = valTokens.Sub(valTokensAfter)
 	suite.Equal(expectedPenalty.String(), penalty.String(), fmt.Sprintf("called: %d", called))
+	return
 }
 
 func (suite *KeeperTestSuite) unjail(ctx sdk.Context, valAddr sdk.ValAddress, pubKey cryptotypes.PubKey) {
