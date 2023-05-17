@@ -1021,7 +1021,6 @@ func (k Keeper) completeLiquidUnstake(ctx sdk.Context, chunk types.Chunk) error 
 }
 
 // handleUnpairingChunk handles unpairing chunk which created previous epoch.
-// TODO: write TC for penalty situation
 func (k Keeper) handleUnpairingChunk(ctx sdk.Context, chunk types.Chunk) error {
 	if chunk.Status != types.CHUNK_STATUS_UNPAIRING {
 		return sdkerrors.Wrapf(types.ErrInvalidChunkStatus, "chunk id: %d, status: %s", chunk.Id, chunk.Status)
@@ -1039,16 +1038,23 @@ func (k Keeper) handleUnpairingChunk(ctx sdk.Context, chunk types.Chunk) error {
 	}
 
 	chunkBalance := k.bankKeeper.GetBalance(ctx, chunk.DerivedAddress(), bondDenom).Amount
+	insuranceBalance := k.bankKeeper.GetBalance(ctx, unpairingInsurance.DerivedAddress(), bondDenom).Amount
 	penalty := types.ChunkSize.Sub(chunkBalance)
 	if penalty.IsPositive() {
-		// TODO: We should consider insurance cannot handle penalty
+		var sendAmount sdk.Coin
+		if penalty.GT(insuranceBalance) {
+			sendAmount = sdk.NewCoin(bondDenom, insuranceBalance)
+		} else {
+			sendAmount = sdk.NewCoin(bondDenom, penalty)
+		}
+
 		// Send penalty to chunk
 		// unpairing chunk must be not damaged to become pairing chunk
 		if err = k.bankKeeper.SendCoins(
 			ctx,
 			unpairingInsurance.DerivedAddress(),
 			chunk.DerivedAddress(),
-			sdk.NewCoins(sdk.NewCoin(bondDenom, penalty)),
+			sdk.NewCoins(sendAmount),
 		); err != nil {
 			return err
 		}
@@ -1069,7 +1075,8 @@ func (k Keeper) handleUnpairingChunk(ctx sdk.Context, chunk types.Chunk) error {
 		if err = k.bankKeeper.InputOutputCoins(ctx, inputs, outputs); err != nil {
 			return err
 		}
-		k.DeleteUnpairingForUnstakingChunkInfo(ctx, chunk.Id)
+		// insurance already sent all of its balance to chunk, so ok delete it
+		k.DeleteInsurance(ctx, unpairingInsurance.Id)
 		k.DeleteChunk(ctx, chunk.Id)
 		return nil
 	}

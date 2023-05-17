@@ -3,13 +3,14 @@ package keeper_test
 import (
 	"bytes"
 	"fmt"
+	"math/rand"
+	"time"
+
 	liquidstakingkeeper "github.com/Canto-Network/Canto/v6/x/liquidstaking"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	"github.com/cosmos/cosmos-sdk/simapp"
 	"github.com/cosmos/cosmos-sdk/x/staking"
 	"github.com/cosmos/cosmos-sdk/x/staking/teststaking"
-	"math/rand"
-	"time"
 
 	"github.com/Canto-Network/Canto/v6/x/liquidstaking/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -2039,7 +2040,9 @@ func (suite *KeeperTestSuite) TestUnpairingForUnstakingChunkTombstoned() {
 	}
 }
 
-func (suite *KeeperTestSuite) TestCumulativeDownTimeSlashingAndTombstone() {
+// TestCumulativeDownTimeSlashing tests how much penalty is applied to chunk
+// when there were maximum possible downtime slashing.
+func (suite *KeeperTestSuite) TestCumulativeDownTimeSlashing() {
 	initialHeight := int64(1)
 	suite.ctx = suite.ctx.WithBlockHeight(initialHeight) // start with clean height
 	valNum := 2
@@ -2069,21 +2072,21 @@ func (suite *KeeperTestSuite) TestCumulativeDownTimeSlashingAndTombstone() {
 	downValPubKey := pubKeys[0]
 	toBeUnpairedChunk := pairedChunks[0]
 	toBeDrainedInsuranceId := pairedChunks[0].PairedInsuranceId
+	fmt.Printf("balance of insurance to be drained: %s\n", oneInsurance.Amount.String())
 
 	epoch := suite.app.LiquidStakingKeeper.GetEpoch(suite.ctx)
 	// assume 1 sec for 1 block
 	// change float64 to int64
 	epochBlocks := int64(epoch.Duration.Seconds()) + suite.ctx.BlockHeight()
 	called := 0
-	cumulativePenalty := sdk.ZeroInt()
 	for {
 		validator, _ := suite.app.StakingKeeper.GetValidatorByConsAddr(suite.ctx, sdk.GetConsAddress(downValPubKey))
-		cumulativePenalty = cumulativePenalty.Add(suite.downTimeSlashing(
+		suite.downTimeSlashing(
 			suite.ctx,
 			downValPubKey,
 			validator.GetConsensusPower(suite.app.StakingKeeper.PowerReduction(suite.ctx)),
 			called,
-		))
+		)
 		suite.unjail(suite.ctx, downValAddr, downValPubKey)
 		called++
 
@@ -2091,11 +2094,14 @@ func (suite *KeeperTestSuite) TestCumulativeDownTimeSlashingAndTombstone() {
 			break
 		}
 	}
+	validatorAfterSlashed, _ := suite.app.StakingKeeper.GetValidatorByConsAddr(suite.ctx, sdk.GetConsAddress(downValPubKey))
+	cumulativePenalty := types.ChunkSize.ToDec().Sub(validatorAfterSlashed.TokensFromShares(types.ChunkSize.ToDec()))
 	fmt.Printf("%d downtime slashing occurred during epoch(%0.f days)\n", called, epoch.Duration.Hours()/24)
+	damagedPercent := cumulativePenalty.Quo(types.ChunkSize.ToDec()).MulInt64(100).TruncateInt64()
+	suite.Equal(59, int(damagedPercent))
 	fmt.Printf(
 		"accumulated penalty: %s | %d percent of ChunkSize tokens\n",
-		cumulativePenalty.String(),
-		cumulativePenalty.ToDec().Quo(types.ChunkSize.ToDec()).MulInt64(100).TruncateInt64(),
+		cumulativePenalty.String(), damagedPercent,
 	)
 	suite.advanceEpoch()
 	staking.EndBlocker(suite.ctx, suite.app.StakingKeeper)
@@ -2115,11 +2121,11 @@ func (suite *KeeperTestSuite) TestCumulativeDownTimeSlashingAndTombstone() {
 			unpairingInsurance.GetValidator(),
 		)
 		suite.Len(ubd.Entries, 1)
-		suite.True(
-			ubd.Entries[0].InitialBalance.LT(types.ChunkSize),
+		suite.Equal(
+			types.ChunkSize.Sub(cumulativePenalty.Ceil().TruncateInt()).String(),
+			ubd.Entries[0].InitialBalance.String(),
 			"it is slashed so when unbonding, initial balance is less than chunk size tokens",
 		)
-		fmt.Printf("unbonding chunk initial balance: %s\n", ubd.Entries[0].InitialBalance.String())
 	}
 
 	rewardModuleAccBalance := suite.app.BankKeeper.GetBalance(suite.ctx, types.RewardPool, suite.denom)
@@ -2139,7 +2145,6 @@ func (suite *KeeperTestSuite) TestCumulativeDownTimeSlashingAndTombstone() {
 		"unpairing insurance is used all of its balance to cover penalty by"+
 			"sending it to reward pool",
 	)
-
 }
 
 func (suite *KeeperTestSuite) downTimeSlashing(ctx sdk.Context, downValPubKey cryptotypes.PubKey, power int64, called int) (penalty sdk.Int) {
