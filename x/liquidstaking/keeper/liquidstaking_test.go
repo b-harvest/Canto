@@ -1,6 +1,7 @@
 package keeper_test
 
 import (
+	"bytes"
 	"fmt"
 	liquidstakingkeeper "github.com/Canto-Network/Canto/v6/x/liquidstaking"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
@@ -319,6 +320,7 @@ func (suite *KeeperTestSuite) TestLiquidStakeWithAdvanceBlocks() {
 			NetAmount:                          currentLiquidatedTokens.ToDec(),
 			TotalDelShares:                     currentLiquidatedTokens.ToDec(),
 			TotalRemainingRewards:              sdk.ZeroDec(),
+			TotalRemainingInsuranceCommissions: sdk.ZeroDec(),
 			TotalChunksBalance:                 sdk.ZeroInt(),
 			TotalLiquidTokens:                  currentLiquidatedTokens,
 			TotalInsuranceTokens:               oneInsurance.Amount.Mul(sdk.NewInt(int64(len(env.insurances)))),
@@ -395,6 +397,7 @@ func (suite *KeeperTestSuite) TestLiquidUnstakeWithAdvanceBlocks() {
 			NetAmount:                          currentLiquidatedTokens.ToDec(),
 			TotalDelShares:                     currentLiquidatedTokens.ToDec(),
 			TotalRemainingRewards:              sdk.ZeroDec(),
+			TotalRemainingInsuranceCommissions: sdk.ZeroDec(),
 			TotalChunksBalance:                 sdk.ZeroInt(),
 			TotalLiquidTokens:                  currentLiquidatedTokens,
 			TotalInsuranceTokens:               oneInsurance.Amount.Mul(sdk.NewInt(int64(len(env.insurances)))),
@@ -2052,12 +2055,15 @@ func (suite *KeeperTestSuite) TestCumulativeDownTimeSlashingAndTombstone() {
 		selfDelegations[i] = tstaking.CreateValidatorWithValPower(valAddr, pubKeys[i], power, true)
 	}
 	staking.EndBlocker(suite.ctx, suite.app.StakingKeeper)
+
 	// Let's create 2 chunk and 2 insurance
 	oneChunk, oneInsurance := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
 	providers, providerBalances := suite.AddTestAddrs(2, oneInsurance.Amount)
 	suite.provideInsurances(suite.ctx, providers, valAddrs, providerBalances, tenPercentFeeRate, nil)
 	delegators, delegatorBalances := suite.AddTestAddrs(2, oneChunk.Amount)
 	suite.liquidStakes(suite.ctx, delegators, delegatorBalances)
+	suite.ctx = suite.ctx.WithBlockHeight(suite.ctx.BlockHeight() + 1)
+	staking.EndBlocker(suite.ctx, suite.app.StakingKeeper)
 
 	downValAddr := valAddrs[0]
 	downValPubKey := pubKeys[0]
@@ -2068,7 +2074,13 @@ func (suite *KeeperTestSuite) TestCumulativeDownTimeSlashingAndTombstone() {
 	epochBlocks := int64(epoch.Duration.Seconds()) + initialHeight
 	called := 0
 	for {
-		suite.downTimeSlashing(suite.ctx, downValPubKey, power)
+		validator, _ := suite.app.StakingKeeper.GetValidatorByConsAddr(suite.ctx, sdk.GetConsAddress(downValPubKey))
+		suite.downTimeSlashing(
+			suite.ctx,
+			downValPubKey,
+			validator.GetConsensusPower(suite.app.StakingKeeper.PowerReduction(suite.ctx)),
+			called,
+		)
 		suite.unjail(suite.ctx, downValAddr, downValPubKey)
 		called++
 
@@ -2080,9 +2092,15 @@ func (suite *KeeperTestSuite) TestCumulativeDownTimeSlashingAndTombstone() {
 	liquidstakingkeeper.EndBlocker(suite.ctx, suite.app.LiquidStakingKeeper)
 }
 
-func (suite *KeeperTestSuite) downTimeSlashing(ctx sdk.Context, downValPubKey cryptotypes.PubKey, power int64) {
+func (suite *KeeperTestSuite) downTimeSlashing(ctx sdk.Context, downValPubKey cryptotypes.PubKey, power int64, called int) {
 	validator, _ := suite.app.StakingKeeper.GetValidatorByConsAddr(suite.ctx, sdk.GetConsAddress(downValPubKey))
 	valTokens := validator.GetTokens()
+	expectedPenalty := suite.expectedPenalty(
+		suite.ctx,
+		power,
+		suite.app.SlashingKeeper.SlashFractionDowntime(suite.ctx),
+	)
+
 	height := suite.ctx.BlockHeader().Height
 	window := suite.app.SlashingKeeper.SignedBlocksWindow(suite.ctx)
 	i := height
@@ -2096,16 +2114,23 @@ func (suite *KeeperTestSuite) downTimeSlashing(ctx sdk.Context, downValPubKey cr
 		suite.ctx = suite.ctx.WithBlockHeight(i).WithBlockTime(suite.ctx.BlockTime().Add(time.Second))
 		suite.app.SlashingKeeper.HandleValidatorSignature(suite.ctx, downValPubKey.Address(), power, false)
 	}
+
 	updates := staking.EndBlocker(suite.ctx, suite.app.StakingKeeper)
-	suite.Len(updates, 1, "validator should have been jailed")
-	suite.Equal(downValPubKey.Bytes(), updates[0].PubKey.GetEd25519(), "validator should have been jailed")
+	jailedOrNot := false
+	for _, update := range updates {
+		if bytes.Equal(update.PubKey.GetEd25519(), downValPubKey.Bytes()) && update.Power == 0 {
+			jailedOrNot = true
+			break
+		}
+	}
+
+	suite.Equal(true, jailedOrNot, fmt.Sprintf("called-%d validator should have been jailed", called))
 	// validator should have been jailed and slashed
 	validator, _ = suite.app.StakingKeeper.GetValidatorByConsAddr(suite.ctx, sdk.GetConsAddress(downValPubKey))
 	valTokensAfter := validator.GetTokens()
 	suite.Equal(stakingtypes.Unbonding, validator.GetStatus())
-	exp := valTokens.ToDec().Mul(suite.app.SlashingKeeper.GetParams(suite.ctx).SlashFractionDowntime).TruncateInt()
 	penalty := valTokens.Sub(valTokensAfter)
-	suite.Equal(exp, penalty)
+	suite.Equal(expectedPenalty.String(), penalty.String(), fmt.Sprintf("called: %d", called))
 }
 
 func (suite *KeeperTestSuite) unjail(ctx sdk.Context, valAddr sdk.ValAddress, pubKey cryptotypes.PubKey) {
@@ -2120,6 +2145,12 @@ func (suite *KeeperTestSuite) unjail(ctx sdk.Context, valAddr sdk.ValAddress, pu
 	updates := staking.EndBlocker(suite.ctx, suite.app.StakingKeeper)
 	suite.Len(updates, 1, "validator should have been bonded again")
 	suite.Equal(pubKey.Bytes(), updates[0].PubKey.GetEd25519(), "validator is bonded again!")
+}
+
+func (suite *KeeperTestSuite) expectedPenalty(ctx sdk.Context, power int64, slashFactor sdk.Dec) sdk.Int {
+	amount := suite.app.StakingKeeper.TokensFromConsensusPower(ctx, power)
+	slashAmountDec := amount.ToDec().Mul(slashFactor)
+	return slashAmountDec.TruncateInt()
 }
 
 func (suite *KeeperTestSuite) getUnitDistribution(

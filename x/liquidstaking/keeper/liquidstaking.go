@@ -19,6 +19,9 @@ func (k Keeper) CollectReward(ctx sdk.Context, chunk types.Chunk, insurance type
 	insuranceCommissions := make(sdk.Coins, delegationRewards.Len())
 	pureRewards := make(sdk.Coins, delegationRewards.Len())
 	for i, delReward := range delegationRewards {
+		if delReward.IsZero() {
+			continue
+		}
 		insuranceCommission := delReward.Amount.ToDec().Mul(insurance.FeeRate).TruncateInt()
 		insuranceCommissions[i] = sdk.NewCoin(
 			delReward.Denom,
@@ -32,30 +35,23 @@ func (k Keeper) CollectReward(ctx sdk.Context, chunk types.Chunk, insurance type
 	fmt.Printf("Collect Reward for validator: %s\n", insurance.GetValidator())
 	fmt.Printf("Pure Reward: %s\n", pureRewards.String())
 
-	if pureRewards.Len() == 1 {
-		inputs := []banktypes.Input{
-			banktypes.NewInput(chunk.DerivedAddress(), sdk.Coins{insuranceCommissions[0]}),
-			banktypes.NewInput(chunk.DerivedAddress(), sdk.Coins{pureRewards[0]}),
-		}
-		outputs := []banktypes.Output{
-			banktypes.NewOutput(insurance.FeePoolAddress(), sdk.Coins{insuranceCommissions[0]}),
-			banktypes.NewOutput(types.RewardPool, sdk.Coins{pureRewards[0]}),
-		}
-		if err := k.bankKeeper.InputOutputCoins(ctx, inputs, outputs); err != nil {
-			panic(err)
-		}
-	} else {
-		inputs := []banktypes.Input{
+	var inputs []banktypes.Input
+	var outputs []banktypes.Output
+	switch pureRewards.Len() {
+	case 0:
+		return
+	default:
+		inputs = []banktypes.Input{
 			banktypes.NewInput(chunk.DerivedAddress(), insuranceCommissions),
 			banktypes.NewInput(chunk.DerivedAddress(), pureRewards),
 		}
-		outputs := []banktypes.Output{
+		outputs = []banktypes.Output{
 			banktypes.NewOutput(insurance.FeePoolAddress(), insuranceCommissions),
 			banktypes.NewOutput(types.RewardPool, pureRewards),
 		}
-		if err := k.bankKeeper.InputOutputCoins(ctx, inputs, outputs); err != nil {
-			panic(err)
-		}
+	}
+	if err := k.bankKeeper.InputOutputCoins(ctx, inputs, outputs); err != nil {
+		panic(err)
 	}
 }
 
