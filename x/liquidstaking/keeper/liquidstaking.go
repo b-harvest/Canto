@@ -236,6 +236,7 @@ func (k Keeper) GetAllRePairableChunksAndOutInsurances(ctx sdk.Context) (
 				return false, nil
 			}
 			outInsurances = append(outInsurances, insurance)
+			// TODO: we should consider damaged chunk...
 			rePairableChunks = append(rePairableChunks, chunk)
 		case types.CHUNK_STATUS_PAIRING:
 			rePairableChunks = append(rePairableChunks, chunk)
@@ -1075,7 +1076,7 @@ func (k Keeper) handleUnpairingChunk(ctx sdk.Context, chunk types.Chunk) error {
 			return err
 		}
 		// insurance already sent all of its balance to chunk, so ok delete it
-		k.DeleteInsurance(ctx, unpairingInsurance.Id)
+		// TODO: k.DeleteInsurance(ctx, unpairingInsurance.Id)? there can be remaining commissions
 		k.DeleteChunk(ctx, chunk.Id)
 		return nil
 	}

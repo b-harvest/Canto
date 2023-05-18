@@ -1287,7 +1287,6 @@ func (suite *KeeperTestSuite) TestEndBlocker() {
 
 }
 
-// TODO: 1. 여러 번의 down-time 이윽고 tombsonte이 되는 케이스를 작성
 // TODO: Re-delegating validator has down-time slashing history, then shares are not equal to chunk size?
 // But it should have same value with chunk size when converted to tokens. This part should be verified.
 func (suite *KeeperTestSuite) TestPairedChunkTombstonedAndRedelegated() {
@@ -2046,6 +2045,8 @@ func (suite *KeeperTestSuite) TestUnpairingForUnstakingChunkTombstoned() {
 
 // TestCumulativeDownTimeSlashing tests how much penalty is applied to chunk
 // when there were maximum possible downtime slashing.
+// It assumes that block time is 1 second (1 block per 1 sec).
+// TODO: Add tombstone also
 func (suite *KeeperTestSuite) TestCumulativeDownTimeSlashing() {
 	initialHeight := int64(1)
 	suite.ctx = suite.ctx.WithBlockHeight(initialHeight) // start with clean height
@@ -2079,9 +2080,7 @@ func (suite *KeeperTestSuite) TestCumulativeDownTimeSlashing() {
 	fmt.Printf("balance of insurance to be drained: %s\n", oneInsurance.Amount.String())
 
 	epoch := suite.app.LiquidStakingKeeper.GetEpoch(suite.ctx)
-	// assume 1 sec for 1 block
-	// change float64 to int64
-	epochBlocks := int64(epoch.Duration.Seconds()) + suite.ctx.BlockHeight()
+	epochTime := suite.ctx.BlockTime().Add(epoch.Duration)
 	called := 0
 	for {
 		validator, _ := suite.app.StakingKeeper.GetValidatorByConsAddr(suite.ctx, sdk.GetConsAddress(downValPubKey))
@@ -2090,11 +2089,12 @@ func (suite *KeeperTestSuite) TestCumulativeDownTimeSlashing() {
 			downValPubKey,
 			validator.GetConsensusPower(suite.app.StakingKeeper.PowerReduction(suite.ctx)),
 			called,
+			time.Second,
 		)
-		suite.unjail(suite.ctx, downValAddr, downValPubKey)
+		suite.unjail(suite.ctx, downValAddr, downValPubKey, time.Second)
 		called++
 
-		if epochBlocks < suite.ctx.BlockHeight() {
+		if suite.ctx.BlockTime().After(epochTime) {
 			break
 		}
 	}
@@ -2151,7 +2151,9 @@ func (suite *KeeperTestSuite) TestCumulativeDownTimeSlashing() {
 	)
 }
 
-func (suite *KeeperTestSuite) downTimeSlashing(ctx sdk.Context, downValPubKey cryptotypes.PubKey, power int64, called int) (penalty sdk.Int) {
+func (suite *KeeperTestSuite) downTimeSlashing(
+	ctx sdk.Context, downValPubKey cryptotypes.PubKey, power int64, called int, blockTime time.Duration,
+) (penalty sdk.Int) {
 	validator, _ := suite.app.StakingKeeper.GetValidatorByConsAddr(suite.ctx, sdk.GetConsAddress(downValPubKey))
 	valTokens := validator.GetTokens()
 	expectedPenalty := suite.expectedPenalty(
@@ -2164,13 +2166,13 @@ func (suite *KeeperTestSuite) downTimeSlashing(ctx sdk.Context, downValPubKey cr
 	window := suite.app.SlashingKeeper.SignedBlocksWindow(suite.ctx)
 	i := height
 	for ; i <= height+window; i++ {
-		suite.ctx = suite.ctx.WithBlockHeight(i).WithBlockTime(suite.ctx.BlockTime().Add(time.Second))
+		suite.ctx = suite.ctx.WithBlockHeight(i).WithBlockTime(suite.ctx.BlockTime().Add(blockTime))
 		suite.app.SlashingKeeper.HandleValidatorSignature(suite.ctx, downValPubKey.Address(), power, true)
 	}
 	min := suite.app.SlashingKeeper.MinSignedPerWindow(ctx)
 	height = suite.ctx.BlockHeight()
 	for ; i <= height+min+1; i++ {
-		suite.ctx = suite.ctx.WithBlockHeight(i).WithBlockTime(suite.ctx.BlockTime().Add(time.Second))
+		suite.ctx = suite.ctx.WithBlockHeight(i).WithBlockTime(suite.ctx.BlockTime().Add(blockTime))
 		suite.app.SlashingKeeper.HandleValidatorSignature(suite.ctx, downValPubKey.Address(), power, false)
 	}
 
@@ -2193,13 +2195,13 @@ func (suite *KeeperTestSuite) downTimeSlashing(ctx sdk.Context, downValPubKey cr
 	return
 }
 
-func (suite *KeeperTestSuite) unjail(ctx sdk.Context, valAddr sdk.ValAddress, pubKey cryptotypes.PubKey) {
-	// After Unjail time passed
-	unjailDurationNum := int64(1800)
+func (suite *KeeperTestSuite) unjail(ctx sdk.Context, valAddr sdk.ValAddress, pubKey cryptotypes.PubKey, blockTime time.Duration) {
+	jailDuration := suite.app.SlashingKeeper.GetParams(suite.ctx).DowntimeJailDuration
+	blockNum := int64(jailDuration / blockTime)
 	suite.ctx = suite.ctx.WithBlockHeight(
-		suite.ctx.BlockHeight() + unjailDurationNum,
+		suite.ctx.BlockHeight() + blockNum,
 	).WithBlockTime(
-		suite.ctx.BlockTime().Add(time.Second * time.Duration(unjailDurationNum)),
+		suite.ctx.BlockTime().Add(jailDuration),
 	)
 	suite.NoError(suite.app.SlashingKeeper.Unjail(suite.ctx, valAddr))
 	updates := staking.EndBlocker(suite.ctx, suite.app.StakingKeeper)
