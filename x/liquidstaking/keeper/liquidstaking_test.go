@@ -1326,6 +1326,7 @@ func (suite *KeeperTestSuite) TestPairedChunkTombstonedAndRedelegated() {
 	power := val.GetConsensusPower(suite.app.StakingKeeper.PowerReduction(suite.ctx))
 	// TODO: We can control block height so we can check unpairing insurance covers the slashing or not in other TC.
 	// infraction height should be before re-delegation to see it.
+	// TODO: can refactor by using tombstone function?
 	evidence := &evidencetypes.Equivocation{
 		Height:           0,
 		Time:             time.Unix(0, 0),
@@ -2043,112 +2044,149 @@ func (suite *KeeperTestSuite) TestUnpairingForUnstakingChunkTombstoned() {
 	}
 }
 
-// TestCumulativeDownTimeSlashing tests how much penalty is applied to chunk
-// when there were maximum possible downtime slashing.
-// It assumes that block time is 1 second (1 block per 1 sec).
-// TODO: Add tombstone also
-func (suite *KeeperTestSuite) TestCumulativeDownTimeSlashing() {
-	initialHeight := int64(1)
-	suite.ctx = suite.ctx.WithBlockHeight(initialHeight) // start with clean height
-	valNum := 2
-	delAddrs, _ := suite.AddTestAddrs(valNum, suite.app.StakingKeeper.TokensFromConsensusPower(suite.ctx, 200))
-	valAddrs := simapp.ConvertAddrsToValAddrs(delAddrs)
-	pubKeys := suite.createTestPubKeys(valNum)
-	tstaking := teststaking.NewHelper(suite.T(), suite.ctx, suite.app.StakingKeeper)
-	tstaking.Denom = suite.app.StakingKeeper.BondDenom(suite.ctx)
-	power := int64(100)
-	selfDelegations := make([]sdk.Int, valNum)
-	// create validators which have the same power
-	for i, valAddr := range valAddrs {
-		selfDelegations[i] = tstaking.CreateValidatorWithValPower(valAddr, pubKeys[i], power, true)
+// TestCumulativePenaltyByMultipleDownTimeSlashingAndTombstone tests how much penalty is applied to chunk
+// when there were maximum possible downtime slashing (+ tombstone).
+// To estimate the appropriate amount of insurance collateral, we should test worst-case scenarios.
+func (suite *KeeperTestSuite) TestCumulativePenaltyByMultipleDownTimeSlashingAndTombstone() {
+	tcs := []struct {
+		name string
+		// blockTime is the time passed between two blocks
+		blockTime              time.Duration
+		includeTombstone       bool
+		expectedPenaltyPercent int
+	}{{
+		name:                   "block time is 1 second",
+		blockTime:              time.Second,
+		includeTombstone:       false,
+		expectedPenaltyPercent: 61,
+	},
+		{
+			name:                   "block time is 1 second including tombstone",
+			blockTime:              time.Second,
+			includeTombstone:       true,
+			expectedPenaltyPercent: 64,
+		},
+		{
+			name:                   "block time is 5 second",
+			blockTime:              5 * time.Second,
+			includeTombstone:       false,
+			expectedPenaltyPercent: 18,
+		},
+
+		{
+			name:                   "block time is 5 second including tombstone",
+			blockTime:              5 * time.Second,
+			includeTombstone:       true,
+			expectedPenaltyPercent: 22,
+		},
 	}
-	staking.EndBlocker(suite.ctx, suite.app.StakingKeeper)
-
-	// Let's create 2 chunk and 2 insurance
-	oneChunk, oneInsurance := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
-	providers, providerBalances := suite.AddTestAddrs(2, oneInsurance.Amount)
-	suite.provideInsurances(suite.ctx, providers, valAddrs, providerBalances, tenPercentFeeRate, nil)
-	delegators, delegatorBalances := suite.AddTestAddrs(2, oneChunk.Amount)
-	pairedChunks := suite.liquidStakes(suite.ctx, delegators, delegatorBalances)
-	suite.ctx = suite.ctx.WithBlockHeight(suite.ctx.BlockHeight() + 1)
-	staking.EndBlocker(suite.ctx, suite.app.StakingKeeper)
-
-	downValAddr := valAddrs[0]
-	downValPubKey := pubKeys[0]
-	toBeUnpairedChunk := pairedChunks[0]
-	toBeDrainedInsuranceId := pairedChunks[0].PairedInsuranceId
-	fmt.Printf("balance of insurance to be drained: %s\n", oneInsurance.Amount.String())
-
-	epoch := suite.app.LiquidStakingKeeper.GetEpoch(suite.ctx)
-	epochTime := suite.ctx.BlockTime().Add(epoch.Duration)
-	called := 0
-	for {
-		validator, _ := suite.app.StakingKeeper.GetValidatorByConsAddr(suite.ctx, sdk.GetConsAddress(downValPubKey))
-		suite.downTimeSlashing(
-			suite.ctx,
-			downValPubKey,
-			validator.GetConsensusPower(suite.app.StakingKeeper.PowerReduction(suite.ctx)),
-			called,
-			time.Second,
-		)
-		suite.unjail(suite.ctx, downValAddr, downValPubKey, time.Second)
-		called++
-
-		if suite.ctx.BlockTime().After(epochTime) {
-			break
+	for _, tc := range tcs {
+		initialHeight := int64(1)
+		suite.ctx = suite.ctx.WithBlockHeight(initialHeight) // start with clean height
+		valNum := 2
+		delAddrs, _ := suite.AddTestAddrs(valNum, suite.app.StakingKeeper.TokensFromConsensusPower(suite.ctx, 200))
+		valAddrs := simapp.ConvertAddrsToValAddrs(delAddrs)
+		pubKeys := suite.createTestPubKeys(valNum)
+		tstaking := teststaking.NewHelper(suite.T(), suite.ctx, suite.app.StakingKeeper)
+		tstaking.Denom = suite.app.StakingKeeper.BondDenom(suite.ctx)
+		power := int64(100)
+		selfDelegations := make([]sdk.Int, valNum)
+		// create validators which have the same power
+		for i, valAddr := range valAddrs {
+			selfDelegations[i] = tstaking.CreateValidatorWithValPower(valAddr, pubKeys[i], power, true)
 		}
-	}
-	validatorAfterSlashed, _ := suite.app.StakingKeeper.GetValidatorByConsAddr(suite.ctx, sdk.GetConsAddress(downValPubKey))
-	cumulativePenalty := types.ChunkSize.ToDec().Sub(validatorAfterSlashed.TokensFromShares(types.ChunkSize.ToDec()))
-	fmt.Printf("%d downtime slashing occurred during epoch(%0.f days)\n", called, epoch.Duration.Hours()/24)
-	damagedPercent := cumulativePenalty.Quo(types.ChunkSize.ToDec()).MulInt64(100).TruncateInt64()
-	suite.Equal(59, int(damagedPercent))
-	fmt.Printf(
-		"accumulated penalty: %s | %d percent of ChunkSize tokens\n",
-		cumulativePenalty.String(), damagedPercent,
-	)
-	suite.advanceEpoch()
-	staking.EndBlocker(suite.ctx, suite.app.StakingKeeper)
-	liquidstakingkeeper.EndBlocker(suite.ctx, suite.app.LiquidStakingKeeper)
-	fmt.Println("chunk unbonding is started")
-	{
-		unPairingChunk, _ := suite.app.LiquidStakingKeeper.GetChunk(suite.ctx, toBeUnpairedChunk.Id)
-		unpairingInsurance, _ := suite.app.LiquidStakingKeeper.GetInsurance(suite.ctx, toBeDrainedInsuranceId)
-		suite.Equal(
-			types.CHUNK_STATUS_UNPAIRING,
-			unPairingChunk.Status,
-			"chunk unbonding is started",
-		)
-		ubd, _ := suite.app.StakingKeeper.GetUnbondingDelegation(
-			suite.ctx,
-			unPairingChunk.DerivedAddress(),
-			unpairingInsurance.GetValidator(),
-		)
-		suite.Len(ubd.Entries, 1)
-		suite.Equal(
-			types.ChunkSize.Sub(cumulativePenalty.Ceil().TruncateInt()).String(),
-			ubd.Entries[0].InitialBalance.String(),
-			"it is slashed so when unbonding, initial balance is less than chunk size tokens",
-		)
-	}
+		staking.EndBlocker(suite.ctx, suite.app.StakingKeeper)
 
-	rewardModuleAccBalance := suite.app.BankKeeper.GetBalance(suite.ctx, types.RewardPool, suite.denom)
-	suite.advanceEpoch()
-	staking.EndBlocker(suite.ctx, suite.app.StakingKeeper)
-	liquidstakingkeeper.EndBlocker(suite.ctx, suite.app.LiquidStakingKeeper)
-	fmt.Println("chunk unbonding is finished")
-	rewardModuleAccBalanceAfter := suite.app.BankKeeper.GetBalance(suite.ctx, types.RewardPool, suite.denom)
-	suite.True(
-		rewardModuleAccBalanceAfter.Amount.GT(rewardModuleAccBalance.Amount),
-	)
-	diff := rewardModuleAccBalanceAfter.Amount.Sub(rewardModuleAccBalance.Amount)
-	fmt.Printf("reward module account balance increased by %s\n", diff.String())
-	unpairingInsurance, _ := suite.app.LiquidStakingKeeper.GetInsurance(suite.ctx, toBeDrainedInsuranceId)
-	unpairingInsuranceBalance := suite.app.BankKeeper.GetBalance(suite.ctx, unpairingInsurance.DerivedAddress(), suite.denom)
-	suite.True(unpairingInsuranceBalance.IsZero(),
-		"unpairing insurance is used all of its balance to cover penalty by"+
-			"sending it to reward pool",
-	)
+		// Let's create 2 chunk and 2 insurance
+		oneChunk, oneInsurance := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
+		providers, providerBalances := suite.AddTestAddrs(2, oneInsurance.Amount)
+		suite.provideInsurances(suite.ctx, providers, valAddrs, providerBalances, tenPercentFeeRate, nil)
+		delegators, delegatorBalances := suite.AddTestAddrs(2, oneChunk.Amount)
+		pairedChunks := suite.liquidStakes(suite.ctx, delegators, delegatorBalances)
+		suite.ctx = suite.ctx.WithBlockHeight(suite.ctx.BlockHeight() + 1)
+		staking.EndBlocker(suite.ctx, suite.app.StakingKeeper)
+
+		downValAddr := valAddrs[0]
+		downValPubKey := pubKeys[0]
+		toBeUnpairedChunk := pairedChunks[0]
+		toBeDrainedInsuranceId := pairedChunks[0].PairedInsuranceId
+		fmt.Printf("balance of insurance to be drained: %s\n", oneInsurance.Amount.String())
+
+		epoch := suite.app.LiquidStakingKeeper.GetEpoch(suite.ctx)
+		epochTime := suite.ctx.BlockTime().Add(epoch.Duration)
+		called := 0
+		for {
+			validator, _ := suite.app.StakingKeeper.GetValidatorByConsAddr(suite.ctx, sdk.GetConsAddress(downValPubKey))
+			suite.downTimeSlashing(
+				suite.ctx,
+				downValPubKey,
+				validator.GetConsensusPower(suite.app.StakingKeeper.PowerReduction(suite.ctx)),
+				called,
+				tc.blockTime,
+			)
+			suite.unjail(suite.ctx, downValAddr, downValPubKey, tc.blockTime)
+			called++
+
+			if suite.ctx.BlockTime().After(epochTime) {
+				break
+			}
+		}
+		if tc.includeTombstone {
+			suite.tombstone(suite.ctx, downValAddr, downValPubKey)
+		}
+
+		validatorAfterSlashed, _ := suite.app.StakingKeeper.GetValidatorByConsAddr(suite.ctx, sdk.GetConsAddress(downValPubKey))
+		cumulativePenalty := types.ChunkSize.ToDec().Sub(validatorAfterSlashed.TokensFromShares(types.ChunkSize.ToDec()))
+		fmt.Printf("%d downtime slashing occurred during epoch(%0.f days)\n", called, epoch.Duration.Hours()/24)
+		damagedPercent := cumulativePenalty.Quo(types.ChunkSize.ToDec()).MulInt64(100).TruncateInt64()
+		suite.Equal(tc.expectedPenaltyPercent, int(damagedPercent))
+		fmt.Printf(
+			"accumulated penalty: %s | %d percent of ChunkSize tokens\n",
+			cumulativePenalty.String(), damagedPercent,
+		)
+		suite.advanceEpoch()
+		staking.EndBlocker(suite.ctx, suite.app.StakingKeeper)
+		liquidstakingkeeper.EndBlocker(suite.ctx, suite.app.LiquidStakingKeeper)
+		fmt.Println("chunk unbonding is started")
+		{
+			unPairingChunk, _ := suite.app.LiquidStakingKeeper.GetChunk(suite.ctx, toBeUnpairedChunk.Id)
+			unpairingInsurance, _ := suite.app.LiquidStakingKeeper.GetInsurance(suite.ctx, toBeDrainedInsuranceId)
+			suite.Equal(
+				types.CHUNK_STATUS_UNPAIRING,
+				unPairingChunk.Status,
+				"chunk unbonding is started",
+			)
+			ubd, _ := suite.app.StakingKeeper.GetUnbondingDelegation(
+				suite.ctx,
+				unPairingChunk.DerivedAddress(),
+				unpairingInsurance.GetValidator(),
+			)
+			suite.Len(ubd.Entries, 1)
+			suite.Equal(
+				types.ChunkSize.Sub(cumulativePenalty.Ceil().TruncateInt()).String(),
+				ubd.Entries[0].InitialBalance.String(),
+				"it is slashed so when unbonding, initial balance is less than chunk size tokens",
+			)
+		}
+
+		rewardModuleAccBalance := suite.app.BankKeeper.GetBalance(suite.ctx, types.RewardPool, suite.denom)
+		suite.advanceEpoch()
+		staking.EndBlocker(suite.ctx, suite.app.StakingKeeper)
+		liquidstakingkeeper.EndBlocker(suite.ctx, suite.app.LiquidStakingKeeper)
+		fmt.Println("chunk unbonding is finished")
+		rewardModuleAccBalanceAfter := suite.app.BankKeeper.GetBalance(suite.ctx, types.RewardPool, suite.denom)
+		suite.True(
+			rewardModuleAccBalanceAfter.Amount.GT(rewardModuleAccBalance.Amount),
+		)
+		diff := rewardModuleAccBalanceAfter.Amount.Sub(rewardModuleAccBalance.Amount)
+		fmt.Printf("reward module account balance increased by %s\n", diff.String())
+		unpairingInsurance, _ := suite.app.LiquidStakingKeeper.GetInsurance(suite.ctx, toBeDrainedInsuranceId)
+		unpairingInsuranceBalance := suite.app.BankKeeper.GetBalance(suite.ctx, unpairingInsurance.DerivedAddress(), suite.denom)
+		suite.True(unpairingInsuranceBalance.IsZero(),
+			"unpairing insurance is used all of its balance to cover penalty by"+
+				"sending it to reward pool",
+		)
+	}
 }
 
 func (suite *KeeperTestSuite) downTimeSlashing(
@@ -2193,6 +2231,31 @@ func (suite *KeeperTestSuite) downTimeSlashing(
 	penalty = valTokens.Sub(valTokensAfter)
 	suite.Equal(expectedPenalty.String(), penalty.String(), fmt.Sprintf("called: %d", called))
 	return
+}
+
+func (suite *KeeperTestSuite) tombstone(
+	ctx sdk.Context, valAddr sdk.ValAddress, valPubKey cryptotypes.PubKey,
+) {
+	validator := suite.app.StakingKeeper.Validator(ctx, valAddr)
+	power := validator.GetConsensusPower(suite.app.StakingKeeper.PowerReduction(ctx))
+	evidence := &evidencetypes.Equivocation{
+		Height:           0,
+		Time:             time.Unix(0, 0),
+		Power:            power,
+		ConsensusAddress: sdk.ConsAddress(valPubKey.Address()).String(),
+	}
+	fmt.Println("DOUBLE SIGN SLASHING FOR VALIDATOR: " + valAddr.String())
+	suite.app.EvidenceKeeper.HandleEquivocationEvidence(ctx, evidence)
+
+	suite.True(
+		suite.app.StakingKeeper.Validator(ctx, valAddr).IsJailed(),
+		"validator must be jailed because it is tombstoned",
+	)
+	suite.True(
+		suite.app.SlashingKeeper.IsTombstoned(ctx, sdk.ConsAddress(valPubKey.Address())),
+		"validator must be tombstoned",
+	)
+
 }
 
 func (suite *KeeperTestSuite) unjail(ctx sdk.Context, valAddr sdk.ValAddress, pubKey cryptotypes.PubKey, blockTime time.Duration) {
