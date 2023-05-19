@@ -2054,12 +2054,13 @@ func (suite *KeeperTestSuite) TestCumulativePenaltyByMultipleDownTimeSlashingAnd
 		blockTime              time.Duration
 		includeTombstone       bool
 		expectedPenaltyPercent int
-	}{{
-		name:                   "block time is 1 second",
-		blockTime:              time.Second,
-		includeTombstone:       false,
-		expectedPenaltyPercent: 61,
-	},
+	}{
+		{
+			name:                   "block time is 1 second",
+			blockTime:              time.Second,
+			includeTombstone:       false,
+			expectedPenaltyPercent: 61,
+		},
 		{
 			name:                   "block time is 1 second including tombstone",
 			blockTime:              time.Second,
