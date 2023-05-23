@@ -126,6 +126,50 @@ func (suite *InflationTestSuite) TestCalculateEpochMintProvision() {
 			sdk.MustNewDecFromStr("64026928909137053253.000000000000000000"),
 			true,
 		},
+		{
+			"period 10 and 25% bonded ratio",
+			Params{
+				MintDenom: "acanto",
+				ExponentialCalculation: ExponentialCalculation{
+					A:             sdk.NewDec(int64(2_191_172)),
+					R:             sdk.ZeroDec(),             // 0%
+					C:             sdk.ZeroDec(),             // 0%
+					BondingTarget: sdk.NewDecWithPrec(80, 2), // 80%
+					MaxVariance:   sdk.ZeroDec(),             // 0%
+				},
+				InflationDistribution: InflationDistribution{
+					StakingRewards: sdk.OneDec(),
+					CommunityPool:  sdk.ZeroDec(), // 0.13 = 10% / (1 - 25%)
+				},
+				EnableInflation: true,
+			},
+			uint64(10),
+			sdk.NewDecWithPrec(25, 2), // 25 %
+			sdk.MustNewDecFromStr("73039066666666666666667.000000000000000000"),
+			true,
+		},
+		{
+			"period 10 and 80% bonded ratio",
+			Params{
+				MintDenom: "acanto",
+				ExponentialCalculation: ExponentialCalculation{
+					A:             sdk.NewDec(int64(2_191_172)),
+					R:             sdk.ZeroDec(),             // 0%
+					C:             sdk.ZeroDec(),             // 0%
+					BondingTarget: sdk.NewDecWithPrec(80, 2), // 80%
+					MaxVariance:   sdk.ZeroDec(),             // 0%
+				},
+				InflationDistribution: InflationDistribution{
+					StakingRewards: sdk.OneDec(),
+					CommunityPool:  sdk.ZeroDec(), // 0.13 = 10% / (1 - 25%)
+				},
+				EnableInflation: true,
+			},
+			uint64(10),
+			sdk.NewDecWithPrec(80, 2), // 80 %
+			sdk.MustNewDecFromStr("73039066666666666666667.000000000000000000"),
+			true,
+		},
 	}
 	for _, tc := range testCases {
 		suite.Run(fmt.Sprintf("Case %s", tc.name), func() {
@@ -136,7 +180,7 @@ func (suite *InflationTestSuite) TestCalculateEpochMintProvision() {
 				tc.bondedRatio,
 			)
 
-			suite.Require().Equal(tc.expEpochProvision, epochMintProvisions)
+			suite.Require().Equal(tc.expEpochProvision.String(), epochMintProvisions.String())
 		})
 	}
 }
