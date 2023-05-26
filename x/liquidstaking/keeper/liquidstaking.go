@@ -488,7 +488,6 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (chunk
 		return
 	}
 
-	// TODO: Must be proved that this is safe, we must call this before sending
 	nas := k.GetNetAmountState(ctx)
 	types.SortInsurances(validatorMap, pairingInsurances, false)
 	totalNewShares := sdk.ZeroDec()
@@ -919,14 +918,13 @@ func (k Keeper) completeInsuranceDuty(ctx sdk.Context, insurance types.Insurance
 		return chunk, insurance, sdkerrors.Wrapf(types.ErrNotFoundChunk, "chunk id: %d", insurance.ChunkId)
 	}
 
-	// TODO: instead of using 0, need some UppercaseName or method(e.g. SetNull)
 	// insurance duty is over
-	insurance.ChunkId = 0
+	insurance.ChunkId = types.Empty
 	insurance.SetStatus(types.INSURANCE_STATUS_UNPAIRED)
 
 	switch chunk.Status {
 	case types.CHUNK_STATUS_UNPAIRING_FOR_UNSTAKING, types.CHUNK_STATUS_UNPAIRING, types.CHUNK_STATUS_PAIRED:
-		chunk.UnpairingInsuranceId = 0
+		chunk.UnpairingInsuranceId = types.Empty
 	}
 
 	k.SetInsurance(ctx, insurance)
