@@ -1128,6 +1128,8 @@ func (k Keeper) handlePairedChunk(ctx sdk.Context, chunk types.Chunk) error {
 		)
 		// EDGE CASE: Insurance cannot cover penalty
 		if penalty.GT(insuranceBalance.Amount.ToDec()) {
+			// TODO: Instead of unpairing it and waits until next epoch,
+			// insurance pay all of its balance to chunk and just unpaired both.
 			insuranceOutOfBalance = true
 			k.startUnpairing(ctx, pairedInsurance, chunk)
 		} else {
