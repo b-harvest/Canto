@@ -456,7 +456,7 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (chunk
 	}
 	chunksToCreate := amount.Amount.Quo(types.ChunkSize).Int64()
 
-	emptyChunkSlots := k.EmptyChunkSlots(ctx).Int64()
+	emptyChunkSlots := k.GetAvailableChunkSlots(ctx).Int64()
 	if (emptyChunkSlots - chunksToCreate) < 0 {
 		err = sdkerrors.Wrapf(
 			types.ErrExceedAvailableChunks,
@@ -1208,16 +1208,32 @@ func (k Keeper) IsInvalidInsurance(ctx sdk.Context, insurance types.Insurance) b
 	return false
 }
 
+// TODO: 생성 가능한 chunks 를 계산할 때
 func (k Keeper) CalcUtilizationRatio(ctx sdk.Context, nat types.NetAmountState) sdk.Dec {
 	totalSupply := k.bankKeeper.GetSupply(ctx, k.stakingKeeper.BondDenom(ctx))
+	// TODO: U를 계산할 때 Slahsing이 반영된 TotalLiquidTokens를 사용하는 게 맞을까?
+	// TODO: Insurance가 커버를 해준다는 가정하에 Slashing 적용이 안된 값을 기준으로 할지?
 	return nat.TotalLiquidTokens.ToDec().Quo(totalSupply.Amount.ToDec())
 }
 
-func (k Keeper) EmptyChunkSlots(ctx sdk.Context) sdk.Int {
-	totalSupply := k.bankKeeper.GetSupply(ctx, k.stakingKeeper.BondDenom(ctx))
-	u := k.CalcUtilizationRatio(ctx, k.GetNetAmountState(ctx))
-	// empty chunk slots = (u_hardcap - u) x total supply / chunk size tokens
-	return k.GetParams(ctx).UHardCap.Sub(u).Mul(totalSupply.Amount.ToDec()).Quo(types.ChunkSize.ToDec()).TruncateInt()
+func (k Keeper) GetAvailableChunkSlots(ctx sdk.Context) sdk.Int {
+	// chunk가 hard cap기준으로 100개가 가능한 상황인데
+	// 100개가 다같이 slashing을 맞았음 10% 씩 가치가 까였음
+	// hard cap 기준으로 90%만 찬 상황
+	// chunk size 100
+	// chunk 갯수 100
+	// u: 10%
+	// hard cap: 10%
+	// total supply: 100,000
+	// utilisation ratio: 9%
+	//
+	// paired chunk 갯수: Chunk Iteration status == paired
+	currentPairedChunks := k.GetPairedChunks(ctx)
+	k.MaxPairedChunks(ctx).Sub()
+}
+
+func (k Keeper) MaxPairedChunks(ctx sdk.Context) sdk.Int {
+	// 최대로 가능한 paired chunk 갯수 = U_Hardcap * totalSupply / chunkSize
 }
 
 // startUnpairing changes status of insurance and chunk to unpairing.

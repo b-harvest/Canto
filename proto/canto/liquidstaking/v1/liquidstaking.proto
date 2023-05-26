@@ -18,10 +18,7 @@ message Epoch {
   int64 start_height = 4;
 }
 
-// Params defines the parameters for the module.
-message Params {
-  option (gogoproto.goproto_getters) = false;
-
+message DynamicFeeRate {
   // minimum fee rate
   string r0 = 1 [
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
@@ -67,6 +64,13 @@ message Params {
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
     (gogoproto.nullable) = false
   ];
+}
+
+// Params defines the parameters for the module.
+message Params {
+  option (gogoproto.goproto_getters) = false;
+
+  DynamicFeeRate dynamic_fee_rate = 1;
 }
 
 // ChunkStatus defines the status of the chunk.
