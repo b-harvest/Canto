@@ -447,23 +447,6 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (chunk
 	delAddr := msg.GetDelegator()
 	amount := msg.Amount
 
-	// Check if max paired chunk size is exceeded or not
-	currenPairedChunks := 0
-	err = k.IterateAllChunks(ctx, func(chunk types.Chunk) (bool, error) {
-		if chunk.Status == types.CHUNK_STATUS_PAIRED {
-			currenPairedChunks++
-		}
-		return false, nil
-	})
-	if err != nil {
-		return
-	}
-	availableChunks := types.MaxPairedChunks - currenPairedChunks
-	if availableChunks <= 0 {
-		err = sdkerrors.Wrapf(types.ErrMaxPairedChunkSizeExceeded, "current paired chunk size: %d", currenPairedChunks)
-		return
-	}
-
 	if err = k.ShouldBeBondDenom(ctx, amount.Denom); err != nil {
 		return
 	}
@@ -472,12 +455,14 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (chunk
 		return
 	}
 	chunksToCreate := amount.Amount.Quo(types.ChunkSize).Int64()
-	if chunksToCreate > int64(availableChunks) {
+
+	emptyChunkSlots := k.EmptyChunkSlots(ctx).Int64()
+	if (emptyChunkSlots - chunksToCreate) < 0 {
 		err = sdkerrors.Wrapf(
 			types.ErrExceedAvailableChunks,
 			"requested chunks to create: %d, available chunks: %d",
 			chunksToCreate,
-			availableChunks,
+			emptyChunkSlots,
 		)
 		return
 	}
@@ -1221,6 +1206,18 @@ func (k Keeper) IsInvalidInsurance(ctx sdk.Context, insurance types.Insurance) b
 		return true
 	}
 	return false
+}
+
+func (k Keeper) CalcUtilizationRatio(ctx sdk.Context, nat types.NetAmountState) sdk.Dec {
+	totalSupply := k.bankKeeper.GetSupply(ctx, k.stakingKeeper.BondDenom(ctx))
+	return nat.TotalLiquidTokens.ToDec().Quo(totalSupply.Amount.ToDec())
+}
+
+func (k Keeper) EmptyChunkSlots(ctx sdk.Context) sdk.Int {
+	totalSupply := k.bankKeeper.GetSupply(ctx, k.stakingKeeper.BondDenom(ctx))
+	u := k.CalcUtilizationRatio(ctx, k.GetNetAmountState(ctx))
+	// empty chunk slots = (u_hardcap - u) x total supply / chunk size tokens
+	return k.GetParams(ctx).UHardCap.Sub(u).Mul(totalSupply.Amount.ToDec()).Quo(types.ChunkSize.ToDec()).TruncateInt()
 }
 
 // startUnpairing changes status of insurance and chunk to unpairing.

@@ -8,11 +8,7 @@ import (
 	ethermint "github.com/evmos/ethermint/types"
 )
 
-const (
-	MaxPairedChunks = 10
-)
-
-var ChunkSize = sdk.TokensFromConsensusPower(5000000, ethermint.PowerReduction)
+var ChunkSize = sdk.TokensFromConsensusPower(250_000, ethermint.PowerReduction)
 
 func NewChunk(id uint64) Chunk {
 	return Chunk{
