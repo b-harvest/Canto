@@ -254,7 +254,7 @@ func (suite *KeeperTestSuite) AddTestAddrs(accNum int, amount sdk.Int) ([]sdk.Ac
 		balances = append(balances, sdk.NewCoin(suite.denom, amount))
 
 		// fund each account
-		suite.fundAccount(addr, amount)
+		suite.fundAccount(suite.ctx, addr, amount)
 	}
 	return addrs, balances
 }
@@ -273,10 +273,10 @@ func (suite *KeeperTestSuite) AddTestAddrsWithFunding(fundingAccount sdk.AccAddr
 	return addrs, balances
 }
 
-func (suite *KeeperTestSuite) fundAccount(addr sdk.AccAddress, amount sdk.Int) {
-	err := suite.app.BankKeeper.MintCoins(suite.ctx, types.ModuleName, sdk.NewCoins(sdk.NewCoin(suite.denom, amount)))
+func (suite *KeeperTestSuite) fundAccount(ctx sdk.Context, addr sdk.AccAddress, amount sdk.Int) {
+	err := suite.app.BankKeeper.MintCoins(ctx, types.ModuleName, sdk.NewCoins(sdk.NewCoin(suite.denom, amount)))
 	suite.NoError(err)
-	err = suite.app.BankKeeper.SendCoinsFromModuleToAccount(suite.ctx, types.ModuleName, addr, sdk.NewCoins(sdk.NewCoin(suite.denom, amount)))
+	err = suite.app.BankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, addr, sdk.NewCoins(sdk.NewCoin(suite.denom, amount)))
 	suite.NoError(err)
 }
 

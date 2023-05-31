@@ -327,6 +327,7 @@ func (k Keeper) RankInsurances(ctx sdk.Context) (
 	return
 }
 
+// TODO: How to handle damaged chunk? We must trigger Undelegate for damaged chunk.
 // RePairRankedInsurances re-pairs ranked insurances.
 func (k Keeper) RePairRankedInsurances(
 	ctx sdk.Context,
