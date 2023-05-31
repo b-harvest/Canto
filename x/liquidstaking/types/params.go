@@ -7,13 +7,7 @@ import (
 )
 
 var (
-	KeyR0         = []byte("R0")
-	KeyUSoftCap   = []byte("USoftCap")
-	KeyUHardCap   = []byte("UHardCap")
-	KeyUOptimal   = []byte("UOptimal")
-	KeySlope1     = []byte("Slope1")
-	KeySlope2     = []byte("Slope2")
-	KeyMaxFeeRate = []byte("MaxFeeRate")
+	KeyDynamicFeeRate = []byte("DynamicFeeRate")
 
 	DefaultR0       = sdk.ZeroDec()
 	DefaultUSoftCap = sdk.MustNewDecFromStr("0.05")
@@ -33,33 +27,32 @@ func ParamKeyTable() paramtypes.KeyTable {
 
 // NewParams creates a new Params object
 func NewParams(
-	r0, uSoftCap, uHardCap, uOptimal, slope1, slope2, maxFeeRate sdk.Dec,
+	dynamicFeeRate DynamicFeeRate,
+	// r0, uSoftCap, uHardCap, uOptimal, slope1, slope2, maxFeeRate sdk.Dec,
 ) Params {
 	return Params{
-		R0:         r0,
-		USoftCap:   uSoftCap,
-		UHardCap:   uHardCap,
-		UOptimal:   uOptimal,
-		Slope1:     slope1,
-		Slope2:     slope2,
-		MaxFeeRate: maxFeeRate,
+		dynamicFeeRate,
 	}
 }
 
 func DefaultParams() Params {
-	return NewParams(DefaultR0, DefaultUSoftCap, DefaultUHardCap, DefaultUOptimal, DefaultSlope1, DefaultSlope2, DefaultMaxFee)
+	return NewParams(
+		DynamicFeeRate{
+			R0:         DefaultR0,
+			USoftCap:   DefaultUSoftCap,
+			UHardCap:   DefaultUHardCap,
+			UOptimal:   DefaultUOptimal,
+			Slope1:     DefaultSlope1,
+			Slope2:     DefaultSlope2,
+			MaxFeeRate: DefaultMaxFee,
+		},
+	)
 }
 
 // ParamSetPairs returns the parameter set pairs.
 func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	return paramtypes.ParamSetPairs{
-		paramtypes.NewParamSetPair(KeyR0, &p.R0, validateR0),
-		paramtypes.NewParamSetPair(KeyUSoftCap, &p.USoftCap, validateUSoftCap),
-		paramtypes.NewParamSetPair(KeyUHardCap, &p.UHardCap, validateUHardCap),
-		paramtypes.NewParamSetPair(KeyUOptimal, &p.UOptimal, validateUOptimal),
-		paramtypes.NewParamSetPair(KeySlope1, &p.Slope1, validateSlope1),
-		paramtypes.NewParamSetPair(KeySlope2, &p.Slope2, validateSlope2),
-		paramtypes.NewParamSetPair(KeyMaxFeeRate, &p.MaxFeeRate, validateMaxFeeRate),
+		paramtypes.NewParamSetPair(KeyDynamicFeeRate, &p.DynamicFeeRate, validateDynamicFeeRate),
 	}
 }
 
@@ -68,26 +61,12 @@ func (p Params) Validate() error {
 		value     interface{}
 		validator func(interface{}) error
 	}{
-		{p.R0, validateR0},
-		{p.USoftCap, validateUSoftCap},
-		{p.UHardCap, validateUHardCap},
-		{p.UOptimal, validateUOptimal},
-		{p.Slope1, validateSlope1},
-		{p.Slope2, validateSlope2},
-		{p.MaxFeeRate, validateMaxFeeRate},
+		{
+			p.DynamicFeeRate, validateDynamicFeeRate,
+		},
 	} {
 		if err := v.validator(v.value); err != nil {
 			return err
-		}
-		// validate dynamic fee model
-		if !p.USoftCap.LT(p.UOptimal) {
-			return fmt.Errorf("uSoftCap should be less than uOptimal")
-		}
-		if !p.UOptimal.LT(p.UHardCap) {
-			return fmt.Errorf("uOptimal should be less than uHardCap")
-		}
-		if !p.R0.Add(p.Slope1).Add(p.Slope2).LTE(p.MaxFeeRate) {
-			return fmt.Errorf("r0 + slope1 + slope2 should not exceeds max fee rate")
 		}
 	}
 	return nil
@@ -237,5 +216,46 @@ func validateMaxFeeRate(i interface{}) error {
 		return fmt.Errorf("maxFeeRate should not be greater than 1")
 	}
 
+	return nil
+}
+
+func validateDynamicFeeRate(i interface{}) (err error) {
+	v, ok := i.(DynamicFeeRate)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T", i)
+	}
+
+	if err = validateR0(v.R0); err != nil {
+		return err
+	}
+	if err = validateUSoftCap(v.USoftCap); err != nil {
+		return err
+	}
+	if err = validateUHardCap(v.UHardCap); err != nil {
+		return err
+	}
+	if err = validateUOptimal(v.UOptimal); err != nil {
+		return err
+	}
+	if err = validateSlope1(v.Slope1); err != nil {
+		return err
+	}
+	if err = validateSlope2(v.Slope2); err != nil {
+		return err
+	}
+	if err = validateMaxFeeRate(v.MaxFeeRate); err != nil {
+		return err
+	}
+
+	// validate dynamic fee model
+	if !v.USoftCap.LT(v.UOptimal) {
+		return fmt.Errorf("uSoftCap should be less than uOptimal")
+	}
+	if !v.UOptimal.LT(v.UHardCap) {
+		return fmt.Errorf("uOptimal should be less than uHardCap")
+	}
+	if !v.R0.Add(v.Slope1).Add(v.Slope2).LTE(v.MaxFeeRate) {
+		return fmt.Errorf("r0 + slope1 + slope2 should not exceeds max fee rate")
+	}
 	return nil
 }

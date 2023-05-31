@@ -18,6 +18,7 @@ message Epoch {
   int64 start_height = 4;
 }
 
+// DynamicFeeRate defines parameters realated with dynamic fee rate mechanism.
 message DynamicFeeRate {
   // minimum fee rate
   string r0 = 1 [
@@ -70,7 +71,7 @@ message DynamicFeeRate {
 message Params {
   option (gogoproto.goproto_getters) = false;
 
-  DynamicFeeRate dynamic_fee_rate = 1;
+  DynamicFeeRate dynamic_fee_rate = 1 [ (gogoproto.nullable) = false ];
 }
 
 // ChunkStatus defines the status of the chunk.

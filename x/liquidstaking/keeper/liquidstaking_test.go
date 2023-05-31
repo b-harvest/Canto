@@ -3,6 +3,7 @@ package keeper_test
 import (
 	"bytes"
 	"fmt"
+	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	"math/rand"
 	"time"
 
@@ -231,8 +232,14 @@ func (suite *KeeperTestSuite) TestLiquidStakeFail() {
 		nil,
 	)
 	oneChunk, oneInsurance := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
-
-	addrs, balances := suite.AddTestAddrs(types.MaxPairedChunks-1, oneChunk.Amount)
+	fundingAccount := sdk.AccAddress(ed25519.GenPrivKey().PubKey().Address())
+	suite.fundAccount(fundingAccount, oneChunk.Amount.MulRaw(100).Add(oneInsurance.Amount.MulRaw(10)))
+	maxPairedChunks := suite.app.LiquidStakingKeeper.MaxPairedChunks(suite.ctx).Int64()
+	suite.Equal(
+		maxPairedChunks, int64(10),
+		"set total supply by creating funding account to fix max paired chunks",
+	)
+	addrs, balances := suite.AddTestAddrsWithFunding(fundingAccount, int(maxPairedChunks-1), oneChunk.Amount)
 
 	// TC: There are no pairing insurances yet. Insurances must be provided to liquid stake
 	acc1 := addrs[0]
@@ -240,7 +247,7 @@ func (suite *KeeperTestSuite) TestLiquidStakeFail() {
 	_, _, _, err := suite.app.LiquidStakingKeeper.DoLiquidStake(suite.ctx, msg)
 	suite.ErrorContains(err, types.ErrNoPairingInsurance.Error())
 
-	providers, providerBalances := suite.AddTestAddrs(10, oneInsurance.Amount)
+	providers, providerBalances := suite.AddTestAddrsWithFunding(fundingAccount, int(maxPairedChunks), oneInsurance.Amount)
 	suite.provideInsurances(suite.ctx, providers, valAddrs, providerBalances, sdk.ZeroDec(), nil)
 
 	// TC: Not enough amount to liquid stake
@@ -262,7 +269,14 @@ func (suite *KeeperTestSuite) TestLiquidStakeFail() {
 	_ = suite.liquidStakes(suite.ctx, addrs, balances)
 
 	// Fund coins to acc1
-	suite.fundAccount(acc1, types.ChunkSize.Mul(sdk.NewInt(2)))
+	suite.app.BankKeeper.SendCoins(
+		suite.ctx,
+		fundingAccount,
+		acc1,
+		sdk.NewCoins(
+			sdk.NewCoin(suite.denom, types.ChunkSize.Mul(sdk.NewInt(2))),
+		),
+	)
 	// Now acc1 have 2 * ChunkSize tokens as balance and try to liquid stake 2 * ChunkSize tokens
 	acc1Balance := suite.app.BankKeeper.GetBalance(suite.ctx, acc1, suite.denom)
 	suite.True(acc1Balance.Amount.Equal(types.ChunkSize.Mul(sdk.NewInt(2))))
@@ -284,7 +298,7 @@ func (suite *KeeperTestSuite) TestLiquidStakeFail() {
 	newAddrs, newBalances := suite.AddTestAddrs(1, oneChunk.Amount)
 	msg = types.NewMsgLiquidStake(newAddrs[0].String(), newBalances[0])
 	_, _, _, err = suite.app.LiquidStakingKeeper.DoLiquidStake(suite.ctx, msg)
-	suite.ErrorIs(err, types.ErrMaxPairedChunkSizeExceeded)
+	suite.ErrorIs(err, types.ErrExceedAvailableChunks)
 
 	suite.mustPassInvariants()
 }
