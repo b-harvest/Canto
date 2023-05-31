@@ -72,6 +72,7 @@ func (p Params) Validate() error {
 	return nil
 }
 
+// TODO: Write test codes for it right now!!
 func validateR0(i interface{}) error {
 	v, ok := i.(sdk.Dec)
 	if !ok {
