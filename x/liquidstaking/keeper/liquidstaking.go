@@ -33,7 +33,9 @@ func (k Keeper) CollectReward(ctx sdk.Context, chunk types.Chunk, insurance type
 		)
 	}
 	fmt.Printf("Collect Reward for validator: %s\n", insurance.GetValidator())
+	fmt.Printf("Delegation Reward: %s\n", delegationRewards.String())
 	fmt.Printf("Pure Reward: %s\n", pureRewards.String())
+	fmt.Printf("Insurance Commission: %s\n", insuranceCommissions.String())
 
 	var inputs []banktypes.Input
 	var outputs []banktypes.Output
