@@ -2,6 +2,7 @@ package types
 
 import (
 	"fmt"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 )
@@ -171,10 +172,6 @@ func validateSlope1(i interface{}) error {
 		return fmt.Errorf("slope1 should not be negative")
 	}
 
-	if v.GT(sdk.OneDec()) {
-		return fmt.Errorf("slope1 should not be greater than 1")
-	}
-
 	return nil
 }
 
@@ -190,10 +187,6 @@ func validateSlope2(i interface{}) error {
 
 	if v.IsNegative() {
 		return fmt.Errorf("slope2 should not be negative")
-	}
-
-	if v.GT(sdk.OneDec()) {
-		return fmt.Errorf("slope2 should not be greater than 1")
 	}
 
 	return nil
@@ -256,7 +249,7 @@ func validateDynamicFeeRate(i interface{}) (err error) {
 		return fmt.Errorf("uOptimal should be less than uHardCap")
 	}
 	if !v.R0.Add(v.Slope1).Add(v.Slope2).LTE(v.MaxFeeRate) {
-		return fmt.Errorf("r0 + slope1 + slope2 should not exceeds max fee rate")
+		return fmt.Errorf("r0 + slope1 + slope2 should not exceeds maxFeeRate")
 	}
 	return nil
 }
