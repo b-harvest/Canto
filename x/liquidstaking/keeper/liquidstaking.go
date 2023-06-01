@@ -10,14 +10,18 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
-// CollectReward collects reward of chunk and
-// distribute to reward module account and insurance
-// 1. Send commission to insurance based on chunk reward
-// 2. Send rest of rewards to reward module account
-func (k Keeper) CollectReward(ctx sdk.Context, chunk types.Chunk, insurance types.Insurance) {
+// CollectRewardAndFee collects reward of chunk and
+// distribute to a module(=fee), reward pool and insurance.
+// 1. Send commission to insurance based on chunk reward.
+// 2. Deduct dynamic fee from remaining and burn it.
+// 3. Send rest of rewards to reward module account.
+func (k Keeper) CollectRewardAndFee(ctx sdk.Context, chunk types.Chunk, insurance types.Insurance) {
 	delegationRewards := k.bankKeeper.GetAllBalances(ctx, chunk.DerivedAddress())
 	insuranceCommissions := make(sdk.Coins, delegationRewards.Len())
-	pureRewards := make(sdk.Coins, delegationRewards.Len())
+	dynamicFees := make(sdk.Coins, delegationRewards.Len())
+	remainingRewards := make(sdk.Coins, delegationRewards.Len())
+
+	feeRate := k.CalcDynamicFeeRate(ctx)
 	for i, delReward := range delegationRewards {
 		if delReward.IsZero() {
 			continue
@@ -27,29 +31,47 @@ func (k Keeper) CollectReward(ctx sdk.Context, chunk types.Chunk, insurance type
 			delReward.Denom,
 			insuranceCommission,
 		)
-		pureRewards[i] = sdk.NewCoin(
+		pureReward := delReward.Amount.Sub(insuranceCommission)
+		dynamicFee := pureReward.ToDec().Mul(feeRate).Ceil().TruncateInt()
+		remainingReward := pureReward.Sub(dynamicFee)
+		dynamicFees[i] = sdk.NewCoin(
 			delReward.Denom,
-			delReward.Amount.Sub(insuranceCommission),
+			dynamicFee,
+		)
+		remainingRewards[i] = sdk.NewCoin(
+			delReward.Denom,
+			remainingReward,
 		)
 	}
 	fmt.Printf("Collect Reward for validator: %s\n", insurance.GetValidator())
 	fmt.Printf("Delegation Reward: %s\n", delegationRewards.String())
-	fmt.Printf("Pure Reward: %s\n", pureRewards.String())
 	fmt.Printf("Insurance Commission: %s\n", insuranceCommissions.String())
+	fmt.Printf("Dynamic Fee: %s\n", dynamicFees.String())
+	fmt.Printf("Reamining Reward: %s\n", remainingRewards.String())
 
 	var inputs []banktypes.Input
 	var outputs []banktypes.Output
-	switch pureRewards.Len() {
+	switch remainingRewards.Len() {
 	case 0:
 		return
 	default:
+		if !dynamicFees.IsZero() {
+			// Collect dynamic fee and burn it first.
+			if err := k.bankKeeper.SendCoinsFromAccountToModule(ctx, chunk.DerivedAddress(), types.ModuleName, dynamicFees); err != nil {
+				panic(err)
+			}
+			if err := k.bankKeeper.BurnCoins(ctx, types.ModuleName, dynamicFees); err != nil {
+				panic(err)
+			}
+		}
+
 		inputs = []banktypes.Input{
 			banktypes.NewInput(chunk.DerivedAddress(), insuranceCommissions),
-			banktypes.NewInput(chunk.DerivedAddress(), pureRewards),
+			banktypes.NewInput(chunk.DerivedAddress(), remainingRewards),
 		}
 		outputs = []banktypes.Output{
 			banktypes.NewOutput(insurance.FeePoolAddress(), insuranceCommissions),
-			banktypes.NewOutput(types.RewardPool, pureRewards),
+			banktypes.NewOutput(types.RewardPool, remainingRewards),
 		}
 	}
 	if err := k.bankKeeper.InputOutputCoins(ctx, inputs, outputs); err != nil {
@@ -58,7 +80,7 @@ func (k Keeper) CollectReward(ctx sdk.Context, chunk types.Chunk, insurance type
 }
 
 // DistributeReward withdraws delegation rewards from all paired chunks
-// Keeper.CollectReward will be called during withdrawing process.
+// Keeper.CollectRewardAndFee will be called during withdrawing process.
 func (k Keeper) DistributeReward(ctx sdk.Context) {
 	err := k.IterateAllChunks(ctx, func(chunk types.Chunk) (bool, error) {
 		var insurance types.Insurance
@@ -87,7 +109,7 @@ func (k Keeper) DistributeReward(ctx sdk.Context) {
 		fmt.Printf("Chunk %d Balance After Withdraw Delegation Rewards\n", chunk.Id)
 		fmt.Println(k.bankKeeper.GetBalance(ctx, chunk.DerivedAddress(), "acanto").String())
 
-		k.CollectReward(ctx, chunk, insurance)
+		k.CollectRewardAndFee(ctx, chunk, insurance)
 		return false, nil
 	})
 	if err != nil {
@@ -1228,21 +1250,6 @@ func (k Keeper) IsInvalidInsurance(ctx sdk.Context, insurance types.Insurance) b
 	return false
 }
 
-// CalcUtilizationRatio returns a utilization ratio of liquidstaking module.
-func (k Keeper) CalcUtilizationRatio(ctx sdk.Context) sdk.Dec {
-	totalSupply := k.bankKeeper.GetSupply(ctx, k.stakingKeeper.BondDenom(ctx))
-	var numPairedChunks int64 = 0
-	k.IterateAllChunks(ctx, func(chunk types.Chunk) (bool, error) {
-		if chunk.Status != types.CHUNK_STATUS_PAIRED {
-			return false, nil
-		}
-		numPairedChunks++
-		return false, nil
-	})
-	// chunkSize * numPairedChunks / totalSupply
-	return types.ChunkSize.Mul(sdk.NewInt(numPairedChunks)).ToDec().Quo(totalSupply.Amount.ToDec())
-}
-
 // GetAvailableChunkSlots returns a number of chunk which can be paired.
 func (k Keeper) GetAvailableChunkSlots(ctx sdk.Context) sdk.Int {
 	var numPairedChunks int64 = 0
@@ -1254,16 +1261,6 @@ func (k Keeper) GetAvailableChunkSlots(ctx sdk.Context) sdk.Int {
 		return false, nil
 	})
 	return k.MaxPairedChunks(ctx).Sub(sdk.NewInt(numPairedChunks))
-}
-
-// MaxPairedChunks returns a upper limit of paired chunks.
-func (k Keeper) MaxPairedChunks(ctx sdk.Context) sdk.Int {
-	hardCap := sdk.MinDec(k.GetParams(ctx).DynamicFeeRate.UHardCap, types.SecurityCap)
-	totalSupply := k.bankKeeper.GetSupply(ctx, k.stakingKeeper.BondDenom(ctx))
-	// 1. u = (chunkSize * numPairedChunks) / totalSupply
-	// 2. numPairedChunks = u * (totalSupply / chunkSize)
-	// 3. maxPairedChunks = hardCap * (totalSupply / chunkSize)
-	return hardCap.Mul(totalSupply.Amount.ToDec().Quo(types.ChunkSize.ToDec())).TruncateInt()
 }
 
 // startUnpairing changes status of insurance and chunk to unpairing.

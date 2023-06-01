@@ -3,9 +3,10 @@ package keeper_test
 import (
 	"bytes"
 	"fmt"
-	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	"math/rand"
 	"time"
+
+	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 
 	liquidstakingkeeper "github.com/Canto-Network/Canto/v6/x/liquidstaking"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
