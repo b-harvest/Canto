@@ -2,6 +2,7 @@ package types
 
 import (
 	"fmt"
+
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -46,4 +47,8 @@ func (c *Chunk) Validate(lastChunkId uint64) error {
 		return ErrInvalidChunkStatus
 	}
 	return nil
+}
+
+func (c *Chunk) HasPairedInsurance() bool {
+	return c.PairedInsuranceId != Empty
 }

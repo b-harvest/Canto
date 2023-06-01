@@ -235,10 +235,13 @@ func (k Keeper) GetAllRePairableChunksAndOutInsurances(ctx sdk.Context) (
 			}
 			_, found = k.stakingKeeper.GetUnbondingDelegation(ctx, chunk.DerivedAddress(), insurance.GetValidator())
 			if found {
+				// unbonding of chunk is triggered because insurance cannot cover the penalty of chunk.
+				// In next epoch, insurance send all of it's balance to chunk
+				// and all balances of chunk will go to reward pool.
+				// After that, insurance will be unpaired also.
 				return false, nil
 			}
 			outInsurances = append(outInsurances, insurance)
-			// TODO: we should consider damaged chunk...
 			rePairableChunks = append(rePairableChunks, chunk)
 		case types.CHUNK_STATUS_PAIRING:
 			rePairableChunks = append(rePairableChunks, chunk)
@@ -329,7 +332,6 @@ func (k Keeper) RankInsurances(ctx sdk.Context) (
 	return
 }
 
-// TODO: How to handle damaged chunk? We must trigger Undelegate for damaged chunk.
 // RePairRankedInsurances re-pairs ranked insurances.
 func (k Keeper) RePairRankedInsurances(
 	ctx sdk.Context,
@@ -1007,6 +1009,7 @@ func (k Keeper) completeLiquidUnstake(ctx sdk.Context, chunk types.Chunk) error 
 }
 
 // handleUnpairingChunk handles unpairing chunk which created previous epoch.
+// Those chunks completed their unbonding already.
 func (k Keeper) handleUnpairingChunk(ctx sdk.Context, chunk types.Chunk) error {
 	if chunk.Status != types.CHUNK_STATUS_UNPAIRING {
 		return sdkerrors.Wrapf(types.ErrInvalidChunkStatus, "chunk id: %d, status: %s", chunk.Id, chunk.Status)
@@ -1019,8 +1022,13 @@ func (k Keeper) handleUnpairingChunk(ctx sdk.Context, chunk types.Chunk) error {
 	if !found {
 		return sdkerrors.Wrapf(types.ErrNotFoundInsurance, "insurance id: %d", chunk.UnpairingInsuranceId)
 	}
-	if chunk.PairedInsuranceId != 0 {
+	if chunk.HasPairedInsurance() {
 		return sdkerrors.Wrapf(types.ErrUnpairingChunkHavePairedChunk, "paired insurance id: %d", chunk.PairedInsuranceId)
+	}
+	if _, found = k.stakingKeeper.GetUnbondingDelegation(ctx, chunk.DerivedAddress(), unpairingInsurance.GetValidator()); found {
+		// UnbondingDelegation must be removed by staking keeper EndBlocker
+		// because Endblocker of liquidstaking module is called after staking module.
+		return sdkerrors.Wrapf(types.ErrUnbondingDelegationNotRemoved, "chunk id: %d", chunk.Id)
 	}
 
 	chunkBalance := k.bankKeeper.GetBalance(ctx, chunk.DerivedAddress(), bondDenom).Amount
@@ -1061,14 +1069,17 @@ func (k Keeper) handleUnpairingChunk(ctx sdk.Context, chunk types.Chunk) error {
 		if err = k.bankKeeper.InputOutputCoins(ctx, inputs, outputs); err != nil {
 			return err
 		}
-		// insurance already sent all of its balance to chunk, so ok delete it
-		// TODO: k.DeleteInsurance(ctx, unpairingInsurance.Id)? there can be remaining commissions
 		k.DeleteChunk(ctx, chunk.Id)
+		// Insurance already sent all of its balance to chunk, but we cannot delete it yet
+		// because it can have remaining commissions.
+		if k.bankKeeper.GetAllBalances(ctx, unpairingInsurance.FeePoolAddress()).IsZero() {
+			// if insurance has no commissions, we can delete it
+			k.DeleteInsurance(ctx, unpairingInsurance.Id)
+		}
 		return nil
 	}
 	chunk.SetStatus(types.CHUNK_STATUS_PAIRING)
 	k.SetChunk(ctx, chunk)
-	k.SetInsurance(ctx, unpairingInsurance)
 
 	return nil
 }
@@ -1116,10 +1127,16 @@ func (k Keeper) handlePairedChunk(ctx sdk.Context, chunk types.Chunk) error {
 		)
 		// EDGE CASE: Insurance cannot cover penalty
 		if penalty.GT(insuranceBalance.Amount.ToDec()) {
-			// TODO: Instead of unpairing it and waits until next epoch,
-			// insurance pay all of its balance to chunk and just unpaired both.
 			insuranceOutOfBalance = true
 			k.startUnpairing(ctx, pairedInsurance, chunk)
+			// start unbonding of chunk because it is damaged
+			if _, err = k.stakingKeeper.Undelegate(
+				ctx, chunk.DerivedAddress(),
+				validator.GetOperator(),
+				delegation.GetShares(),
+			); err != nil {
+				return err
+			}
 		} else {
 			// Insurance can cover penalty
 			// 1. Send penalty to chunk
