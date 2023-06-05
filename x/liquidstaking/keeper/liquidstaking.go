@@ -105,8 +105,14 @@ func (k Keeper) DistributeReward(ctx sdk.Context) {
 		}
 		// TODO: remove print when go to production
 		fmt.Printf("Chunk %d Balance Before Withdraw Delegation Rewards\n", chunk.Id)
-		fmt.Println(k.bankKeeper.GetBalance(ctx, chunk.DerivedAddress(), "acanto").String())
+		// TODO: remove when go to production
+		bal := k.bankKeeper.GetBalance(ctx, chunk.DerivedAddress(), "acanto")
+		if bal.IsPositive() {
+			panic("chunk %d balance is not zero")
+		}
+		fmt.Println(bal.String())
 		_, err = k.distributionKeeper.WithdrawDelegationRewards(ctx, chunk.DerivedAddress(), validator.GetOperator())
+		// chunk balance -> chunk reward address
 		if err != nil {
 			return true, err
 		}
