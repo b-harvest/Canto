@@ -1240,16 +1240,6 @@ func (k Keeper) IsSufficientInsurance(ctx sdk.Context, insurance types.Insurance
 	return true
 }
 
-// IsInvalidInsurance checks whether the validator of insurance is tombstoned or not
-func (k Keeper) IsInvalidInsurance(ctx sdk.Context, insurance types.Insurance) bool {
-	validator, found := k.stakingKeeper.GetValidator(ctx, insurance.GetValidator())
-	err := k.IsValidValidator(ctx, validator, found)
-	if err == types.ErrTombstonedValidator {
-		return true
-	}
-	return false
-}
-
 // GetAvailableChunkSlots returns a number of chunk which can be paired.
 func (k Keeper) GetAvailableChunkSlots(ctx sdk.Context) sdk.Int {
 	var numPairedChunks int64 = 0
