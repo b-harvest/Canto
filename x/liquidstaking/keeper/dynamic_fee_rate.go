@@ -33,9 +33,9 @@ func (k Keeper) CalcDynamicFeeRate(ctx sdk.Context) sdk.Dec {
 		return r0
 	}
 	if u.LTE(optimal) {
-		return k.CalcFormulaBetweenSoftCapAndOptimal(r0, u, softCap, optimal, slope1)
+		return k.CalcFormulaBetweenSoftCapAndOptimal(r0, softCap, optimal, slope1, u)
 	}
-	return k.CalcFormulaUpperOptimal(r0, u, optimal, hardCap, slope1, slope2)
+	return k.CalcFormulaUpperOptimal(r0, optimal, hardCap, slope1, slope2, u)
 }
 
 // CalcFormulaBetweenSoftCapAndOptimal returns a dynamic fee rate with formula between softcap and optimal.
