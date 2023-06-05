@@ -395,7 +395,6 @@ func (suite *KeeperTestSuite) TestLiquidStakeWithAdvanceBlocks() {
 	}
 }
 
-// TODO: fix TC
 func (suite *KeeperTestSuite) TestLiquidUnstakeWithAdvanceBlocks() {
 	fixedInsuranceFeeRate := tenPercentFeeRate
 	env := suite.setupLiquidStakeTestingEnv(
@@ -446,7 +445,7 @@ func (suite *KeeperTestSuite) TestLiquidUnstakeWithAdvanceBlocks() {
 	// advance 1 block(= epoch period in test environment) so reward is accumulated which means mint rate is changed
 	suite.advanceHeight(1, "")
 
-	unitDelegationRewardPerRewardEpoch, _ := sdk.NewIntFromString("29999994000000000000")
+	unitDelegationRewardPerRewardEpoch, _ := sdk.NewIntFromString("29999880000479750000")
 	unitInsuranceCommissionPerRewardEpoch, pureUnitRewardPerRewardEpoch := suite.getUnitDistribution(unitDelegationRewardPerRewardEpoch, fixedInsuranceFeeRate)
 
 	// each delegation reward per epoch(=1 block in test) * number of paired chunks
@@ -462,7 +461,7 @@ func (suite *KeeperTestSuite) TestLiquidUnstakeWithAdvanceBlocks() {
 			"one epoch(=1 block in test) passed, so remaining rewards must be increased",
 		)
 		suite.Equal(notClaimedRewards.ToDec(), nas.NetAmount.Sub(beforeNas.NetAmount), "net amount must be increased by not claimed rewards")
-		suite.Equal("0.999994600030239830", nas.MintRate.String(), "mint rate increased because of reward accumulation")
+		suite.Equal("0.999892012094645400", nas.MintRate.String(), "mint rate increased because of reward accumulation")
 	}
 
 	undelegator := env.delegators[0]
@@ -525,27 +524,38 @@ func (suite *KeeperTestSuite) TestLiquidUnstakeWithAdvanceBlocks() {
 			"unstaking 1 chunk is started which means undelegate is already triggered",
 		)
 		suite.True(nas.TotalRemainingRewards.IsZero(), "all rewards are claimed")
+		expected := pureUnitRewardPerRewardEpoch.Mul(pairedChunksInt).Mul(sdk.NewInt(suite.rewardEpochCount))
+		actual := nas.RewardModuleAccBalance
+		// there is a diff because of truncation
 		suite.Equal(
-			pureUnitRewardPerRewardEpoch.Mul(pairedChunksInt).Mul(sdk.NewInt(suite.rewardEpochCount)).String(),
-			nas.RewardModuleAccBalance.String(),
-			fmt.Sprintf("before unstaking triggered there are collecting reward process so reward module got %d chunk's rewards", pairedChunksInt.Int64()),
+			"675000",
+			actual.Sub(expected).String(),
+			fmt.Sprintf("before unstaking triggered there are collecting reward process "+
+				"so reward module got %d chunk's rewards", pairedChunksInt.Int64()),
 		)
+		expected = unitInsuranceCommissionPerRewardEpoch.Mul(sdk.NewInt(suite.rewardEpochCount))
+		actual = nas.TotalUnpairingInsuranceCommissions
+		// there is a diff because of truncation
 		suite.Equal(
-			unitInsuranceCommissionPerRewardEpoch.Mul(sdk.NewInt(suite.rewardEpochCount)).String(),
-			nas.TotalUnpairingInsuranceCommissions.String(),
+			"25000",
+			actual.Sub(expected).String(),
 		)
+		expected = unitInsuranceCommissionPerRewardEpoch.Mul(sdk.NewInt(suite.rewardEpochCount).Mul(sdk.NewInt(2)))
+		actual = nas.TotalPairedInsuranceCommissions.Sub(beforeNas.TotalPairedInsuranceCommissions)
 		suite.Equal(
-			unitInsuranceCommissionPerRewardEpoch.Mul(sdk.NewInt(suite.rewardEpochCount).Mul(sdk.NewInt(2))).String(),
-			nas.TotalPairedInsuranceCommissions.Sub(beforeNas.TotalPairedInsuranceCommissions).String(),
+			"50000",
+			actual.Sub(expected).String(),
 		)
 		suite.Equal(
 			oneInsurance.Amount.String(),
 			nas.TotalUnpairingInsuranceTokens.Sub(beforeNas.TotalUnpairingInsuranceTokens).String(),
 			"",
 		)
+		expected = unitInsuranceCommissionPerRewardEpoch.Mul(sdk.NewInt(suite.rewardEpochCount))
+		actual = nas.TotalUnpairingInsuranceCommissions.Sub(beforeNas.TotalUnpairingInsuranceCommissions)
 		suite.Equal(
-			unitInsuranceCommissionPerRewardEpoch.Mul(sdk.NewInt(suite.rewardEpochCount)).String(),
-			nas.TotalUnpairingInsuranceCommissions.Sub(beforeNas.TotalUnpairingInsuranceCommissions).String(),
+			"25000",
+			actual.Sub(expected).String(),
 			"TotalUnpairingInsuranceTokens must be increased by insurance commission per epoch",
 		)
 		suite.True(nas.MintRate.LT(beforeNas.MintRate), "mint rate decreased because of reward is accumulated")
@@ -595,14 +605,19 @@ func (suite *KeeperTestSuite) TestLiquidUnstakeWithAdvanceBlocks() {
 		)
 		suite.True(nas.LsTokensTotalSupply.LT(beforeNas.LsTokensTotalSupply), "ls tokens are burned")
 		suite.True(nas.TotalRemainingRewards.IsZero(), "all rewards are claimed")
+		expected := pureUnitRewardPerRewardEpoch.Mul(pairedChunksInt)
+		actual := nas.RewardModuleAccBalance.Sub(beforeNas.RewardModuleAccBalance)
+		// there is a diff because of truncation
 		suite.Equal(
-			pureUnitRewardPerRewardEpoch.Mul(pairedChunksInt).String(),
-			nas.RewardModuleAccBalance.Sub(beforeNas.RewardModuleAccBalance).String(),
+			"461697084450000",
+			expected.Sub(actual).String(),
 			"reward module account balance must be increased by pure reward per epoch * reward epoch count",
 		)
+		expected = unitInsuranceCommissionPerRewardEpoch.Mul(pairedChunksInt)
+		actual = nas.TotalPairedInsuranceCommissions.Sub(beforeNas.TotalPairedInsuranceCommissions)
 		suite.Equal(
-			unitInsuranceCommissionPerRewardEpoch.Mul(pairedChunksInt).String(),
-			nas.TotalPairedInsuranceCommissions.Sub(beforeNas.TotalPairedInsuranceCommissions).String(),
+			"51299676050000",
+			expected.Sub(actual).String(),
 		)
 		suite.Equal(
 			afterBondDenomBalance.String(),

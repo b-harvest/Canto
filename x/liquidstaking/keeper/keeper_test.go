@@ -337,12 +337,8 @@ func (suite *KeeperTestSuite) advanceHeight(height int, msg string) {
 				fmt.Printf("\tbalance after: %s\n", suite.app.BankKeeper.GetAllBalances(suite.ctx, sdk.AccAddress(validator.GetOperator())).String())
 				fmt.Printf("\tcommission after: %s\n", suite.app.DistrKeeper.GetValidatorAccumulatedCommission(suite.ctx, validator.GetOperator()).Commission.String())
 				fmt.Printf("\tcurrent reward after: %s\n", suite.app.DistrKeeper.GetValidatorCurrentRewards(suite.ctx, validator.GetOperator()).Rewards.String())
-				cumulativeRatio := suite.app.DistrKeeper.GetValidatorCurrentRewards(suite.ctx, validator.GetOperator()).Rewards.QuoDec(validator.GetTokens().ToDec())
-				fmt.Printf("\tcumulative ratio after: %s\n", cumulativeRatio.String())
 				stake := validator.TokensFromSharesTruncated(types.ChunkSize.ToDec())
 				fmt.Printf("\tdelShares token value after: %s\n", stake.String())
-				finalRewards, _ := cumulativeRatio.MulDecTruncate(stake).TruncateDecimal() // finalRewards
-				fmt.Printf("\tcalculated del final rewards(stake x cumulativeRatio) and truncate deicmal: %s\n", finalRewards.String())
 				fmt.Printf("\tvalidator current rewards after: %s\n",
 					suite.app.DistrKeeper.GetValidatorCurrentRewards(suite.ctx, validator.GetOperator()).Rewards.QuoDec(
 						validator.GetTokens().ToDec(),
@@ -416,6 +412,7 @@ func (suite *KeeperTestSuite) setupLiquidStakeTestingEnv(env testingEnvOptions) 
 
 	bondDenom := suite.app.StakingKeeper.BondDenom(suite.ctx)
 	liquidBondDenom := suite.app.LiquidStakingKeeper.GetLiquidBondDenom(suite.ctx)
+	u := suite.app.LiquidStakingKeeper.CalcUtilizationRatio(suite.ctx)
 	fmt.Printf(`
 ===============================================================================
 Initial state of %s 
@@ -428,6 +425,9 @@ Initial state of %s
 - insurance fee ratesS: %s
 - bonded denom: %s
 - liquid bond denom: %s
+- funding account balance: %s
+- total supply: %s
+- utilization ratio: %s
 ===============================================================================
 `,
 		env.desc,
@@ -440,6 +440,9 @@ Initial state of %s
 		env.insuranceFeeRates,
 		bondDenom,
 		liquidBondDenom,
+		env.fundingAccountBalance,
+		suite.app.BankKeeper.GetSupply(suite.ctx, suite.denom).String(),
+		u.String(),
 	)
 	return testingEnv{
 		delegators,
