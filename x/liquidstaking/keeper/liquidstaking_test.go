@@ -627,7 +627,6 @@ func (suite *KeeperTestSuite) TestLiquidUnstakeWithAdvanceBlocks() {
 	}
 }
 
-// TODO: fix TC
 func (suite *KeeperTestSuite) TestQueueLiquidUnstakeFail() {
 	suite.resetEpochs()
 	valAddrs, _ := suite.CreateValidators(
@@ -635,10 +634,11 @@ func (suite *KeeperTestSuite) TestQueueLiquidUnstakeFail() {
 		tenPercentFeeRate,
 		nil,
 	)
+	suite.fundAccount(suite.ctx, fundingAccount, types.ChunkSize.MulRaw(500))
 	oneChunk, oneInsurance := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
-	providers, providerBalances := suite.AddTestAddrs(10, oneInsurance.Amount)
+	providers, providerBalances := suite.AddTestAddrsWithFunding(fundingAccount, 10, oneInsurance.Amount)
 	suite.provideInsurances(suite.ctx, providers, valAddrs, providerBalances, sdk.ZeroDec(), nil)
-	delegators, delegatorBalances := suite.AddTestAddrs(3, oneChunk.Amount)
+	delegators, delegatorBalances := suite.AddTestAddrsWithFunding(fundingAccount, 3, oneChunk.Amount)
 	undelegator := delegators[0]
 
 	for _, tc := range []struct {
