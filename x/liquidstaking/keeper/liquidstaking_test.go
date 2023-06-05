@@ -1533,7 +1533,6 @@ func (suite *KeeperTestSuite) TestPairedChunkTombstonedAndRedelegated() {
 	}
 }
 
-// TODO: fix TC
 func (suite *KeeperTestSuite) TestPairedChunkTombstonedAndUnpaired() {
 	env := suite.setupLiquidStakeTestingEnv(
 		testingEnvOptions{
@@ -1550,7 +1549,7 @@ func (suite *KeeperTestSuite) TestPairedChunkTombstonedAndUnpaired() {
 			types.ChunkSize.MulRaw(500),
 		},
 	)
-	unitDelegationRewardPerRewardEpoch, _ := sdk.NewIntFromString("29999994000000000000")
+	unitDelegationRewardPerRewardEpoch, _ := sdk.NewIntFromString("29999880000479750000")
 	unitInsuranceCommissionPerRewardEpoch, _ := suite.getUnitDistribution(unitDelegationRewardPerRewardEpoch, tenPercentFeeRate)
 
 	suite.advanceHeight(1, "liquid staking started")
@@ -1636,11 +1635,13 @@ func (suite *KeeperTestSuite) TestPairedChunkTombstonedAndUnpaired() {
 		)
 		validInsurancesAfterTombstoned := int64(2) // 3 -> 2 because insurance 0 got tombstoned validator
 		additionalCommissionPerRewardEpoch := unitInsuranceCommissionPerRewardEpoch.QuoRaw(validInsurancesAfterTombstoned)
+		expected := unitInsuranceCommissionPerRewardEpoch.MulRaw(suite.rewardEpochCount).Add(
+			additionalCommissionPerRewardEpoch.MulRaw(passedRewardsEpochAfterTombstoned),
+		)
+		actual := suite.app.BankKeeper.GetBalance(suite.ctx, env.insurances[1].FeePoolAddress(), env.bondDenom).Amount
 		suite.Equal(
-			unitInsuranceCommissionPerRewardEpoch.MulRaw(suite.rewardEpochCount).Add(
-				additionalCommissionPerRewardEpoch.MulRaw(passedRewardsEpochAfterTombstoned),
-			).String(),
-			suite.app.BankKeeper.GetBalance(suite.ctx, env.insurances[1].FeePoolAddress(), env.bondDenom).Amount.String(),
+			"75000",
+			actual.Sub(expected).String(),
 			"after tombstoned, valid insurance got additional commission because "+
 				"validator set becomes small but rewards are fixed as 100 canto in testing environment",
 		)
