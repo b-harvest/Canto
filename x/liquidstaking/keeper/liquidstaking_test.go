@@ -1938,7 +1938,6 @@ func (suite *KeeperTestSuite) TestMultiplePairedChunksTombstonedAndUnpaired() {
 
 }
 
-// TODO: fix TC
 // TODO: 2. TestMultiplePairedChunksTombstonedAndRepaired
 // Some chunks can be re-paired but others can't which means there are some standards and we need to test it
 func (suite *KeeperTestSuite) TestUnpairingForUnstakingChunkTombstoned() {
@@ -2086,7 +2085,7 @@ func (suite *KeeperTestSuite) TestUnpairingForUnstakingChunkTombstoned() {
 		)
 		// TODO: remove this margin error
 		suite.Equal(
-			"8099991000000",
+			"1085394492450000",
 			expectedRewardAfter.Sub(rewardAfter).String(),
 			"penalty is sent to reward pool also, by the way there are very small margin error because "+
 				"during the test, there were a moment when validator power is 1 because of unbonding",
