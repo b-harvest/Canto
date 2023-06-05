@@ -245,22 +245,6 @@ func (suite *KeeperTestSuite) CreateValidators(
 	return
 }
 
-// TODO: Remove this function and usages. Use AddTestAddrsWithFunding instead
-// Add test addresses with funds
-func (suite *KeeperTestSuite) AddTestAddrs(accNum int, amount sdk.Int) ([]sdk.AccAddress, []sdk.Coin) {
-	addrs := make([]sdk.AccAddress, 0, accNum)
-	balances := make([]sdk.Coin, 0, accNum)
-	for i := 0; i < accNum; i++ {
-		addr := sdk.AccAddress(ed25519.GenPrivKey().PubKey().Address())
-		addrs = append(addrs, addr)
-		balances = append(balances, sdk.NewCoin(suite.denom, amount))
-
-		// fund each account
-		suite.fundAccount(suite.ctx, addr, amount)
-	}
-	return addrs, balances
-}
-
 // Add test addresses with funds
 func (suite *KeeperTestSuite) AddTestAddrsWithFunding(fundingAccount sdk.AccAddress, accNum int, amount sdk.Int) ([]sdk.AccAddress, []sdk.Coin) {
 	addrs := make([]sdk.AccAddress, 0, accNum)

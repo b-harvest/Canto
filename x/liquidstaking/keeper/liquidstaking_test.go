@@ -127,8 +127,9 @@ func (suite *KeeperTestSuite) TestProvideInsurance() {
 		tenPercentFeeRate,
 		nil,
 	)
+	suite.fundAccount(suite.ctx, fundingAccount, types.ChunkSize.MulRaw(500))
 	_, oneInsurance := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
-	providers, _ := suite.AddTestAddrs(10, oneInsurance.Amount)
+	providers, _ := suite.AddTestAddrsWithFunding(fundingAccount, 10, oneInsurance.Amount)
 
 	for _, tc := range []struct {
 		name        string
@@ -185,11 +186,12 @@ func (suite *KeeperTestSuite) TestLiquidStakeSuccess() {
 		tenPercentFeeRate,
 		nil,
 	)
+	suite.fundAccount(suite.ctx, fundingAccount, types.ChunkSize.MulRaw(500))
 	oneChunk, oneInsurance := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
-	providers, balances := suite.AddTestAddrs(10, oneInsurance.Amount)
+	providers, balances := suite.AddTestAddrsWithFunding(fundingAccount, 10, oneInsurance.Amount)
 	suite.provideInsurances(suite.ctx, providers, valAddrs, balances, sdk.ZeroDec(), nil)
 
-	delegators, balances := suite.AddTestAddrs(10, oneChunk.Amount)
+	delegators, balances := suite.AddTestAddrsWithFunding(fundingAccount, 10, oneChunk.Amount)
 	nas := suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
 
 	liquidBondDenom := suite.app.LiquidStakingKeeper.GetLiquidBondDenom(suite.ctx)
@@ -299,7 +301,7 @@ func (suite *KeeperTestSuite) TestLiquidStakeFail() {
 	suite.liquidStakes(suite.ctx, []sdk.AccAddress{acc1}, []sdk.Coin{oneChunk})
 
 	// TC: MaxPairedChunks is reached, no more chunks can be paired
-	newAddrs, newBalances := suite.AddTestAddrs(1, oneChunk.Amount)
+	newAddrs, newBalances := suite.AddTestAddrsWithFunding(fundingAccount, 1, oneChunk.Amount)
 	msg = types.NewMsgLiquidStake(newAddrs[0].String(), newBalances[0])
 	_, _, _, err = suite.app.LiquidStakingKeeper.DoLiquidStake(suite.ctx, msg)
 	suite.ErrorIs(err, types.ErrExceedAvailableChunks)
@@ -720,8 +722,9 @@ func (suite *KeeperTestSuite) TestCancelProvideInsuranceSuccess() {
 		tenPercentFeeRate,
 		nil,
 	)
+	suite.fundAccount(suite.ctx, fundingAccount, types.ChunkSize.MulRaw(500))
 	_, minimumCoverage := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
-	providers, balances := suite.AddTestAddrs(10, minimumCoverage.Amount)
+	providers, balances := suite.AddTestAddrsWithFunding(fundingAccount, 10, minimumCoverage.Amount)
 	insurances := suite.provideInsurances(suite.ctx, providers, valAddrs, balances, sdk.ZeroDec(), nil)
 
 	provider := providers[0]
@@ -859,8 +862,9 @@ func (suite *KeeperTestSuite) TestDoWithdrawInsuranceFail() {
 		tenPercentFeeRate,
 		nil,
 	)
+	suite.fundAccount(suite.ctx, fundingAccount, types.ChunkSize.MulRaw(500))
 	_, oneInsurance := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
-	providers, providerBalances := suite.AddTestAddrs(3, oneInsurance.Amount.Add(sdk.NewInt(100)))
+	providers, providerBalances := suite.AddTestAddrsWithFunding(fundingAccount, 3, oneInsurance.Amount.Add(sdk.NewInt(100)))
 	insurances := suite.provideInsurances(suite.ctx, providers, valAddrs, providerBalances, sdk.NewDecWithPrec(10, 2), nil)
 
 	tcs := []struct {
@@ -972,8 +976,9 @@ func (suite *KeeperTestSuite) TestDoWithdrawInsuranceCommissionFail() {
 		tenPercentFeeRate,
 		nil,
 	)
+	suite.fundAccount(suite.ctx, fundingAccount, types.ChunkSize.MulRaw(500))
 	_, oneInsurance := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
-	providers, providerBalances := suite.AddTestAddrs(3, oneInsurance.Amount.Add(sdk.NewInt(100)))
+	providers, providerBalances := suite.AddTestAddrsWithFunding(fundingAccount, 3, oneInsurance.Amount.Add(sdk.NewInt(100)))
 	insurances := suite.provideInsurances(
 		suite.ctx,
 		providers,
@@ -1021,8 +1026,9 @@ func (suite *KeeperTestSuite) TestDoDepositInsurance() {
 		tenPercentFeeRate,
 		nil,
 	)
+	suite.fundAccount(suite.ctx, fundingAccount, types.ChunkSize.MulRaw(500))
 	_, oneInsurance := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
-	providers, _ := suite.AddTestAddrs(3, oneInsurance.Amount.Add(sdk.NewInt(100)))
+	providers, _ := suite.AddTestAddrsWithFunding(fundingAccount, 3, oneInsurance.Amount.Add(sdk.NewInt(100)))
 	insurances := suite.provideInsurances(
 		suite.ctx,
 		providers,
@@ -1049,8 +1055,9 @@ func (suite *KeeperTestSuite) TestDoDepositInsuranceFail() {
 		tenPercentFeeRate,
 		nil,
 	)
+	suite.fundAccount(suite.ctx, fundingAccount, types.ChunkSize.MulRaw(500))
 	_, oneInsurance := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
-	providers, providerBalances := suite.AddTestAddrs(3, oneInsurance.Amount.Add(sdk.NewInt(100)))
+	providers, providerBalances := suite.AddTestAddrsWithFunding(fundingAccount, 3, oneInsurance.Amount.Add(sdk.NewInt(100)))
 	insurances := suite.provideInsurances(
 		suite.ctx,
 		providers,
@@ -1134,7 +1141,7 @@ func (suite *KeeperTestSuite) TestRankInsurances() {
 	suite.advanceHeight(1, "")
 
 	// Cheap insurances which are competitive than current paired insurances are provided
-	otherProviders, otherProviderBalances := suite.AddTestAddrs(3, oneInsurance.Amount)
+	otherProviders, otherProviderBalances := suite.AddTestAddrsWithFunding(fundingAccount, 3, oneInsurance.Amount)
 	newInsurances := suite.provideInsurances(
 		suite.ctx,
 		otherProviders,
@@ -1239,7 +1246,7 @@ func (suite *KeeperTestSuite) TestEndBlocker() {
 		tenPercentFeeRate,
 		nil,
 	)
-	newProviders, newProviderBalances := suite.AddTestAddrs(3, oneInsurance.Amount)
+	newProviders, newProviderBalances := suite.AddTestAddrsWithFunding(fundingAccount, 3, oneInsurance.Amount)
 	newInsurances := suite.provideInsurances(
 		suite.ctx,
 		newProviders,
@@ -1297,7 +1304,7 @@ func (suite *KeeperTestSuite) TestEndBlocker() {
 	suite.advanceHeight(1, "")
 
 	pairedInsurances := newInsurances
-	newProviders, newProviderBalances = suite.AddTestAddrs(3, oneInsurance.Amount)
+	newProviders, newProviderBalances = suite.AddTestAddrsWithFunding(fundingAccount, 3, oneInsurance.Amount)
 	newInsurances = suite.provideInsurances(
 		suite.ctx,
 		newProviders,
@@ -2175,9 +2182,9 @@ func (suite *KeeperTestSuite) TestCumulativePenaltyByMultipleDownTimeSlashingAnd
 
 			// Let's create 2 chunk and 2 insurance
 			oneChunk, oneInsurance := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
-			providers, providerBalances := suite.AddTestAddrs(2, oneInsurance.Amount)
+			providers, providerBalances := suite.AddTestAddrsWithFunding(fundingAccount, 2, oneInsurance.Amount)
 			suite.provideInsurances(suite.ctx, providers, valAddrs, providerBalances, tenPercentFeeRate, nil)
-			delegators, delegatorBalances := suite.AddTestAddrs(2, oneChunk.Amount)
+			delegators, delegatorBalances := suite.AddTestAddrsWithFunding(fundingAccount, 2, oneChunk.Amount)
 			pairedChunks := suite.liquidStakes(suite.ctx, delegators, delegatorBalances)
 			suite.ctx = suite.ctx.WithBlockHeight(suite.ctx.BlockHeight() + 1)
 			staking.EndBlocker(suite.ctx, suite.app.StakingKeeper)
@@ -2264,6 +2271,10 @@ func (suite *KeeperTestSuite) TestCumulativePenaltyByMultipleDownTimeSlashingAnd
 			)
 		})
 	}
+}
+
+func (suite *KeeperTestSuite) TestDynamicFee() {
+
 }
 
 func (suite *KeeperTestSuite) downTimeSlashing(
