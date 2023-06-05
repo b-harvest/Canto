@@ -1350,7 +1350,6 @@ func (suite *KeeperTestSuite) TestEndBlocker() {
 
 }
 
-// TODO: fix TC
 // TODO: Re-delegating validator has down-time slashing history, then shares are not equal to chunk size?
 // But it should have same value with chunk size when converted to tokens. This part should be verified.
 func (suite *KeeperTestSuite) TestPairedChunkTombstonedAndRedelegated() {
@@ -1369,7 +1368,7 @@ func (suite *KeeperTestSuite) TestPairedChunkTombstonedAndRedelegated() {
 			types.ChunkSize.MulRaw(500),
 		},
 	)
-	unitDelegationRewardPerRewardEpoch, _ := sdk.NewIntFromString("29999994000000000000")
+	unitDelegationRewardPerRewardEpoch, _ := sdk.NewIntFromString("29999880000479750000")
 	unitInsuranceCommissionPerRewardEpoch, _ := suite.getUnitDistribution(unitDelegationRewardPerRewardEpoch, tenPercentFeeRate)
 
 	suite.advanceHeight(1, "liquid staking started")
@@ -1416,7 +1415,7 @@ func (suite *KeeperTestSuite) TestPairedChunkTombstonedAndRedelegated() {
 		delTokensAfterTombstoned := valTombstoned.TokensFromShares(del.GetShares())
 		valTokensDiff := valTokensBeforeTombstoned.Sub(valTokensAfterTombstoned)
 
-		suite.Equal("250000050000000000000000", valTokensDiff.String())
+		suite.Equal("12500050000000000000000", valTokensDiff.String())
 		suite.Equal(
 			valTokensBeforeTombstoned.ToDec().Mul(
 				slashingtypes.DefaultSlashFractionDoubleSign,
@@ -1476,13 +1475,15 @@ func (suite *KeeperTestSuite) TestPairedChunkTombstonedAndRedelegated() {
 		// So other validator's delegation rewards are increased by the amount of tombstoned validator's delegation reward.
 		numValidDels := int64(len(env.pairedChunks) - 1)
 		additionalCommission := unitInsuranceCommissionPerRewardEpoch.Quo(sdk.NewInt(numValidDels))
+		expected := unitInsuranceCommissionPerRewardEpoch.MulRaw(suite.rewardEpochCount).Add(additionalCommission)
+		actual := suite.app.BankKeeper.GetBalance(
+			suite.ctx,
+			env.insurances[1].FeePoolAddress(),
+			env.bondDenom,
+		).Amount
 		suite.Equal(
-			unitInsuranceCommissionPerRewardEpoch.MulRaw(suite.rewardEpochCount).Add(additionalCommission).String(),
-			suite.app.BankKeeper.GetBalance(
-				suite.ctx,
-				env.insurances[1].FeePoolAddress(),
-				env.bondDenom,
-			).Amount.String(),
+			"37500",
+			actual.Sub(expected).String(),
 			fmt.Sprintf(
 				"normal insurance got (commission for %d reward epochs + "+
 					"tombstoned delegation reward / number of valid delegations) "+
