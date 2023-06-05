@@ -2274,7 +2274,89 @@ func (suite *KeeperTestSuite) TestCumulativePenaltyByMultipleDownTimeSlashingAnd
 }
 
 func (suite *KeeperTestSuite) TestDynamicFee() {
+	fixedInsuranceFeeRate := tenPercentFeeRate
+	tcs := []struct {
+		name                     string
+		numVals                  int
+		numPairedChunks          int
+		numInsurances            int
+		fundingAccountBalance    sdk.Int
+		unitDelegationReward     string
+		u                        sdk.Dec
+		dynamicFeeRate           sdk.Dec
+		uAfterEpoch              sdk.Dec
+		dynamicFeeRateAfterEpoch sdk.Dec
+	}{
+		{
+			"almost max fee rate",
+			3,
+			3,
+			10,
+			types.ChunkSize.MulRaw(30),
+			"29999880000479750000",
+			sdk.MustNewDecFromStr("0.099999960000016000"),
+			sdk.MustNewDecFromStr("0.499998400000640000"),
+			sdk.MustNewDecFromStr("0.099998626685526852"),
+			sdk.MustNewDecFromStr("0.499945067421074080"),
+		},
+		{
+			"",
+			3,
+			2,
+			10,
+			types.ChunkSize.MulRaw(30),
+			"44999730001619750000",
+			sdk.MustNewDecFromStr("0.066666640000010667"),
+			sdk.MustNewDecFromStr("0.041666600000026668"),
+			sdk.MustNewDecFromStr("0.066665751123684568"),
+			sdk.MustNewDecFromStr("0.041664377809211420"),
+		},
+	}
 
+	for _, tc := range tcs {
+		suite.Run(tc.name, func() {
+			suite.SetupTest()
+			env := suite.setupLiquidStakeTestingEnv(
+				testingEnvOptions{
+					tc.name,
+					tc.numVals,
+					tenPercentFeeRate,
+					nil,
+					onePower,
+					nil,
+					tc.numInsurances,
+					fixedInsuranceFeeRate,
+					nil,
+					tc.numPairedChunks,
+					tc.fundingAccountBalance,
+				},
+			)
+			{
+				// Check current state before reaching epoch
+				suite.Equal(
+					tc.u.String(),
+					suite.app.LiquidStakingKeeper.CalcUtilizationRatio(suite.ctx).String(),
+				)
+				suite.Equal(
+					tc.dynamicFeeRate.String(),
+					suite.app.LiquidStakingKeeper.CalcDynamicFeeRate(suite.ctx).String(),
+				)
+			}
+			beforeNas := suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
+			unitDelegationRewardPerRewardEpoch, _ := sdk.NewIntFromString(tc.unitDelegationReward)
+			_, pureUnitRewardPerRewardEpoch := suite.getUnitDistribution(unitDelegationRewardPerRewardEpoch, tenPercentFeeRate)
+			suite.advanceEpoch()
+			suite.advanceHeight(1, "got rewards and dynamic fee is charged")
+			nas := suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
+			numPairedChunks := int64(len(env.pairedChunks))
+			expectedFee := pureUnitRewardPerRewardEpoch.ToDec().Mul(tc.dynamicFeeRateAfterEpoch).Ceil().TruncateInt()
+			suite.Equal(
+				pureUnitRewardPerRewardEpoch.Sub(expectedFee).MulRaw(numPairedChunks).String(),
+				nas.RewardModuleAccBalance.Sub(beforeNas.RewardModuleAccBalance).String(),
+				"(pureUnitReward - expectedFee) is added to reward module account",
+			)
+		})
+	}
 }
 
 func (suite *KeeperTestSuite) downTimeSlashing(

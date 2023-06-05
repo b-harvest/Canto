@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"fmt"
-
 	"github.com/Canto-Network/Canto/v6/x/liquidstaking/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -15,13 +14,17 @@ import (
 // 1. Send commission to insurance based on chunk reward.
 // 2. Deduct dynamic fee from remaining and burn it.
 // 3. Send rest of rewards to reward module account.
-func (k Keeper) CollectRewardAndFee(ctx sdk.Context, chunk types.Chunk, insurance types.Insurance) {
+func (k Keeper) CollectRewardAndFee(
+	ctx sdk.Context,
+	dynamicFeeRate sdk.Dec,
+	chunk types.Chunk,
+	insurance types.Insurance,
+) {
 	delegationRewards := k.bankKeeper.GetAllBalances(ctx, chunk.DerivedAddress())
 	insuranceCommissions := make(sdk.Coins, delegationRewards.Len())
 	dynamicFees := make(sdk.Coins, delegationRewards.Len())
 	remainingRewards := make(sdk.Coins, delegationRewards.Len())
 
-	feeRate := k.CalcDynamicFeeRate(ctx)
 	for i, delReward := range delegationRewards {
 		if delReward.IsZero() {
 			continue
@@ -32,7 +35,7 @@ func (k Keeper) CollectRewardAndFee(ctx sdk.Context, chunk types.Chunk, insuranc
 			insuranceCommission,
 		)
 		pureReward := delReward.Amount.Sub(insuranceCommission)
-		dynamicFee := pureReward.ToDec().Mul(feeRate).Ceil().TruncateInt()
+		dynamicFee := pureReward.ToDec().Mul(dynamicFeeRate).Ceil().TruncateInt()
 		remainingReward := pureReward.Sub(dynamicFee)
 		dynamicFees[i] = sdk.NewCoin(
 			delReward.Denom,
@@ -82,6 +85,7 @@ func (k Keeper) CollectRewardAndFee(ctx sdk.Context, chunk types.Chunk, insuranc
 // DistributeReward withdraws delegation rewards from all paired chunks
 // Keeper.CollectRewardAndFee will be called during withdrawing process.
 func (k Keeper) DistributeReward(ctx sdk.Context) {
+	feeRate := k.CalcDynamicFeeRate(ctx)
 	err := k.IterateAllChunks(ctx, func(chunk types.Chunk) (bool, error) {
 		var insurance types.Insurance
 		var found bool
@@ -109,7 +113,7 @@ func (k Keeper) DistributeReward(ctx sdk.Context) {
 		fmt.Printf("Chunk %d Balance After Withdraw Delegation Rewards\n", chunk.Id)
 		fmt.Println(k.bankKeeper.GetBalance(ctx, chunk.DerivedAddress(), "acanto").String())
 
-		k.CollectRewardAndFee(ctx, chunk, insurance)
+		k.CollectRewardAndFee(ctx, feeRate, chunk, insurance)
 		return false, nil
 	})
 	if err != nil {
