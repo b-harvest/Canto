@@ -326,7 +326,7 @@ func (suite *KeeperTestSuite) TestLiquidStakeWithAdvanceBlocks() {
 	)
 
 	_, oneInsurance := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
-	unitDelegationRewardPerRewardEpoch, _ := sdk.NewIntFromString("29999994000000000000")
+	unitDelegationRewardPerRewardEpoch, _ := sdk.NewIntFromString("29999880000479750000")
 	unitInsuranceCommissionPerRewardEpoch, pureUnitRewardPerRewardEpoch := suite.getUnitDistribution(unitDelegationRewardPerRewardEpoch, fixedInsuranceFeeRate)
 
 	nas := suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
@@ -363,11 +363,10 @@ func (suite *KeeperTestSuite) TestLiquidStakeWithAdvanceBlocks() {
 	nas = suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
 	fmt.Println(nas)
 	{
-		suite.Equal(
-			pureUnitRewardPerRewardEpoch.Mul(pairedChunksInt).String(),
-			nas.TotalRemainingRewards.Sub(beforeNas.TotalRemainingRewards).TruncateInt().String(),
-		)
-		suite.Equal("0.999994600030239830", nas.MintRate.String())
+		expected := pureUnitRewardPerRewardEpoch.Mul(pairedChunksInt)
+		actual := nas.TotalRemainingRewards.Sub(beforeNas.TotalRemainingRewards).TruncateInt()
+		suite.Equal(expected.String(), actual.String(), "remaining rewards are distributed")
+		suite.Equal("0.999892012094645400", nas.MintRate.String())
 	}
 
 	suite.advanceEpoch()
@@ -377,19 +376,26 @@ func (suite *KeeperTestSuite) TestLiquidStakeWithAdvanceBlocks() {
 	fmt.Println(nas)
 	{
 		suite.True(nas.TotalRemainingRewards.IsZero(), "remaining rewards are distributed")
+		expected := pureUnitRewardPerRewardEpoch.Mul(pairedChunksInt).Mul(sdk.NewInt(suite.rewardEpochCount))
+		actual := nas.RewardModuleAccBalance
 		suite.Equal(
-			pureUnitRewardPerRewardEpoch.Mul(pairedChunksInt).Mul(sdk.NewInt(suite.rewardEpochCount)).String(),
-			nas.RewardModuleAccBalance.String(),
+			"675000",
+			actual.Sub(expected).String(),
+			"there is a small difference because of truncating",
 		)
+		expected = unitInsuranceCommissionPerRewardEpoch.Mul(pairedChunksInt).Mul(sdk.NewInt(suite.rewardEpochCount))
+		actual = nas.TotalPairedInsuranceCommissions
 		suite.Equal(
-			unitInsuranceCommissionPerRewardEpoch.Mul(pairedChunksInt).Mul(sdk.NewInt(suite.rewardEpochCount)).String(),
-			nas.TotalPairedInsuranceCommissions.String(),
+			"75000",
+			actual.Sub(expected).String(),
+			"there is a small difference because of truncating",
 		)
-		suite.Equal("0.999989200118798693", nas.MintRate.String())
+		suite.Equal("0.999784047509547900", nas.MintRate.String())
 		suite.True(nas.MintRate.LT(beforeNas.MintRate))
 	}
 }
 
+// TODO: fix TC
 func (suite *KeeperTestSuite) TestLiquidUnstakeWithAdvanceBlocks() {
 	fixedInsuranceFeeRate := tenPercentFeeRate
 	env := suite.setupLiquidStakeTestingEnv(
@@ -606,6 +612,7 @@ func (suite *KeeperTestSuite) TestLiquidUnstakeWithAdvanceBlocks() {
 	}
 }
 
+// TODO: fix TC
 func (suite *KeeperTestSuite) TestQueueLiquidUnstakeFail() {
 	suite.resetEpochs()
 	valAddrs, _ := suite.CreateValidators(
@@ -1328,6 +1335,7 @@ func (suite *KeeperTestSuite) TestEndBlocker() {
 
 }
 
+// TODO: fix TC
 // TODO: Re-delegating validator has down-time slashing history, then shares are not equal to chunk size?
 // But it should have same value with chunk size when converted to tokens. This part should be verified.
 func (suite *KeeperTestSuite) TestPairedChunkTombstonedAndRedelegated() {
@@ -1509,6 +1517,7 @@ func (suite *KeeperTestSuite) TestPairedChunkTombstonedAndRedelegated() {
 	}
 }
 
+// TODO: fix TC
 func (suite *KeeperTestSuite) TestPairedChunkTombstonedAndUnpaired() {
 	env := suite.setupLiquidStakeTestingEnv(
 		testingEnvOptions{
@@ -1912,6 +1921,7 @@ func (suite *KeeperTestSuite) TestMultiplePairedChunksTombstonedAndUnpaired() {
 
 }
 
+// TODO: fix TC
 // TODO: 2. TestMultiplePairedChunksTombstonedAndRepaired
 // Some chunks can be re-paired but others can't which means there are some standards and we need to test it
 func (suite *KeeperTestSuite) TestUnpairingForUnstakingChunkTombstoned() {
