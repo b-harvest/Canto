@@ -2221,42 +2221,6 @@ paths:
           format: uint64
       tags:
         - Query
-  /canto/liquidstaking/v1/max_paired_chunks:
-    get:
-      operationId: MaxPairedChunks
-      responses:
-        '200':
-          description: A successful response.
-          schema:
-            type: object
-            properties:
-              max_paired_chunks:
-                type: string
-                format: uint64
-        default:
-          description: An unexpected error response.
-          schema:
-            type: object
-            properties:
-              error:
-                type: string
-              code:
-                type: integer
-                format: int32
-              message:
-                type: string
-              details:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    type_url:
-                      type: string
-                    value:
-                      type: string
-                      format: byte
-      tags:
-        - Query
   /canto/liquidstaking/v1/params:
     get:
       summary: Params retrieves the total set of minting parameters.
@@ -2270,6 +2234,50 @@ paths:
               params:
                 description: params defines the parameters of the module.
                 type: object
+                properties:
+                  dynamic_fee_rate:
+                    type: object
+                    properties:
+                      r0:
+                        type: string
+                        title: minimum fee rate
+                      u_soft_cap:
+                        type: string
+                        description: >-
+                          Softcap for utilization ratio. If the utilization
+                          ratio is below this
+
+                          value, fee rate is R0.
+                      u_hard_cap:
+                        type: string
+                        description: >-
+                          Hardcap for utilization ratio. If the utilization
+                          ratio cannot bigger than
+
+                          this value.
+                      u_optimal:
+                        type: string
+                        description: Optimal utilization ratio.
+                      slope1:
+                        type: string
+                        description: >-
+                          If the current utilization ratio is between softcap
+                          and optimal, fee rate
+
+                          increases at a slow pace.
+                      slope2:
+                        type: string
+                        description: >-
+                          If the current utilization ratio is above optimal, fee
+                          rate increases at a
+
+                          faster pace.
+                      max_fee_rate:
+                        type: string
+                        description: Maximum fee rate.
+                    description: >-
+                      DynamicFeeRate defines parameters realated with dynamic
+                      fee rate mechanism.
             description: >-
               QueryParamsResponse is the response type for the Query/Params RPC
               method.
@@ -2341,6 +2349,9 @@ paths:
                     title: >-
                       The cumulative reward of all chunks delegations from the
                       last distribution
+                  total_remaining_insurance_commissions:
+                    type: string
+                    title: The cumulative commissions of all insurances
                   total_chunks_balance:
                     type: string
                     description: >-
@@ -36289,6 +36300,47 @@ definitions:
       Once the unbonding period is over in next epoch, the staked tokens are
       returned to the delegator's account and the associated chunk object is
       removed.
+  canto.liquidstaking.v1.DynamicFeeRate:
+    type: object
+    properties:
+      r0:
+        type: string
+        title: minimum fee rate
+      u_soft_cap:
+        type: string
+        description: |-
+          Softcap for utilization ratio. If the utilization ratio is below this
+          value, fee rate is R0.
+      u_hard_cap:
+        type: string
+        description: >-
+          Hardcap for utilization ratio. If the utilization ratio cannot bigger
+          than
+
+          this value.
+      u_optimal:
+        type: string
+        description: Optimal utilization ratio.
+      slope1:
+        type: string
+        description: >-
+          If the current utilization ratio is between softcap and optimal, fee
+          rate
+
+          increases at a slow pace.
+      slope2:
+        type: string
+        description: >-
+          If the current utilization ratio is above optimal, fee rate increases
+          at a
+
+          faster pace.
+      max_fee_rate:
+        type: string
+        description: Maximum fee rate.
+    description: >-
+      DynamicFeeRate defines parameters realated with dynamic fee rate
+      mechanism.
   canto.liquidstaking.v1.Epoch:
     type: object
     properties:
@@ -36452,6 +36504,9 @@ definitions:
         title: >-
           The cumulative reward of all chunks delegations from the last
           distribution
+      total_remaining_insurance_commissions:
+        type: string
+        title: The cumulative commissions of all insurances
       total_chunks_balance:
         type: string
         description: >-
@@ -36520,6 +36575,50 @@ definitions:
       calculation and query and is not stored in kv.
   canto.liquidstaking.v1.Params:
     type: object
+    properties:
+      dynamic_fee_rate:
+        type: object
+        properties:
+          r0:
+            type: string
+            title: minimum fee rate
+          u_soft_cap:
+            type: string
+            description: >-
+              Softcap for utilization ratio. If the utilization ratio is below
+              this
+
+              value, fee rate is R0.
+          u_hard_cap:
+            type: string
+            description: >-
+              Hardcap for utilization ratio. If the utilization ratio cannot
+              bigger than
+
+              this value.
+          u_optimal:
+            type: string
+            description: Optimal utilization ratio.
+          slope1:
+            type: string
+            description: >-
+              If the current utilization ratio is between softcap and optimal,
+              fee rate
+
+              increases at a slow pace.
+          slope2:
+            type: string
+            description: >-
+              If the current utilization ratio is above optimal, fee rate
+              increases at a
+
+              faster pace.
+          max_fee_rate:
+            type: string
+            description: Maximum fee rate.
+        description: >-
+          DynamicFeeRate defines parameters realated with dynamic fee rate
+          mechanism.
     description: Params defines the parameters for the module.
   canto.liquidstaking.v1.QueryChunkResponse:
     type: object
@@ -37362,18 +37461,56 @@ definitions:
                    repeated Bar results = 1;
                    PageResponse page = 2;
            }
-  canto.liquidstaking.v1.QueryMaxPairedChunksResponse:
-    type: object
-    properties:
-      max_paired_chunks:
-        type: string
-        format: uint64
   canto.liquidstaking.v1.QueryParamsResponse:
     type: object
     properties:
       params:
         description: params defines the parameters of the module.
         type: object
+        properties:
+          dynamic_fee_rate:
+            type: object
+            properties:
+              r0:
+                type: string
+                title: minimum fee rate
+              u_soft_cap:
+                type: string
+                description: >-
+                  Softcap for utilization ratio. If the utilization ratio is
+                  below this
+
+                  value, fee rate is R0.
+              u_hard_cap:
+                type: string
+                description: >-
+                  Hardcap for utilization ratio. If the utilization ratio cannot
+                  bigger than
+
+                  this value.
+              u_optimal:
+                type: string
+                description: Optimal utilization ratio.
+              slope1:
+                type: string
+                description: >-
+                  If the current utilization ratio is between softcap and
+                  optimal, fee rate
+
+                  increases at a slow pace.
+              slope2:
+                type: string
+                description: >-
+                  If the current utilization ratio is above optimal, fee rate
+                  increases at a
+
+                  faster pace.
+              max_fee_rate:
+                type: string
+                description: Maximum fee rate.
+            description: >-
+              DynamicFeeRate defines parameters realated with dynamic fee rate
+              mechanism.
     description: QueryParamsResponse is the response type for the Query/Params RPC method.
   canto.liquidstaking.v1.QueryStatesResponse:
     type: object
@@ -37411,6 +37548,9 @@ definitions:
             title: >-
               The cumulative reward of all chunks delegations from the last
               distribution
+          total_remaining_insurance_commissions:
+            type: string
+            title: The cumulative commissions of all insurances
           total_chunks_balance:
             type: string
             description: >-

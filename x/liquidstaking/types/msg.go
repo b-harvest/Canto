@@ -196,8 +196,8 @@ func (msg MsgWithdrawInsurance) GetSignBytes() []byte {
 	return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(&msg))
 }
 func (msg MsgWithdrawInsurance) GetSigners() []sdk.AccAddress {
-	funder := sdk.MustAccAddressFromBech32(msg.ProviderAddress)
-	return []sdk.AccAddress{funder}
+	provider := sdk.MustAccAddressFromBech32(msg.ProviderAddress)
+	return []sdk.AccAddress{provider}
 }
 
 func (msg MsgWithdrawInsurance) GetProvider() sdk.AccAddress {
@@ -223,11 +223,39 @@ func (msg MsgWithdrawInsuranceCommission) GetSignBytes() []byte {
 	return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(&msg))
 }
 func (msg MsgWithdrawInsuranceCommission) GetSigners() []sdk.AccAddress {
-	funder := sdk.MustAccAddressFromBech32(msg.ProviderAddress)
-	return []sdk.AccAddress{funder}
+	provider := sdk.MustAccAddressFromBech32(msg.ProviderAddress)
+	return []sdk.AccAddress{provider}
 }
 
 func (msg MsgWithdrawInsuranceCommission) GetProvider() sdk.AccAddress {
 	addr := sdk.MustAccAddressFromBech32(msg.ProviderAddress)
+	return addr
+}
+
+func NewMsgClaimDiscountedReward(requesterAddress string, amount sdk.Coin, minimumDiscountRate sdk.Dec) *MsgClaimDiscountedReward {
+	return &MsgClaimDiscountedReward{
+		RequesterAddress:    requesterAddress,
+		Amount:              amount,
+		MinimumDiscountRate: minimumDiscountRate,
+	}
+}
+func (msg MsgClaimDiscountedReward) Route() string { return RouterKey }
+func (msg MsgClaimDiscountedReward) Type() string  { return TypeMsgWithdrawInsurance }
+func (msg MsgClaimDiscountedReward) ValidateBasic() error {
+	if _, err := sdk.AccAddressFromBech32(msg.RequesterAddress); err != nil {
+		return sdkerrors.Wrapf(err, "invalid requester address %s", msg.RequesterAddress)
+	}
+	return nil
+}
+func (msg MsgClaimDiscountedReward) GetSignBytes() []byte {
+	return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(&msg))
+}
+func (msg MsgClaimDiscountedReward) GetSigners() []sdk.AccAddress {
+	requester := sdk.MustAccAddressFromBech32(msg.RequesterAddress)
+	return []sdk.AccAddress{requester}
+}
+
+func (msg MsgClaimDiscountedReward) GetRequestser() sdk.AccAddress {
+	addr := sdk.MustAccAddressFromBech32(msg.RequesterAddress)
 	return addr
 }

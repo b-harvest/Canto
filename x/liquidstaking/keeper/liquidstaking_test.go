@@ -2359,6 +2359,69 @@ func (suite *KeeperTestSuite) TestDynamicFee() {
 	}
 }
 
+func (suite *KeeperTestSuite) TestDoClaimDiscountedRewardFail() {
+	env := suite.setupLiquidStakeTestingEnv(
+		testingEnvOptions{
+			"TestDoCancelProvideInsuranceFail",
+			3,
+			tenPercentFeeRate,
+			nil,
+			onePower,
+			nil,
+			3,
+			tenPercentFeeRate,
+			nil,
+			1,
+			types.ChunkSize.MulRaw(500),
+		},
+	)
+	suite.advanceHeight(100, "pass 100 reward epoch")
+	suite.advanceEpoch() // reward is accumulated to reward pool
+	suite.advanceHeight(1, "liquid staking endblocker is triggered")
+
+	tcs := []struct {
+		name        string
+		msg         *types.MsgClaimDiscountedReward
+		expectedErr error
+	}{
+		{
+			name: "invalid denom",
+			msg: types.NewMsgClaimDiscountedReward(
+				env.delegators[0].String(),
+				sdk.NewCoin("invalidDenom", sdk.NewInt(100)),
+				sdk.MustNewDecFromStr("0.00001"),
+			),
+			expectedErr: types.ErrInvalidLiquidBondDenom,
+		},
+		{
+			name: "mint rate is lower than min mint rate",
+			msg: types.NewMsgClaimDiscountedReward(
+				env.delegators[0].String(),
+				sdk.NewCoin(types.DefaultLiquidBondDenom, sdk.NewInt(100)),
+				sdk.MustNewDecFromStr("0.5"),
+			),
+			expectedErr: types.ErrDiscountRateTooLow,
+		},
+		{
+			name: "requester does not have msg.Amount",
+			msg: types.NewMsgClaimDiscountedReward(
+				env.delegators[0].String(),
+				sdk.NewCoin(types.DefaultLiquidBondDenom, sdk.TokensFromConsensusPower(100_000_000, ethermint.PowerReduction)),
+				sdk.MustNewDecFromStr("0.00000001"),
+			),
+			expectedErr: sdkerrors.ErrInsufficientFunds,
+		},
+	}
+
+	for _, tc := range tcs {
+		suite.Run(tc.name, func() {
+			err := suite.app.LiquidStakingKeeper.DoClaimDiscountedReward(suite.ctx, tc.msg)
+			suite.ErrorContains(err, tc.expectedErr.Error())
+		})
+	}
+
+}
+
 func (suite *KeeperTestSuite) downTimeSlashing(
 	ctx sdk.Context, downValPubKey cryptotypes.PubKey, power int64, called int, blockTime time.Duration,
 ) (penalty sdk.Int) {

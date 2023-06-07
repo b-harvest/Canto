@@ -847,6 +847,71 @@ func (k Keeper) DoDepositInsurance(ctx sdk.Context, msg *types.MsgDepositInsuran
 	return
 }
 
+// DoClaimDiscountedReward claims discounted reward by paying lstoken.
+func (k Keeper) DoClaimDiscountedReward(ctx sdk.Context, msg *types.MsgClaimDiscountedReward) (err error) {
+	if err = k.ShouldBeLiquidBondDenom(ctx, msg.Amount.Denom); err != nil {
+		return
+	}
+
+	discountRate := k.CalcDiscountRate(ctx)
+	// discount rate >= minimum discount rate
+	// if discount rate(e.g. 10%) is lower than minimum discount rate(e.g. 20%), then it is not profitable to claim reward.
+	if discountRate.LT(msg.MinimumDiscountRate) {
+		err = sdkerrors.Wrapf(types.ErrDiscountRateTooLow, "current discount rate: %s", discountRate)
+		return
+	}
+	nas := k.GetNetAmountState(ctx)
+	discountedMintRate := nas.MintRate.Mul(sdk.OneDec().Sub(discountRate))
+
+	var claimableAmt sdk.Coin
+	var burnAmt sdk.Coin
+
+	claimableAmt = k.bankKeeper.GetBalance(ctx, types.RewardPool, k.stakingKeeper.BondDenom(ctx))
+	burnAmt = msg.Amount
+
+	// claim amount = (ls token amount / discounted mint rate)
+	claimAmt := burnAmt.Amount.ToDec().Quo(discountedMintRate).TruncateInt()
+	if claimAmt.GT(claimableAmt.Amount) {
+		// requester cannot claim more than claimable amount
+		claimableAmt.Amount = claimAmt
+		// burn amount = (claim amount * discounted mint rate)
+		burnAmt.Amount = claimableAmt.Amount.ToDec().Mul(discountedMintRate).Ceil().TruncateInt()
+	}
+
+	// escrow ls tokens to burn
+	if err = k.bankKeeper.SendCoins(
+		ctx,
+		msg.GetRequestser(),
+		types.LsTokenEscrowAcc,
+		sdk.NewCoins(burnAmt),
+	); err != nil {
+		return
+	}
+	// send claimAmt to requester
+	if err = k.bankKeeper.SendCoins(
+		ctx,
+		types.RewardPool,
+		msg.GetRequestser(),
+		sdk.NewCoins(claimableAmt),
+	); err != nil {
+		return
+	}
+	if err = k.burnEscrowedLsTokens(ctx, burnAmt); err != nil {
+		return
+	}
+	return
+}
+
+// CalcDiscountRate calculates the current discount rate.
+// reward module account's balance / (num paired chunks * chunk size)
+func (k Keeper) CalcDiscountRate(ctx sdk.Context) sdk.Dec {
+	accumulated := k.bankKeeper.GetBalance(ctx, types.RewardPool, k.stakingKeeper.BondDenom(ctx))
+	numPairedChunks := k.getNumPairedChunks(ctx)
+	return accumulated.Amount.ToDec().Quo(
+		sdk.NewInt(numPairedChunks).Mul(types.ChunkSize).ToDec(),
+	)
+}
+
 func (k Keeper) SetLiquidBondDenom(ctx sdk.Context, denom string) {
 	store := ctx.KVStore(k.storeKey)
 	store.Set(types.KeyLiquidBondDenom, []byte(denom))
@@ -1252,15 +1317,7 @@ func (k Keeper) IsSufficientInsurance(ctx sdk.Context, insurance types.Insurance
 
 // GetAvailableChunkSlots returns a number of chunk which can be paired.
 func (k Keeper) GetAvailableChunkSlots(ctx sdk.Context) sdk.Int {
-	var numPairedChunks int64 = 0
-	k.IterateAllChunks(ctx, func(chunk types.Chunk) (bool, error) {
-		if chunk.Status != types.CHUNK_STATUS_PAIRED {
-			return false, nil
-		}
-		numPairedChunks++
-		return false, nil
-	})
-	return k.MaxPairedChunks(ctx).Sub(sdk.NewInt(numPairedChunks))
+	return k.MaxPairedChunks(ctx).Sub(sdk.NewInt(k.getNumPairedChunks(ctx)))
 }
 
 // startUnpairing changes status of insurance and chunk to unpairing.
@@ -1330,4 +1387,15 @@ func (k Keeper) rePairChunkAndInsurance(ctx sdk.Context, chunk types.Chunk, newI
 	k.SetInsurance(ctx, outInsurance)
 	k.SetInsurance(ctx, newInsurance)
 	k.SetChunk(ctx, chunk)
+}
+
+func (k Keeper) getNumPairedChunks(ctx sdk.Context) (numPairedChunks int64) {
+	k.IterateAllChunks(ctx, func(chunk types.Chunk) (bool, error) {
+		if chunk.Status != types.CHUNK_STATUS_PAIRED {
+			return false, nil
+		}
+		numPairedChunks++
+		return false, nil
+	})
+	return
 }
