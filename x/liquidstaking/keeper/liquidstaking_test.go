@@ -360,7 +360,7 @@ func (suite *KeeperTestSuite) TestLiquidStakeWithAdvanceBlocks() {
 		}), "no epoch(=1 block in test) processed yet, so there are no mint rate change and remaining rewards yet")
 	}
 
-	suite.advanceHeight(1, "")
+	suite.ctx = suite.advanceHeight(suite.ctx, 1, "")
 	beforeNas := nas
 	nas = suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
 	fmt.Println(nas)
@@ -371,8 +371,8 @@ func (suite *KeeperTestSuite) TestLiquidStakeWithAdvanceBlocks() {
 		suite.Equal("0.999892012094645400", nas.MintRate.String())
 	}
 
-	suite.advanceEpoch()
-	suite.advanceHeight(1, "delegation reward are distributed to insurance and reward module")
+	suite.ctx = suite.advanceEpoch(suite.ctx)
+	suite.ctx = suite.advanceHeight(suite.ctx, 1, "delegation reward are distributed to insurance and reward module")
 	beforeNas = nas
 	nas = suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
 	fmt.Println(nas)
@@ -445,7 +445,7 @@ func (suite *KeeperTestSuite) TestLiquidUnstakeWithAdvanceBlocks() {
 		}), "no epoch(=1 block in test) processed yet, so there are no mint rate change and remaining rewards yet")
 	}
 	// advance 1 block(= epoch period in test environment) so reward is accumulated which means mint rate is changed
-	suite.advanceHeight(1, "")
+	suite.ctx = suite.advanceHeight(suite.ctx, 1, "")
 
 	unitDelegationRewardPerRewardEpoch, _ := sdk.NewIntFromString("29999880000479750000")
 	unitInsuranceCommissionPerRewardEpoch, pureUnitRewardPerRewardEpoch := suite.getUnitDistribution(unitDelegationRewardPerRewardEpoch, fixedInsuranceFeeRate)
@@ -502,8 +502,8 @@ func (suite *KeeperTestSuite) TestLiquidUnstakeWithAdvanceBlocks() {
 	}
 
 	// The actual unstaking started in this epoch
-	suite.advanceEpoch()
-	suite.advanceHeight(1, "The actual unstaking started\nThe insurance commission and reward are claimed")
+	suite.ctx = suite.advanceEpoch(suite.ctx)
+	suite.ctx = suite.advanceHeight(suite.ctx, 1, "The actual unstaking started\nThe insurance commission and reward are claimed")
 	beforeNas = nas
 	nas = suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
 	fmt.Println(nas)
@@ -579,8 +579,8 @@ func (suite *KeeperTestSuite) TestLiquidUnstakeWithAdvanceBlocks() {
 	suite.Equal(len(env.pairedChunks)-len(UnpairingForUnstakingChunks), len(pairedChunksAfterUnstake))
 	pairedChunksInt = sdk.NewInt(int64(len(pairedChunksAfterUnstake)))
 
-	suite.advanceEpoch()
-	suite.advanceHeight(1, "The insurance commission and reward are claimed\nThe unstaking is completed")
+	suite.ctx = suite.advanceEpoch(suite.ctx)
+	suite.ctx = suite.advanceHeight(suite.ctx, 1, "The insurance commission and reward are claimed\nThe unstaking is completed")
 
 	// Now number of paired chunk is decreased and still reward is fixed,
 	// so the unit reward per epoch is increased.
@@ -825,13 +825,13 @@ func (suite *KeeperTestSuite) TestDoWithdrawInsurance() {
 		),
 	)
 	suite.NoError(err)
-	suite.advanceEpoch()
-	suite.advanceHeight(1, "queued withdraw insurance request is handled and there are no additional insurances yet so unpairing triggered")
+	suite.ctx = suite.advanceEpoch(suite.ctx)
+	suite.ctx = suite.advanceHeight(suite.ctx, 1, "queued withdraw insurance request is handled and there are no additional insurances yet so unpairing triggered")
 
-	suite.advanceHeight(1, "")
+	suite.ctx = suite.advanceHeight(suite.ctx, 1, "")
 
-	suite.advanceEpoch()
-	suite.advanceHeight(1, "unpairing is done")
+	suite.ctx = suite.advanceEpoch(suite.ctx)
+	suite.ctx = suite.advanceHeight(suite.ctx, 1, "unpairing is done")
 
 	unpairedInsurance, _ := suite.app.LiquidStakingKeeper.GetInsurance(suite.ctx, env.insurances[0].Id)
 	suite.Equal(types.INSURANCE_STATUS_UNPAIRED, unpairedInsurance.Status)
@@ -932,7 +932,7 @@ func (suite *KeeperTestSuite) TestDoWithdrawInsuranceCommission() {
 	provider := env.providers[0]
 	targetInsurance := env.insurances[0]
 	beforeInsuranceCommission := suite.app.BankKeeper.GetBalance(suite.ctx, targetInsurance.FeePoolAddress(), suite.denom)
-	suite.advanceHeight(1, "")
+	suite.ctx = suite.advanceHeight(suite.ctx, 1, "")
 	afterInsuranceCommission := suite.app.BankKeeper.GetBalance(suite.ctx, targetInsurance.FeePoolAddress(), suite.denom)
 	suite.Equal(
 		afterInsuranceCommission.String(),
@@ -940,8 +940,8 @@ func (suite *KeeperTestSuite) TestDoWithdrawInsuranceCommission() {
 		"epoch is not reached yet so no insurance commission is distributed",
 	)
 
-	suite.advanceEpoch()
-	suite.advanceHeight(1, "cumulated delegation reward is distributed to withdraw fee pool")
+	suite.ctx = suite.advanceEpoch(suite.ctx)
+	suite.ctx = suite.advanceHeight(suite.ctx, 1, "cumulated delegation reward is distributed to withdraw fee pool")
 	afterInsuranceCommission = suite.app.BankKeeper.GetBalance(suite.ctx, targetInsurance.FeePoolAddress(), suite.denom)
 	expected := unitInsuranceCommissionPerRewardEpoch.Mul(sdk.NewInt(suite.rewardEpochCount))
 	actual := afterInsuranceCommission.Amount
@@ -1138,7 +1138,7 @@ func (suite *KeeperTestSuite) TestRankInsurances() {
 	suite.Len(newlyRankedInInsurances, 0)
 	suite.Len(rankOutInsurances, 0)
 
-	suite.advanceHeight(1, "")
+	suite.ctx = suite.advanceHeight(suite.ctx, 1, "")
 
 	// Cheap insurances which are competitive than current paired insurances are provided
 	otherProviders, otherProviderBalances := suite.AddTestAddrsWithFunding(fundingAccount, 3, oneInsurance.Amount)
@@ -1213,8 +1213,8 @@ func (suite *KeeperTestSuite) TestEndBlocker() {
 		),
 	)
 	suite.NoError(err)
-	suite.advanceEpoch()
-	suite.advanceHeight(1, "queued withdraw insurance request is handled and there are no additional insurances yet so unpairing triggered")
+	suite.ctx = suite.advanceEpoch(suite.ctx)
+	suite.ctx = suite.advanceHeight(suite.ctx, 1, "queued withdraw insurance request is handled and there are no additional insurances yet so unpairing triggered")
 	{
 		// Check unbonding obj exists
 		unbondingDelegation, found := suite.app.StakingKeeper.GetUnbondingDelegation(
@@ -1226,10 +1226,10 @@ func (suite *KeeperTestSuite) TestEndBlocker() {
 		suite.Equal(toBeWithdrawnInsurance.GetValidator().String(), unbondingDelegation.ValidatorAddress)
 	}
 
-	suite.advanceHeight(1, "")
+	suite.ctx = suite.advanceHeight(suite.ctx, 1, "")
 
-	suite.advanceEpoch()
-	suite.advanceHeight(1, "withdrawal and unbonding of chunkToBeUnpairing is finished")
+	suite.ctx = suite.advanceEpoch(suite.ctx)
+	suite.ctx = suite.advanceHeight(suite.ctx, 1, "withdrawal and unbonding of chunkToBeUnpairing is finished")
 	withdrawnInsurance, _ := suite.app.LiquidStakingKeeper.GetInsurance(suite.ctx, toBeWithdrawnInsurance.Id)
 	pairingChunk, _ := suite.app.LiquidStakingKeeper.GetChunk(suite.ctx, chunkToBeUnpairing.Id)
 	{
@@ -1238,7 +1238,7 @@ func (suite *KeeperTestSuite) TestEndBlocker() {
 		suite.Equal(types.INSURANCE_STATUS_UNPAIRED, withdrawnInsurance.Status)
 	}
 
-	suite.advanceHeight(1, "")
+	suite.ctx = suite.advanceHeight(suite.ctx, 1, "")
 
 	_, oneInsurance := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
 	newValAddrs, _ := suite.CreateValidators(
@@ -1255,8 +1255,8 @@ func (suite *KeeperTestSuite) TestEndBlocker() {
 		sdk.NewDecWithPrec(1, 2), // much cheaper than current paired insurances
 		nil,
 	)
-	suite.advanceEpoch()
-	suite.advanceHeight(1, "pairing chunk is paired now")
+	suite.ctx = suite.advanceEpoch(suite.ctx)
+	suite.ctx = suite.advanceHeight(suite.ctx, 1, "pairing chunk is paired now")
 	{
 		// get newInsurances from module so it presents latest state of insurances
 		var updatedNewInsurances []types.Insurance
@@ -1301,7 +1301,7 @@ func (suite *KeeperTestSuite) TestEndBlocker() {
 		}))
 	}
 
-	suite.advanceHeight(1, "")
+	suite.ctx = suite.advanceHeight(suite.ctx, 1, "")
 
 	pairedInsurances := newInsurances
 	newProviders, newProviderBalances = suite.AddTestAddrsWithFunding(fundingAccount, 3, oneInsurance.Amount)
@@ -1313,8 +1313,8 @@ func (suite *KeeperTestSuite) TestEndBlocker() {
 		sdk.NewDecWithPrec(1, 3), // much cheaper than current paired insurances
 		nil,
 	)
-	suite.advanceEpoch()
-	suite.advanceHeight(1, "all paired chunks are started to be re-paired with new insurances")
+	suite.ctx = suite.advanceEpoch(suite.ctx)
+	suite.ctx = suite.advanceHeight(suite.ctx, 1, "all paired chunks are started to be re-paired with new insurances")
 	{
 		// get newInsurances from module so it presents latest state of insurances
 		var updatedNewInsurances []types.Insurance
@@ -1378,7 +1378,7 @@ func (suite *KeeperTestSuite) TestPairedChunkTombstonedAndRedelegated() {
 	unitDelegationRewardPerRewardEpoch, _ := sdk.NewIntFromString("29999880000479750000")
 	unitInsuranceCommissionPerRewardEpoch, _ := suite.getUnitDistribution(unitDelegationRewardPerRewardEpoch, tenPercentFeeRate)
 
-	suite.advanceHeight(1, "liquid staking started")
+	suite.ctx = suite.advanceHeight(suite.ctx, 1, "liquid staking started")
 	fmt.Println(suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx))
 
 	toBeTombstonedValidator := env.valAddrs[0]
@@ -1449,8 +1449,8 @@ func (suite *KeeperTestSuite) TestPairedChunkTombstonedAndRedelegated() {
 		)
 	}
 
-	suite.advanceEpoch()
-	suite.advanceHeight(1, "epoch reached after validator is tombstoned")
+	suite.ctx = suite.advanceEpoch(suite.ctx)
+	suite.ctx = suite.advanceHeight(suite.ctx, 1, "epoch reached after validator is tombstoned")
 	fmt.Println(suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx))
 	passedRewardsEpochAfterTombstoned := int64(1)
 
@@ -1522,11 +1522,11 @@ func (suite *KeeperTestSuite) TestPairedChunkTombstonedAndRedelegated() {
 		afterCovered := reDelegatedVal.TokensFromShares(del.GetShares())
 		suite.Equal(types.ChunkSize.ToDec().String(), afterCovered.String())
 	}
-	suite.advanceHeight(1, "delegation rewards are accumulated")
+	suite.ctx = suite.advanceHeight(suite.ctx, 1, "delegation rewards are accumulated")
 	fmt.Println(suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx))
 
-	suite.advanceEpoch()
-	suite.advanceHeight(1, "unpairing insurance because of tombstoned is unpaired now")
+	suite.ctx = suite.advanceEpoch(suite.ctx)
+	suite.ctx = suite.advanceHeight(suite.ctx, 1, "unpairing insurance because of tombstoned is unpaired now")
 	fmt.Println(suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx))
 
 	{
@@ -1559,7 +1559,7 @@ func (suite *KeeperTestSuite) TestPairedChunkTombstonedAndUnpaired() {
 	unitDelegationRewardPerRewardEpoch, _ := sdk.NewIntFromString("29999880000479750000")
 	unitInsuranceCommissionPerRewardEpoch, _ := suite.getUnitDistribution(unitDelegationRewardPerRewardEpoch, tenPercentFeeRate)
 
-	suite.advanceHeight(1, "liquid staking started")
+	suite.ctx = suite.advanceHeight(suite.ctx, 1, "liquid staking started")
 	fmt.Println(suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx))
 
 	toBeTombstonedValidator := env.valAddrs[0]
@@ -1600,11 +1600,11 @@ func (suite *KeeperTestSuite) TestPairedChunkTombstonedAndUnpaired() {
 	pairedInsuranceBalance := suite.app.BankKeeper.GetBalance(suite.ctx, pairedInsurance.DerivedAddress(), env.bondDenom)
 	suite.app.EvidenceKeeper.HandleEquivocationEvidence(suite.ctx, evidence)
 
-	suite.advanceHeight(1, "one block passed afetr validator is tombstoned because of double signing")
+	suite.ctx = suite.advanceHeight(suite.ctx, 1, "one block passed afetr validator is tombstoned because of double signing")
 	fmt.Println(suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx))
 
-	suite.advanceEpoch()
-	suite.advanceHeight(1, "chunk started to be unpairing")
+	suite.ctx = suite.advanceEpoch(suite.ctx)
+	suite.ctx = suite.advanceHeight(suite.ctx, 1, "chunk started to be unpairing")
 	passedRewardsEpochAfterTombstoned := int64(2)
 
 	pairedInsuranceBalanceAfterCoveringSlash := suite.app.BankKeeper.GetBalance(suite.ctx, pairedInsurance.DerivedAddress(), env.bondDenom)
@@ -1670,11 +1670,11 @@ func (suite *KeeperTestSuite) TestPairedChunkTombstonedAndUnpaired() {
 		)
 	}
 
-	suite.advanceHeight(1, "")
+	suite.ctx = suite.advanceHeight(suite.ctx, 1, "")
 	fmt.Println(suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx))
 
-	suite.advanceEpoch()
-	suite.advanceHeight(1, "unpairing of chunk is finished")
+	suite.ctx = suite.advanceEpoch(suite.ctx)
+	suite.ctx = suite.advanceHeight(suite.ctx, 1, "unpairing of chunk is finished")
 
 	{
 		tombstonedChunkAfterUnpairing, _ := suite.app.LiquidStakingKeeper.GetChunk(suite.ctx, toBeTombstonedChunk.Id)
@@ -1714,7 +1714,7 @@ func (suite *KeeperTestSuite) TestMultiplePairedChunksTombstonedAndRedelegated()
 	)
 	_, oneInsurnace := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
 
-	suite.advanceHeight(1, "liquid staking started")
+	suite.ctx = suite.advanceHeight(suite.ctx, 1, "liquid staking started")
 	fmt.Println(suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx))
 
 	toBeTombstonedValidator := env.valAddrs[0]
@@ -1751,11 +1751,11 @@ func (suite *KeeperTestSuite) TestMultiplePairedChunksTombstonedAndRedelegated()
 		ConsensusAddress: sdk.ConsAddress(toBeTombstonedValidatorPubKey.Address()).String(),
 	}
 	suite.app.EvidenceKeeper.HandleEquivocationEvidence(suite.ctx, evidence)
-	suite.advanceHeight(1, "one block passed afetr validator is tombstoned because of double signing")
+	suite.ctx = suite.advanceHeight(suite.ctx, 1, "one block passed afetr validator is tombstoned because of double signing")
 	fmt.Println(suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx))
 
-	suite.advanceEpoch()
-	suite.advanceHeight(1, "re-pairing of chunks is finished")
+	suite.ctx = suite.advanceEpoch(suite.ctx)
+	suite.ctx = suite.advanceHeight(suite.ctx, 1, "re-pairing of chunks is finished")
 
 	{
 		for i, pairedInsuranceBeforeTombstoned := range pairedInsurances {
@@ -1792,10 +1792,10 @@ func (suite *KeeperTestSuite) TestMultiplePairedChunksTombstonedAndRedelegated()
 		}
 	}
 
-	suite.advanceHeight(1, "")
+	suite.ctx = suite.advanceHeight(suite.ctx, 1, "")
 
-	suite.advanceEpoch()
-	suite.advanceHeight(1, "un-pairing insurances are unpaired")
+	suite.ctx = suite.advanceEpoch(suite.ctx)
+	suite.ctx = suite.advanceHeight(suite.ctx, 1, "un-pairing insurances are unpaired")
 	{
 		for _, pairedInsuranceBeforeTombstoned := range pairedInsurances {
 			// insurance finished duty
@@ -1831,7 +1831,7 @@ func (suite *KeeperTestSuite) TestMultiplePairedChunksTombstonedAndUnpaired() {
 			types.ChunkSize.MulRaw(500),
 		},
 	)
-	suite.advanceHeight(1, "liquid staking started")
+	suite.ctx = suite.advanceHeight(suite.ctx, 1, "liquid staking started")
 	fmt.Println(suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx))
 	toBeTombstonedValidator := env.valAddrs[0]
 	toBeTombstonedValidatorPubKey := env.pubKeys[0]
@@ -1869,11 +1869,11 @@ func (suite *KeeperTestSuite) TestMultiplePairedChunksTombstonedAndUnpaired() {
 	}
 
 	suite.app.EvidenceKeeper.HandleEquivocationEvidence(suite.ctx, evidence)
-	suite.advanceHeight(1, "one block passed afetr validator is tombstoned because of double signing")
+	suite.ctx = suite.advanceHeight(suite.ctx, 1, "one block passed afetr validator is tombstoned because of double signing")
 	fmt.Println(suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx))
 
-	suite.advanceEpoch()
-	suite.advanceHeight(1, "chunks started to be unpairing")
+	suite.ctx = suite.advanceEpoch(suite.ctx)
+	suite.ctx = suite.advanceHeight(suite.ctx, 1, "chunks started to be unpairing")
 
 	var tombstonedChunks []types.Chunk
 	for _, toBeTombstonedChunk := range toBeTombstonedChunks {
@@ -1918,11 +1918,11 @@ func (suite *KeeperTestSuite) TestMultiplePairedChunksTombstonedAndUnpaired() {
 		}
 	}
 
-	suite.advanceHeight(1, "")
+	suite.ctx = suite.advanceHeight(suite.ctx, 1, "")
 	fmt.Println(suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx))
 
-	suite.advanceEpoch()
-	suite.advanceHeight(1, "unpairing of chunk is finished")
+	suite.ctx = suite.advanceEpoch(suite.ctx)
+	suite.ctx = suite.advanceHeight(suite.ctx, 1, "unpairing of chunk is finished")
 
 	{
 		for i, toBeTombstonedChunk := range toBeTombstonedChunks {
@@ -1964,7 +1964,7 @@ func (suite *KeeperTestSuite) TestUnpairingForUnstakingChunkTombstoned() {
 		},
 	)
 	numPassedRewardEpochsBeforeUnstaked := int64(0)
-	suite.advanceHeight(1, "liquid staking started")
+	suite.ctx = suite.advanceHeight(suite.ctx, 1, "liquid staking started")
 	numPassedRewardEpochsBeforeUnstaked++
 	fmt.Println(suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx))
 
@@ -1983,8 +1983,8 @@ func (suite *KeeperTestSuite) TestUnpairingForUnstakingChunkTombstoned() {
 	suite.NoError(err)
 	afterEscrowLsTokens := suite.app.BankKeeper.GetBalance(suite.ctx, undelegator, env.liquidBondDenom)
 
-	suite.advanceEpoch()
-	suite.advanceHeight(1, "unstaking started")
+	suite.ctx = suite.advanceEpoch(suite.ctx)
+	suite.ctx = suite.advanceHeight(suite.ctx, 1, "unstaking started")
 	numPassedRewardEpochsBeforeUnstaked++
 	fmt.Println(suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx))
 
@@ -2024,7 +2024,7 @@ func (suite *KeeperTestSuite) TestUnpairingForUnstakingChunkTombstoned() {
 		suite.Equal(unbondingDelegation.Entries[0].InitialBalance.String(), types.ChunkSize.String())
 	}
 
-	suite.advanceHeight(1, "")
+	suite.ctx = suite.advanceHeight(suite.ctx, 1, "")
 	fmt.Println(suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx))
 
 	selfDelegationToken := suite.app.StakingKeeper.TokensFromConsensusPower(suite.ctx, onePower)
@@ -2046,7 +2046,7 @@ func (suite *KeeperTestSuite) TestUnpairingForUnstakingChunkTombstoned() {
 
 	fmt.Println("DOUBLE SIGN SLASHING FOR VALIDATOR: " + toBeTombstonedValidator.String())
 	suite.app.EvidenceKeeper.HandleEquivocationEvidence(suite.ctx, evidence)
-	suite.advanceHeight(1, "one block passed afetr validator is tombstoned because of double signing")
+	suite.ctx = suite.advanceHeight(suite.ctx, 1, "one block passed afetr validator is tombstoned because of double signing")
 	fmt.Println(suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx))
 
 	var penalty sdk.Int
@@ -2072,8 +2072,8 @@ func (suite *KeeperTestSuite) TestUnpairingForUnstakingChunkTombstoned() {
 	}
 
 	rewardPoolBalanceBefore := suite.app.BankKeeper.GetBalance(suite.ctx, types.RewardPool, env.bondDenom)
-	suite.advanceEpoch()
-	suite.advanceHeight(1, "epoch reached after validator is tombstoned because of double signing")
+	suite.ctx = suite.advanceEpoch(suite.ctx)
+	suite.ctx = suite.advanceHeight(suite.ctx, 1, "epoch reached after validator is tombstoned because of double signing")
 	fmt.Println(suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx))
 	rewardPoolBalanceAfter := suite.app.BankKeeper.GetBalance(suite.ctx, types.RewardPool, env.bondDenom)
 
@@ -2227,7 +2227,7 @@ func (suite *KeeperTestSuite) TestCumulativePenaltyByMultipleDownTimeSlashingAnd
 				"accumulated penalty: %s | %d percent of ChunkSize tokens\n",
 				cumulativePenalty.String(), damagedPercent,
 			)
-			suite.advanceEpoch()
+			suite.ctx = suite.advanceEpoch(suite.ctx)
 			staking.EndBlocker(suite.ctx, suite.app.StakingKeeper)
 			liquidstakingkeeper.EndBlocker(suite.ctx, suite.app.LiquidStakingKeeper)
 			fmt.Println("chunk unbonding is started")
@@ -2253,7 +2253,7 @@ func (suite *KeeperTestSuite) TestCumulativePenaltyByMultipleDownTimeSlashingAnd
 			}
 
 			rewardModuleAccBalance := suite.app.BankKeeper.GetBalance(suite.ctx, types.RewardPool, suite.denom)
-			suite.advanceEpoch()
+			suite.ctx = suite.advanceEpoch(suite.ctx)
 			staking.EndBlocker(suite.ctx, suite.app.StakingKeeper)
 			liquidstakingkeeper.EndBlocker(suite.ctx, suite.app.LiquidStakingKeeper)
 			fmt.Println("chunk unbonding is finished")
@@ -2345,8 +2345,8 @@ func (suite *KeeperTestSuite) TestDynamicFee() {
 			beforeNas := suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
 			unitDelegationRewardPerRewardEpoch, _ := sdk.NewIntFromString(tc.unitDelegationReward)
 			_, pureUnitRewardPerRewardEpoch := suite.getUnitDistribution(unitDelegationRewardPerRewardEpoch, tenPercentFeeRate)
-			suite.advanceEpoch()
-			suite.advanceHeight(1, "got rewards and dynamic fee is charged")
+			suite.ctx = suite.advanceEpoch(suite.ctx)
+			suite.ctx = suite.advanceHeight(suite.ctx, 1, "got rewards and dynamic fee is charged")
 			nas := suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
 			numPairedChunks := int64(len(env.pairedChunks))
 			expectedFee := pureUnitRewardPerRewardEpoch.ToDec().Mul(tc.dynamicFeeRateAfterEpoch).Ceil().TruncateInt()
@@ -2358,6 +2358,68 @@ func (suite *KeeperTestSuite) TestDynamicFee() {
 		})
 	}
 }
+
+func (suite *KeeperTestSuite) TestCalcDiscountRate() {
+	suite.setupLiquidStakeTestingEnv(
+		testingEnvOptions{
+			"TestDoCancelProvideInsuranceFail",
+			3,
+			tenPercentFeeRate,
+			nil,
+			onePower,
+			nil,
+			3,
+			tenPercentFeeRate,
+			nil,
+			1,
+			types.ChunkSize.MulRaw(500),
+		},
+	)
+	tcs := []struct {
+		name                 string
+		numRewardEpochs      int
+		expectedDiscountRate sdk.Dec
+	}{
+		{
+			"100 reward epoch",
+			100,
+			sdk.MustNewDecFromStr("0.032399611204665543"),
+		},
+	}
+
+	for _, tc := range tcs {
+		suite.Run(tc.name, func() {
+			cachedCtx, _ := suite.ctx.CacheContext()
+			cachedCtx = suite.advanceHeight(cachedCtx, tc.numRewardEpochs-1, fmt.Sprintf("let's pass %d reward epoch", tc.numRewardEpochs))
+			cachedCtx = suite.advanceEpoch(cachedCtx) // reward is accumulated to reward pool
+			cachedCtx = suite.advanceHeight(cachedCtx, 1, "liquid staking endblocker is triggered")
+			discountRate := suite.app.LiquidStakingKeeper.CalcDiscountRate(cachedCtx)
+			suite.Equal(tc.expectedDiscountRate.String(), discountRate.String())
+		})
+	}
+
+}
+
+//func (suite *KeeperTestSuite) TestDoClaimDiscountedReward() {
+//	env := suite.setupLiquidStakeTestingEnv(
+//		testingEnvOptions{
+//			"TestDoCancelProvideInsuranceFail",
+//			3,
+//			tenPercentFeeRate,
+//			nil,
+//			onePower,
+//			nil,
+//			3,
+//			tenPercentFeeRate,
+//			nil,
+//			1,
+//			types.ChunkSize.MulRaw(500),
+//		},
+//	)
+//	suite.advanceHeight(100, "pass 100 reward epoch")
+//	suite.advanceEpoch() // reward is accumulated to reward pool
+//	suite.advanceHeight(1, "liquid staking endblocker is triggered")
+//}
 
 func (suite *KeeperTestSuite) TestDoClaimDiscountedRewardFail() {
 	env := suite.setupLiquidStakeTestingEnv(
@@ -2375,9 +2437,9 @@ func (suite *KeeperTestSuite) TestDoClaimDiscountedRewardFail() {
 			types.ChunkSize.MulRaw(500),
 		},
 	)
-	suite.advanceHeight(100, "pass 100 reward epoch")
-	suite.advanceEpoch() // reward is accumulated to reward pool
-	suite.advanceHeight(1, "liquid staking endblocker is triggered")
+	suite.ctx = suite.advanceHeight(suite.ctx, 100, "pass 100 reward epoch")
+	suite.ctx = suite.advanceEpoch(suite.ctx) // reward is accumulated to reward pool
+	suite.ctx = suite.advanceHeight(suite.ctx, 1, "liquid staking endblocker is triggered")
 
 	tcs := []struct {
 		name        string
@@ -2419,7 +2481,6 @@ func (suite *KeeperTestSuite) TestDoClaimDiscountedRewardFail() {
 			suite.ErrorContains(err, tc.expectedErr.Error())
 		})
 	}
-
 }
 
 func (suite *KeeperTestSuite) downTimeSlashing(
