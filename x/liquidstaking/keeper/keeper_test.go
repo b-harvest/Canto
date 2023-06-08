@@ -2,11 +2,12 @@ package keeper_test
 
 import (
 	"fmt"
-	"github.com/Canto-Network/Canto/v6/x/liquidstaking"
-	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	"strconv"
 	"testing"
 	"time"
+
+	"github.com/Canto-Network/Canto/v6/x/liquidstaking"
+	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 
 	liquidstakingkeeper "github.com/Canto-Network/Canto/v6/x/liquidstaking/keeper"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
@@ -35,6 +36,8 @@ import (
 	tmversion "github.com/tendermint/tendermint/proto/tendermint/version"
 	"github.com/tendermint/tendermint/version"
 )
+
+var DefaultInflationAmt = sdk.TokensFromConsensusPower(100, ethermint.PowerReduction)
 
 type KeeperTestSuite struct {
 	suite.Suite
@@ -279,7 +282,7 @@ func (suite *KeeperTestSuite) advanceHeight(ctx sdk.Context, height int, msg str
 
 		// Mimic inflation module AfterEpochEnd Hook
 		// - Inflation happened in the end of epoch triggered by AfterEpochEnd hook of epochs module
-		mintedCoin := sdk.NewCoin(suite.denom, sdk.TokensFromConsensusPower(100, ethermint.PowerReduction)) // 100 Canto
+		mintedCoin := sdk.NewCoin(suite.denom, DefaultInflationAmt)
 		_, _, err := suite.app.InflationKeeper.MintAndAllocateInflation(ctx, mintedCoin)
 		suite.NoError(err)
 		feeCollectorBalances := suite.app.BankKeeper.GetAllBalances(ctx, feeCollector.GetAddress())

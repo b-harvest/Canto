@@ -2300,7 +2300,7 @@ func (suite *KeeperTestSuite) TestDynamicFee() {
 			sdk.MustNewDecFromStr("0.499945067421074080"),
 		},
 		{
-			"",
+			"about +1% from softcap",
 			3,
 			2,
 			10,
@@ -2362,7 +2362,7 @@ func (suite *KeeperTestSuite) TestDynamicFee() {
 func (suite *KeeperTestSuite) TestCalcDiscountRate() {
 	suite.setupLiquidStakeTestingEnv(
 		testingEnvOptions{
-			"TestDoCancelProvideInsuranceFail",
+			"TestCalcDiscountRate",
 			3,
 			tenPercentFeeRate,
 			nil,
@@ -2381,9 +2381,14 @@ func (suite *KeeperTestSuite) TestCalcDiscountRate() {
 		expectedDiscountRate sdk.Dec
 	}{
 		{
-			"100 reward epoch",
+			"a lot of rewards but cannot exceed MaximumDiscountRate",
 			100,
-			sdk.MustNewDecFromStr("0.032399611204665543"),
+			types.MaximumDiscountRate,
+		},
+		{
+			"small reward",
+			10,
+			sdk.MustNewDecFromStr("0.003239961120466554"),
 		},
 	}
 
@@ -2400,31 +2405,57 @@ func (suite *KeeperTestSuite) TestCalcDiscountRate() {
 
 }
 
-//func (suite *KeeperTestSuite) TestDoClaimDiscountedReward() {
-//	env := suite.setupLiquidStakeTestingEnv(
-//		testingEnvOptions{
-//			"TestDoCancelProvideInsuranceFail",
-//			3,
-//			tenPercentFeeRate,
-//			nil,
-//			onePower,
-//			nil,
-//			3,
-//			tenPercentFeeRate,
-//			nil,
-//			1,
-//			types.ChunkSize.MulRaw(500),
-//		},
-//	)
-//	suite.advanceHeight(100, "pass 100 reward epoch")
-//	suite.advanceEpoch() // reward is accumulated to reward pool
-//	suite.advanceHeight(1, "liquid staking endblocker is triggered")
-//}
+// WIP
+func (suite *KeeperTestSuite) TestDoClaimDiscountedReward() {
+	env := suite.setupLiquidStakeTestingEnv(
+		testingEnvOptions{
+			"TestDoClaimDiscountedReward",
+			3,
+			tenPercentFeeRate,
+			nil,
+			onePower,
+			nil,
+			10,
+			tenPercentFeeRate,
+			nil,
+			10,
+			types.ChunkSize.MulRaw(500),
+		},
+	)
+	suite.ctx = suite.advanceHeight(suite.ctx, 99, "pass 100 reward epoch")
+	suite.ctx = suite.advanceEpoch(suite.ctx) // reward is accumulated to reward pool
+	suite.ctx = suite.advanceHeight(suite.ctx, 1, "liquid staking endblocker is triggered")
+
+	liquidBondDenom := suite.app.LiquidStakingKeeper.GetLiquidBondDenom(suite.ctx)
+	fmt.Println(suite.app.LiquidStakingKeeper.CalcDiscountRate(suite.ctx))
+	msg := types.NewMsgClaimDiscountedReward(
+		env.delegators[0].String(),
+		sdk.NewCoin(liquidBondDenom, DefaultInflationAmt.MulRaw(100)),
+		sdk.MustNewDecFromStr("0.01"),
+	)
+	beforeBalance := suite.app.BankKeeper.GetBalance(suite.ctx, env.delegators[0], suite.denom)
+	fmt.Println(beforeBalance)
+	beforeLsTokenBalance := suite.app.BankKeeper.GetBalance(
+		suite.ctx,
+		env.delegators[0],
+		suite.app.LiquidStakingKeeper.GetLiquidBondDenom(suite.ctx),
+	)
+	fmt.Println(beforeLsTokenBalance)
+	suite.NoError(suite.app.LiquidStakingKeeper.DoClaimDiscountedReward(suite.ctx, msg))
+	afterBalance := suite.app.BankKeeper.GetBalance(suite.ctx, env.delegators[0], suite.denom)
+	fmt.Println(afterBalance)
+	afterLsTokenBalance := suite.app.BankKeeper.GetBalance(
+		suite.ctx,
+		env.delegators[0],
+		suite.app.LiquidStakingKeeper.GetLiquidBondDenom(suite.ctx),
+	)
+	fmt.Println(afterLsTokenBalance)
+}
 
 func (suite *KeeperTestSuite) TestDoClaimDiscountedRewardFail() {
 	env := suite.setupLiquidStakeTestingEnv(
 		testingEnvOptions{
-			"TestDoCancelProvideInsuranceFail",
+			"TestDoClaimDiscountedRewardFail",
 			3,
 			tenPercentFeeRate,
 			nil,

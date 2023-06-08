@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"fmt"
+
 	"github.com/Canto-Network/Canto/v6/x/liquidstaking/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -907,9 +908,10 @@ func (k Keeper) DoClaimDiscountedReward(ctx sdk.Context, msg *types.MsgClaimDisc
 func (k Keeper) CalcDiscountRate(ctx sdk.Context) sdk.Dec {
 	accumulated := k.bankKeeper.GetBalance(ctx, types.RewardPool, k.stakingKeeper.BondDenom(ctx))
 	numPairedChunks := k.getNumPairedChunks(ctx)
-	return accumulated.Amount.ToDec().Quo(
+	discountRate := accumulated.Amount.ToDec().Quo(
 		sdk.NewInt(numPairedChunks).Mul(types.ChunkSize).ToDec(),
 	)
+	return sdk.MinDec(discountRate, types.MaximumDiscountRate)
 }
 
 func (k Keeper) SetLiquidBondDenom(ctx sdk.Context, denom string) {
