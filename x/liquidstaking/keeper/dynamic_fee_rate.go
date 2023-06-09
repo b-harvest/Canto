@@ -16,6 +16,9 @@ func (k Keeper) CalcUtilizationRatio(ctx sdk.Context) sdk.Dec {
 		numPairedChunks++
 		return false, nil
 	})
+	if totalSupply.IsZero() || numPairedChunks == 0 {
+		return sdk.ZeroDec()
+	}
 	// chunkSize * numPairedChunks / totalSupply
 	return types.ChunkSize.Mul(sdk.NewInt(numPairedChunks)).ToDec().Quo(totalSupply.Amount.ToDec())
 }

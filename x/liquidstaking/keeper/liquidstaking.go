@@ -197,6 +197,7 @@ func (k Keeper) HandleQueuedLiquidUnstakes(ctx sdk.Context) ([]types.Chunk, erro
 		if err != nil {
 			return nil, err
 		}
+		// TODO: k.startUnpairing(ctx, chunk, insurance)?
 		chunk.SetStatus(types.CHUNK_STATUS_UNPAIRING_FOR_UNSTAKING)
 		chunk.UnpairingInsuranceId = chunk.PairedInsuranceId
 		chunk.PairedInsuranceId = 0
@@ -900,6 +901,9 @@ func (k Keeper) DoClaimDiscountedReward(ctx sdk.Context, msg *types.MsgClaimDisc
 func (k Keeper) CalcDiscountRate(ctx sdk.Context) sdk.Dec {
 	accumulated := k.bankKeeper.GetBalance(ctx, types.RewardPool, k.stakingKeeper.BondDenom(ctx))
 	numPairedChunks := k.getNumPairedChunks(ctx)
+	if accumulated.IsZero() || numPairedChunks == 0 {
+		return sdk.ZeroDec()
+	}
 	discountRate := accumulated.Amount.ToDec().Quo(
 		sdk.NewInt(numPairedChunks).Mul(types.ChunkSize).ToDec(),
 	)

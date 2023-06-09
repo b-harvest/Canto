@@ -87,8 +87,7 @@ func (suite *KeeperTestSuite) provideInsurances(
 	valNum := len(valAddrs)
 	var providedInsurances []types.Insurance
 	for i, provider := range providers {
-		msg := types.NewMsgProvideInsurance(provider.String(), amounts[i])
-		msg.ValidatorAddress = valAddrs[i%valNum].String()
+		msg := types.NewMsgProvideInsurance(provider.String(), valAddrs[i%valNum].String(), amounts[i], sdk.ZeroDec())
 		if fixedFeeRate.IsPositive() {
 			msg.FeeRate = fixedFeeRate
 		} else if feeRates != nil && len(feeRates) > 0 {

@@ -85,10 +85,12 @@ func (msg MsgLiquidUnstake) GetDelegator() sdk.AccAddress {
 	return addr
 }
 
-func NewMsgProvideInsurance(providerAddress string, amount sdk.Coin) *MsgProvideInsurance {
+func NewMsgProvideInsurance(providerAddress, validatorAddress string, amount sdk.Coin, feeRate sdk.Dec) *MsgProvideInsurance {
 	return &MsgProvideInsurance{
-		ProviderAddress: providerAddress,
-		Amount:          amount,
+		ProviderAddress:  providerAddress,
+		ValidatorAddress: validatorAddress,
+		Amount:           amount,
+		FeeRate:          feeRate,
 	}
 }
 func (msg MsgProvideInsurance) Route() string { return RouterKey }
