@@ -880,13 +880,7 @@ func (k Keeper) DoClaimDiscountedReward(ctx sdk.Context, msg *types.MsgClaimDisc
 		burnAmt.Amount = claimAmt.ToDec().Mul(discountedMintRate).Ceil().TruncateInt()
 	}
 
-	// escrow ls tokens to burn
-	if err = k.bankKeeper.SendCoins(
-		ctx,
-		msg.GetRequestser(),
-		types.LsTokenEscrowAcc,
-		sdk.NewCoins(burnAmt),
-	); err != nil {
+	if err = k.burnLsTokens(ctx, msg.GetRequestser(), burnAmt); err != nil {
 		return
 	}
 	// send claimAmt to requester (error)
@@ -896,9 +890,6 @@ func (k Keeper) DoClaimDiscountedReward(ctx sdk.Context, msg *types.MsgClaimDisc
 		msg.GetRequestser(),
 		sdk.NewCoins(claimableAmt),
 	); err != nil {
-		return
-	}
-	if err = k.burnEscrowedLsTokens(ctx, burnAmt); err != nil {
 		return
 	}
 	return
@@ -988,6 +979,25 @@ func (k Keeper) burnEscrowedLsTokens(ctx sdk.Context, lsTokensToBurn sdk.Coin) e
 	if err := k.bankKeeper.SendCoinsFromAccountToModule(
 		ctx,
 		types.LsTokenEscrowAcc,
+		types.ModuleName,
+		sdk.NewCoins(lsTokensToBurn),
+	); err != nil {
+		return err
+	}
+	if err := k.bankKeeper.BurnCoins(ctx, types.ModuleName, sdk.NewCoins(lsTokensToBurn)); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (k Keeper) burnLsTokens(ctx sdk.Context, from sdk.AccAddress, lsTokensToBurn sdk.Coin) error {
+	if err := k.ShouldBeLiquidBondDenom(ctx, lsTokensToBurn.Denom); err != nil {
+		return err
+	}
+
+	if err := k.bankKeeper.SendCoinsFromAccountToModule(
+		ctx,
+		from,
 		types.ModuleName,
 		sdk.NewCoins(lsTokensToBurn),
 	); err != nil {

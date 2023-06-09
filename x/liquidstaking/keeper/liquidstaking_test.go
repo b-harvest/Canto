@@ -2524,7 +2524,7 @@ func (suite *KeeperTestSuite) TestDoClaimDiscountedRewardFail() {
 			types.ChunkSize.MulRaw(500),
 		},
 	)
-	suite.ctx = suite.advanceHeight(suite.ctx, 100, "pass 100 reward epoch")
+	suite.ctx = suite.advanceHeight(suite.ctx, 99, "pass 100 reward epoch")
 	suite.ctx = suite.advanceEpoch(suite.ctx) // reward is accumulated to reward pool
 	suite.ctx = suite.advanceHeight(suite.ctx, 1, "liquid staking endblocker is triggered")
 
@@ -2554,8 +2554,8 @@ func (suite *KeeperTestSuite) TestDoClaimDiscountedRewardFail() {
 		{
 			name: "requester does not have msg.Amount",
 			msg: types.NewMsgClaimDiscountedReward(
-				env.delegators[0].String(),
-				sdk.NewCoin(types.DefaultLiquidBondDenom, sdk.TokensFromConsensusPower(100_000_000, ethermint.PowerReduction)),
+				sdk.AccAddress(ed25519.GenPrivKey().PubKey().Address()).String(),
+				sdk.NewCoin(types.DefaultLiquidBondDenom, sdk.TokensFromConsensusPower(10_000, ethermint.PowerReduction)),
 				sdk.MustNewDecFromStr("0.00000001"),
 			),
 			expectedErr: sdkerrors.ErrInsufficientFunds,
