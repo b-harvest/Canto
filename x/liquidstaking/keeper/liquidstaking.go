@@ -872,11 +872,12 @@ func (k Keeper) DoClaimDiscountedReward(ctx sdk.Context, msg *types.MsgClaimDisc
 
 	// claim amount = (ls token amount / discounted mint rate)
 	claimAmt := burnAmt.Amount.ToDec().Quo(discountedMintRate).TruncateInt()
+	// Requester can claim only up to claimable amount
 	if claimAmt.GT(claimableAmt.Amount) {
 		// requester cannot claim more than claimable amount
-		claimableAmt.Amount = claimAmt
+		claimAmt = claimableAmt.Amount
 		// burn amount = (claim amount * discounted mint rate)
-		burnAmt.Amount = claimableAmt.Amount.ToDec().Mul(discountedMintRate).Ceil().TruncateInt()
+		burnAmt.Amount = claimAmt.ToDec().Mul(discountedMintRate).Ceil().TruncateInt()
 	}
 
 	// escrow ls tokens to burn
@@ -888,7 +889,7 @@ func (k Keeper) DoClaimDiscountedReward(ctx sdk.Context, msg *types.MsgClaimDisc
 	); err != nil {
 		return
 	}
-	// send claimAmt to requester
+	// send claimAmt to requester (error)
 	if err = k.bankKeeper.SendCoins(
 		ctx,
 		types.RewardPool,

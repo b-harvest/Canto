@@ -2405,7 +2405,7 @@ func (suite *KeeperTestSuite) TestCalcDiscountRate() {
 
 }
 
-// WIP
+// TestDoClaimDiscountedReward tests success cases.
 func (suite *KeeperTestSuite) TestDoClaimDiscountedReward() {
 	env := suite.setupLiquidStakeTestingEnv(
 		testingEnvOptions{
@@ -2422,34 +2422,90 @@ func (suite *KeeperTestSuite) TestDoClaimDiscountedReward() {
 			types.ChunkSize.MulRaw(500),
 		},
 	)
-	suite.ctx = suite.advanceHeight(suite.ctx, 99, "pass 100 reward epoch")
-	suite.ctx = suite.advanceEpoch(suite.ctx) // reward is accumulated to reward pool
-	suite.ctx = suite.advanceHeight(suite.ctx, 1, "liquid staking endblocker is triggered")
+	type expected struct {
+		discountRate        string
+		beforeMintRate      string
+		beforeTokenBal      string
+		beforeLsTokenBal    string
+		afterMintRate       string
+		afterTokenBal       string
+		afterLsTokenBal     string
+		increasedMintRate   string
+		decreasedLsTokenBal string
+	}
 
 	liquidBondDenom := suite.app.LiquidStakingKeeper.GetLiquidBondDenom(suite.ctx)
-	fmt.Println(suite.app.LiquidStakingKeeper.CalcDiscountRate(suite.ctx))
-	msg := types.NewMsgClaimDiscountedReward(
-		env.delegators[0].String(),
-		sdk.NewCoin(liquidBondDenom, DefaultInflationAmt.MulRaw(100)),
-		sdk.MustNewDecFromStr("0.01"),
-	)
-	beforeBalance := suite.app.BankKeeper.GetBalance(suite.ctx, env.delegators[0], suite.denom)
-	fmt.Println(beforeBalance)
-	beforeLsTokenBalance := suite.app.BankKeeper.GetBalance(
-		suite.ctx,
-		env.delegators[0],
-		suite.app.LiquidStakingKeeper.GetLiquidBondDenom(suite.ctx),
-	)
-	fmt.Println(beforeLsTokenBalance)
-	suite.NoError(suite.app.LiquidStakingKeeper.DoClaimDiscountedReward(suite.ctx, msg))
-	afterBalance := suite.app.BankKeeper.GetBalance(suite.ctx, env.delegators[0], suite.denom)
-	fmt.Println(afterBalance)
-	afterLsTokenBalance := suite.app.BankKeeper.GetBalance(
-		suite.ctx,
-		env.delegators[0],
-		suite.app.LiquidStakingKeeper.GetLiquidBondDenom(suite.ctx),
-	)
-	fmt.Println(afterLsTokenBalance)
+	tcs := []struct {
+		name            string
+		numRewardEpochs int
+		expected
+		msg *types.MsgClaimDiscountedReward
+	}{
+		{
+			"discounted little",
+			100,
+			expected{
+				"0.003239996112004665",
+				"0.996770467560542769",
+				"0",
+				"250000000000000000000000",
+				"0.996780931233090204",
+				"8099990280011661750000",
+				"241952328082725510093151",
+				"0.000010463672547435",
+				"8047671917274489906849",
+			},
+			types.NewMsgClaimDiscountedReward(
+				env.delegators[0].String(),
+				sdk.NewCoin(liquidBondDenom, DefaultInflationAmt.MulRaw(100)),
+				sdk.MustNewDecFromStr("0.002"),
+			),
+		},
+		{
+			"discounted a lot",
+			1000,
+			expected{
+				"0.030000000000000000",
+				"0.968616851665805890",
+				"0",
+				"250000000000000000000000",
+				"0.996000000000000000",
+				"80999902800116637750000",
+				"240000000000000000000000",
+				"0.027383148334194110",
+				"10000000000000000000000",
+			},
+			types.NewMsgClaimDiscountedReward(
+				env.delegators[0].String(),
+				sdk.NewCoin(liquidBondDenom, DefaultInflationAmt.MulRaw(100)),
+				sdk.MustNewDecFromStr("0.03"),
+			),
+		},
+	}
+
+	for _, tc := range tcs {
+		suite.Run(tc.name, func() {
+			cachedCtx, _ := suite.ctx.CacheContext()
+			cachedCtx = suite.advanceHeight(cachedCtx, tc.numRewardEpochs-1, fmt.Sprintf("pass %d reward epoch", tc.numRewardEpochs))
+			cachedCtx = suite.advanceEpoch(cachedCtx) // reward is accumulated to reward pool
+			cachedCtx = suite.advanceHeight(cachedCtx, 1, "liquid staking endblocker is triggered")
+			requester := tc.msg.GetRequestser()
+			suite.Equal(tc.expected.discountRate, suite.app.LiquidStakingKeeper.CalcDiscountRate(cachedCtx).String())
+			suite.Equal(tc.expected.beforeTokenBal, suite.app.BankKeeper.GetBalance(cachedCtx, requester, suite.denom).Amount.String())
+			beforeLsTokenBal := suite.app.BankKeeper.GetBalance(cachedCtx, requester, liquidBondDenom).Amount
+			suite.Equal(tc.expected.beforeLsTokenBal, beforeLsTokenBal.String())
+			beforeMintRate := suite.app.LiquidStakingKeeper.GetNetAmountState(cachedCtx).MintRate
+			suite.Equal(tc.expected.beforeMintRate, beforeMintRate.String())
+			suite.NoError(suite.app.LiquidStakingKeeper.DoClaimDiscountedReward(cachedCtx, tc.msg))
+			suite.Equal(tc.afterTokenBal, suite.app.BankKeeper.GetBalance(cachedCtx, requester, suite.denom).Amount.String())
+			afterLsTokenBal := suite.app.BankKeeper.GetBalance(cachedCtx, requester, liquidBondDenom).Amount
+			suite.Equal(tc.expected.afterLsTokenBal, afterLsTokenBal.String())
+			afterMintRate := suite.app.LiquidStakingKeeper.GetNetAmountState(cachedCtx).MintRate
+			suite.Equal(tc.expected.afterMintRate, afterMintRate.String())
+			suite.Equal(tc.expected.increasedMintRate, afterMintRate.Sub(beforeMintRate).String())
+			suite.Equal(tc.expected.decreasedLsTokenBal, beforeLsTokenBal.Sub(afterLsTokenBal).String())
+		})
+	}
 }
 
 func (suite *KeeperTestSuite) TestDoClaimDiscountedRewardFail() {
