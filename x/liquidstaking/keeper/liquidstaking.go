@@ -197,13 +197,7 @@ func (k Keeper) HandleQueuedLiquidUnstakes(ctx sdk.Context) ([]types.Chunk, erro
 		if err != nil {
 			return nil, err
 		}
-		// TODO: k.startUnpairing(ctx, chunk, insurance)?
-		chunk.SetStatus(types.CHUNK_STATUS_UNPAIRING_FOR_UNSTAKING)
-		chunk.UnpairingInsuranceId = chunk.PairedInsuranceId
-		chunk.PairedInsuranceId = 0
-		insurance.SetStatus(types.INSURANCE_STATUS_UNPAIRING)
-		k.SetChunk(ctx, chunk)
-		k.SetInsurance(ctx, insurance)
+		_, chunk = k.startUnpairingForLiquidUnstake(ctx, insurance, chunk)
 		unstakedChunks = append(unstakedChunks, chunk)
 	}
 	return unstakedChunks, nil
@@ -1339,13 +1333,33 @@ func (k Keeper) GetAvailableChunkSlots(ctx sdk.Context) sdk.Int {
 
 // startUnpairing changes status of insurance and chunk to unpairing.
 // Actual unpairing process including un-delegate chunk will be done after ranking in EndBlocker.
-func (k Keeper) startUnpairing(ctx sdk.Context, insurance types.Insurance, chunk types.Chunk) {
+func (k Keeper) startUnpairing(
+	ctx sdk.Context,
+	insurance types.Insurance,
+	chunk types.Chunk,
+) {
 	insurance.SetStatus(types.INSURANCE_STATUS_UNPAIRING)
 	chunk.UnpairingInsuranceId = chunk.PairedInsuranceId
 	chunk.PairedInsuranceId = 0
 	chunk.SetStatus(types.CHUNK_STATUS_UNPAIRING)
 	k.SetChunk(ctx, chunk)
 	k.SetInsurance(ctx, insurance)
+}
+
+// startUnpairingForLiquidUnstake changes status of insurance to unpairing and
+// chunk to UnpairingForUnstaking.
+func (k Keeper) startUnpairingForLiquidUnstake(
+	ctx sdk.Context,
+	insurance types.Insurance,
+	chunk types.Chunk,
+) (types.Insurance, types.Chunk) {
+	chunk.SetStatus(types.CHUNK_STATUS_UNPAIRING_FOR_UNSTAKING)
+	chunk.UnpairingInsuranceId = chunk.PairedInsuranceId
+	chunk.PairedInsuranceId = types.Empty
+	insurance.SetStatus(types.INSURANCE_STATUS_UNPAIRING)
+	k.SetChunk(ctx, chunk)
+	k.SetInsurance(ctx, insurance)
+	return insurance, chunk
 }
 
 // withdrawInsurance withdraws insurance and commissions from insurance account immediately.
