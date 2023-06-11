@@ -948,6 +948,7 @@ paths:
         - Query
   /canto/liquidstaking/v1/chunk_size:
     get:
+      summary: ChunkSize returns the chunk size of the module.
       operationId: ChunkSize
       responses:
         '200':
@@ -1000,189 +1001,14 @@ paths:
                     id:
                       type: string
                       format: uint64
-                      title: Chunk id
-                    tokens:
+                      title: Id of the chunk
+                    paired_insurance_id:
                       type: string
-                      description: |-
-                        Amount of native tokens delegated by Chunk.
-                        If got slashed, the amount will be reduced.
-                        This value can be nil in Pairing status.
-                    shares:
+                      format: uint64
+                      title: Id of Paired insurance, 0 means no insurance
+                    unpairing_insurance_id:
                       type: string
-                      description: |-
-                        Amount of shares delegated by Chunk.
-                        This value can be nil in Pairing status.
-                    accumulated_reward:
-                      title: >-
-                        Accumulated reward of the chunk which will be reset at
-                        Epoch
-                      type: object
-                      properties:
-                        denom:
-                          type: string
-                        amount:
-                          type: string
-                      description: >-
-                        Coin defines a token with a denomination and an amount.
-
-
-                        NOTE: The amount field is an Int which implements the
-                        custom method
-
-                        signatures required by gogoproto.
-                    paired_insurance:
-                      title: Paired insurance
-                      type: object
-                      properties:
-                        id:
-                          type: string
-                          format: uint64
-                          title: Id of the insurance
-                        validator_address:
-                          type: string
-                          title: Address of the validator
-                        provider_address:
-                          type: string
-                          title: Address of the insurance provider
-                        fee_rate:
-                          type: string
-                          title: Fee rate of the insurance
-                        chunk_id:
-                          type: string
-                          format: uint64
-                          title: Id of the chunk for which the insurance has a duty
-                        status:
-                          title: Status of the insurance
-                          type: string
-                          enum:
-                            - INSURANCE_STATUS_UNSPECIFIED
-                            - INSURANCE_STATUS_PAIRING
-                            - INSURANCE_STATUS_PAIRED
-                            - INSURANCE_STATUS_UNPAIRING
-                            - INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAWAL
-                            - INSURANCE_STATUS_UNPAIRED
-                          default: INSURANCE_STATUS_UNSPECIFIED
-                          description: >-
-                            InsuranceStatus defines the status of the insurance.
-
-                             - INSURANCE_STATUS_PAIRING: This is the default status of an insurance when an insurance provider sends
-                            a MsgProvideInsurance. This status indicates that
-                            the insurance is ready to
-
-                            be paired with a chunk. When an empty slot is
-                            available and either
-
-                            msgLiquidStake is received or pairing chunks have
-                            been created in the
-
-                            recent epoch, the insurance with the lowest fee will
-                            be paired with the
-
-                            chunk. Once paired, the insurance contract can be
-                            cancelled using
-
-                            MsgCancelProvideInsurance.
-                             - INSURANCE_STATUS_PAIRED: An insurance is paired with a chunk. While the insurance is in this status,
-                            it serves as a form of protection for the chunk by
-                            insuring it against
-
-                            unexpected loss that may occur due to validator
-                            slashing. This ensures that
-
-                            the chunk remains same size and maximize its staking
-                            rewards.
-                             - INSURANCE_STATUS_UNPAIRING: A paired insurance enters this status when it no longer has enough balance
-                            to cover slashing penalties, when the validator is
-                            tombstoned, or
-
-                            when the paired chunk is started to be undelegated.
-
-                            At the next epoch, unpairing will be unpaired.
-                             - INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAWAL: A paired insurance enters this status when there are
-                            queued withdrawal insurance requests created by
-                            MsgWithdrawInsurance at the
-
-                            epoch.
-                             - INSURANCE_STATUS_UNPAIRED: Unpairing insurances from previous epoch enters this status.
-                            Unpaired insurance can be withdrawn immediately by
-                            MsgWithdrawInsurance.
-                      description: Insurance defines the insurance of the module.
-                    unpairing_insurance:
-                      type: object
-                      properties:
-                        id:
-                          type: string
-                          format: uint64
-                          title: Id of the insurance
-                        validator_address:
-                          type: string
-                          title: Address of the validator
-                        provider_address:
-                          type: string
-                          title: Address of the insurance provider
-                        fee_rate:
-                          type: string
-                          title: Fee rate of the insurance
-                        chunk_id:
-                          type: string
-                          format: uint64
-                          title: Id of the chunk for which the insurance has a duty
-                        status:
-                          title: Status of the insurance
-                          type: string
-                          enum:
-                            - INSURANCE_STATUS_UNSPECIFIED
-                            - INSURANCE_STATUS_PAIRING
-                            - INSURANCE_STATUS_PAIRED
-                            - INSURANCE_STATUS_UNPAIRING
-                            - INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAWAL
-                            - INSURANCE_STATUS_UNPAIRED
-                          default: INSURANCE_STATUS_UNSPECIFIED
-                          description: >-
-                            InsuranceStatus defines the status of the insurance.
-
-                             - INSURANCE_STATUS_PAIRING: This is the default status of an insurance when an insurance provider sends
-                            a MsgProvideInsurance. This status indicates that
-                            the insurance is ready to
-
-                            be paired with a chunk. When an empty slot is
-                            available and either
-
-                            msgLiquidStake is received or pairing chunks have
-                            been created in the
-
-                            recent epoch, the insurance with the lowest fee will
-                            be paired with the
-
-                            chunk. Once paired, the insurance contract can be
-                            cancelled using
-
-                            MsgCancelProvideInsurance.
-                             - INSURANCE_STATUS_PAIRED: An insurance is paired with a chunk. While the insurance is in this status,
-                            it serves as a form of protection for the chunk by
-                            insuring it against
-
-                            unexpected loss that may occur due to validator
-                            slashing. This ensures that
-
-                            the chunk remains same size and maximize its staking
-                            rewards.
-                             - INSURANCE_STATUS_UNPAIRING: A paired insurance enters this status when it no longer has enough balance
-                            to cover slashing penalties, when the validator is
-                            tombstoned, or
-
-                            when the paired chunk is started to be undelegated.
-
-                            At the next epoch, unpairing will be unpaired.
-                             - INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAWAL: A paired insurance enters this status when there are
-                            queued withdrawal insurance requests created by
-                            MsgWithdrawInsurance at the
-
-                            epoch.
-                             - INSURANCE_STATUS_UNPAIRED: Unpairing insurances from previous epoch enters this status.
-                            Unpaired insurance can be withdrawn immediately by
-                            MsgWithdrawInsurance.
-                      description: Insurance defines the insurance of the module.
+                      format: uint64
                     status:
                       title: Status of the chunk
                       type: string
@@ -1228,6 +1054,7 @@ paths:
                         chunk object is
 
                         removed.
+                  description: Chunk defines the chunk of the module.
               pagination:
                 type: object
                 properties:
@@ -1397,189 +1224,14 @@ paths:
                   id:
                     type: string
                     format: uint64
-                    title: Chunk id
-                  tokens:
+                    title: Id of the chunk
+                  paired_insurance_id:
                     type: string
-                    description: |-
-                      Amount of native tokens delegated by Chunk.
-                      If got slashed, the amount will be reduced.
-                      This value can be nil in Pairing status.
-                  shares:
+                    format: uint64
+                    title: Id of Paired insurance, 0 means no insurance
+                  unpairing_insurance_id:
                     type: string
-                    description: |-
-                      Amount of shares delegated by Chunk.
-                      This value can be nil in Pairing status.
-                  accumulated_reward:
-                    title: >-
-                      Accumulated reward of the chunk which will be reset at
-                      Epoch
-                    type: object
-                    properties:
-                      denom:
-                        type: string
-                      amount:
-                        type: string
-                    description: >-
-                      Coin defines a token with a denomination and an amount.
-
-
-                      NOTE: The amount field is an Int which implements the
-                      custom method
-
-                      signatures required by gogoproto.
-                  paired_insurance:
-                    title: Paired insurance
-                    type: object
-                    properties:
-                      id:
-                        type: string
-                        format: uint64
-                        title: Id of the insurance
-                      validator_address:
-                        type: string
-                        title: Address of the validator
-                      provider_address:
-                        type: string
-                        title: Address of the insurance provider
-                      fee_rate:
-                        type: string
-                        title: Fee rate of the insurance
-                      chunk_id:
-                        type: string
-                        format: uint64
-                        title: Id of the chunk for which the insurance has a duty
-                      status:
-                        title: Status of the insurance
-                        type: string
-                        enum:
-                          - INSURANCE_STATUS_UNSPECIFIED
-                          - INSURANCE_STATUS_PAIRING
-                          - INSURANCE_STATUS_PAIRED
-                          - INSURANCE_STATUS_UNPAIRING
-                          - INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAWAL
-                          - INSURANCE_STATUS_UNPAIRED
-                        default: INSURANCE_STATUS_UNSPECIFIED
-                        description: >-
-                          InsuranceStatus defines the status of the insurance.
-
-                           - INSURANCE_STATUS_PAIRING: This is the default status of an insurance when an insurance provider sends
-                          a MsgProvideInsurance. This status indicates that the
-                          insurance is ready to
-
-                          be paired with a chunk. When an empty slot is
-                          available and either
-
-                          msgLiquidStake is received or pairing chunks have been
-                          created in the
-
-                          recent epoch, the insurance with the lowest fee will
-                          be paired with the
-
-                          chunk. Once paired, the insurance contract can be
-                          cancelled using
-
-                          MsgCancelProvideInsurance.
-                           - INSURANCE_STATUS_PAIRED: An insurance is paired with a chunk. While the insurance is in this status,
-                          it serves as a form of protection for the chunk by
-                          insuring it against
-
-                          unexpected loss that may occur due to validator
-                          slashing. This ensures that
-
-                          the chunk remains same size and maximize its staking
-                          rewards.
-                           - INSURANCE_STATUS_UNPAIRING: A paired insurance enters this status when it no longer has enough balance
-                          to cover slashing penalties, when the validator is
-                          tombstoned, or
-
-                          when the paired chunk is started to be undelegated.
-
-                          At the next epoch, unpairing will be unpaired.
-                           - INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAWAL: A paired insurance enters this status when there are
-                          queued withdrawal insurance requests created by
-                          MsgWithdrawInsurance at the
-
-                          epoch.
-                           - INSURANCE_STATUS_UNPAIRED: Unpairing insurances from previous epoch enters this status.
-                          Unpaired insurance can be withdrawn immediately by
-                          MsgWithdrawInsurance.
-                    description: Insurance defines the insurance of the module.
-                  unpairing_insurance:
-                    type: object
-                    properties:
-                      id:
-                        type: string
-                        format: uint64
-                        title: Id of the insurance
-                      validator_address:
-                        type: string
-                        title: Address of the validator
-                      provider_address:
-                        type: string
-                        title: Address of the insurance provider
-                      fee_rate:
-                        type: string
-                        title: Fee rate of the insurance
-                      chunk_id:
-                        type: string
-                        format: uint64
-                        title: Id of the chunk for which the insurance has a duty
-                      status:
-                        title: Status of the insurance
-                        type: string
-                        enum:
-                          - INSURANCE_STATUS_UNSPECIFIED
-                          - INSURANCE_STATUS_PAIRING
-                          - INSURANCE_STATUS_PAIRED
-                          - INSURANCE_STATUS_UNPAIRING
-                          - INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAWAL
-                          - INSURANCE_STATUS_UNPAIRED
-                        default: INSURANCE_STATUS_UNSPECIFIED
-                        description: >-
-                          InsuranceStatus defines the status of the insurance.
-
-                           - INSURANCE_STATUS_PAIRING: This is the default status of an insurance when an insurance provider sends
-                          a MsgProvideInsurance. This status indicates that the
-                          insurance is ready to
-
-                          be paired with a chunk. When an empty slot is
-                          available and either
-
-                          msgLiquidStake is received or pairing chunks have been
-                          created in the
-
-                          recent epoch, the insurance with the lowest fee will
-                          be paired with the
-
-                          chunk. Once paired, the insurance contract can be
-                          cancelled using
-
-                          MsgCancelProvideInsurance.
-                           - INSURANCE_STATUS_PAIRED: An insurance is paired with a chunk. While the insurance is in this status,
-                          it serves as a form of protection for the chunk by
-                          insuring it against
-
-                          unexpected loss that may occur due to validator
-                          slashing. This ensures that
-
-                          the chunk remains same size and maximize its staking
-                          rewards.
-                           - INSURANCE_STATUS_UNPAIRING: A paired insurance enters this status when it no longer has enough balance
-                          to cover slashing penalties, when the validator is
-                          tombstoned, or
-
-                          when the paired chunk is started to be undelegated.
-
-                          At the next epoch, unpairing will be unpaired.
-                           - INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAWAL: A paired insurance enters this status when there are
-                          queued withdrawal insurance requests created by
-                          MsgWithdrawInsurance at the
-
-                          epoch.
-                           - INSURANCE_STATUS_UNPAIRED: Unpairing insurances from previous epoch enters this status.
-                          Unpaired insurance can be withdrawn immediately by
-                          MsgWithdrawInsurance.
-                    description: Insurance defines the insurance of the module.
+                    format: uint64
                   status:
                     title: Status of the chunk
                     type: string
@@ -1625,6 +1277,7 @@ paths:
                       chunk object is
 
                       removed.
+                description: Chunk defines the chunk of the module.
         default:
           description: An unexpected error response.
           schema:
@@ -1721,93 +1374,20 @@ paths:
                     id:
                       type: string
                       format: uint64
-                      title: Insurance id
+                      title: Id of the insurance
                     validator_address:
                       type: string
                       title: Address of the validator
                     provider_address:
                       type: string
-                      title: Address of the provider
-                    amount:
-                      title: Amount of native token to guard slashing
-                      type: object
-                      properties:
-                        denom:
-                          type: string
-                        amount:
-                          type: string
-                      description: >-
-                        Coin defines a token with a denomination and an amount.
-
-
-                        NOTE: The amount field is an Int which implements the
-                        custom method
-
-                        signatures required by gogoproto.
+                      title: Address of the insurance provider
                     fee_rate:
                       type: string
                       title: Fee rate of the insurance
-                    chunk:
-                      title: Paired chunk
-                      type: object
-                      properties:
-                        id:
-                          type: string
-                          format: uint64
-                          title: Id of the chunk
-                        paired_insurance_id:
-                          type: string
-                          format: uint64
-                          title: Id of Paired insurance, 0 means no insurance
-                        unpairing_insurance_id:
-                          type: string
-                          format: uint64
-                        status:
-                          title: Status of the chunk
-                          type: string
-                          enum:
-                            - CHUNK_STATUS_UNSPECIFIED
-                            - CHUNK_STATUS_PAIRING
-                            - CHUNK_STATUS_PAIRED
-                            - CHUNK_STATUS_UNPAIRING
-                            - CHUNK_STATUS_UNPAIRING_FOR_UNSTAKING
-                          default: CHUNK_STATUS_UNSPECIFIED
-                          description: >-
-                            ChunkStatus defines the status of the chunk.
-
-                             - CHUNK_STATUS_PAIRING: This status indicates that the chunk is ready to be paired with an
-                            insurance.
-                             - CHUNK_STATUS_PAIRED: A chunk is paired with an insurance that has the lowest fee rate.
-                            The fee rate is determined by the sum of the
-                            insurance fee rate set by
-
-                            the insurance provider and the commission fee rate
-                            set by the validator
-
-                            designated by the insurance provider.
-                             - CHUNK_STATUS_UNPAIRING: A paired chunk enters this status when paired insurance is started to be
-                            withdrawn or is insufficient (meaning the insurance
-                            balance is below the
-
-                            minimum requirement to be considered valid
-                            insurance) or the validator of
-
-                            the insurance becomes tombstoned.
-                             - CHUNK_STATUS_UNPAIRING_FOR_UNSTAKING: When a delegator (also known as a liquid staker) sends a MsgLiquidUnstake,
-                            it is queued as a PendingLiquidUnstake. At the end
-                            of the epoch,
-
-                            the actual undelegation is triggered and the chunk
-                            enters this state.
-
-                            Once the unbonding period is over in next epoch, the
-                            staked tokens are
-
-                            returned to the delegator's account and the
-                            associated chunk object is
-
-                            removed.
-                      description: Chunk defines the chunk of the module.
+                    chunk_id:
+                      type: string
+                      format: uint64
+                      title: Id of the chunk for which the insurance has a duty
                     status:
                       title: Status of the insurance
                       type: string
@@ -1863,6 +1443,7 @@ paths:
                          - INSURANCE_STATUS_UNPAIRED: Unpairing insurances from previous epoch enters this status.
                         Unpaired insurance can be withdrawn immediately by
                         MsgWithdrawInsurance.
+                  description: Insurance defines the insurance of the module.
               pagination:
                 type: object
                 properties:
@@ -2049,93 +1630,20 @@ paths:
                   id:
                     type: string
                     format: uint64
-                    title: Insurance id
+                    title: Id of the insurance
                   validator_address:
                     type: string
                     title: Address of the validator
                   provider_address:
                     type: string
-                    title: Address of the provider
-                  amount:
-                    title: Amount of native token to guard slashing
-                    type: object
-                    properties:
-                      denom:
-                        type: string
-                      amount:
-                        type: string
-                    description: >-
-                      Coin defines a token with a denomination and an amount.
-
-
-                      NOTE: The amount field is an Int which implements the
-                      custom method
-
-                      signatures required by gogoproto.
+                    title: Address of the insurance provider
                   fee_rate:
                     type: string
                     title: Fee rate of the insurance
-                  chunk:
-                    title: Paired chunk
-                    type: object
-                    properties:
-                      id:
-                        type: string
-                        format: uint64
-                        title: Id of the chunk
-                      paired_insurance_id:
-                        type: string
-                        format: uint64
-                        title: Id of Paired insurance, 0 means no insurance
-                      unpairing_insurance_id:
-                        type: string
-                        format: uint64
-                      status:
-                        title: Status of the chunk
-                        type: string
-                        enum:
-                          - CHUNK_STATUS_UNSPECIFIED
-                          - CHUNK_STATUS_PAIRING
-                          - CHUNK_STATUS_PAIRED
-                          - CHUNK_STATUS_UNPAIRING
-                          - CHUNK_STATUS_UNPAIRING_FOR_UNSTAKING
-                        default: CHUNK_STATUS_UNSPECIFIED
-                        description: >-
-                          ChunkStatus defines the status of the chunk.
-
-                           - CHUNK_STATUS_PAIRING: This status indicates that the chunk is ready to be paired with an
-                          insurance.
-                           - CHUNK_STATUS_PAIRED: A chunk is paired with an insurance that has the lowest fee rate.
-                          The fee rate is determined by the sum of the insurance
-                          fee rate set by
-
-                          the insurance provider and the commission fee rate set
-                          by the validator
-
-                          designated by the insurance provider.
-                           - CHUNK_STATUS_UNPAIRING: A paired chunk enters this status when paired insurance is started to be
-                          withdrawn or is insufficient (meaning the insurance
-                          balance is below the
-
-                          minimum requirement to be considered valid insurance)
-                          or the validator of
-
-                          the insurance becomes tombstoned.
-                           - CHUNK_STATUS_UNPAIRING_FOR_UNSTAKING: When a delegator (also known as a liquid staker) sends a MsgLiquidUnstake,
-                          it is queued as a PendingLiquidUnstake. At the end of
-                          the epoch,
-
-                          the actual undelegation is triggered and the chunk
-                          enters this state.
-
-                          Once the unbonding period is over in next epoch, the
-                          staked tokens are
-
-                          returned to the delegator's account and the associated
-                          chunk object is
-
-                          removed.
-                    description: Chunk defines the chunk of the module.
+                  chunk_id:
+                    type: string
+                    format: uint64
+                    title: Id of the chunk for which the insurance has a duty
                   status:
                     title: Status of the insurance
                     type: string
@@ -2191,6 +1699,7 @@ paths:
                        - INSURANCE_STATUS_UNPAIRED: Unpairing insurances from previous epoch enters this status.
                       Unpaired insurance can be withdrawn immediately by
                       MsgWithdrawInsurance.
+                description: Insurance defines the insurance of the module.
         default:
           description: An unexpected error response.
           schema:
@@ -2414,6 +1923,12 @@ paths:
                   reward_module_acc_balance:
                     type: string
                     title: Balance of reward module account
+                  utilization_ratio:
+                    type: string
+                  discount_rate:
+                    type: string
+                  fee_rate:
+                    type: string
                 description: >-
                   NetAmountState is type for net amount raw data and mint rate,
                   This is a value
@@ -2448,6 +1963,9 @@ paths:
         - Query
   /canto/liquidstaking/v1/unpairing_for_unstaking_chunk_infos:
     get:
+      summary: >-
+        UnpairingForUnstakingChunkInfos returns all unpairing for unstaking
+        chunk infos on the module.
       operationId: UnpairingForUnstakingChunkInfos
       responses:
         '200':
@@ -2460,253 +1978,19 @@ paths:
                 items:
                   type: object
                   properties:
-                    chunk:
+                    info:
                       type: object
                       properties:
-                        id:
+                        chunk_id:
                           type: string
                           format: uint64
-                          title: Chunk id
-                        tokens:
+                          title: The id of chunk
+                        delegator_address:
                           type: string
-                          description: |-
-                            Amount of native tokens delegated by Chunk.
-                            If got slashed, the amount will be reduced.
-                            This value can be nil in Pairing status.
-                        shares:
+                          title: Address of delegator (=liquid unstaker)
+                        escrowed_lstokens:
                           type: string
-                          description: |-
-                            Amount of shares delegated by Chunk.
-                            This value can be nil in Pairing status.
-                        accumulated_reward:
-                          title: >-
-                            Accumulated reward of the chunk which will be reset
-                            at Epoch
-                          type: object
-                          properties:
-                            denom:
-                              type: string
-                            amount:
-                              type: string
-                          description: >-
-                            Coin defines a token with a denomination and an
-                            amount.
-
-
-                            NOTE: The amount field is an Int which implements
-                            the custom method
-
-                            signatures required by gogoproto.
-                        paired_insurance:
-                          title: Paired insurance
-                          type: object
-                          properties:
-                            id:
-                              type: string
-                              format: uint64
-                              title: Id of the insurance
-                            validator_address:
-                              type: string
-                              title: Address of the validator
-                            provider_address:
-                              type: string
-                              title: Address of the insurance provider
-                            fee_rate:
-                              type: string
-                              title: Fee rate of the insurance
-                            chunk_id:
-                              type: string
-                              format: uint64
-                              title: >-
-                                Id of the chunk for which the insurance has a
-                                duty
-                            status:
-                              title: Status of the insurance
-                              type: string
-                              enum:
-                                - INSURANCE_STATUS_UNSPECIFIED
-                                - INSURANCE_STATUS_PAIRING
-                                - INSURANCE_STATUS_PAIRED
-                                - INSURANCE_STATUS_UNPAIRING
-                                - INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAWAL
-                                - INSURANCE_STATUS_UNPAIRED
-                              default: INSURANCE_STATUS_UNSPECIFIED
-                              description: >-
-                                InsuranceStatus defines the status of the
-                                insurance.
-
-                                 - INSURANCE_STATUS_PAIRING: This is the default status of an insurance when an insurance provider sends
-                                a MsgProvideInsurance. This status indicates
-                                that the insurance is ready to
-
-                                be paired with a chunk. When an empty slot is
-                                available and either
-
-                                msgLiquidStake is received or pairing chunks
-                                have been created in the
-
-                                recent epoch, the insurance with the lowest fee
-                                will be paired with the
-
-                                chunk. Once paired, the insurance contract can
-                                be cancelled using
-
-                                MsgCancelProvideInsurance.
-                                 - INSURANCE_STATUS_PAIRED: An insurance is paired with a chunk. While the insurance is in this status,
-                                it serves as a form of protection for the chunk
-                                by insuring it against
-
-                                unexpected loss that may occur due to validator
-                                slashing. This ensures that
-
-                                the chunk remains same size and maximize its
-                                staking rewards.
-                                 - INSURANCE_STATUS_UNPAIRING: A paired insurance enters this status when it no longer has enough balance
-                                to cover slashing penalties, when the validator
-                                is tombstoned, or
-
-                                when the paired chunk is started to be
-                                undelegated.
-
-                                At the next epoch, unpairing will be unpaired.
-                                 - INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAWAL: A paired insurance enters this status when there are
-                                queued withdrawal insurance requests created by
-                                MsgWithdrawInsurance at the
-
-                                epoch.
-                                 - INSURANCE_STATUS_UNPAIRED: Unpairing insurances from previous epoch enters this status.
-                                Unpaired insurance can be withdrawn immediately
-                                by MsgWithdrawInsurance.
-                          description: Insurance defines the insurance of the module.
-                        unpairing_insurance:
-                          type: object
-                          properties:
-                            id:
-                              type: string
-                              format: uint64
-                              title: Id of the insurance
-                            validator_address:
-                              type: string
-                              title: Address of the validator
-                            provider_address:
-                              type: string
-                              title: Address of the insurance provider
-                            fee_rate:
-                              type: string
-                              title: Fee rate of the insurance
-                            chunk_id:
-                              type: string
-                              format: uint64
-                              title: >-
-                                Id of the chunk for which the insurance has a
-                                duty
-                            status:
-                              title: Status of the insurance
-                              type: string
-                              enum:
-                                - INSURANCE_STATUS_UNSPECIFIED
-                                - INSURANCE_STATUS_PAIRING
-                                - INSURANCE_STATUS_PAIRED
-                                - INSURANCE_STATUS_UNPAIRING
-                                - INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAWAL
-                                - INSURANCE_STATUS_UNPAIRED
-                              default: INSURANCE_STATUS_UNSPECIFIED
-                              description: >-
-                                InsuranceStatus defines the status of the
-                                insurance.
-
-                                 - INSURANCE_STATUS_PAIRING: This is the default status of an insurance when an insurance provider sends
-                                a MsgProvideInsurance. This status indicates
-                                that the insurance is ready to
-
-                                be paired with a chunk. When an empty slot is
-                                available and either
-
-                                msgLiquidStake is received or pairing chunks
-                                have been created in the
-
-                                recent epoch, the insurance with the lowest fee
-                                will be paired with the
-
-                                chunk. Once paired, the insurance contract can
-                                be cancelled using
-
-                                MsgCancelProvideInsurance.
-                                 - INSURANCE_STATUS_PAIRED: An insurance is paired with a chunk. While the insurance is in this status,
-                                it serves as a form of protection for the chunk
-                                by insuring it against
-
-                                unexpected loss that may occur due to validator
-                                slashing. This ensures that
-
-                                the chunk remains same size and maximize its
-                                staking rewards.
-                                 - INSURANCE_STATUS_UNPAIRING: A paired insurance enters this status when it no longer has enough balance
-                                to cover slashing penalties, when the validator
-                                is tombstoned, or
-
-                                when the paired chunk is started to be
-                                undelegated.
-
-                                At the next epoch, unpairing will be unpaired.
-                                 - INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAWAL: A paired insurance enters this status when there are
-                                queued withdrawal insurance requests created by
-                                MsgWithdrawInsurance at the
-
-                                epoch.
-                                 - INSURANCE_STATUS_UNPAIRED: Unpairing insurances from previous epoch enters this status.
-                                Unpaired insurance can be withdrawn immediately
-                                by MsgWithdrawInsurance.
-                          description: Insurance defines the insurance of the module.
-                        status:
-                          title: Status of the chunk
-                          type: string
-                          enum:
-                            - CHUNK_STATUS_UNSPECIFIED
-                            - CHUNK_STATUS_PAIRING
-                            - CHUNK_STATUS_PAIRED
-                            - CHUNK_STATUS_UNPAIRING
-                            - CHUNK_STATUS_UNPAIRING_FOR_UNSTAKING
-                          default: CHUNK_STATUS_UNSPECIFIED
-                          description: >-
-                            ChunkStatus defines the status of the chunk.
-
-                             - CHUNK_STATUS_PAIRING: This status indicates that the chunk is ready to be paired with an
-                            insurance.
-                             - CHUNK_STATUS_PAIRED: A chunk is paired with an insurance that has the lowest fee rate.
-                            The fee rate is determined by the sum of the
-                            insurance fee rate set by
-
-                            the insurance provider and the commission fee rate
-                            set by the validator
-
-                            designated by the insurance provider.
-                             - CHUNK_STATUS_UNPAIRING: A paired chunk enters this status when paired insurance is started to be
-                            withdrawn or is insufficient (meaning the insurance
-                            balance is below the
-
-                            minimum requirement to be considered valid
-                            insurance) or the validator of
-
-                            the insurance becomes tombstoned.
-                             - CHUNK_STATUS_UNPAIRING_FOR_UNSTAKING: When a delegator (also known as a liquid staker) sends a MsgLiquidUnstake,
-                            it is queued as a PendingLiquidUnstake. At the end
-                            of the epoch,
-
-                            the actual undelegation is triggered and the chunk
-                            enters this state.
-
-                            Once the unbonding period is over in next epoch, the
-                            staked tokens are
-
-                            returned to the delegator's account and the
-                            associated chunk object is
-
-                            removed.
-                    delegator_address:
-                      type: string
-                    escrowed_lstokens:
-                      type: string
+                          title: Amount of ls tokens to burn
               pagination:
                 type: object
                 properties:
@@ -2761,6 +2045,13 @@ paths:
           in: query
           required: false
           type: string
+        - name: queued
+          description: |-
+            If queued is true, it means that liquid unstake hasn't started yet.
+            If queued is false, it means that liquid unstake has started.
+          in: query
+          required: false
+          type: boolean
         - name: pagination.key
           description: |-
             key is a value returned in PageResponse.next_key to begin
@@ -2821,6 +2112,9 @@ paths:
         - Query
   /canto/liquidstaking/v1/unpairing_for_unstaking_chunk_infos/{id}:
     get:
+      summary: >-
+        UnpairingForUnstakingChunkInfo returns a unpairing for unstaking chunk
+        info by id.
       operationId: UnpairingForUnstakingChunkInfo
       responses:
         '200':
@@ -2831,249 +2125,19 @@ paths:
               info:
                 type: object
                 properties:
-                  chunk:
+                  info:
                     type: object
                     properties:
-                      id:
+                      chunk_id:
                         type: string
                         format: uint64
-                        title: Chunk id
-                      tokens:
+                        title: The id of chunk
+                      delegator_address:
                         type: string
-                        description: |-
-                          Amount of native tokens delegated by Chunk.
-                          If got slashed, the amount will be reduced.
-                          This value can be nil in Pairing status.
-                      shares:
+                        title: Address of delegator (=liquid unstaker)
+                      escrowed_lstokens:
                         type: string
-                        description: |-
-                          Amount of shares delegated by Chunk.
-                          This value can be nil in Pairing status.
-                      accumulated_reward:
-                        title: >-
-                          Accumulated reward of the chunk which will be reset at
-                          Epoch
-                        type: object
-                        properties:
-                          denom:
-                            type: string
-                          amount:
-                            type: string
-                        description: >-
-                          Coin defines a token with a denomination and an
-                          amount.
-
-
-                          NOTE: The amount field is an Int which implements the
-                          custom method
-
-                          signatures required by gogoproto.
-                      paired_insurance:
-                        title: Paired insurance
-                        type: object
-                        properties:
-                          id:
-                            type: string
-                            format: uint64
-                            title: Id of the insurance
-                          validator_address:
-                            type: string
-                            title: Address of the validator
-                          provider_address:
-                            type: string
-                            title: Address of the insurance provider
-                          fee_rate:
-                            type: string
-                            title: Fee rate of the insurance
-                          chunk_id:
-                            type: string
-                            format: uint64
-                            title: Id of the chunk for which the insurance has a duty
-                          status:
-                            title: Status of the insurance
-                            type: string
-                            enum:
-                              - INSURANCE_STATUS_UNSPECIFIED
-                              - INSURANCE_STATUS_PAIRING
-                              - INSURANCE_STATUS_PAIRED
-                              - INSURANCE_STATUS_UNPAIRING
-                              - INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAWAL
-                              - INSURANCE_STATUS_UNPAIRED
-                            default: INSURANCE_STATUS_UNSPECIFIED
-                            description: >-
-                              InsuranceStatus defines the status of the
-                              insurance.
-
-                               - INSURANCE_STATUS_PAIRING: This is the default status of an insurance when an insurance provider sends
-                              a MsgProvideInsurance. This status indicates that
-                              the insurance is ready to
-
-                              be paired with a chunk. When an empty slot is
-                              available and either
-
-                              msgLiquidStake is received or pairing chunks have
-                              been created in the
-
-                              recent epoch, the insurance with the lowest fee
-                              will be paired with the
-
-                              chunk. Once paired, the insurance contract can be
-                              cancelled using
-
-                              MsgCancelProvideInsurance.
-                               - INSURANCE_STATUS_PAIRED: An insurance is paired with a chunk. While the insurance is in this status,
-                              it serves as a form of protection for the chunk by
-                              insuring it against
-
-                              unexpected loss that may occur due to validator
-                              slashing. This ensures that
-
-                              the chunk remains same size and maximize its
-                              staking rewards.
-                               - INSURANCE_STATUS_UNPAIRING: A paired insurance enters this status when it no longer has enough balance
-                              to cover slashing penalties, when the validator is
-                              tombstoned, or
-
-                              when the paired chunk is started to be
-                              undelegated.
-
-                              At the next epoch, unpairing will be unpaired.
-                               - INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAWAL: A paired insurance enters this status when there are
-                              queued withdrawal insurance requests created by
-                              MsgWithdrawInsurance at the
-
-                              epoch.
-                               - INSURANCE_STATUS_UNPAIRED: Unpairing insurances from previous epoch enters this status.
-                              Unpaired insurance can be withdrawn immediately by
-                              MsgWithdrawInsurance.
-                        description: Insurance defines the insurance of the module.
-                      unpairing_insurance:
-                        type: object
-                        properties:
-                          id:
-                            type: string
-                            format: uint64
-                            title: Id of the insurance
-                          validator_address:
-                            type: string
-                            title: Address of the validator
-                          provider_address:
-                            type: string
-                            title: Address of the insurance provider
-                          fee_rate:
-                            type: string
-                            title: Fee rate of the insurance
-                          chunk_id:
-                            type: string
-                            format: uint64
-                            title: Id of the chunk for which the insurance has a duty
-                          status:
-                            title: Status of the insurance
-                            type: string
-                            enum:
-                              - INSURANCE_STATUS_UNSPECIFIED
-                              - INSURANCE_STATUS_PAIRING
-                              - INSURANCE_STATUS_PAIRED
-                              - INSURANCE_STATUS_UNPAIRING
-                              - INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAWAL
-                              - INSURANCE_STATUS_UNPAIRED
-                            default: INSURANCE_STATUS_UNSPECIFIED
-                            description: >-
-                              InsuranceStatus defines the status of the
-                              insurance.
-
-                               - INSURANCE_STATUS_PAIRING: This is the default status of an insurance when an insurance provider sends
-                              a MsgProvideInsurance. This status indicates that
-                              the insurance is ready to
-
-                              be paired with a chunk. When an empty slot is
-                              available and either
-
-                              msgLiquidStake is received or pairing chunks have
-                              been created in the
-
-                              recent epoch, the insurance with the lowest fee
-                              will be paired with the
-
-                              chunk. Once paired, the insurance contract can be
-                              cancelled using
-
-                              MsgCancelProvideInsurance.
-                               - INSURANCE_STATUS_PAIRED: An insurance is paired with a chunk. While the insurance is in this status,
-                              it serves as a form of protection for the chunk by
-                              insuring it against
-
-                              unexpected loss that may occur due to validator
-                              slashing. This ensures that
-
-                              the chunk remains same size and maximize its
-                              staking rewards.
-                               - INSURANCE_STATUS_UNPAIRING: A paired insurance enters this status when it no longer has enough balance
-                              to cover slashing penalties, when the validator is
-                              tombstoned, or
-
-                              when the paired chunk is started to be
-                              undelegated.
-
-                              At the next epoch, unpairing will be unpaired.
-                               - INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAWAL: A paired insurance enters this status when there are
-                              queued withdrawal insurance requests created by
-                              MsgWithdrawInsurance at the
-
-                              epoch.
-                               - INSURANCE_STATUS_UNPAIRED: Unpairing insurances from previous epoch enters this status.
-                              Unpaired insurance can be withdrawn immediately by
-                              MsgWithdrawInsurance.
-                        description: Insurance defines the insurance of the module.
-                      status:
-                        title: Status of the chunk
-                        type: string
-                        enum:
-                          - CHUNK_STATUS_UNSPECIFIED
-                          - CHUNK_STATUS_PAIRING
-                          - CHUNK_STATUS_PAIRED
-                          - CHUNK_STATUS_UNPAIRING
-                          - CHUNK_STATUS_UNPAIRING_FOR_UNSTAKING
-                        default: CHUNK_STATUS_UNSPECIFIED
-                        description: >-
-                          ChunkStatus defines the status of the chunk.
-
-                           - CHUNK_STATUS_PAIRING: This status indicates that the chunk is ready to be paired with an
-                          insurance.
-                           - CHUNK_STATUS_PAIRED: A chunk is paired with an insurance that has the lowest fee rate.
-                          The fee rate is determined by the sum of the insurance
-                          fee rate set by
-
-                          the insurance provider and the commission fee rate set
-                          by the validator
-
-                          designated by the insurance provider.
-                           - CHUNK_STATUS_UNPAIRING: A paired chunk enters this status when paired insurance is started to be
-                          withdrawn or is insufficient (meaning the insurance
-                          balance is below the
-
-                          minimum requirement to be considered valid insurance)
-                          or the validator of
-
-                          the insurance becomes tombstoned.
-                           - CHUNK_STATUS_UNPAIRING_FOR_UNSTAKING: When a delegator (also known as a liquid staker) sends a MsgLiquidUnstake,
-                          it is queued as a PendingLiquidUnstake. At the end of
-                          the epoch,
-
-                          the actual undelegation is triggered and the chunk
-                          enters this state.
-
-                          Once the unbonding period is over in next epoch, the
-                          staked tokens are
-
-                          returned to the delegator's account and the associated
-                          chunk object is
-
-                          removed.
-                  delegator_address:
-                    type: string
-                  escrowed_lstokens:
-                    type: string
+                        title: Amount of ls tokens to burn
         default:
           description: An unexpected error response.
           schema:
@@ -3106,6 +2170,9 @@ paths:
         - Query
   /canto/liquidstaking/v1/withdraw_insurance_requests:
     get:
+      summary: >-
+        WithdrawInsuranceRequests returns all withdraw insurance requests on the
+        module.
       operationId: WithdrawInsuranceRequests
       responses:
         '200':
@@ -3118,155 +2185,13 @@ paths:
                 items:
                   type: object
                   properties:
-                    insurance:
+                    request:
                       type: object
                       properties:
-                        id:
+                        insurance_id:
                           type: string
                           format: uint64
-                          title: Insurance id
-                        validator_address:
-                          type: string
-                          title: Address of the validator
-                        provider_address:
-                          type: string
-                          title: Address of the provider
-                        amount:
-                          title: Amount of native token to guard slashing
-                          type: object
-                          properties:
-                            denom:
-                              type: string
-                            amount:
-                              type: string
-                          description: >-
-                            Coin defines a token with a denomination and an
-                            amount.
-
-
-                            NOTE: The amount field is an Int which implements
-                            the custom method
-
-                            signatures required by gogoproto.
-                        fee_rate:
-                          type: string
-                          title: Fee rate of the insurance
-                        chunk:
-                          title: Paired chunk
-                          type: object
-                          properties:
-                            id:
-                              type: string
-                              format: uint64
-                              title: Id of the chunk
-                            paired_insurance_id:
-                              type: string
-                              format: uint64
-                              title: Id of Paired insurance, 0 means no insurance
-                            unpairing_insurance_id:
-                              type: string
-                              format: uint64
-                            status:
-                              title: Status of the chunk
-                              type: string
-                              enum:
-                                - CHUNK_STATUS_UNSPECIFIED
-                                - CHUNK_STATUS_PAIRING
-                                - CHUNK_STATUS_PAIRED
-                                - CHUNK_STATUS_UNPAIRING
-                                - CHUNK_STATUS_UNPAIRING_FOR_UNSTAKING
-                              default: CHUNK_STATUS_UNSPECIFIED
-                              description: >-
-                                ChunkStatus defines the status of the chunk.
-
-                                 - CHUNK_STATUS_PAIRING: This status indicates that the chunk is ready to be paired with an
-                                insurance.
-                                 - CHUNK_STATUS_PAIRED: A chunk is paired with an insurance that has the lowest fee rate.
-                                The fee rate is determined by the sum of the
-                                insurance fee rate set by
-
-                                the insurance provider and the commission fee
-                                rate set by the validator
-
-                                designated by the insurance provider.
-                                 - CHUNK_STATUS_UNPAIRING: A paired chunk enters this status when paired insurance is started to be
-                                withdrawn or is insufficient (meaning the
-                                insurance balance is below the
-
-                                minimum requirement to be considered valid
-                                insurance) or the validator of
-
-                                the insurance becomes tombstoned.
-                                 - CHUNK_STATUS_UNPAIRING_FOR_UNSTAKING: When a delegator (also known as a liquid staker) sends a MsgLiquidUnstake,
-                                it is queued as a PendingLiquidUnstake. At the
-                                end of the epoch,
-
-                                the actual undelegation is triggered and the
-                                chunk enters this state.
-
-                                Once the unbonding period is over in next epoch,
-                                the staked tokens are
-
-                                returned to the delegator's account and the
-                                associated chunk object is
-
-                                removed.
-                          description: Chunk defines the chunk of the module.
-                        status:
-                          title: Status of the insurance
-                          type: string
-                          enum:
-                            - INSURANCE_STATUS_UNSPECIFIED
-                            - INSURANCE_STATUS_PAIRING
-                            - INSURANCE_STATUS_PAIRED
-                            - INSURANCE_STATUS_UNPAIRING
-                            - INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAWAL
-                            - INSURANCE_STATUS_UNPAIRED
-                          default: INSURANCE_STATUS_UNSPECIFIED
-                          description: >-
-                            InsuranceStatus defines the status of the insurance.
-
-                             - INSURANCE_STATUS_PAIRING: This is the default status of an insurance when an insurance provider sends
-                            a MsgProvideInsurance. This status indicates that
-                            the insurance is ready to
-
-                            be paired with a chunk. When an empty slot is
-                            available and either
-
-                            msgLiquidStake is received or pairing chunks have
-                            been created in the
-
-                            recent epoch, the insurance with the lowest fee will
-                            be paired with the
-
-                            chunk. Once paired, the insurance contract can be
-                            cancelled using
-
-                            MsgCancelProvideInsurance.
-                             - INSURANCE_STATUS_PAIRED: An insurance is paired with a chunk. While the insurance is in this status,
-                            it serves as a form of protection for the chunk by
-                            insuring it against
-
-                            unexpected loss that may occur due to validator
-                            slashing. This ensures that
-
-                            the chunk remains same size and maximize its staking
-                            rewards.
-                             - INSURANCE_STATUS_UNPAIRING: A paired insurance enters this status when it no longer has enough balance
-                            to cover slashing penalties, when the validator is
-                            tombstoned, or
-
-                            when the paired chunk is started to be undelegated.
-
-                            At the next epoch, unpairing will be unpaired.
-                             - INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAWAL: A paired insurance enters this status when there are
-                            queued withdrawal insurance requests created by
-                            MsgWithdrawInsurance at the
-
-                            epoch.
-                             - INSURANCE_STATUS_UNPAIRED: Unpairing insurances from previous epoch enters this status.
-                            Unpaired insurance can be withdrawn immediately by
-                            MsgWithdrawInsurance.
+                          title: The id of insurance
               pagination:
                 type: object
                 properties:
@@ -3382,6 +2307,7 @@ paths:
         - Query
   /canto/liquidstaking/v1/withdraw_insurance_requests/{id}:
     get:
+      summary: WithdrawInsuranceRequest returns a withdraw insurance request by id.
       operationId: WithdrawInsuranceRequest
       responses:
         '200':
@@ -3392,155 +2318,13 @@ paths:
               request:
                 type: object
                 properties:
-                  insurance:
+                  request:
                     type: object
                     properties:
-                      id:
+                      insurance_id:
                         type: string
                         format: uint64
-                        title: Insurance id
-                      validator_address:
-                        type: string
-                        title: Address of the validator
-                      provider_address:
-                        type: string
-                        title: Address of the provider
-                      amount:
-                        title: Amount of native token to guard slashing
-                        type: object
-                        properties:
-                          denom:
-                            type: string
-                          amount:
-                            type: string
-                        description: >-
-                          Coin defines a token with a denomination and an
-                          amount.
-
-
-                          NOTE: The amount field is an Int which implements the
-                          custom method
-
-                          signatures required by gogoproto.
-                      fee_rate:
-                        type: string
-                        title: Fee rate of the insurance
-                      chunk:
-                        title: Paired chunk
-                        type: object
-                        properties:
-                          id:
-                            type: string
-                            format: uint64
-                            title: Id of the chunk
-                          paired_insurance_id:
-                            type: string
-                            format: uint64
-                            title: Id of Paired insurance, 0 means no insurance
-                          unpairing_insurance_id:
-                            type: string
-                            format: uint64
-                          status:
-                            title: Status of the chunk
-                            type: string
-                            enum:
-                              - CHUNK_STATUS_UNSPECIFIED
-                              - CHUNK_STATUS_PAIRING
-                              - CHUNK_STATUS_PAIRED
-                              - CHUNK_STATUS_UNPAIRING
-                              - CHUNK_STATUS_UNPAIRING_FOR_UNSTAKING
-                            default: CHUNK_STATUS_UNSPECIFIED
-                            description: >-
-                              ChunkStatus defines the status of the chunk.
-
-                               - CHUNK_STATUS_PAIRING: This status indicates that the chunk is ready to be paired with an
-                              insurance.
-                               - CHUNK_STATUS_PAIRED: A chunk is paired with an insurance that has the lowest fee rate.
-                              The fee rate is determined by the sum of the
-                              insurance fee rate set by
-
-                              the insurance provider and the commission fee rate
-                              set by the validator
-
-                              designated by the insurance provider.
-                               - CHUNK_STATUS_UNPAIRING: A paired chunk enters this status when paired insurance is started to be
-                              withdrawn or is insufficient (meaning the
-                              insurance balance is below the
-
-                              minimum requirement to be considered valid
-                              insurance) or the validator of
-
-                              the insurance becomes tombstoned.
-                               - CHUNK_STATUS_UNPAIRING_FOR_UNSTAKING: When a delegator (also known as a liquid staker) sends a MsgLiquidUnstake,
-                              it is queued as a PendingLiquidUnstake. At the end
-                              of the epoch,
-
-                              the actual undelegation is triggered and the chunk
-                              enters this state.
-
-                              Once the unbonding period is over in next epoch,
-                              the staked tokens are
-
-                              returned to the delegator's account and the
-                              associated chunk object is
-
-                              removed.
-                        description: Chunk defines the chunk of the module.
-                      status:
-                        title: Status of the insurance
-                        type: string
-                        enum:
-                          - INSURANCE_STATUS_UNSPECIFIED
-                          - INSURANCE_STATUS_PAIRING
-                          - INSURANCE_STATUS_PAIRED
-                          - INSURANCE_STATUS_UNPAIRING
-                          - INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAWAL
-                          - INSURANCE_STATUS_UNPAIRED
-                        default: INSURANCE_STATUS_UNSPECIFIED
-                        description: >-
-                          InsuranceStatus defines the status of the insurance.
-
-                           - INSURANCE_STATUS_PAIRING: This is the default status of an insurance when an insurance provider sends
-                          a MsgProvideInsurance. This status indicates that the
-                          insurance is ready to
-
-                          be paired with a chunk. When an empty slot is
-                          available and either
-
-                          msgLiquidStake is received or pairing chunks have been
-                          created in the
-
-                          recent epoch, the insurance with the lowest fee will
-                          be paired with the
-
-                          chunk. Once paired, the insurance contract can be
-                          cancelled using
-
-                          MsgCancelProvideInsurance.
-                           - INSURANCE_STATUS_PAIRED: An insurance is paired with a chunk. While the insurance is in this status,
-                          it serves as a form of protection for the chunk by
-                          insuring it against
-
-                          unexpected loss that may occur due to validator
-                          slashing. This ensures that
-
-                          the chunk remains same size and maximize its staking
-                          rewards.
-                           - INSURANCE_STATUS_UNPAIRING: A paired insurance enters this status when it no longer has enough balance
-                          to cover slashing penalties, when the validator is
-                          tombstoned, or
-
-                          when the paired chunk is started to be undelegated.
-
-                          At the next epoch, unpairing will be unpaired.
-                           - INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAWAL: A paired insurance enters this status when there are
-                          queued withdrawal insurance requests created by
-                          MsgWithdrawInsurance at the
-
-                          epoch.
-                           - INSURANCE_STATUS_UNPAIRED: Unpairing insurances from previous epoch enters this status.
-                          Unpaired insurance can be withdrawn immediately by
-                          MsgWithdrawInsurance.
+                        title: The id of insurance
         default:
           description: An unexpected error response.
           schema:
@@ -36565,6 +35349,12 @@ definitions:
       reward_module_acc_balance:
         type: string
         title: Balance of reward module account
+      utilization_ratio:
+        type: string
+      discount_rate:
+        type: string
+      fee_rate:
+        type: string
     description: >-
       NetAmountState is type for net amount raw data and mint rate, This is a
       value
@@ -36629,185 +35419,14 @@ definitions:
           id:
             type: string
             format: uint64
-            title: Chunk id
-          tokens:
+            title: Id of the chunk
+          paired_insurance_id:
             type: string
-            description: |-
-              Amount of native tokens delegated by Chunk.
-              If got slashed, the amount will be reduced.
-              This value can be nil in Pairing status.
-          shares:
+            format: uint64
+            title: Id of Paired insurance, 0 means no insurance
+          unpairing_insurance_id:
             type: string
-            description: |-
-              Amount of shares delegated by Chunk.
-              This value can be nil in Pairing status.
-          accumulated_reward:
-            title: Accumulated reward of the chunk which will be reset at Epoch
-            type: object
-            properties:
-              denom:
-                type: string
-              amount:
-                type: string
-            description: >-
-              Coin defines a token with a denomination and an amount.
-
-
-              NOTE: The amount field is an Int which implements the custom
-              method
-
-              signatures required by gogoproto.
-          paired_insurance:
-            title: Paired insurance
-            type: object
-            properties:
-              id:
-                type: string
-                format: uint64
-                title: Id of the insurance
-              validator_address:
-                type: string
-                title: Address of the validator
-              provider_address:
-                type: string
-                title: Address of the insurance provider
-              fee_rate:
-                type: string
-                title: Fee rate of the insurance
-              chunk_id:
-                type: string
-                format: uint64
-                title: Id of the chunk for which the insurance has a duty
-              status:
-                title: Status of the insurance
-                type: string
-                enum:
-                  - INSURANCE_STATUS_UNSPECIFIED
-                  - INSURANCE_STATUS_PAIRING
-                  - INSURANCE_STATUS_PAIRED
-                  - INSURANCE_STATUS_UNPAIRING
-                  - INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAWAL
-                  - INSURANCE_STATUS_UNPAIRED
-                default: INSURANCE_STATUS_UNSPECIFIED
-                description: >-
-                  InsuranceStatus defines the status of the insurance.
-
-                   - INSURANCE_STATUS_PAIRING: This is the default status of an insurance when an insurance provider sends
-                  a MsgProvideInsurance. This status indicates that the
-                  insurance is ready to
-
-                  be paired with a chunk. When an empty slot is available and
-                  either
-
-                  msgLiquidStake is received or pairing chunks have been created
-                  in the
-
-                  recent epoch, the insurance with the lowest fee will be paired
-                  with the
-
-                  chunk. Once paired, the insurance contract can be cancelled
-                  using
-
-                  MsgCancelProvideInsurance.
-                   - INSURANCE_STATUS_PAIRED: An insurance is paired with a chunk. While the insurance is in this status,
-                  it serves as a form of protection for the chunk by insuring it
-                  against
-
-                  unexpected loss that may occur due to validator slashing. This
-                  ensures that
-
-                  the chunk remains same size and maximize its staking rewards.
-                   - INSURANCE_STATUS_UNPAIRING: A paired insurance enters this status when it no longer has enough balance
-                  to cover slashing penalties, when the validator is tombstoned,
-                  or
-
-                  when the paired chunk is started to be undelegated.
-
-                  At the next epoch, unpairing will be unpaired.
-                   - INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAWAL: A paired insurance enters this status when there are
-                  queued withdrawal insurance requests created by
-                  MsgWithdrawInsurance at the
-
-                  epoch.
-                   - INSURANCE_STATUS_UNPAIRED: Unpairing insurances from previous epoch enters this status.
-                  Unpaired insurance can be withdrawn immediately by
-                  MsgWithdrawInsurance.
-            description: Insurance defines the insurance of the module.
-          unpairing_insurance:
-            type: object
-            properties:
-              id:
-                type: string
-                format: uint64
-                title: Id of the insurance
-              validator_address:
-                type: string
-                title: Address of the validator
-              provider_address:
-                type: string
-                title: Address of the insurance provider
-              fee_rate:
-                type: string
-                title: Fee rate of the insurance
-              chunk_id:
-                type: string
-                format: uint64
-                title: Id of the chunk for which the insurance has a duty
-              status:
-                title: Status of the insurance
-                type: string
-                enum:
-                  - INSURANCE_STATUS_UNSPECIFIED
-                  - INSURANCE_STATUS_PAIRING
-                  - INSURANCE_STATUS_PAIRED
-                  - INSURANCE_STATUS_UNPAIRING
-                  - INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAWAL
-                  - INSURANCE_STATUS_UNPAIRED
-                default: INSURANCE_STATUS_UNSPECIFIED
-                description: >-
-                  InsuranceStatus defines the status of the insurance.
-
-                   - INSURANCE_STATUS_PAIRING: This is the default status of an insurance when an insurance provider sends
-                  a MsgProvideInsurance. This status indicates that the
-                  insurance is ready to
-
-                  be paired with a chunk. When an empty slot is available and
-                  either
-
-                  msgLiquidStake is received or pairing chunks have been created
-                  in the
-
-                  recent epoch, the insurance with the lowest fee will be paired
-                  with the
-
-                  chunk. Once paired, the insurance contract can be cancelled
-                  using
-
-                  MsgCancelProvideInsurance.
-                   - INSURANCE_STATUS_PAIRED: An insurance is paired with a chunk. While the insurance is in this status,
-                  it serves as a form of protection for the chunk by insuring it
-                  against
-
-                  unexpected loss that may occur due to validator slashing. This
-                  ensures that
-
-                  the chunk remains same size and maximize its staking rewards.
-                   - INSURANCE_STATUS_UNPAIRING: A paired insurance enters this status when it no longer has enough balance
-                  to cover slashing penalties, when the validator is tombstoned,
-                  or
-
-                  when the paired chunk is started to be undelegated.
-
-                  At the next epoch, unpairing will be unpaired.
-                   - INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAWAL: A paired insurance enters this status when there are
-                  queued withdrawal insurance requests created by
-                  MsgWithdrawInsurance at the
-
-                  epoch.
-                   - INSURANCE_STATUS_UNPAIRED: Unpairing insurances from previous epoch enters this status.
-                  Unpaired insurance can be withdrawn immediately by
-                  MsgWithdrawInsurance.
-            description: Insurance defines the insurance of the module.
+            format: uint64
           status:
             title: Status of the chunk
             type: string
@@ -36852,6 +35471,7 @@ definitions:
               object is
 
               removed.
+        description: Chunk defines the chunk of the module.
   canto.liquidstaking.v1.QueryChunkSizeResponse:
     type: object
     properties:
@@ -36869,187 +35489,14 @@ definitions:
             id:
               type: string
               format: uint64
-              title: Chunk id
-            tokens:
+              title: Id of the chunk
+            paired_insurance_id:
               type: string
-              description: |-
-                Amount of native tokens delegated by Chunk.
-                If got slashed, the amount will be reduced.
-                This value can be nil in Pairing status.
-            shares:
+              format: uint64
+              title: Id of Paired insurance, 0 means no insurance
+            unpairing_insurance_id:
               type: string
-              description: |-
-                Amount of shares delegated by Chunk.
-                This value can be nil in Pairing status.
-            accumulated_reward:
-              title: Accumulated reward of the chunk which will be reset at Epoch
-              type: object
-              properties:
-                denom:
-                  type: string
-                amount:
-                  type: string
-              description: >-
-                Coin defines a token with a denomination and an amount.
-
-
-                NOTE: The amount field is an Int which implements the custom
-                method
-
-                signatures required by gogoproto.
-            paired_insurance:
-              title: Paired insurance
-              type: object
-              properties:
-                id:
-                  type: string
-                  format: uint64
-                  title: Id of the insurance
-                validator_address:
-                  type: string
-                  title: Address of the validator
-                provider_address:
-                  type: string
-                  title: Address of the insurance provider
-                fee_rate:
-                  type: string
-                  title: Fee rate of the insurance
-                chunk_id:
-                  type: string
-                  format: uint64
-                  title: Id of the chunk for which the insurance has a duty
-                status:
-                  title: Status of the insurance
-                  type: string
-                  enum:
-                    - INSURANCE_STATUS_UNSPECIFIED
-                    - INSURANCE_STATUS_PAIRING
-                    - INSURANCE_STATUS_PAIRED
-                    - INSURANCE_STATUS_UNPAIRING
-                    - INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAWAL
-                    - INSURANCE_STATUS_UNPAIRED
-                  default: INSURANCE_STATUS_UNSPECIFIED
-                  description: >-
-                    InsuranceStatus defines the status of the insurance.
-
-                     - INSURANCE_STATUS_PAIRING: This is the default status of an insurance when an insurance provider sends
-                    a MsgProvideInsurance. This status indicates that the
-                    insurance is ready to
-
-                    be paired with a chunk. When an empty slot is available and
-                    either
-
-                    msgLiquidStake is received or pairing chunks have been
-                    created in the
-
-                    recent epoch, the insurance with the lowest fee will be
-                    paired with the
-
-                    chunk. Once paired, the insurance contract can be cancelled
-                    using
-
-                    MsgCancelProvideInsurance.
-                     - INSURANCE_STATUS_PAIRED: An insurance is paired with a chunk. While the insurance is in this status,
-                    it serves as a form of protection for the chunk by insuring
-                    it against
-
-                    unexpected loss that may occur due to validator slashing.
-                    This ensures that
-
-                    the chunk remains same size and maximize its staking
-                    rewards.
-                     - INSURANCE_STATUS_UNPAIRING: A paired insurance enters this status when it no longer has enough balance
-                    to cover slashing penalties, when the validator is
-                    tombstoned, or
-
-                    when the paired chunk is started to be undelegated.
-
-                    At the next epoch, unpairing will be unpaired.
-                     - INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAWAL: A paired insurance enters this status when there are
-                    queued withdrawal insurance requests created by
-                    MsgWithdrawInsurance at the
-
-                    epoch.
-                     - INSURANCE_STATUS_UNPAIRED: Unpairing insurances from previous epoch enters this status.
-                    Unpaired insurance can be withdrawn immediately by
-                    MsgWithdrawInsurance.
-              description: Insurance defines the insurance of the module.
-            unpairing_insurance:
-              type: object
-              properties:
-                id:
-                  type: string
-                  format: uint64
-                  title: Id of the insurance
-                validator_address:
-                  type: string
-                  title: Address of the validator
-                provider_address:
-                  type: string
-                  title: Address of the insurance provider
-                fee_rate:
-                  type: string
-                  title: Fee rate of the insurance
-                chunk_id:
-                  type: string
-                  format: uint64
-                  title: Id of the chunk for which the insurance has a duty
-                status:
-                  title: Status of the insurance
-                  type: string
-                  enum:
-                    - INSURANCE_STATUS_UNSPECIFIED
-                    - INSURANCE_STATUS_PAIRING
-                    - INSURANCE_STATUS_PAIRED
-                    - INSURANCE_STATUS_UNPAIRING
-                    - INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAWAL
-                    - INSURANCE_STATUS_UNPAIRED
-                  default: INSURANCE_STATUS_UNSPECIFIED
-                  description: >-
-                    InsuranceStatus defines the status of the insurance.
-
-                     - INSURANCE_STATUS_PAIRING: This is the default status of an insurance when an insurance provider sends
-                    a MsgProvideInsurance. This status indicates that the
-                    insurance is ready to
-
-                    be paired with a chunk. When an empty slot is available and
-                    either
-
-                    msgLiquidStake is received or pairing chunks have been
-                    created in the
-
-                    recent epoch, the insurance with the lowest fee will be
-                    paired with the
-
-                    chunk. Once paired, the insurance contract can be cancelled
-                    using
-
-                    MsgCancelProvideInsurance.
-                     - INSURANCE_STATUS_PAIRED: An insurance is paired with a chunk. While the insurance is in this status,
-                    it serves as a form of protection for the chunk by insuring
-                    it against
-
-                    unexpected loss that may occur due to validator slashing.
-                    This ensures that
-
-                    the chunk remains same size and maximize its staking
-                    rewards.
-                     - INSURANCE_STATUS_UNPAIRING: A paired insurance enters this status when it no longer has enough balance
-                    to cover slashing penalties, when the validator is
-                    tombstoned, or
-
-                    when the paired chunk is started to be undelegated.
-
-                    At the next epoch, unpairing will be unpaired.
-                     - INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAWAL: A paired insurance enters this status when there are
-                    queued withdrawal insurance requests created by
-                    MsgWithdrawInsurance at the
-
-                    epoch.
-                     - INSURANCE_STATUS_UNPAIRED: Unpairing insurances from previous epoch enters this status.
-                    Unpaired insurance can be withdrawn immediately by
-                    MsgWithdrawInsurance.
-              description: Insurance defines the insurance of the module.
+              format: uint64
             status:
               title: Status of the chunk
               type: string
@@ -37094,6 +35541,7 @@ definitions:
                 object is
 
                 removed.
+          description: Chunk defines the chunk of the module.
       pagination:
         type: object
         properties:
@@ -37146,93 +35594,20 @@ definitions:
           id:
             type: string
             format: uint64
-            title: Insurance id
+            title: Id of the insurance
           validator_address:
             type: string
             title: Address of the validator
           provider_address:
             type: string
-            title: Address of the provider
-          amount:
-            title: Amount of native token to guard slashing
-            type: object
-            properties:
-              denom:
-                type: string
-              amount:
-                type: string
-            description: >-
-              Coin defines a token with a denomination and an amount.
-
-
-              NOTE: The amount field is an Int which implements the custom
-              method
-
-              signatures required by gogoproto.
+            title: Address of the insurance provider
           fee_rate:
             type: string
             title: Fee rate of the insurance
-          chunk:
-            title: Paired chunk
-            type: object
-            properties:
-              id:
-                type: string
-                format: uint64
-                title: Id of the chunk
-              paired_insurance_id:
-                type: string
-                format: uint64
-                title: Id of Paired insurance, 0 means no insurance
-              unpairing_insurance_id:
-                type: string
-                format: uint64
-              status:
-                title: Status of the chunk
-                type: string
-                enum:
-                  - CHUNK_STATUS_UNSPECIFIED
-                  - CHUNK_STATUS_PAIRING
-                  - CHUNK_STATUS_PAIRED
-                  - CHUNK_STATUS_UNPAIRING
-                  - CHUNK_STATUS_UNPAIRING_FOR_UNSTAKING
-                default: CHUNK_STATUS_UNSPECIFIED
-                description: >-
-                  ChunkStatus defines the status of the chunk.
-
-                   - CHUNK_STATUS_PAIRING: This status indicates that the chunk is ready to be paired with an
-                  insurance.
-                   - CHUNK_STATUS_PAIRED: A chunk is paired with an insurance that has the lowest fee rate.
-                  The fee rate is determined by the sum of the insurance fee
-                  rate set by
-
-                  the insurance provider and the commission fee rate set by the
-                  validator
-
-                  designated by the insurance provider.
-                   - CHUNK_STATUS_UNPAIRING: A paired chunk enters this status when paired insurance is started to be
-                  withdrawn or is insufficient (meaning the insurance balance is
-                  below the
-
-                  minimum requirement to be considered valid insurance) or the
-                  validator of
-
-                  the insurance becomes tombstoned.
-                   - CHUNK_STATUS_UNPAIRING_FOR_UNSTAKING: When a delegator (also known as a liquid staker) sends a MsgLiquidUnstake,
-                  it is queued as a PendingLiquidUnstake. At the end of the
-                  epoch,
-
-                  the actual undelegation is triggered and the chunk enters this
-                  state.
-
-                  Once the unbonding period is over in next epoch, the staked
-                  tokens are
-
-                  returned to the delegator's account and the associated chunk
-                  object is
-
-                  removed.
-            description: Chunk defines the chunk of the module.
+          chunk_id:
+            type: string
+            format: uint64
+            title: Id of the chunk for which the insurance has a duty
           status:
             title: Status of the insurance
             type: string
@@ -37284,6 +35659,7 @@ definitions:
                - INSURANCE_STATUS_UNPAIRED: Unpairing insurances from previous epoch enters this status.
               Unpaired insurance can be withdrawn immediately by
               MsgWithdrawInsurance.
+        description: Insurance defines the insurance of the module.
   canto.liquidstaking.v1.QueryInsurancesResponse:
     type: object
     properties:
@@ -37295,93 +35671,20 @@ definitions:
             id:
               type: string
               format: uint64
-              title: Insurance id
+              title: Id of the insurance
             validator_address:
               type: string
               title: Address of the validator
             provider_address:
               type: string
-              title: Address of the provider
-            amount:
-              title: Amount of native token to guard slashing
-              type: object
-              properties:
-                denom:
-                  type: string
-                amount:
-                  type: string
-              description: >-
-                Coin defines a token with a denomination and an amount.
-
-
-                NOTE: The amount field is an Int which implements the custom
-                method
-
-                signatures required by gogoproto.
+              title: Address of the insurance provider
             fee_rate:
               type: string
               title: Fee rate of the insurance
-            chunk:
-              title: Paired chunk
-              type: object
-              properties:
-                id:
-                  type: string
-                  format: uint64
-                  title: Id of the chunk
-                paired_insurance_id:
-                  type: string
-                  format: uint64
-                  title: Id of Paired insurance, 0 means no insurance
-                unpairing_insurance_id:
-                  type: string
-                  format: uint64
-                status:
-                  title: Status of the chunk
-                  type: string
-                  enum:
-                    - CHUNK_STATUS_UNSPECIFIED
-                    - CHUNK_STATUS_PAIRING
-                    - CHUNK_STATUS_PAIRED
-                    - CHUNK_STATUS_UNPAIRING
-                    - CHUNK_STATUS_UNPAIRING_FOR_UNSTAKING
-                  default: CHUNK_STATUS_UNSPECIFIED
-                  description: >-
-                    ChunkStatus defines the status of the chunk.
-
-                     - CHUNK_STATUS_PAIRING: This status indicates that the chunk is ready to be paired with an
-                    insurance.
-                     - CHUNK_STATUS_PAIRED: A chunk is paired with an insurance that has the lowest fee rate.
-                    The fee rate is determined by the sum of the insurance fee
-                    rate set by
-
-                    the insurance provider and the commission fee rate set by
-                    the validator
-
-                    designated by the insurance provider.
-                     - CHUNK_STATUS_UNPAIRING: A paired chunk enters this status when paired insurance is started to be
-                    withdrawn or is insufficient (meaning the insurance balance
-                    is below the
-
-                    minimum requirement to be considered valid insurance) or the
-                    validator of
-
-                    the insurance becomes tombstoned.
-                     - CHUNK_STATUS_UNPAIRING_FOR_UNSTAKING: When a delegator (also known as a liquid staker) sends a MsgLiquidUnstake,
-                    it is queued as a PendingLiquidUnstake. At the end of the
-                    epoch,
-
-                    the actual undelegation is triggered and the chunk enters
-                    this state.
-
-                    Once the unbonding period is over in next epoch, the staked
-                    tokens are
-
-                    returned to the delegator's account and the associated chunk
-                    object is
-
-                    removed.
-              description: Chunk defines the chunk of the module.
+            chunk_id:
+              type: string
+              format: uint64
+              title: Id of the chunk for which the insurance has a duty
             status:
               title: Status of the insurance
               type: string
@@ -37436,6 +35739,7 @@ definitions:
                  - INSURANCE_STATUS_UNPAIRED: Unpairing insurances from previous epoch enters this status.
                 Unpaired insurance can be withdrawn immediately by
                 MsgWithdrawInsurance.
+          description: Insurance defines the insurance of the module.
       pagination:
         type: object
         properties:
@@ -37611,6 +35915,12 @@ definitions:
           reward_module_acc_balance:
             type: string
             title: Balance of reward module account
+          utilization_ratio:
+            type: string
+          discount_rate:
+            type: string
+          fee_rate:
+            type: string
         description: >-
           NetAmountState is type for net amount raw data and mint rate, This is
           a value
@@ -37625,242 +35935,19 @@ definitions:
       info:
         type: object
         properties:
-          chunk:
+          info:
             type: object
             properties:
-              id:
+              chunk_id:
                 type: string
                 format: uint64
-                title: Chunk id
-              tokens:
+                title: The id of chunk
+              delegator_address:
                 type: string
-                description: |-
-                  Amount of native tokens delegated by Chunk.
-                  If got slashed, the amount will be reduced.
-                  This value can be nil in Pairing status.
-              shares:
+                title: Address of delegator (=liquid unstaker)
+              escrowed_lstokens:
                 type: string
-                description: |-
-                  Amount of shares delegated by Chunk.
-                  This value can be nil in Pairing status.
-              accumulated_reward:
-                title: Accumulated reward of the chunk which will be reset at Epoch
-                type: object
-                properties:
-                  denom:
-                    type: string
-                  amount:
-                    type: string
-                description: >-
-                  Coin defines a token with a denomination and an amount.
-
-
-                  NOTE: The amount field is an Int which implements the custom
-                  method
-
-                  signatures required by gogoproto.
-              paired_insurance:
-                title: Paired insurance
-                type: object
-                properties:
-                  id:
-                    type: string
-                    format: uint64
-                    title: Id of the insurance
-                  validator_address:
-                    type: string
-                    title: Address of the validator
-                  provider_address:
-                    type: string
-                    title: Address of the insurance provider
-                  fee_rate:
-                    type: string
-                    title: Fee rate of the insurance
-                  chunk_id:
-                    type: string
-                    format: uint64
-                    title: Id of the chunk for which the insurance has a duty
-                  status:
-                    title: Status of the insurance
-                    type: string
-                    enum:
-                      - INSURANCE_STATUS_UNSPECIFIED
-                      - INSURANCE_STATUS_PAIRING
-                      - INSURANCE_STATUS_PAIRED
-                      - INSURANCE_STATUS_UNPAIRING
-                      - INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAWAL
-                      - INSURANCE_STATUS_UNPAIRED
-                    default: INSURANCE_STATUS_UNSPECIFIED
-                    description: >-
-                      InsuranceStatus defines the status of the insurance.
-
-                       - INSURANCE_STATUS_PAIRING: This is the default status of an insurance when an insurance provider sends
-                      a MsgProvideInsurance. This status indicates that the
-                      insurance is ready to
-
-                      be paired with a chunk. When an empty slot is available
-                      and either
-
-                      msgLiquidStake is received or pairing chunks have been
-                      created in the
-
-                      recent epoch, the insurance with the lowest fee will be
-                      paired with the
-
-                      chunk. Once paired, the insurance contract can be
-                      cancelled using
-
-                      MsgCancelProvideInsurance.
-                       - INSURANCE_STATUS_PAIRED: An insurance is paired with a chunk. While the insurance is in this status,
-                      it serves as a form of protection for the chunk by
-                      insuring it against
-
-                      unexpected loss that may occur due to validator slashing.
-                      This ensures that
-
-                      the chunk remains same size and maximize its staking
-                      rewards.
-                       - INSURANCE_STATUS_UNPAIRING: A paired insurance enters this status when it no longer has enough balance
-                      to cover slashing penalties, when the validator is
-                      tombstoned, or
-
-                      when the paired chunk is started to be undelegated.
-
-                      At the next epoch, unpairing will be unpaired.
-                       - INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAWAL: A paired insurance enters this status when there are
-                      queued withdrawal insurance requests created by
-                      MsgWithdrawInsurance at the
-
-                      epoch.
-                       - INSURANCE_STATUS_UNPAIRED: Unpairing insurances from previous epoch enters this status.
-                      Unpaired insurance can be withdrawn immediately by
-                      MsgWithdrawInsurance.
-                description: Insurance defines the insurance of the module.
-              unpairing_insurance:
-                type: object
-                properties:
-                  id:
-                    type: string
-                    format: uint64
-                    title: Id of the insurance
-                  validator_address:
-                    type: string
-                    title: Address of the validator
-                  provider_address:
-                    type: string
-                    title: Address of the insurance provider
-                  fee_rate:
-                    type: string
-                    title: Fee rate of the insurance
-                  chunk_id:
-                    type: string
-                    format: uint64
-                    title: Id of the chunk for which the insurance has a duty
-                  status:
-                    title: Status of the insurance
-                    type: string
-                    enum:
-                      - INSURANCE_STATUS_UNSPECIFIED
-                      - INSURANCE_STATUS_PAIRING
-                      - INSURANCE_STATUS_PAIRED
-                      - INSURANCE_STATUS_UNPAIRING
-                      - INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAWAL
-                      - INSURANCE_STATUS_UNPAIRED
-                    default: INSURANCE_STATUS_UNSPECIFIED
-                    description: >-
-                      InsuranceStatus defines the status of the insurance.
-
-                       - INSURANCE_STATUS_PAIRING: This is the default status of an insurance when an insurance provider sends
-                      a MsgProvideInsurance. This status indicates that the
-                      insurance is ready to
-
-                      be paired with a chunk. When an empty slot is available
-                      and either
-
-                      msgLiquidStake is received or pairing chunks have been
-                      created in the
-
-                      recent epoch, the insurance with the lowest fee will be
-                      paired with the
-
-                      chunk. Once paired, the insurance contract can be
-                      cancelled using
-
-                      MsgCancelProvideInsurance.
-                       - INSURANCE_STATUS_PAIRED: An insurance is paired with a chunk. While the insurance is in this status,
-                      it serves as a form of protection for the chunk by
-                      insuring it against
-
-                      unexpected loss that may occur due to validator slashing.
-                      This ensures that
-
-                      the chunk remains same size and maximize its staking
-                      rewards.
-                       - INSURANCE_STATUS_UNPAIRING: A paired insurance enters this status when it no longer has enough balance
-                      to cover slashing penalties, when the validator is
-                      tombstoned, or
-
-                      when the paired chunk is started to be undelegated.
-
-                      At the next epoch, unpairing will be unpaired.
-                       - INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAWAL: A paired insurance enters this status when there are
-                      queued withdrawal insurance requests created by
-                      MsgWithdrawInsurance at the
-
-                      epoch.
-                       - INSURANCE_STATUS_UNPAIRED: Unpairing insurances from previous epoch enters this status.
-                      Unpaired insurance can be withdrawn immediately by
-                      MsgWithdrawInsurance.
-                description: Insurance defines the insurance of the module.
-              status:
-                title: Status of the chunk
-                type: string
-                enum:
-                  - CHUNK_STATUS_UNSPECIFIED
-                  - CHUNK_STATUS_PAIRING
-                  - CHUNK_STATUS_PAIRED
-                  - CHUNK_STATUS_UNPAIRING
-                  - CHUNK_STATUS_UNPAIRING_FOR_UNSTAKING
-                default: CHUNK_STATUS_UNSPECIFIED
-                description: >-
-                  ChunkStatus defines the status of the chunk.
-
-                   - CHUNK_STATUS_PAIRING: This status indicates that the chunk is ready to be paired with an
-                  insurance.
-                   - CHUNK_STATUS_PAIRED: A chunk is paired with an insurance that has the lowest fee rate.
-                  The fee rate is determined by the sum of the insurance fee
-                  rate set by
-
-                  the insurance provider and the commission fee rate set by the
-                  validator
-
-                  designated by the insurance provider.
-                   - CHUNK_STATUS_UNPAIRING: A paired chunk enters this status when paired insurance is started to be
-                  withdrawn or is insufficient (meaning the insurance balance is
-                  below the
-
-                  minimum requirement to be considered valid insurance) or the
-                  validator of
-
-                  the insurance becomes tombstoned.
-                   - CHUNK_STATUS_UNPAIRING_FOR_UNSTAKING: When a delegator (also known as a liquid staker) sends a MsgLiquidUnstake,
-                  it is queued as a PendingLiquidUnstake. At the end of the
-                  epoch,
-
-                  the actual undelegation is triggered and the chunk enters this
-                  state.
-
-                  Once the unbonding period is over in next epoch, the staked
-                  tokens are
-
-                  returned to the delegator's account and the associated chunk
-                  object is
-
-                  removed.
-          delegator_address:
-            type: string
-          escrowed_lstokens:
-            type: string
+                title: Amount of ls tokens to burn
   canto.liquidstaking.v1.QueryUnpairingForUnstakingChunkInfosResponse:
     type: object
     properties:
@@ -37869,242 +35956,19 @@ definitions:
         items:
           type: object
           properties:
-            chunk:
+            info:
               type: object
               properties:
-                id:
+                chunk_id:
                   type: string
                   format: uint64
-                  title: Chunk id
-                tokens:
+                  title: The id of chunk
+                delegator_address:
                   type: string
-                  description: |-
-                    Amount of native tokens delegated by Chunk.
-                    If got slashed, the amount will be reduced.
-                    This value can be nil in Pairing status.
-                shares:
+                  title: Address of delegator (=liquid unstaker)
+                escrowed_lstokens:
                   type: string
-                  description: |-
-                    Amount of shares delegated by Chunk.
-                    This value can be nil in Pairing status.
-                accumulated_reward:
-                  title: Accumulated reward of the chunk which will be reset at Epoch
-                  type: object
-                  properties:
-                    denom:
-                      type: string
-                    amount:
-                      type: string
-                  description: >-
-                    Coin defines a token with a denomination and an amount.
-
-
-                    NOTE: The amount field is an Int which implements the custom
-                    method
-
-                    signatures required by gogoproto.
-                paired_insurance:
-                  title: Paired insurance
-                  type: object
-                  properties:
-                    id:
-                      type: string
-                      format: uint64
-                      title: Id of the insurance
-                    validator_address:
-                      type: string
-                      title: Address of the validator
-                    provider_address:
-                      type: string
-                      title: Address of the insurance provider
-                    fee_rate:
-                      type: string
-                      title: Fee rate of the insurance
-                    chunk_id:
-                      type: string
-                      format: uint64
-                      title: Id of the chunk for which the insurance has a duty
-                    status:
-                      title: Status of the insurance
-                      type: string
-                      enum:
-                        - INSURANCE_STATUS_UNSPECIFIED
-                        - INSURANCE_STATUS_PAIRING
-                        - INSURANCE_STATUS_PAIRED
-                        - INSURANCE_STATUS_UNPAIRING
-                        - INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAWAL
-                        - INSURANCE_STATUS_UNPAIRED
-                      default: INSURANCE_STATUS_UNSPECIFIED
-                      description: >-
-                        InsuranceStatus defines the status of the insurance.
-
-                         - INSURANCE_STATUS_PAIRING: This is the default status of an insurance when an insurance provider sends
-                        a MsgProvideInsurance. This status indicates that the
-                        insurance is ready to
-
-                        be paired with a chunk. When an empty slot is available
-                        and either
-
-                        msgLiquidStake is received or pairing chunks have been
-                        created in the
-
-                        recent epoch, the insurance with the lowest fee will be
-                        paired with the
-
-                        chunk. Once paired, the insurance contract can be
-                        cancelled using
-
-                        MsgCancelProvideInsurance.
-                         - INSURANCE_STATUS_PAIRED: An insurance is paired with a chunk. While the insurance is in this status,
-                        it serves as a form of protection for the chunk by
-                        insuring it against
-
-                        unexpected loss that may occur due to validator
-                        slashing. This ensures that
-
-                        the chunk remains same size and maximize its staking
-                        rewards.
-                         - INSURANCE_STATUS_UNPAIRING: A paired insurance enters this status when it no longer has enough balance
-                        to cover slashing penalties, when the validator is
-                        tombstoned, or
-
-                        when the paired chunk is started to be undelegated.
-
-                        At the next epoch, unpairing will be unpaired.
-                         - INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAWAL: A paired insurance enters this status when there are
-                        queued withdrawal insurance requests created by
-                        MsgWithdrawInsurance at the
-
-                        epoch.
-                         - INSURANCE_STATUS_UNPAIRED: Unpairing insurances from previous epoch enters this status.
-                        Unpaired insurance can be withdrawn immediately by
-                        MsgWithdrawInsurance.
-                  description: Insurance defines the insurance of the module.
-                unpairing_insurance:
-                  type: object
-                  properties:
-                    id:
-                      type: string
-                      format: uint64
-                      title: Id of the insurance
-                    validator_address:
-                      type: string
-                      title: Address of the validator
-                    provider_address:
-                      type: string
-                      title: Address of the insurance provider
-                    fee_rate:
-                      type: string
-                      title: Fee rate of the insurance
-                    chunk_id:
-                      type: string
-                      format: uint64
-                      title: Id of the chunk for which the insurance has a duty
-                    status:
-                      title: Status of the insurance
-                      type: string
-                      enum:
-                        - INSURANCE_STATUS_UNSPECIFIED
-                        - INSURANCE_STATUS_PAIRING
-                        - INSURANCE_STATUS_PAIRED
-                        - INSURANCE_STATUS_UNPAIRING
-                        - INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAWAL
-                        - INSURANCE_STATUS_UNPAIRED
-                      default: INSURANCE_STATUS_UNSPECIFIED
-                      description: >-
-                        InsuranceStatus defines the status of the insurance.
-
-                         - INSURANCE_STATUS_PAIRING: This is the default status of an insurance when an insurance provider sends
-                        a MsgProvideInsurance. This status indicates that the
-                        insurance is ready to
-
-                        be paired with a chunk. When an empty slot is available
-                        and either
-
-                        msgLiquidStake is received or pairing chunks have been
-                        created in the
-
-                        recent epoch, the insurance with the lowest fee will be
-                        paired with the
-
-                        chunk. Once paired, the insurance contract can be
-                        cancelled using
-
-                        MsgCancelProvideInsurance.
-                         - INSURANCE_STATUS_PAIRED: An insurance is paired with a chunk. While the insurance is in this status,
-                        it serves as a form of protection for the chunk by
-                        insuring it against
-
-                        unexpected loss that may occur due to validator
-                        slashing. This ensures that
-
-                        the chunk remains same size and maximize its staking
-                        rewards.
-                         - INSURANCE_STATUS_UNPAIRING: A paired insurance enters this status when it no longer has enough balance
-                        to cover slashing penalties, when the validator is
-                        tombstoned, or
-
-                        when the paired chunk is started to be undelegated.
-
-                        At the next epoch, unpairing will be unpaired.
-                         - INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAWAL: A paired insurance enters this status when there are
-                        queued withdrawal insurance requests created by
-                        MsgWithdrawInsurance at the
-
-                        epoch.
-                         - INSURANCE_STATUS_UNPAIRED: Unpairing insurances from previous epoch enters this status.
-                        Unpaired insurance can be withdrawn immediately by
-                        MsgWithdrawInsurance.
-                  description: Insurance defines the insurance of the module.
-                status:
-                  title: Status of the chunk
-                  type: string
-                  enum:
-                    - CHUNK_STATUS_UNSPECIFIED
-                    - CHUNK_STATUS_PAIRING
-                    - CHUNK_STATUS_PAIRED
-                    - CHUNK_STATUS_UNPAIRING
-                    - CHUNK_STATUS_UNPAIRING_FOR_UNSTAKING
-                  default: CHUNK_STATUS_UNSPECIFIED
-                  description: >-
-                    ChunkStatus defines the status of the chunk.
-
-                     - CHUNK_STATUS_PAIRING: This status indicates that the chunk is ready to be paired with an
-                    insurance.
-                     - CHUNK_STATUS_PAIRED: A chunk is paired with an insurance that has the lowest fee rate.
-                    The fee rate is determined by the sum of the insurance fee
-                    rate set by
-
-                    the insurance provider and the commission fee rate set by
-                    the validator
-
-                    designated by the insurance provider.
-                     - CHUNK_STATUS_UNPAIRING: A paired chunk enters this status when paired insurance is started to be
-                    withdrawn or is insufficient (meaning the insurance balance
-                    is below the
-
-                    minimum requirement to be considered valid insurance) or the
-                    validator of
-
-                    the insurance becomes tombstoned.
-                     - CHUNK_STATUS_UNPAIRING_FOR_UNSTAKING: When a delegator (also known as a liquid staker) sends a MsgLiquidUnstake,
-                    it is queued as a PendingLiquidUnstake. At the end of the
-                    epoch,
-
-                    the actual undelegation is triggered and the chunk enters
-                    this state.
-
-                    Once the unbonding period is over in next epoch, the staked
-                    tokens are
-
-                    returned to the delegator's account and the associated chunk
-                    object is
-
-                    removed.
-            delegator_address:
-              type: string
-            escrowed_lstokens:
-              type: string
+                  title: Amount of ls tokens to burn
       pagination:
         type: object
         properties:
@@ -38136,153 +36000,13 @@ definitions:
       request:
         type: object
         properties:
-          insurance:
+          request:
             type: object
             properties:
-              id:
+              insurance_id:
                 type: string
                 format: uint64
-                title: Insurance id
-              validator_address:
-                type: string
-                title: Address of the validator
-              provider_address:
-                type: string
-                title: Address of the provider
-              amount:
-                title: Amount of native token to guard slashing
-                type: object
-                properties:
-                  denom:
-                    type: string
-                  amount:
-                    type: string
-                description: >-
-                  Coin defines a token with a denomination and an amount.
-
-
-                  NOTE: The amount field is an Int which implements the custom
-                  method
-
-                  signatures required by gogoproto.
-              fee_rate:
-                type: string
-                title: Fee rate of the insurance
-              chunk:
-                title: Paired chunk
-                type: object
-                properties:
-                  id:
-                    type: string
-                    format: uint64
-                    title: Id of the chunk
-                  paired_insurance_id:
-                    type: string
-                    format: uint64
-                    title: Id of Paired insurance, 0 means no insurance
-                  unpairing_insurance_id:
-                    type: string
-                    format: uint64
-                  status:
-                    title: Status of the chunk
-                    type: string
-                    enum:
-                      - CHUNK_STATUS_UNSPECIFIED
-                      - CHUNK_STATUS_PAIRING
-                      - CHUNK_STATUS_PAIRED
-                      - CHUNK_STATUS_UNPAIRING
-                      - CHUNK_STATUS_UNPAIRING_FOR_UNSTAKING
-                    default: CHUNK_STATUS_UNSPECIFIED
-                    description: >-
-                      ChunkStatus defines the status of the chunk.
-
-                       - CHUNK_STATUS_PAIRING: This status indicates that the chunk is ready to be paired with an
-                      insurance.
-                       - CHUNK_STATUS_PAIRED: A chunk is paired with an insurance that has the lowest fee rate.
-                      The fee rate is determined by the sum of the insurance fee
-                      rate set by
-
-                      the insurance provider and the commission fee rate set by
-                      the validator
-
-                      designated by the insurance provider.
-                       - CHUNK_STATUS_UNPAIRING: A paired chunk enters this status when paired insurance is started to be
-                      withdrawn or is insufficient (meaning the insurance
-                      balance is below the
-
-                      minimum requirement to be considered valid insurance) or
-                      the validator of
-
-                      the insurance becomes tombstoned.
-                       - CHUNK_STATUS_UNPAIRING_FOR_UNSTAKING: When a delegator (also known as a liquid staker) sends a MsgLiquidUnstake,
-                      it is queued as a PendingLiquidUnstake. At the end of the
-                      epoch,
-
-                      the actual undelegation is triggered and the chunk enters
-                      this state.
-
-                      Once the unbonding period is over in next epoch, the
-                      staked tokens are
-
-                      returned to the delegator's account and the associated
-                      chunk object is
-
-                      removed.
-                description: Chunk defines the chunk of the module.
-              status:
-                title: Status of the insurance
-                type: string
-                enum:
-                  - INSURANCE_STATUS_UNSPECIFIED
-                  - INSURANCE_STATUS_PAIRING
-                  - INSURANCE_STATUS_PAIRED
-                  - INSURANCE_STATUS_UNPAIRING
-                  - INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAWAL
-                  - INSURANCE_STATUS_UNPAIRED
-                default: INSURANCE_STATUS_UNSPECIFIED
-                description: >-
-                  InsuranceStatus defines the status of the insurance.
-
-                   - INSURANCE_STATUS_PAIRING: This is the default status of an insurance when an insurance provider sends
-                  a MsgProvideInsurance. This status indicates that the
-                  insurance is ready to
-
-                  be paired with a chunk. When an empty slot is available and
-                  either
-
-                  msgLiquidStake is received or pairing chunks have been created
-                  in the
-
-                  recent epoch, the insurance with the lowest fee will be paired
-                  with the
-
-                  chunk. Once paired, the insurance contract can be cancelled
-                  using
-
-                  MsgCancelProvideInsurance.
-                   - INSURANCE_STATUS_PAIRED: An insurance is paired with a chunk. While the insurance is in this status,
-                  it serves as a form of protection for the chunk by insuring it
-                  against
-
-                  unexpected loss that may occur due to validator slashing. This
-                  ensures that
-
-                  the chunk remains same size and maximize its staking rewards.
-                   - INSURANCE_STATUS_UNPAIRING: A paired insurance enters this status when it no longer has enough balance
-                  to cover slashing penalties, when the validator is tombstoned,
-                  or
-
-                  when the paired chunk is started to be undelegated.
-
-                  At the next epoch, unpairing will be unpaired.
-                   - INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAWAL: A paired insurance enters this status when there are
-                  queued withdrawal insurance requests created by
-                  MsgWithdrawInsurance at the
-
-                  epoch.
-                   - INSURANCE_STATUS_UNPAIRED: Unpairing insurances from previous epoch enters this status.
-                  Unpaired insurance can be withdrawn immediately by
-                  MsgWithdrawInsurance.
+                title: The id of insurance
   canto.liquidstaking.v1.QueryWithdrawInsuranceRequestsResponse:
     type: object
     properties:
@@ -38291,154 +36015,13 @@ definitions:
         items:
           type: object
           properties:
-            insurance:
+            request:
               type: object
               properties:
-                id:
+                insurance_id:
                   type: string
                   format: uint64
-                  title: Insurance id
-                validator_address:
-                  type: string
-                  title: Address of the validator
-                provider_address:
-                  type: string
-                  title: Address of the provider
-                amount:
-                  title: Amount of native token to guard slashing
-                  type: object
-                  properties:
-                    denom:
-                      type: string
-                    amount:
-                      type: string
-                  description: >-
-                    Coin defines a token with a denomination and an amount.
-
-
-                    NOTE: The amount field is an Int which implements the custom
-                    method
-
-                    signatures required by gogoproto.
-                fee_rate:
-                  type: string
-                  title: Fee rate of the insurance
-                chunk:
-                  title: Paired chunk
-                  type: object
-                  properties:
-                    id:
-                      type: string
-                      format: uint64
-                      title: Id of the chunk
-                    paired_insurance_id:
-                      type: string
-                      format: uint64
-                      title: Id of Paired insurance, 0 means no insurance
-                    unpairing_insurance_id:
-                      type: string
-                      format: uint64
-                    status:
-                      title: Status of the chunk
-                      type: string
-                      enum:
-                        - CHUNK_STATUS_UNSPECIFIED
-                        - CHUNK_STATUS_PAIRING
-                        - CHUNK_STATUS_PAIRED
-                        - CHUNK_STATUS_UNPAIRING
-                        - CHUNK_STATUS_UNPAIRING_FOR_UNSTAKING
-                      default: CHUNK_STATUS_UNSPECIFIED
-                      description: >-
-                        ChunkStatus defines the status of the chunk.
-
-                         - CHUNK_STATUS_PAIRING: This status indicates that the chunk is ready to be paired with an
-                        insurance.
-                         - CHUNK_STATUS_PAIRED: A chunk is paired with an insurance that has the lowest fee rate.
-                        The fee rate is determined by the sum of the insurance
-                        fee rate set by
-
-                        the insurance provider and the commission fee rate set
-                        by the validator
-
-                        designated by the insurance provider.
-                         - CHUNK_STATUS_UNPAIRING: A paired chunk enters this status when paired insurance is started to be
-                        withdrawn or is insufficient (meaning the insurance
-                        balance is below the
-
-                        minimum requirement to be considered valid insurance) or
-                        the validator of
-
-                        the insurance becomes tombstoned.
-                         - CHUNK_STATUS_UNPAIRING_FOR_UNSTAKING: When a delegator (also known as a liquid staker) sends a MsgLiquidUnstake,
-                        it is queued as a PendingLiquidUnstake. At the end of
-                        the epoch,
-
-                        the actual undelegation is triggered and the chunk
-                        enters this state.
-
-                        Once the unbonding period is over in next epoch, the
-                        staked tokens are
-
-                        returned to the delegator's account and the associated
-                        chunk object is
-
-                        removed.
-                  description: Chunk defines the chunk of the module.
-                status:
-                  title: Status of the insurance
-                  type: string
-                  enum:
-                    - INSURANCE_STATUS_UNSPECIFIED
-                    - INSURANCE_STATUS_PAIRING
-                    - INSURANCE_STATUS_PAIRED
-                    - INSURANCE_STATUS_UNPAIRING
-                    - INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAWAL
-                    - INSURANCE_STATUS_UNPAIRED
-                  default: INSURANCE_STATUS_UNSPECIFIED
-                  description: >-
-                    InsuranceStatus defines the status of the insurance.
-
-                     - INSURANCE_STATUS_PAIRING: This is the default status of an insurance when an insurance provider sends
-                    a MsgProvideInsurance. This status indicates that the
-                    insurance is ready to
-
-                    be paired with a chunk. When an empty slot is available and
-                    either
-
-                    msgLiquidStake is received or pairing chunks have been
-                    created in the
-
-                    recent epoch, the insurance with the lowest fee will be
-                    paired with the
-
-                    chunk. Once paired, the insurance contract can be cancelled
-                    using
-
-                    MsgCancelProvideInsurance.
-                     - INSURANCE_STATUS_PAIRED: An insurance is paired with a chunk. While the insurance is in this status,
-                    it serves as a form of protection for the chunk by insuring
-                    it against
-
-                    unexpected loss that may occur due to validator slashing.
-                    This ensures that
-
-                    the chunk remains same size and maximize its staking
-                    rewards.
-                     - INSURANCE_STATUS_UNPAIRING: A paired insurance enters this status when it no longer has enough balance
-                    to cover slashing penalties, when the validator is
-                    tombstoned, or
-
-                    when the paired chunk is started to be undelegated.
-
-                    At the next epoch, unpairing will be unpaired.
-                     - INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAWAL: A paired insurance enters this status when there are
-                    queued withdrawal insurance requests created by
-                    MsgWithdrawInsurance at the
-
-                    epoch.
-                     - INSURANCE_STATUS_UNPAIRED: Unpairing insurances from previous epoch enters this status.
-                    Unpaired insurance can be withdrawn immediately by
-                    MsgWithdrawInsurance.
+                  title: The id of insurance
       pagination:
         type: object
         properties:
@@ -38464,743 +36047,52 @@ definitions:
                    repeated Bar results = 1;
                    PageResponse page = 2;
            }
-  canto.liquidstaking.v1.ResponseChunk:
-    type: object
-    properties:
-      id:
-        type: string
-        format: uint64
-        title: Chunk id
-      tokens:
-        type: string
-        description: |-
-          Amount of native tokens delegated by Chunk.
-          If got slashed, the amount will be reduced.
-          This value can be nil in Pairing status.
-      shares:
-        type: string
-        description: |-
-          Amount of shares delegated by Chunk.
-          This value can be nil in Pairing status.
-      accumulated_reward:
-        title: Accumulated reward of the chunk which will be reset at Epoch
-        type: object
-        properties:
-          denom:
-            type: string
-          amount:
-            type: string
-        description: |-
-          Coin defines a token with a denomination and an amount.
-
-          NOTE: The amount field is an Int which implements the custom method
-          signatures required by gogoproto.
-      paired_insurance:
-        title: Paired insurance
-        type: object
-        properties:
-          id:
-            type: string
-            format: uint64
-            title: Id of the insurance
-          validator_address:
-            type: string
-            title: Address of the validator
-          provider_address:
-            type: string
-            title: Address of the insurance provider
-          fee_rate:
-            type: string
-            title: Fee rate of the insurance
-          chunk_id:
-            type: string
-            format: uint64
-            title: Id of the chunk for which the insurance has a duty
-          status:
-            title: Status of the insurance
-            type: string
-            enum:
-              - INSURANCE_STATUS_UNSPECIFIED
-              - INSURANCE_STATUS_PAIRING
-              - INSURANCE_STATUS_PAIRED
-              - INSURANCE_STATUS_UNPAIRING
-              - INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAWAL
-              - INSURANCE_STATUS_UNPAIRED
-            default: INSURANCE_STATUS_UNSPECIFIED
-            description: >-
-              InsuranceStatus defines the status of the insurance.
-
-               - INSURANCE_STATUS_PAIRING: This is the default status of an insurance when an insurance provider sends
-              a MsgProvideInsurance. This status indicates that the insurance is
-              ready to
-
-              be paired with a chunk. When an empty slot is available and either
-
-              msgLiquidStake is received or pairing chunks have been created in
-              the
-
-              recent epoch, the insurance with the lowest fee will be paired
-              with the
-
-              chunk. Once paired, the insurance contract can be cancelled using
-
-              MsgCancelProvideInsurance.
-               - INSURANCE_STATUS_PAIRED: An insurance is paired with a chunk. While the insurance is in this status,
-              it serves as a form of protection for the chunk by insuring it
-              against
-
-              unexpected loss that may occur due to validator slashing. This
-              ensures that
-
-              the chunk remains same size and maximize its staking rewards.
-               - INSURANCE_STATUS_UNPAIRING: A paired insurance enters this status when it no longer has enough balance
-              to cover slashing penalties, when the validator is tombstoned, or
-
-              when the paired chunk is started to be undelegated.
-
-              At the next epoch, unpairing will be unpaired.
-               - INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAWAL: A paired insurance enters this status when there are
-              queued withdrawal insurance requests created by
-              MsgWithdrawInsurance at the
-
-              epoch.
-               - INSURANCE_STATUS_UNPAIRED: Unpairing insurances from previous epoch enters this status.
-              Unpaired insurance can be withdrawn immediately by
-              MsgWithdrawInsurance.
-        description: Insurance defines the insurance of the module.
-      unpairing_insurance:
-        type: object
-        properties:
-          id:
-            type: string
-            format: uint64
-            title: Id of the insurance
-          validator_address:
-            type: string
-            title: Address of the validator
-          provider_address:
-            type: string
-            title: Address of the insurance provider
-          fee_rate:
-            type: string
-            title: Fee rate of the insurance
-          chunk_id:
-            type: string
-            format: uint64
-            title: Id of the chunk for which the insurance has a duty
-          status:
-            title: Status of the insurance
-            type: string
-            enum:
-              - INSURANCE_STATUS_UNSPECIFIED
-              - INSURANCE_STATUS_PAIRING
-              - INSURANCE_STATUS_PAIRED
-              - INSURANCE_STATUS_UNPAIRING
-              - INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAWAL
-              - INSURANCE_STATUS_UNPAIRED
-            default: INSURANCE_STATUS_UNSPECIFIED
-            description: >-
-              InsuranceStatus defines the status of the insurance.
-
-               - INSURANCE_STATUS_PAIRING: This is the default status of an insurance when an insurance provider sends
-              a MsgProvideInsurance. This status indicates that the insurance is
-              ready to
-
-              be paired with a chunk. When an empty slot is available and either
-
-              msgLiquidStake is received or pairing chunks have been created in
-              the
-
-              recent epoch, the insurance with the lowest fee will be paired
-              with the
-
-              chunk. Once paired, the insurance contract can be cancelled using
-
-              MsgCancelProvideInsurance.
-               - INSURANCE_STATUS_PAIRED: An insurance is paired with a chunk. While the insurance is in this status,
-              it serves as a form of protection for the chunk by insuring it
-              against
-
-              unexpected loss that may occur due to validator slashing. This
-              ensures that
-
-              the chunk remains same size and maximize its staking rewards.
-               - INSURANCE_STATUS_UNPAIRING: A paired insurance enters this status when it no longer has enough balance
-              to cover slashing penalties, when the validator is tombstoned, or
-
-              when the paired chunk is started to be undelegated.
-
-              At the next epoch, unpairing will be unpaired.
-               - INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAWAL: A paired insurance enters this status when there are
-              queued withdrawal insurance requests created by
-              MsgWithdrawInsurance at the
-
-              epoch.
-               - INSURANCE_STATUS_UNPAIRED: Unpairing insurances from previous epoch enters this status.
-              Unpaired insurance can be withdrawn immediately by
-              MsgWithdrawInsurance.
-        description: Insurance defines the insurance of the module.
-      status:
-        title: Status of the chunk
-        type: string
-        enum:
-          - CHUNK_STATUS_UNSPECIFIED
-          - CHUNK_STATUS_PAIRING
-          - CHUNK_STATUS_PAIRED
-          - CHUNK_STATUS_UNPAIRING
-          - CHUNK_STATUS_UNPAIRING_FOR_UNSTAKING
-        default: CHUNK_STATUS_UNSPECIFIED
-        description: >-
-          ChunkStatus defines the status of the chunk.
-
-           - CHUNK_STATUS_PAIRING: This status indicates that the chunk is ready to be paired with an
-          insurance.
-           - CHUNK_STATUS_PAIRED: A chunk is paired with an insurance that has the lowest fee rate.
-          The fee rate is determined by the sum of the insurance fee rate set by
-
-          the insurance provider and the commission fee rate set by the
-          validator
-
-          designated by the insurance provider.
-           - CHUNK_STATUS_UNPAIRING: A paired chunk enters this status when paired insurance is started to be
-          withdrawn or is insufficient (meaning the insurance balance is below
-          the
-
-          minimum requirement to be considered valid insurance) or the validator
-          of
-
-          the insurance becomes tombstoned.
-           - CHUNK_STATUS_UNPAIRING_FOR_UNSTAKING: When a delegator (also known as a liquid staker) sends a MsgLiquidUnstake,
-          it is queued as a PendingLiquidUnstake. At the end of the epoch,
-
-          the actual undelegation is triggered and the chunk enters this state.
-
-          Once the unbonding period is over in next epoch, the staked tokens are
-
-          returned to the delegator's account and the associated chunk object is
-
-          removed.
-  canto.liquidstaking.v1.ResponseInsurance:
-    type: object
-    properties:
-      id:
-        type: string
-        format: uint64
-        title: Insurance id
-      validator_address:
-        type: string
-        title: Address of the validator
-      provider_address:
-        type: string
-        title: Address of the provider
-      amount:
-        title: Amount of native token to guard slashing
-        type: object
-        properties:
-          denom:
-            type: string
-          amount:
-            type: string
-        description: |-
-          Coin defines a token with a denomination and an amount.
-
-          NOTE: The amount field is an Int which implements the custom method
-          signatures required by gogoproto.
-      fee_rate:
-        type: string
-        title: Fee rate of the insurance
-      chunk:
-        title: Paired chunk
-        type: object
-        properties:
-          id:
-            type: string
-            format: uint64
-            title: Id of the chunk
-          paired_insurance_id:
-            type: string
-            format: uint64
-            title: Id of Paired insurance, 0 means no insurance
-          unpairing_insurance_id:
-            type: string
-            format: uint64
-          status:
-            title: Status of the chunk
-            type: string
-            enum:
-              - CHUNK_STATUS_UNSPECIFIED
-              - CHUNK_STATUS_PAIRING
-              - CHUNK_STATUS_PAIRED
-              - CHUNK_STATUS_UNPAIRING
-              - CHUNK_STATUS_UNPAIRING_FOR_UNSTAKING
-            default: CHUNK_STATUS_UNSPECIFIED
-            description: >-
-              ChunkStatus defines the status of the chunk.
-
-               - CHUNK_STATUS_PAIRING: This status indicates that the chunk is ready to be paired with an
-              insurance.
-               - CHUNK_STATUS_PAIRED: A chunk is paired with an insurance that has the lowest fee rate.
-              The fee rate is determined by the sum of the insurance fee rate
-              set by
-
-              the insurance provider and the commission fee rate set by the
-              validator
-
-              designated by the insurance provider.
-               - CHUNK_STATUS_UNPAIRING: A paired chunk enters this status when paired insurance is started to be
-              withdrawn or is insufficient (meaning the insurance balance is
-              below the
-
-              minimum requirement to be considered valid insurance) or the
-              validator of
-
-              the insurance becomes tombstoned.
-               - CHUNK_STATUS_UNPAIRING_FOR_UNSTAKING: When a delegator (also known as a liquid staker) sends a MsgLiquidUnstake,
-              it is queued as a PendingLiquidUnstake. At the end of the epoch,
-
-              the actual undelegation is triggered and the chunk enters this
-              state.
-
-              Once the unbonding period is over in next epoch, the staked tokens
-              are
-
-              returned to the delegator's account and the associated chunk
-              object is
-
-              removed.
-        description: Chunk defines the chunk of the module.
-      status:
-        title: Status of the insurance
-        type: string
-        enum:
-          - INSURANCE_STATUS_UNSPECIFIED
-          - INSURANCE_STATUS_PAIRING
-          - INSURANCE_STATUS_PAIRED
-          - INSURANCE_STATUS_UNPAIRING
-          - INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAWAL
-          - INSURANCE_STATUS_UNPAIRED
-        default: INSURANCE_STATUS_UNSPECIFIED
-        description: >-
-          InsuranceStatus defines the status of the insurance.
-
-           - INSURANCE_STATUS_PAIRING: This is the default status of an insurance when an insurance provider sends
-          a MsgProvideInsurance. This status indicates that the insurance is
-          ready to
-
-          be paired with a chunk. When an empty slot is available and either
-
-          msgLiquidStake is received or pairing chunks have been created in the
-
-          recent epoch, the insurance with the lowest fee will be paired with
-          the
-
-          chunk. Once paired, the insurance contract can be cancelled using
-
-          MsgCancelProvideInsurance.
-           - INSURANCE_STATUS_PAIRED: An insurance is paired with a chunk. While the insurance is in this status,
-          it serves as a form of protection for the chunk by insuring it against
-
-          unexpected loss that may occur due to validator slashing. This ensures
-          that
-
-          the chunk remains same size and maximize its staking rewards.
-           - INSURANCE_STATUS_UNPAIRING: A paired insurance enters this status when it no longer has enough balance
-          to cover slashing penalties, when the validator is tombstoned, or
-
-          when the paired chunk is started to be undelegated.
-
-          At the next epoch, unpairing will be unpaired.
-           - INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAWAL: A paired insurance enters this status when there are
-          queued withdrawal insurance requests created by MsgWithdrawInsurance
-          at the
-
-          epoch.
-           - INSURANCE_STATUS_UNPAIRED: Unpairing insurances from previous epoch enters this status.
-          Unpaired insurance can be withdrawn immediately by
-          MsgWithdrawInsurance.
   canto.liquidstaking.v1.ResponseUnpairingForUnstakingChunkInfo:
     type: object
     properties:
-      chunk:
+      info:
         type: object
         properties:
-          id:
+          chunk_id:
             type: string
             format: uint64
-            title: Chunk id
-          tokens:
+            title: The id of chunk
+          delegator_address:
             type: string
-            description: |-
-              Amount of native tokens delegated by Chunk.
-              If got slashed, the amount will be reduced.
-              This value can be nil in Pairing status.
-          shares:
+            title: Address of delegator (=liquid unstaker)
+          escrowed_lstokens:
             type: string
-            description: |-
-              Amount of shares delegated by Chunk.
-              This value can be nil in Pairing status.
-          accumulated_reward:
-            title: Accumulated reward of the chunk which will be reset at Epoch
-            type: object
-            properties:
-              denom:
-                type: string
-              amount:
-                type: string
-            description: >-
-              Coin defines a token with a denomination and an amount.
-
-
-              NOTE: The amount field is an Int which implements the custom
-              method
-
-              signatures required by gogoproto.
-          paired_insurance:
-            title: Paired insurance
-            type: object
-            properties:
-              id:
-                type: string
-                format: uint64
-                title: Id of the insurance
-              validator_address:
-                type: string
-                title: Address of the validator
-              provider_address:
-                type: string
-                title: Address of the insurance provider
-              fee_rate:
-                type: string
-                title: Fee rate of the insurance
-              chunk_id:
-                type: string
-                format: uint64
-                title: Id of the chunk for which the insurance has a duty
-              status:
-                title: Status of the insurance
-                type: string
-                enum:
-                  - INSURANCE_STATUS_UNSPECIFIED
-                  - INSURANCE_STATUS_PAIRING
-                  - INSURANCE_STATUS_PAIRED
-                  - INSURANCE_STATUS_UNPAIRING
-                  - INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAWAL
-                  - INSURANCE_STATUS_UNPAIRED
-                default: INSURANCE_STATUS_UNSPECIFIED
-                description: >-
-                  InsuranceStatus defines the status of the insurance.
-
-                   - INSURANCE_STATUS_PAIRING: This is the default status of an insurance when an insurance provider sends
-                  a MsgProvideInsurance. This status indicates that the
-                  insurance is ready to
-
-                  be paired with a chunk. When an empty slot is available and
-                  either
-
-                  msgLiquidStake is received or pairing chunks have been created
-                  in the
-
-                  recent epoch, the insurance with the lowest fee will be paired
-                  with the
-
-                  chunk. Once paired, the insurance contract can be cancelled
-                  using
-
-                  MsgCancelProvideInsurance.
-                   - INSURANCE_STATUS_PAIRED: An insurance is paired with a chunk. While the insurance is in this status,
-                  it serves as a form of protection for the chunk by insuring it
-                  against
-
-                  unexpected loss that may occur due to validator slashing. This
-                  ensures that
-
-                  the chunk remains same size and maximize its staking rewards.
-                   - INSURANCE_STATUS_UNPAIRING: A paired insurance enters this status when it no longer has enough balance
-                  to cover slashing penalties, when the validator is tombstoned,
-                  or
-
-                  when the paired chunk is started to be undelegated.
-
-                  At the next epoch, unpairing will be unpaired.
-                   - INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAWAL: A paired insurance enters this status when there are
-                  queued withdrawal insurance requests created by
-                  MsgWithdrawInsurance at the
-
-                  epoch.
-                   - INSURANCE_STATUS_UNPAIRED: Unpairing insurances from previous epoch enters this status.
-                  Unpaired insurance can be withdrawn immediately by
-                  MsgWithdrawInsurance.
-            description: Insurance defines the insurance of the module.
-          unpairing_insurance:
-            type: object
-            properties:
-              id:
-                type: string
-                format: uint64
-                title: Id of the insurance
-              validator_address:
-                type: string
-                title: Address of the validator
-              provider_address:
-                type: string
-                title: Address of the insurance provider
-              fee_rate:
-                type: string
-                title: Fee rate of the insurance
-              chunk_id:
-                type: string
-                format: uint64
-                title: Id of the chunk for which the insurance has a duty
-              status:
-                title: Status of the insurance
-                type: string
-                enum:
-                  - INSURANCE_STATUS_UNSPECIFIED
-                  - INSURANCE_STATUS_PAIRING
-                  - INSURANCE_STATUS_PAIRED
-                  - INSURANCE_STATUS_UNPAIRING
-                  - INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAWAL
-                  - INSURANCE_STATUS_UNPAIRED
-                default: INSURANCE_STATUS_UNSPECIFIED
-                description: >-
-                  InsuranceStatus defines the status of the insurance.
-
-                   - INSURANCE_STATUS_PAIRING: This is the default status of an insurance when an insurance provider sends
-                  a MsgProvideInsurance. This status indicates that the
-                  insurance is ready to
-
-                  be paired with a chunk. When an empty slot is available and
-                  either
-
-                  msgLiquidStake is received or pairing chunks have been created
-                  in the
-
-                  recent epoch, the insurance with the lowest fee will be paired
-                  with the
-
-                  chunk. Once paired, the insurance contract can be cancelled
-                  using
-
-                  MsgCancelProvideInsurance.
-                   - INSURANCE_STATUS_PAIRED: An insurance is paired with a chunk. While the insurance is in this status,
-                  it serves as a form of protection for the chunk by insuring it
-                  against
-
-                  unexpected loss that may occur due to validator slashing. This
-                  ensures that
-
-                  the chunk remains same size and maximize its staking rewards.
-                   - INSURANCE_STATUS_UNPAIRING: A paired insurance enters this status when it no longer has enough balance
-                  to cover slashing penalties, when the validator is tombstoned,
-                  or
-
-                  when the paired chunk is started to be undelegated.
-
-                  At the next epoch, unpairing will be unpaired.
-                   - INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAWAL: A paired insurance enters this status when there are
-                  queued withdrawal insurance requests created by
-                  MsgWithdrawInsurance at the
-
-                  epoch.
-                   - INSURANCE_STATUS_UNPAIRED: Unpairing insurances from previous epoch enters this status.
-                  Unpaired insurance can be withdrawn immediately by
-                  MsgWithdrawInsurance.
-            description: Insurance defines the insurance of the module.
-          status:
-            title: Status of the chunk
-            type: string
-            enum:
-              - CHUNK_STATUS_UNSPECIFIED
-              - CHUNK_STATUS_PAIRING
-              - CHUNK_STATUS_PAIRED
-              - CHUNK_STATUS_UNPAIRING
-              - CHUNK_STATUS_UNPAIRING_FOR_UNSTAKING
-            default: CHUNK_STATUS_UNSPECIFIED
-            description: >-
-              ChunkStatus defines the status of the chunk.
-
-               - CHUNK_STATUS_PAIRING: This status indicates that the chunk is ready to be paired with an
-              insurance.
-               - CHUNK_STATUS_PAIRED: A chunk is paired with an insurance that has the lowest fee rate.
-              The fee rate is determined by the sum of the insurance fee rate
-              set by
-
-              the insurance provider and the commission fee rate set by the
-              validator
-
-              designated by the insurance provider.
-               - CHUNK_STATUS_UNPAIRING: A paired chunk enters this status when paired insurance is started to be
-              withdrawn or is insufficient (meaning the insurance balance is
-              below the
-
-              minimum requirement to be considered valid insurance) or the
-              validator of
-
-              the insurance becomes tombstoned.
-               - CHUNK_STATUS_UNPAIRING_FOR_UNSTAKING: When a delegator (also known as a liquid staker) sends a MsgLiquidUnstake,
-              it is queued as a PendingLiquidUnstake. At the end of the epoch,
-
-              the actual undelegation is triggered and the chunk enters this
-              state.
-
-              Once the unbonding period is over in next epoch, the staked tokens
-              are
-
-              returned to the delegator's account and the associated chunk
-              object is
-
-              removed.
-      delegator_address:
-        type: string
-      escrowed_lstokens:
-        type: string
+            title: Amount of ls tokens to burn
   canto.liquidstaking.v1.ResponseWithdrawInsuranceRequest:
     type: object
     properties:
-      insurance:
+      request:
         type: object
         properties:
-          id:
+          insurance_id:
             type: string
             format: uint64
-            title: Insurance id
-          validator_address:
-            type: string
-            title: Address of the validator
-          provider_address:
-            type: string
-            title: Address of the provider
-          amount:
-            title: Amount of native token to guard slashing
-            type: object
-            properties:
-              denom:
-                type: string
-              amount:
-                type: string
-            description: >-
-              Coin defines a token with a denomination and an amount.
-
-
-              NOTE: The amount field is an Int which implements the custom
-              method
-
-              signatures required by gogoproto.
-          fee_rate:
-            type: string
-            title: Fee rate of the insurance
-          chunk:
-            title: Paired chunk
-            type: object
-            properties:
-              id:
-                type: string
-                format: uint64
-                title: Id of the chunk
-              paired_insurance_id:
-                type: string
-                format: uint64
-                title: Id of Paired insurance, 0 means no insurance
-              unpairing_insurance_id:
-                type: string
-                format: uint64
-              status:
-                title: Status of the chunk
-                type: string
-                enum:
-                  - CHUNK_STATUS_UNSPECIFIED
-                  - CHUNK_STATUS_PAIRING
-                  - CHUNK_STATUS_PAIRED
-                  - CHUNK_STATUS_UNPAIRING
-                  - CHUNK_STATUS_UNPAIRING_FOR_UNSTAKING
-                default: CHUNK_STATUS_UNSPECIFIED
-                description: >-
-                  ChunkStatus defines the status of the chunk.
-
-                   - CHUNK_STATUS_PAIRING: This status indicates that the chunk is ready to be paired with an
-                  insurance.
-                   - CHUNK_STATUS_PAIRED: A chunk is paired with an insurance that has the lowest fee rate.
-                  The fee rate is determined by the sum of the insurance fee
-                  rate set by
-
-                  the insurance provider and the commission fee rate set by the
-                  validator
-
-                  designated by the insurance provider.
-                   - CHUNK_STATUS_UNPAIRING: A paired chunk enters this status when paired insurance is started to be
-                  withdrawn or is insufficient (meaning the insurance balance is
-                  below the
-
-                  minimum requirement to be considered valid insurance) or the
-                  validator of
-
-                  the insurance becomes tombstoned.
-                   - CHUNK_STATUS_UNPAIRING_FOR_UNSTAKING: When a delegator (also known as a liquid staker) sends a MsgLiquidUnstake,
-                  it is queued as a PendingLiquidUnstake. At the end of the
-                  epoch,
-
-                  the actual undelegation is triggered and the chunk enters this
-                  state.
-
-                  Once the unbonding period is over in next epoch, the staked
-                  tokens are
-
-                  returned to the delegator's account and the associated chunk
-                  object is
-
-                  removed.
-            description: Chunk defines the chunk of the module.
-          status:
-            title: Status of the insurance
-            type: string
-            enum:
-              - INSURANCE_STATUS_UNSPECIFIED
-              - INSURANCE_STATUS_PAIRING
-              - INSURANCE_STATUS_PAIRED
-              - INSURANCE_STATUS_UNPAIRING
-              - INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAWAL
-              - INSURANCE_STATUS_UNPAIRED
-            default: INSURANCE_STATUS_UNSPECIFIED
-            description: >-
-              InsuranceStatus defines the status of the insurance.
-
-               - INSURANCE_STATUS_PAIRING: This is the default status of an insurance when an insurance provider sends
-              a MsgProvideInsurance. This status indicates that the insurance is
-              ready to
-
-              be paired with a chunk. When an empty slot is available and either
-
-              msgLiquidStake is received or pairing chunks have been created in
-              the
-
-              recent epoch, the insurance with the lowest fee will be paired
-              with the
-
-              chunk. Once paired, the insurance contract can be cancelled using
-
-              MsgCancelProvideInsurance.
-               - INSURANCE_STATUS_PAIRED: An insurance is paired with a chunk. While the insurance is in this status,
-              it serves as a form of protection for the chunk by insuring it
-              against
-
-              unexpected loss that may occur due to validator slashing. This
-              ensures that
-
-              the chunk remains same size and maximize its staking rewards.
-               - INSURANCE_STATUS_UNPAIRING: A paired insurance enters this status when it no longer has enough balance
-              to cover slashing penalties, when the validator is tombstoned, or
-
-              when the paired chunk is started to be undelegated.
-
-              At the next epoch, unpairing will be unpaired.
-               - INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAWAL: A paired insurance enters this status when there are
-              queued withdrawal insurance requests created by
-              MsgWithdrawInsurance at the
-
-              epoch.
-               - INSURANCE_STATUS_UNPAIRED: Unpairing insurances from previous epoch enters this status.
-              Unpaired insurance can be withdrawn immediately by
-              MsgWithdrawInsurance.
+            title: The id of insurance
+  canto.liquidstaking.v1.UnpairingForUnstakingChunkInfo:
+    type: object
+    properties:
+      chunk_id:
+        type: string
+        format: uint64
+        title: The id of chunk
+      delegator_address:
+        type: string
+        title: Address of delegator (=liquid unstaker)
+      escrowed_lstokens:
+        type: string
+        title: Amount of ls tokens to burn
+  canto.liquidstaking.v1.WithdrawInsuranceRequest:
+    type: object
+    properties:
+      insurance_id:
+        type: string
+        format: uint64
+        title: The id of insurance
   ethermint.evm.v1.ChainConfig:
     type: object
     properties:

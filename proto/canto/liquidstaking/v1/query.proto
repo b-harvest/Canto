@@ -77,6 +77,13 @@ service Query {
     option (google.api.http).get = "/canto/liquidstaking/v1/chunk_size";
   }
 
+  // MinimumCollateral returns the minimum collateral of the module.
+  // Insurance providers must provide collateral greater than or equal to the minimum collateral.
+  rpc MinimumCollateral(QueryMinimumCollateralRequest)
+      returns (QueryMinimumCollateralResponse) {
+    option (google.api.http).get = "/canto/liquidstaking/v1/minimum_collateral";
+  }
+
   // States returns the states of the module.
   rpc States(QueryStatesRequest) returns (QueryStatesResponse) {
     option (google.api.http).get = "/canto/liquidstaking/v1/states";
@@ -189,7 +196,10 @@ message QueryUnpairingForUnstakingChunkInfoResponse {
 }
 
 message QueryChunkSizeRequest {}
-message QueryChunkSizeResponse { uint64 chunk_size = 1; }
+message QueryChunkSizeResponse { cosmos.base.v1beta1.Coin chunk_size = 1[(gogoproto.nullable) = false]; }
+
+message QueryMinimumCollateralRequest {}
+message QueryMinimumCollateralResponse { cosmos.base.v1beta1.DecCoin minimum_collateral = 2 [(gogoproto.nullable) = false]; }
 
 message QueryStatesRequest {}
 

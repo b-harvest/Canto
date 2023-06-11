@@ -123,11 +123,6 @@ func (k Keeper) Insurance(c context.Context, req *types.QueryInsuranceRequest) (
 	return &types.QueryInsuranceResponse{Insurance: insurance}, nil
 }
 
-func (k Keeper) States(c context.Context, _ *types.QueryStatesRequest) (*types.QueryStatesResponse, error) {
-	ctx := sdk.UnwrapSDKContext(c)
-	return &types.QueryStatesResponse{NetAmountState: k.GetNetAmountState(ctx)}, nil
-}
-
 func (k Keeper) WithdrawInsuranceRequests(c context.Context, req *types.QueryWithdrawInsuranceRequestsRequest) (*types.QueryWithdrawInsuranceRequestsResponse, error) {
 	ctx := sdk.UnwrapSDKContext(c)
 	var reqs []types.ResponseWithdrawInsuranceRequest
@@ -229,6 +224,31 @@ func (k Keeper) UnpairingForUnstakingChunkInfo(c context.Context, req *types.Que
 	}, nil
 }
 
-func (k Keeper) ChunkSize(_ context.Context, _ *types.QueryChunkSizeRequest) (*types.QueryChunkSizeResponse, error) {
-	return &types.QueryChunkSizeResponse{ChunkSize: types.ChunkSize.Uint64()}, nil
+func (k Keeper) ChunkSize(c context.Context, _ *types.QueryChunkSizeRequest) (*types.QueryChunkSizeResponse, error) {
+	ctx := sdk.UnwrapSDKContext(c)
+	return &types.QueryChunkSizeResponse{
+		ChunkSize: sdk.NewCoin(
+			k.stakingKeeper.BondDenom(ctx),
+			types.ChunkSize,
+		),
+	}, nil
+}
+
+func (k Keeper) MinimumCollateral(c context.Context, _ *types.QueryMinimumCollateralRequest) (*types.QueryMinimumCollateralResponse, error) {
+	ctx := sdk.UnwrapSDKContext(c)
+	minimumCollateral, err := sdk.NewDecFromStr(types.MinimumCollateral)
+	if err != nil {
+		return nil, err
+	}
+	return &types.QueryMinimumCollateralResponse{
+		MinimumCollateral: sdk.NewDecCoinFromDec(
+			k.stakingKeeper.BondDenom(ctx),
+			types.ChunkSize.ToDec().Mul(minimumCollateral),
+		),
+	}, nil
+}
+
+func (k Keeper) States(c context.Context, _ *types.QueryStatesRequest) (*types.QueryStatesResponse, error) {
+	ctx := sdk.UnwrapSDKContext(c)
+	return &types.QueryStatesResponse{NetAmountState: k.GetNetAmountState(ctx)}, nil
 }

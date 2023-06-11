@@ -947,7 +947,7 @@ func (k Keeper) IsValidValidator(ctx sdk.Context, validator stakingtypes.Validat
 func (k Keeper) GetMinimumRequirements(ctx sdk.Context) (oneChunkAmount, slashingCoverage sdk.Coin) {
 	bondDenom := k.stakingKeeper.BondDenom(ctx)
 	oneChunkAmount = sdk.NewCoin(bondDenom, types.ChunkSize)
-	fraction := sdk.MustNewDecFromStr(types.SlashFraction)
+	fraction := sdk.MustNewDecFromStr(types.MinimumCollateral)
 	slashingCoverage = sdk.NewCoin(bondDenom, oneChunkAmount.Amount.ToDec().Mul(fraction).TruncateInt())
 	return
 }

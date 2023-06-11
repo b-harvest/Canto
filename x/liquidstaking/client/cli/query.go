@@ -39,6 +39,7 @@ func GetQueryCmd(queryRoute string) *cobra.Command {
 		CmdQueryUnpairingForUnstakingChunkInfosRequests(),
 		CmdQueryUnpairingForUnstakingChunkInfosRequest(),
 		CmdQueryChunkSizeRequest(),
+		CmdQueryMinimumCollateral(),
 		CmdQueryStatesRequest(),
 	)
 
@@ -500,6 +501,38 @@ $ %s query %s chunk-size
 			request := &types.QueryChunkSizeRequest{}
 			// Query store
 			response, err := queryClient.ChunkSize(context.Background(), request)
+			if err != nil {
+				return err
+			}
+			return clientCtx.PrintProto(response)
+		},
+	}
+	flags.AddQueryFlagsToCmd(cmd)
+	return cmd
+}
+
+func CmdQueryMinimumCollateral() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "minimum-collateral",
+		Args:  cobra.ExactArgs(0),
+		Short: "Query the minimum collateral",
+		Long: strings.TrimSpace(
+			fmt.Sprintf(`Query the minimum collateral on a network.
+Example:
+$ %s query %s minimum-collateral
+`,
+				version.AppName, types.ModuleName,
+			),
+		),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+			queryClient := types.NewQueryClient(clientCtx)
+			request := &types.QueryMinimumCollateralRequest{}
+			// Query store
+			response, err := queryClient.MinimumCollateral(context.Background(), request)
 			if err != nil {
 				return err
 			}
