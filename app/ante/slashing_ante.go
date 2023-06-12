@@ -19,18 +19,18 @@ import (
 // The liquidstaking module works closely with the slashing params. (e.g. MinimumCollateral constant is calculated based on the slashing params)
 // To reduce unexpected risks, it is important to reduce the maximum slashing penalty that can theoretically occur.
 type SlashingParamChangeLimitDecorator struct {
-	cdc            codec.BinaryCodec
 	slashingKeeper *slashingkeeper.Keeper
+	cdc            codec.BinaryCodec
 }
 
 // NewSlashingParamChangeLimitDecorator creates a new slashing param change limit decorator.
 func NewSlashingParamChangeLimitDecorator(
-	cdc codec.BinaryCodec,
 	slashingKeeper *slashingkeeper.Keeper,
+	cdc codec.BinaryCodec,
 ) SlashingParamChangeLimitDecorator {
 	return SlashingParamChangeLimitDecorator{
-		cdc:            cdc,
 		slashingKeeper: slashingKeeper,
+		cdc:            cdc,
 	}
 }
 
@@ -40,10 +40,6 @@ func (s SlashingParamChangeLimitDecorator) AnteHandle(
 	simulate bool,
 	next sdk.AnteHandler,
 ) (newCtx sdk.Context, err error) {
-	if !ctx.IsCheckTx() || simulate {
-		return next(ctx, tx, simulate)
-	}
-
 	msgs := tx.GetMsgs()
 	if err = s.ValidateMsgs(ctx, msgs); err != nil {
 		return ctx, err
@@ -53,8 +49,8 @@ func (s SlashingParamChangeLimitDecorator) AnteHandle(
 }
 
 func (s SlashingParamChangeLimitDecorator) ValidateMsgs(ctx sdk.Context, msgs []sdk.Msg) error {
+	var params slashingtypes.Params
 	validMsg := func(m sdk.Msg) error {
-		var params slashingtypes.Params
 		if msg, ok := m.(*govtypes.MsgSubmitProposal); ok {
 			switch c := msg.GetContent().(type) {
 			case *proposal.ParameterChangeProposal:

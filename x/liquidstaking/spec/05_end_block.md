@@ -14,6 +14,7 @@ The end block logic is executed at the end of each epoch.
   - distribute reward
     - send insurance commission from chunk
       - insurance commission: `(balance of chunk) x insurance.FeeRate`
+    - burn fee calculated by `fee rate x (balance of chunk - insurance commission)` (Please check the `CalcDynamicFeeRate` )
     - send rest of chunk balance to reward pool
 
 ## Cover slashing and handle mature unbondings

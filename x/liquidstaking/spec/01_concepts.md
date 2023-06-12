@@ -20,10 +20,28 @@ Fee rate competition allows liquid staking only for slots whose fee rate fall wi
 
 ## Reward distribution
 
-All **active chunks** have the same size of tokens(= hard coded amount: **500M**). **An active chunk** is paired with **insurance** and has its own Delegation object in the `staking` module, which earns rewards for every inflation epoch as set by the Inflation module.
+All **active chunks** have the same size of tokens(= hard coded amount: **250K**). **An active chunk** is paired with **insurance** and has its own Delegation object in the `staking` module, which earns rewards for every inflation epoch as set by the Inflation module.
 
 All delegation rewards are collected at every `liquidstaking` module epoch, which must be the same as `staking` module's unbonding period. These rewards are then collected to a **reward module account.**
 
-## Reward Withdrawal (WIP)
+### Dynamic Fee Rate
+
+liquidstaking module takes **a fee calculated based on utilization ratio** before delegation rewards go to the reward pool(Delegation reward -> insurance commission --(fee is burned)--> reward pool ).
+
+**Utilization ratio(= u)** is calculated as follows: `chunkSize * numPairedChunks / totalSupply`
+
+The fee rate is calculated as follows:
+
+* if u < softCap then, **fee rate =** `r0`
+* if softCap <= u <= optimal then, **fee rate =** `r0 + ((u - softcap) / (optimal - softcap) x slope1)`
+* if optimal < u <= hardCap then, **fee rate =** `r0 + slope1 + ((min(u, hardcap) - optimal) / (hardcap - optimal) x slope2)`
+
+And the fee is calculated as follows: `fee = (delegation reward - insurance commission) * feeRate`
+
+Fee is burned and the rest of the delegation reward goes to the reward pool.
+
+## Reward withdrawal 
 
 The rewards accumulated on the **reward module account** can be withdrawn by anyone who has lsToken, at a discounted price.
+
+The discount rate is calculated as follows: `discount rate = reward module account's balance / (num paired chunks * chunk size)`

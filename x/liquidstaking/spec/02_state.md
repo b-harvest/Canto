@@ -13,7 +13,7 @@ type Chunk struct {
   Id uint64 // Unique id increased by 1
   PairedInsuranceId uint64
   UnpairingInsuranceId uint64
-	Status ChunkStatus // Status of chunk
+  Status ChunkStatus // Status of chunk
 }
 ```
 
@@ -28,7 +28,7 @@ A **chunk** has the following status:
 
 An insurance object is created when Insurance Provider sends valid `MsgInsuranceProvide`.
 
-All state transition of Insurance occurs at EndBlock and an epoch is reached, except msgServer got `MsgInsuranceProvide`
+Most state transition of Insurance occurs at EndBlock and an epoch is reached.
 
 ```go
 type Insurance struct {
@@ -51,9 +51,9 @@ An **insurance** has the following status:
 
 ## UnpairingForUnstakingChunkInfo
 
-It is created when msgServer receives `MsgLiquidUnstake` for paired chunk. The actual unbonding is started at **Handle Queued Liquid Unstakes.**
+It is created when msgServer receives `MsgLiquidUnstake` for paired chunk. The actual unbonding is started at **[Handle Queued Liquid Unstakes](https://github.com/Canto-Network/Canto/blob/main/x/liquidstaking/spec/05_end_block.md#handle-queued-liquid-unstakes).**
 
-It is removed **Cover slashing and handle mature unbondings** when chunk unbonding is finished.
+It is removed **[Cover slashing and handle mature unbondings](https://github.com/Canto-Network/Canto/blob/main/x/liquidstaking/spec/05_end_block.md#cover-slashing-and-handle-mature-unbondings)* when chunk unbonding is finished.
 
 ```go
 type UnpairingForUnstakingChunkInfo struct {
