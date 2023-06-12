@@ -125,7 +125,7 @@ func (k Keeper) Insurance(c context.Context, req *types.QueryInsuranceRequest) (
 
 func (k Keeper) WithdrawInsuranceRequests(c context.Context, req *types.QueryWithdrawInsuranceRequestsRequest) (*types.QueryWithdrawInsuranceRequestsResponse, error) {
 	ctx := sdk.UnwrapSDKContext(c)
-	var reqs []types.ResponseWithdrawInsuranceRequest
+	var reqs []types.WithdrawInsuranceRequest
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefixUnpairingForUnstakingChunkInfo)
 
 	pageRes, err := query.FilteredPaginate(store, req.Pagination, func(key []byte, value []byte, accumulate bool) (bool, error) {
@@ -144,7 +144,7 @@ func (k Keeper) WithdrawInsuranceRequests(c context.Context, req *types.QueryWit
 		}
 
 		if accumulate {
-			reqs = append(reqs, types.ResponseWithdrawInsuranceRequest{withdrawInsuranceRequest})
+			reqs = append(reqs, withdrawInsuranceRequest)
 		}
 		return true, nil
 	})
@@ -166,15 +166,13 @@ func (k Keeper) WithdrawInsuranceRequest(c context.Context, req *types.QueryWith
 		return nil, fmt.Errorf("no insurance is associated with Insurance Id %d", request.InsuranceId)
 	}
 	return &types.QueryWithdrawInsuranceRequestResponse{
-		Request: types.ResponseWithdrawInsuranceRequest{
-			Request: request,
-		},
+		WithdrawInsuranceRequest: request,
 	}, nil
 }
 
 func (k Keeper) UnpairingForUnstakingChunkInfos(c context.Context, req *types.QueryUnpairingForUnstakingChunkInfosRequest) (*types.QueryUnpairingForUnstakingChunkInfosResponse, error) {
 	ctx := sdk.UnwrapSDKContext(c)
-	var infos []types.ResponseUnpairingForUnstakingChunkInfo
+	var infos []types.UnpairingForUnstakingChunkInfo
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefixUnpairingForUnstakingChunkInfo)
 
 	pageRes, err := query.FilteredPaginate(store, req.Pagination, func(key []byte, value []byte, accumulate bool) (bool, error) {
@@ -199,7 +197,7 @@ func (k Keeper) UnpairingForUnstakingChunkInfos(c context.Context, req *types.Qu
 		}
 
 		if accumulate {
-			infos = append(infos, types.ResponseUnpairingForUnstakingChunkInfo{Info: info})
+			infos = append(infos, info)
 		}
 		return true, nil
 	})
@@ -218,9 +216,7 @@ func (k Keeper) UnpairingForUnstakingChunkInfo(c context.Context, req *types.Que
 		return nil, fmt.Errorf("no unpairing for unstaking chunk info is associated with Id %d", req.Id)
 	}
 	return &types.QueryUnpairingForUnstakingChunkInfoResponse{
-		Info: types.ResponseUnpairingForUnstakingChunkInfo{
-			Info: info,
-		},
+		UnpairingForUnstakingChunkInfo: info,
 	}, nil
 }
 
