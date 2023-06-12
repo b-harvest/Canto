@@ -50,13 +50,16 @@ func (s SlashingParamChangeLimitDecorator) AnteHandle(
 
 func (s SlashingParamChangeLimitDecorator) ValidateMsgs(ctx sdk.Context, msgs []sdk.Msg) error {
 	validMsg := func(m sdk.Msg) error {
-		params := s.slashingKeeper.GetParams(ctx)
+		var params slashingtypes.Params
 		if msg, ok := m.(*govtypes.MsgSubmitProposal); ok {
 			switch c := msg.GetContent().(type) {
 			case *proposal.ParameterChangeProposal:
 				for _, c := range c.Changes {
 					if c.GetSubspace() != slashingtypes.ModuleName {
 						return nil
+					}
+					if params == (slashingtypes.Params{}) {
+						params = s.slashingKeeper.GetParams(ctx)
 					}
 					switch c.GetKey() {
 					case string(slashingtypes.KeySignedBlocksWindow):
