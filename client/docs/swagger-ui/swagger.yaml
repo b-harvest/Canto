@@ -2203,19 +2203,16 @@ paths:
               info:
                 type: object
                 properties:
-                  info:
-                    type: object
-                    properties:
-                      chunk_id:
-                        type: string
-                        format: uint64
-                        title: The id of chunk
-                      delegator_address:
-                        type: string
-                        title: Address of delegator (=liquid unstaker)
-                      escrowed_lstokens:
-                        type: string
-                        title: Amount of ls tokens to burn
+                  chunk_id:
+                    type: string
+                    format: uint64
+                    title: The id of chunk
+                  delegator_address:
+                    type: string
+                    title: Address of delegator (=liquid unstaker)
+                  escrowed_lstokens:
+                    type: string
+                    title: Amount of ls tokens to burn
         default:
           description: An unexpected error response.
           schema:
@@ -2395,13 +2392,10 @@ paths:
               request:
                 type: object
                 properties:
-                  request:
-                    type: object
-                    properties:
-                      insurance_id:
-                        type: string
-                        format: uint64
-                        title: The id of insurance
+                  insurance_id:
+                    type: string
+                    format: uint64
+                    title: The id of insurance
         default:
           description: An unexpected error response.
           schema:
@@ -36241,19 +36235,16 @@ definitions:
       info:
         type: object
         properties:
-          info:
-            type: object
-            properties:
-              chunk_id:
-                type: string
-                format: uint64
-                title: The id of chunk
-              delegator_address:
-                type: string
-                title: Address of delegator (=liquid unstaker)
-              escrowed_lstokens:
-                type: string
-                title: Amount of ls tokens to burn
+          chunk_id:
+            type: string
+            format: uint64
+            title: The id of chunk
+          delegator_address:
+            type: string
+            title: Address of delegator (=liquid unstaker)
+          escrowed_lstokens:
+            type: string
+            title: Amount of ls tokens to burn
   canto.liquidstaking.v1.QueryUnpairingForUnstakingChunkInfosResponse:
     type: object
     properties:
@@ -36303,13 +36294,10 @@ definitions:
       request:
         type: object
         properties:
-          request:
-            type: object
-            properties:
-              insurance_id:
-                type: string
-                format: uint64
-                title: The id of insurance
+          insurance_id:
+            type: string
+            format: uint64
+            title: The id of insurance
   canto.liquidstaking.v1.QueryWithdrawInsuranceRequestsResponse:
     type: object
     properties:
@@ -36347,32 +36335,6 @@ definitions:
                    repeated Bar results = 1;
                    PageResponse page = 2;
            }
-  canto.liquidstaking.v1.ResponseUnpairingForUnstakingChunkInfo:
-    type: object
-    properties:
-      info:
-        type: object
-        properties:
-          chunk_id:
-            type: string
-            format: uint64
-            title: The id of chunk
-          delegator_address:
-            type: string
-            title: Address of delegator (=liquid unstaker)
-          escrowed_lstokens:
-            type: string
-            title: Amount of ls tokens to burn
-  canto.liquidstaking.v1.ResponseWithdrawInsuranceRequest:
-    type: object
-    properties:
-      request:
-        type: object
-        properties:
-          insurance_id:
-            type: string
-            format: uint64
-            title: The id of insurance
   canto.liquidstaking.v1.UnpairingForUnstakingChunkInfo:
     type: object
     properties:

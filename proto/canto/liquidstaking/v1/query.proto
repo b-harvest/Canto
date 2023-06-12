@@ -150,14 +150,6 @@ message QueryInsuranceResponse {
   Insurance insurance = 1 [ (gogoproto.nullable) = false ];
 }
 
-message ResponseWithdrawInsuranceRequest {
-  WithdrawInsuranceRequest request = 1 [ (gogoproto.nullable) = false ];
-}
-
-message ResponseUnpairingForUnstakingChunkInfo {
-  UnpairingForUnstakingChunkInfo info = 1 [ (gogoproto.nullable) = false ];
-}
-
 message QueryWithdrawInsuranceRequestsRequest {
   // Query all withdraw insurance requests requested by ProviderAddress
   string provider_address = 1;
@@ -173,7 +165,7 @@ message QueryWithdrawInsuranceRequestsResponse {
 
 message QueryWithdrawInsuranceRequestRequest { uint64 id = 1; }
 message QueryWithdrawInsuranceRequestResponse {
-  ResponseWithdrawInsuranceRequest request = 1 [ (gogoproto.nullable) = false ];
+  WithdrawInsuranceRequest request = 1 [ (gogoproto.nullable) = false ];
 }
 
 message QueryUnpairingForUnstakingChunkInfosRequest {
@@ -193,8 +185,7 @@ message QueryUnpairingForUnstakingChunkInfosResponse {
 
 message QueryUnpairingForUnstakingChunkInfoRequest { uint64 id = 1; }
 message QueryUnpairingForUnstakingChunkInfoResponse {
-  ResponseUnpairingForUnstakingChunkInfo info = 1
-      [ (gogoproto.nullable) = false ];
+  UnpairingForUnstakingChunkInfo info = 1 [ (gogoproto.nullable) = false ];
 }
 
 message QueryChunkSizeRequest {}
