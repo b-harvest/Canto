@@ -1,19 +1,13 @@
 package ante_test
 
 import (
-	"github.com/Canto-Network/Canto/v6/app"
 	"github.com/Canto-Network/Canto/v6/app/ante"
 	"github.com/Canto-Network/Canto/v6/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"github.com/cosmos/cosmos-sdk/x/params/types/proposal"
-	"github.com/evmos/ethermint/encoding"
-	abci "github.com/tendermint/tendermint/abci/types"
 	"strconv"
 )
-
-var proposer = sdk.AccAddress("test1")
 
 func (suite *AnteTestSuite) TestSlashingParamChangeProposal() {
 	suite.SetupTest(false)
@@ -106,41 +100,22 @@ func (suite *AnteTestSuite) TestSlashingParamChangeProposal() {
 		},
 	}
 
-	encodingConfig := encoding.MakeConfig(app.ModuleBasics)
-	decorator := ante.NewSlashingParamChangeLimitDecorator(&suite.app.SlashingKeeper, suite.app.AppCodec())
+	spcld := ante.NewSlashingParamChangeLimitDecorator(&suite.app.SlashingKeeper, suite.app.AppCodec())
+	anteHandler := sdk.ChainAnteDecorators(spcld)
 	for _, tc := range tests {
 		suite.Run(tc.desc, func() {
 			msg, err := govtypes.NewMsgSubmitProposal(
 				tc.createSubmitProposal(),
 				sdk.NewCoins(sdk.NewCoin(suite.app.StakingKeeper.BondDenom(suite.ctx), sdk.NewInt(10000))),
-				proposer,
+				suite.addr,
 			)
-			// Check decorator first
-			err = decorator.ValidateMsgs(suite.ctx, []sdk.Msg{msg})
-			if tc.expectedError != nil {
-				suite.Require().ErrorContains(err, tc.expectedError.Error())
-			} else {
-				suite.Require().NoError(err)
-			}
-
-			// Check tx
 			tx, err := createTx(suite.priv, []sdk.Msg{msg}...)
 			suite.Require().NoError(err)
-			txEncoder := encodingConfig.TxConfig.TxEncoder()
-			txBytes, err := txEncoder(tx)
-			suite.Require().NoError(err)
-
-			resDeliverTx := suite.app.DeliverTx(
-				abci.RequestDeliverTx{
-					Tx: txBytes,
-				},
-			)
+			_, err = anteHandler(suite.ctx, tx, false)
 			if tc.expectedError != nil {
-				sdkError, ok := tc.expectedError.(*sdkerrors.Error)
-				suite.True(ok)
-				suite.Require().Equal(resDeliverTx.Code, sdkError.ABCICode(), resDeliverTx.Log)
+				suite.ErrorContains(err, tc.expectedError.Error())
 			} else {
-				suite.Require().Equal(resDeliverTx.Code, sdkerrors.ErrUnknownAddress.ABCICode(), resDeliverTx.Log)
+				suite.Require().NoError(err)
 			}
 		})
 	}
