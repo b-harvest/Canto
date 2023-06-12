@@ -37,11 +37,16 @@ type AnteTestSuite struct {
 	ctx   sdk.Context
 	app   *app.Canto
 	denom string
+	priv  *ethsecp256k1.PrivKey
+	addr  sdk.AccAddress
 }
 
 func (suite *AnteTestSuite) SetupTest(isCheckTx bool) {
 	t := suite.T()
 	privCons, err := ethsecp256k1.GenerateKey()
+	suite.priv = privCons
+	suite.addr = sdk.AccAddress(privCons.PubKey().Address())
+
 	require.NoError(t, err)
 	consAddress := sdk.ConsAddress(privCons.PubKey().Address())
 

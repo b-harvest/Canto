@@ -5,6 +5,7 @@ import (
 	"github.com/Canto-Network/Canto/v6/app/ante"
 	"github.com/Canto-Network/Canto/v6/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"github.com/cosmos/cosmos-sdk/x/params/types/proposal"
 	"github.com/evmos/ethermint/encoding"
@@ -105,10 +106,7 @@ func (suite *AnteTestSuite) TestSlashingParamChangeProposal() {
 		},
 	}
 
-	testPrivKeys, _, err := generatePrivKeyAddressPairs(10)
-	suite.Require().NoError(err)
 	encodingConfig := encoding.MakeConfig(app.ModuleBasics)
-
 	decorator := ante.NewSlashingParamChangeLimitDecorator(&suite.app.SlashingKeeper, suite.app.AppCodec())
 	for _, tc := range tests {
 		suite.Run(tc.desc, func() {
@@ -117,6 +115,7 @@ func (suite *AnteTestSuite) TestSlashingParamChangeProposal() {
 				sdk.NewCoins(sdk.NewCoin(suite.app.StakingKeeper.BondDenom(suite.ctx), sdk.NewInt(10000))),
 				proposer,
 			)
+			// Check decorator first
 			err = decorator.ValidateMsgs(suite.ctx, []sdk.Msg{msg})
 			if tc.expectedError != nil {
 				suite.Require().ErrorContains(err, tc.expectedError.Error())
@@ -124,18 +123,25 @@ func (suite *AnteTestSuite) TestSlashingParamChangeProposal() {
 				suite.Require().NoError(err)
 			}
 
-			tx, err := createTx(testPrivKeys[0], []sdk.Msg{msg}...)
+			// Check tx
+			tx, err := createTx(suite.priv, []sdk.Msg{msg}...)
 			suite.Require().NoError(err)
 			txEncoder := encodingConfig.TxConfig.TxEncoder()
 			txBytes, err := txEncoder(tx)
 			suite.Require().NoError(err)
 
-			resCheckTx := suite.app.DeliverTx(
+			resDeliverTx := suite.app.DeliverTx(
 				abci.RequestDeliverTx{
 					Tx: txBytes,
 				},
 			)
-			suite.Require().Equal(resCheckTx.Code, tc.expectedError, resCheckTx.Log)
+			if tc.expectedError != nil {
+				sdkError, ok := tc.expectedError.(*sdkerrors.Error)
+				suite.True(ok)
+				suite.Require().Equal(resDeliverTx.Code, sdkError.ABCICode(), resDeliverTx.Log)
+			} else {
+				suite.Require().Equal(resDeliverTx.Code, sdkerrors.ErrUnknownAddress.ABCICode(), resDeliverTx.Log)
+			}
 		})
 	}
 }

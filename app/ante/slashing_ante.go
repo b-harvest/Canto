@@ -70,7 +70,7 @@ func (s SlashingParamChangeLimitDecorator) ValidateMsgs(ctx sdk.Context, msgs []
 							return err
 						}
 						if window < params.SignedBlocksWindow {
-							return sdkerrors.Wrapf(types.ErrInvalidSignedBlocksWindow, "given: %d, current: %d", window, params.SignedBlocksWindow)
+							return types.ErrInvalidSignedBlocksWindow
 						}
 					case string(slashingtypes.KeyMinSignedPerWindow):
 						minSignedPerWindow, err := sdk.NewDecFromStr(c.GetValue())
@@ -78,7 +78,7 @@ func (s SlashingParamChangeLimitDecorator) ValidateMsgs(ctx sdk.Context, msgs []
 							return err
 						}
 						if minSignedPerWindow.LT(params.MinSignedPerWindow) {
-							return sdkerrors.Wrapf(types.ErrInvalidMinSignedPerWindow, "given: %s, current: %s", minSignedPerWindow, params.MinSignedPerWindow)
+							return types.ErrInvalidMinSignedPerWindow
 						}
 					case string(slashingtypes.KeyDowntimeJailDuration):
 						downtimeJailDuration, err := strconv.ParseInt(c.GetValue(), 10, 64)
@@ -86,7 +86,7 @@ func (s SlashingParamChangeLimitDecorator) ValidateMsgs(ctx sdk.Context, msgs []
 							return err
 						}
 						if time.Duration(downtimeJailDuration) < params.DowntimeJailDuration {
-							return sdkerrors.Wrapf(types.ErrInvalidDowntimeJailDuration, "given: %d, current: %d", downtimeJailDuration, params.DowntimeJailDuration)
+							return types.ErrInvalidDowntimeJailDuration
 						}
 					// SlashFractionDoubleSign, SlashFractionDowntime are not allowed to be increased.
 					// If we increase these params, the slashing penalty can be increased.
@@ -96,7 +96,7 @@ func (s SlashingParamChangeLimitDecorator) ValidateMsgs(ctx sdk.Context, msgs []
 							return err
 						}
 						if slashFractionDoubleSign.GT(params.SlashFractionDoubleSign) {
-							return sdkerrors.Wrapf(types.ErrInvalidSlashFractionDoubleSign, "given: %s, current: %s", slashFractionDoubleSign, params.SlashFractionDoubleSign)
+							return types.ErrInvalidSlashFractionDoubleSign
 						}
 					case string(slashingtypes.KeySlashFractionDowntime):
 						slashFractionDowntime, err := sdk.NewDecFromStr(c.GetValue())
@@ -104,7 +104,7 @@ func (s SlashingParamChangeLimitDecorator) ValidateMsgs(ctx sdk.Context, msgs []
 							return err
 						}
 						if slashFractionDowntime.GT(params.SlashFractionDowntime) {
-							return sdkerrors.Wrapf(types.ErrInvalidSlashFractionDowntime, "given: %s, current: %s", slashFractionDowntime, params.SlashFractionDowntime)
+							return types.ErrInvalidSlashFractionDowntime
 						}
 					}
 				}
