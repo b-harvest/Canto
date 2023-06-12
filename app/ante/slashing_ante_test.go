@@ -9,6 +9,8 @@ import (
 	"strconv"
 )
 
+// TODO: Advanced test cases (e.g. nested param change proposals)
+// Authz and multi msg cases
 func (suite *AnteTestSuite) TestSlashingParamChangeProposal() {
 	suite.SetupTest(false)
 	params := suite.app.SlashingKeeper.GetParams(suite.ctx)
