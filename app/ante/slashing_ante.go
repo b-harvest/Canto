@@ -15,11 +15,15 @@ import (
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 )
 
+// SlashingParamChangeLimitDecorator checks that the slashing params change proposals.
+// The liquidstaking module works closely with the slashing params. (e.g. MinimumCollateral constant is calculated based on the slashing params)
+// To reduce unexpected risks, it is important to reduce the maximum slashing penalty that can theoretically occur.
 type SlashingParamChangeLimitDecorator struct {
 	cdc            codec.BinaryCodec
 	slashingKeeper *slashingkeeper.Keeper
 }
 
+// NewSlashingParamChangeLimitDecorator creates a new slashing param change limit decorator.
 func NewSlashingParamChangeLimitDecorator(
 	cdc codec.BinaryCodec,
 	slashingKeeper *slashingkeeper.Keeper,
@@ -62,6 +66,8 @@ func (s SlashingParamChangeLimitDecorator) ValidateMsgs(ctx sdk.Context, msgs []
 						params = s.slashingKeeper.GetParams(ctx)
 					}
 					switch c.GetKey() {
+					// SignedBlocksWindow, MinSignedPerWindow, DowntimeJailDuration are not allowed to be decreased.
+					// If we decrease these params, the slashing penalty can be increased.
 					case string(slashingtypes.KeySignedBlocksWindow):
 						window, err := strconv.ParseInt(c.GetValue(), 10, 64)
 						if err != nil {
@@ -86,6 +92,8 @@ func (s SlashingParamChangeLimitDecorator) ValidateMsgs(ctx sdk.Context, msgs []
 						if time.Duration(downtimeJailDuration) < params.DowntimeJailDuration {
 							return sdkerrors.Wrapf(types.ErrInvalidDowntimeJailDuration, "given: %d, current: %d", downtimeJailDuration, params.DowntimeJailDuration)
 						}
+					// SlashFractionDoubleSign, SlashFractionDowntime are not allowed to be increased.
+					// If we increase these params, the slashing penalty can be increased.
 					case string(slashingtypes.KeySlashFractionDoubleSign):
 						slashFractionDoubleSign, err := sdk.NewDecFromStr(c.GetValue())
 						if err != nil {
