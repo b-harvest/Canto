@@ -166,7 +166,7 @@ func (k Keeper) WithdrawInsuranceRequest(c context.Context, req *types.QueryWith
 		return nil, fmt.Errorf("no insurance is associated with Insurance Id %d", request.InsuranceId)
 	}
 	return &types.QueryWithdrawInsuranceRequestResponse{
-		WithdrawInsuranceRequest: request,
+		request,
 	}, nil
 }
 
@@ -216,7 +216,7 @@ func (k Keeper) UnpairingForUnstakingChunkInfo(c context.Context, req *types.Que
 		return nil, fmt.Errorf("no unpairing for unstaking chunk info is associated with Id %d", req.Id)
 	}
 	return &types.QueryUnpairingForUnstakingChunkInfoResponse{
-		UnpairingForUnstakingChunkInfo: info,
+		info,
 	}, nil
 }
 

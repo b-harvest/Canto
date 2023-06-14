@@ -159,13 +159,15 @@ message QueryWithdrawInsuranceRequestsRequest {
 }
 
 message QueryWithdrawInsuranceRequestsResponse {
-  repeated WithdrawInsuranceRequest reqs = 1 [ (gogoproto.nullable) = false ];
+  repeated WithdrawInsuranceRequest withdraw_insurance_requests = 1
+      [ (gogoproto.nullable) = false ];
   cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
 message QueryWithdrawInsuranceRequestRequest { uint64 id = 1; }
 message QueryWithdrawInsuranceRequestResponse {
-  WithdrawInsuranceRequest req = 1 [ (gogoproto.nullable) = false ];
+  WithdrawInsuranceRequest withdraw_insurance_request = 1
+      [ (gogoproto.nullable) = false ];
 }
 
 message QueryUnpairingForUnstakingChunkInfosRequest {
@@ -178,14 +180,15 @@ message QueryUnpairingForUnstakingChunkInfosRequest {
 }
 
 message QueryUnpairingForUnstakingChunkInfosResponse {
-  repeated UnpairingForUnstakingChunkInfo infos = 1
-      [ (gogoproto.nullable) = false ];
+  repeated UnpairingForUnstakingChunkInfo unpairing_for_unstaking_chunk_infos =
+      1 [ (gogoproto.nullable) = false ];
   cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
 message QueryUnpairingForUnstakingChunkInfoRequest { uint64 id = 1; }
 message QueryUnpairingForUnstakingChunkInfoResponse {
-  UnpairingForUnstakingChunkInfo info = 1 [ (gogoproto.nullable) = false ];
+  UnpairingForUnstakingChunkInfo unpairing_for_unstaking_chunk_info = 1
+      [ (gogoproto.nullable) = false ];
 }
 
 message QueryChunkSizeRequest {}
