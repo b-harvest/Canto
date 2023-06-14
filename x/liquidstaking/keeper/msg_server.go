@@ -19,6 +19,7 @@ func (k Keeper) LiquidStake(goCtx context.Context, msg *types.MsgLiquidStake) (*
 	}
 	return &types.MsgLiquidStakeResponse{}, nil
 }
+
 func (k Keeper) LiquidUnstake(goCtx context.Context, msg *types.MsgLiquidUnstake) (*types.MsgLiquidUnstakeResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 

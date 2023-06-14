@@ -25,9 +25,11 @@ func NewGenesisState(
 
 func DefaultGenesisState() *GenesisState {
 	return &GenesisState{
-		LiquidBondDenom:                 DefaultLiquidBondDenom,
-		Params:                          DefaultParams(),
-		Epoch:                           Epoch{},
+		LiquidBondDenom: DefaultLiquidBondDenom,
+		Params:          DefaultParams(),
+		Epoch:           Epoch{
+			// TODO: add default values
+		},
 		LastChunkId:                     0,
 		LastInsuranceId:                 0,
 		Chunks:                          []Chunk{},
