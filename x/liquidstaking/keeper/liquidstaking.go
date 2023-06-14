@@ -906,12 +906,12 @@ func (k Keeper) CalcDiscountRate(ctx sdk.Context) sdk.Dec {
 
 func (k Keeper) SetLiquidBondDenom(ctx sdk.Context, denom string) {
 	store := ctx.KVStore(k.storeKey)
-	store.Set(types.KeyLiquidBondDenom, []byte(denom))
+	store.Set(types.KeyPrefixLiquidBondDenom, []byte(denom))
 }
 
 func (k Keeper) GetLiquidBondDenom(ctx sdk.Context) string {
 	store := ctx.KVStore(k.storeKey)
-	return string(store.Get(types.KeyLiquidBondDenom))
+	return string(store.Get(types.KeyPrefixLiquidBondDenom))
 }
 
 func (k Keeper) IsValidValidator(ctx sdk.Context, validator stakingtypes.Validator, found bool) error {
