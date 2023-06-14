@@ -1,5 +1,11 @@
 package types
 
+import (
+	"time"
+
+	"github.com/cosmos/cosmos-sdk/x/staking/types"
+)
+
 // NewGenesisState creates a new GenesisState instance.
 func NewGenesisState(
 	params Params,
@@ -27,8 +33,11 @@ func DefaultGenesisState() *GenesisState {
 	return &GenesisState{
 		LiquidBondDenom: DefaultLiquidBondDenom,
 		Params:          DefaultParams(),
-		Epoch:           Epoch{
-			// TODO: add default values
+		Epoch: Epoch{
+			CurrentNumber: 1,
+			StartTime:     time.Now(),
+			Duration:      types.DefaultUnbondingTime,
+			StartHeight:   1,
 		},
 		LastChunkId:                     0,
 		LastInsuranceId:                 0,
@@ -39,18 +48,13 @@ func DefaultGenesisState() *GenesisState {
 	}
 }
 
+// Validate performs basic genesis state validation returning an error upon any
 func (gs GenesisState) Validate() error {
 	if err := gs.Params.Validate(); err != nil {
 		return err
 	}
 	if err := gs.Epoch.Validate(); err != nil {
 		return err
-	}
-	if gs.LastChunkId < 0 {
-		return ErrInvalidLastChunkId
-	}
-	if gs.LastInsuranceId < 0 {
-		return ErrInvalidLastInsuranceId
 	}
 	chunkMap := make(map[uint64]Chunk)
 	for _, chunk := range gs.Chunks {
