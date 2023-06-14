@@ -1242,7 +1242,7 @@ paths:
           schema:
             type: object
             properties:
-              unpairingForUnstakingChunkInfos:
+              infos:
                 type: array
                 items:
                   type: object
@@ -1492,7 +1492,7 @@ paths:
           schema:
             type: object
             properties:
-              unpairingForUnstakingChunkInfo:
+              info:
                 type: object
                 properties:
                   chunk_id:
@@ -1855,7 +1855,7 @@ paths:
           schema:
             type: object
             properties:
-              withdrawInsuranceRequests:
+              reqs:
                 type: array
                 items:
                   type: object
@@ -2105,7 +2105,7 @@ paths:
           schema:
             type: object
             properties:
-              withdrawInsuranceRequest:
+              req:
                 type: object
                 properties:
                   insurance_id:
@@ -36232,7 +36232,7 @@ definitions:
   canto.liquidstaking.v1.QueryUnpairingForUnstakingChunkInfoResponse:
     type: object
     properties:
-      unpairingForUnstakingChunkInfo:
+      info:
         type: object
         properties:
           chunk_id:
@@ -36248,7 +36248,7 @@ definitions:
   canto.liquidstaking.v1.QueryUnpairingForUnstakingChunkInfosResponse:
     type: object
     properties:
-      unpairingForUnstakingChunkInfos:
+      infos:
         type: array
         items:
           type: object
@@ -36291,7 +36291,7 @@ definitions:
   canto.liquidstaking.v1.QueryWithdrawInsuranceRequestResponse:
     type: object
     properties:
-      withdrawInsuranceRequest:
+      req:
         type: object
         properties:
           insurance_id:
@@ -36301,7 +36301,7 @@ definitions:
   canto.liquidstaking.v1.QueryWithdrawInsuranceRequestsResponse:
     type: object
     properties:
-      withdrawInsuranceRequests:
+      reqs:
         type: array
         items:
           type: object
