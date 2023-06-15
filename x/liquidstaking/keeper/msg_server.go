@@ -66,7 +66,7 @@ func (k Keeper) WithdrawInsurance(goCtx context.Context, msg *types.MsgWithdrawI
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	// TODO: Publish events using returned values
-	_, err := k.DoWithdrawInsurance(ctx, msg)
+	_, _, err := k.DoWithdrawInsurance(ctx, msg)
 	if err != nil {
 		return nil, err
 	}

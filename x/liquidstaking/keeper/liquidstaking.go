@@ -476,6 +476,7 @@ func (k Keeper) RePairRankedInsurances(
 	return
 }
 
+// TODO: Test with very large number of chunks
 func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (chunks []types.Chunk, newShares sdk.Dec, lsTokenMintAmount sdk.Int, err error) {
 	delAddr := msg.GetDelegator()
 	amount := msg.Amount
@@ -487,10 +488,9 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (chunk
 	if err = k.ShouldBeMultipleOfChunkSize(amount.Amount); err != nil {
 		return
 	}
-	chunksToCreate := amount.Amount.Quo(types.ChunkSize).Int64()
-
-	availableChunkSlots := k.GetAvailableChunkSlots(ctx).Int64()
-	if (availableChunkSlots - chunksToCreate) < 0 {
+	chunksToCreate := amount.Amount.Quo(types.ChunkSize)
+	availableChunkSlots := k.GetAvailableChunkSlots(ctx)
+	if availableChunkSlots.LT(chunksToCreate) {
 		err = sdkerrors.Wrapf(
 			types.ErrExceedAvailableChunks,
 			"requested chunks to create: %d, available chunks: %d",
@@ -501,7 +501,8 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (chunk
 	}
 
 	pairingInsurances, validatorMap := k.getPairingInsurances(ctx)
-	if chunksToCreate > int64(len(pairingInsurances)) {
+	numPairingInsurances := sdk.NewIntFromUint64(uint64(len(pairingInsurances)))
+	if chunksToCreate.GT(numPairingInsurances) {
 		err = types.ErrNoPairingInsurance
 		return
 	}
@@ -510,7 +511,10 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (chunk
 	types.SortInsurances(validatorMap, pairingInsurances, false)
 	totalNewShares := sdk.ZeroDec()
 	totalLsTokenMintAmount := sdk.ZeroInt()
-	for i := int64(0); i < chunksToCreate; i++ {
+	for {
+		if chunksToCreate.IsZero() {
+			break
+		}
 		cheapestInsurance := pairingInsurances[0]
 		pairingInsurances = pairingInsurances[1:]
 
@@ -564,6 +568,7 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (chunk
 			return
 		}
 		chunks = append(chunks, chunk)
+		chunksToCreate = chunksToCreate.Sub(sdk.OneInt())
 	}
 	return
 }
@@ -597,6 +602,13 @@ func (k Keeper) QueueLiquidUnstake(ctx sdk.Context, msg *types.MsgLiquidUnstake)
 		pairedInsurance, found := k.GetInsurance(ctx, chunk.PairedInsuranceId)
 		if found == false {
 			return false, types.ErrNotFoundInsurance
+		}
+
+		// Check if there is queued a withdraw request for paired insurance.
+		// If so, skip this chunk because it will be started to be unpairing in the upcoming epoch.
+		_, found = k.GetWithdrawInsuranceRequest(ctx, pairedInsurance.Id)
+		if found {
+			return false, nil
 		}
 
 		if _, ok := validatorMap[pairedInsurance.ValidatorAddress]; !ok {
@@ -753,7 +765,11 @@ func (k Keeper) DoCancelProvideInsurance(ctx sdk.Context, msg *types.MsgCancelPr
 
 // DoWithdrawInsurance withdraws insurance immediately if it is unpaired.
 // If it is paired then it will be queued and unpaired at the epoch.
-func (k Keeper) DoWithdrawInsurance(ctx sdk.Context, msg *types.MsgWithdrawInsurance) (withdrawnInsurance types.Insurance, err error) {
+func (k Keeper) DoWithdrawInsurance(ctx sdk.Context, msg *types.MsgWithdrawInsurance) (
+	withdrawnInsurance types.Insurance,
+	withdrawRequest types.WithdrawInsuranceRequest,
+	err error,
+) {
 	// Get insurance
 	insurance, found := k.GetInsurance(ctx, msg.Id)
 	if !found {
@@ -769,7 +785,9 @@ func (k Keeper) DoWithdrawInsurance(ctx sdk.Context, msg *types.MsgWithdrawInsur
 	// If insurnace is unpaired then immediately withdraw insurance
 	switch insurance.Status {
 	case types.INSURANCE_STATUS_PAIRED:
-		k.SetWithdrawInsuranceRequest(ctx, types.NewWithdrawInsuranceRequest(msg.Id))
+		withdrawRequest = types.NewWithdrawInsuranceRequest(msg.Id)
+		// If paired chunk have queued liquid unstaking request, then it cannot be started to be withdrawn
+		k.SetWithdrawInsuranceRequest(ctx, withdrawRequest)
 	case types.INSURANCE_STATUS_UNPAIRED:
 		// Withdraw immediately
 		err = k.withdrawInsurance(ctx, insurance)

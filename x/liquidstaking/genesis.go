@@ -1,13 +1,14 @@
-package keeper
+package liquidstaking
 
 import (
+	"github.com/Canto-Network/Canto/v6/x/liquidstaking/keeper"
 	"github.com/Canto-Network/Canto/v6/x/liquidstaking/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 // InitGenesis initializes the capability module's state from a provided genesis
 // state.
-func InitGenesis(ctx sdk.Context, k Keeper, genState types.GenesisState) {
+func InitGenesis(ctx sdk.Context, k keeper.Keeper, genState types.GenesisState) {
 	if err := genState.Validate(); err != nil {
 		panic(err)
 	}
@@ -31,7 +32,7 @@ func InitGenesis(ctx sdk.Context, k Keeper, genState types.GenesisState) {
 }
 
 // ExportGenesis returns the capability module's exported genesis.
-func ExportGenesis(ctx sdk.Context, k Keeper) *types.GenesisState {
+func ExportGenesis(ctx sdk.Context, k keeper.Keeper) *types.GenesisState {
 	genesis := types.DefaultGenesisState()
 	genesis.LiquidBondDenom = k.GetLiquidBondDenom(ctx)
 	genesis.Params = k.GetParams(ctx)

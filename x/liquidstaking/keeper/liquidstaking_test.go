@@ -816,7 +816,7 @@ func (suite *KeeperTestSuite) TestDoWithdrawInsurance() {
 	)
 
 	toBeWithdrawnInsurance, _ := suite.app.LiquidStakingKeeper.GetInsurance(suite.ctx, env.insurances[0].Id)
-	_, err := suite.app.LiquidStakingKeeper.DoWithdrawInsurance(
+	_, _, err := suite.app.LiquidStakingKeeper.DoWithdrawInsurance(
 		suite.ctx,
 		types.NewMsgWithdrawInsurance(
 			toBeWithdrawnInsurance.ProviderAddress,
@@ -838,7 +838,7 @@ func (suite *KeeperTestSuite) TestDoWithdrawInsurance() {
 	beforeProviderBalance := suite.app.BankKeeper.GetBalance(suite.ctx, unpairedInsurance.GetProvider(), suite.denom)
 	unpairedInsuranceBalance := suite.app.BankKeeper.GetBalance(suite.ctx, unpairedInsurance.DerivedAddress(), suite.denom)
 	unpairedInsuranceCommission := suite.app.BankKeeper.GetBalance(suite.ctx, unpairedInsurance.FeePoolAddress(), suite.denom)
-	_, err = suite.app.LiquidStakingKeeper.DoWithdrawInsurance(
+	_, _, err = suite.app.LiquidStakingKeeper.DoWithdrawInsurance(
 		suite.ctx,
 		types.NewMsgWithdrawInsurance(
 			unpairedInsurance.ProviderAddress,
@@ -898,7 +898,7 @@ func (suite *KeeperTestSuite) TestDoWithdrawInsuranceFail() {
 	}
 
 	for _, tc := range tcs {
-		_, err := suite.app.LiquidStakingKeeper.DoWithdrawInsurance(suite.ctx, tc.msg)
+		_, _, err := suite.app.LiquidStakingKeeper.DoWithdrawInsurance(suite.ctx, tc.msg)
 		if tc.expectedErr == nil {
 			suite.NoError(err)
 		}
@@ -1204,7 +1204,7 @@ func (suite *KeeperTestSuite) TestEndBlocker() {
 	// Queue withdraw insurance request
 	toBeWithdrawnInsurance, _ := suite.app.LiquidStakingKeeper.GetInsurance(suite.ctx, env.insurances[0].Id)
 	chunkToBeUnpairing, _ := suite.app.LiquidStakingKeeper.GetChunk(suite.ctx, toBeWithdrawnInsurance.ChunkId)
-	_, err := suite.app.LiquidStakingKeeper.DoWithdrawInsurance(
+	_, _, err := suite.app.LiquidStakingKeeper.DoWithdrawInsurance(
 		suite.ctx,
 		types.NewMsgWithdrawInsurance(
 			toBeWithdrawnInsurance.ProviderAddress,
