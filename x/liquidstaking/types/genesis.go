@@ -34,10 +34,10 @@ func DefaultGenesisState() *GenesisState {
 		LiquidBondDenom: DefaultLiquidBondDenom,
 		Params:          DefaultParams(),
 		Epoch: Epoch{
-			CurrentNumber: 1,
-			StartTime:     time.Now(),
+			CurrentNumber: 0,
+			StartTime:     time.Time{},
 			Duration:      types.DefaultUnbondingTime,
-			StartHeight:   1,
+			StartHeight:   0,
 		},
 		LastChunkId:                     0,
 		LastInsuranceId:                 0,
