@@ -124,10 +124,13 @@ func (k Keeper) Insurance(c context.Context, req *types.QueryInsuranceRequest) (
 }
 
 func (k Keeper) WithdrawInsuranceRequests(c context.Context, req *types.QueryWithdrawInsuranceRequestsRequest) (*types.QueryWithdrawInsuranceRequestsResponse, error) {
+	if req == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "empty request")
+	}
 	ctx := sdk.UnwrapSDKContext(c)
-	var reqs []types.WithdrawInsuranceRequest
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefixUnpairingForUnstakingChunkInfo)
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefixWithdrawInsuranceRequest)
 
+	var reqs []types.WithdrawInsuranceRequest
 	pageRes, err := query.FilteredPaginate(store, req.Pagination, func(key []byte, value []byte, accumulate bool) (bool, error) {
 		var withdrawInsuranceRequest types.WithdrawInsuranceRequest
 		if err := k.cdc.Unmarshal(value, &withdrawInsuranceRequest); err != nil {
@@ -156,6 +159,9 @@ func (k Keeper) WithdrawInsuranceRequests(c context.Context, req *types.QueryWit
 }
 
 func (k Keeper) WithdrawInsuranceRequest(c context.Context, req *types.QueryWithdrawInsuranceRequestRequest) (*types.QueryWithdrawInsuranceRequestResponse, error) {
+	if req == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "empty request")
+	}
 	ctx := sdk.UnwrapSDKContext(c)
 	request, found := k.GetWithdrawInsuranceRequest(ctx, req.Id)
 	if !found {
@@ -171,6 +177,9 @@ func (k Keeper) WithdrawInsuranceRequest(c context.Context, req *types.QueryWith
 }
 
 func (k Keeper) UnpairingForUnstakingChunkInfos(c context.Context, req *types.QueryUnpairingForUnstakingChunkInfosRequest) (*types.QueryUnpairingForUnstakingChunkInfosResponse, error) {
+	if req == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "empty request")
+	}
 	ctx := sdk.UnwrapSDKContext(c)
 	var infos []types.UnpairingForUnstakingChunkInfo
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefixUnpairingForUnstakingChunkInfo)
@@ -210,6 +219,9 @@ func (k Keeper) UnpairingForUnstakingChunkInfos(c context.Context, req *types.Qu
 }
 
 func (k Keeper) UnpairingForUnstakingChunkInfo(c context.Context, req *types.QueryUnpairingForUnstakingChunkInfoRequest) (*types.QueryUnpairingForUnstakingChunkInfoResponse, error) {
+	if req == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "empty request")
+	}
 	ctx := sdk.UnwrapSDKContext(c)
 	info, found := k.GetUnpairingForUnstakingChunkInfo(ctx, req.Id)
 	if !found {
@@ -220,7 +232,10 @@ func (k Keeper) UnpairingForUnstakingChunkInfo(c context.Context, req *types.Que
 	}, nil
 }
 
-func (k Keeper) ChunkSize(c context.Context, _ *types.QueryChunkSizeRequest) (*types.QueryChunkSizeResponse, error) {
+func (k Keeper) ChunkSize(c context.Context, req *types.QueryChunkSizeRequest) (*types.QueryChunkSizeResponse, error) {
+	if req == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "empty request")
+	}
 	ctx := sdk.UnwrapSDKContext(c)
 	return &types.QueryChunkSizeResponse{
 		ChunkSize: sdk.NewCoin(
@@ -230,7 +245,10 @@ func (k Keeper) ChunkSize(c context.Context, _ *types.QueryChunkSizeRequest) (*t
 	}, nil
 }
 
-func (k Keeper) MinimumCollateral(c context.Context, _ *types.QueryMinimumCollateralRequest) (*types.QueryMinimumCollateralResponse, error) {
+func (k Keeper) MinimumCollateral(c context.Context, req *types.QueryMinimumCollateralRequest) (*types.QueryMinimumCollateralResponse, error) {
+	if req == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "empty request")
+	}
 	ctx := sdk.UnwrapSDKContext(c)
 	minimumCollateral, err := sdk.NewDecFromStr(types.MinimumCollateral)
 	if err != nil {
@@ -244,7 +262,10 @@ func (k Keeper) MinimumCollateral(c context.Context, _ *types.QueryMinimumCollat
 	}, nil
 }
 
-func (k Keeper) States(c context.Context, _ *types.QueryStatesRequest) (*types.QueryStatesResponse, error) {
+func (k Keeper) States(c context.Context, req *types.QueryStatesRequest) (*types.QueryStatesResponse, error) {
+	if req == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "empty request")
+	}
 	ctx := sdk.UnwrapSDKContext(c)
 	return &types.QueryStatesResponse{NetAmountState: k.GetNetAmountState(ctx)}, nil
 }
