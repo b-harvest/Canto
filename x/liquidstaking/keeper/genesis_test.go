@@ -122,7 +122,7 @@ func (suite *KeeperTestSuite) TestImportExportGenesis() {
 		suite.True(insurances[i].Equal(ins))
 	}
 	// check unstakingInfo and withdrawRequest are exist
-	info, found := suite.app.LiquidStakingKeeper.GetUnpairingForUnstakingChunkInfo(suite.ctx, chunks[0].Id)
+	info, found := suite.app.LiquidStakingKeeper.GetUnpairingForUnstakingChunkInfo(suite.ctx, chunks[1].Id)
 	suite.True(found)
 	suite.True(unstakingInfos[0].Equal(info))
 	req, found := suite.app.LiquidStakingKeeper.GetWithdrawInsuranceRequest(suite.ctx, insurances[1].Id)

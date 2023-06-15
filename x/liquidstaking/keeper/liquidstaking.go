@@ -223,7 +223,7 @@ func (k Keeper) HandleQueuedWithdrawInsuranceRequests(ctx sdk.Context) ([]types.
 		if !found {
 			return nil, sdkerrors.Wrapf(types.ErrNotFoundInsurance, "id: %d", req.InsuranceId)
 		}
-		if insurance.Status != types.INSURANCE_STATUS_PAIRED {
+		if insurance.Status != types.INSURANCE_STATUS_PAIRED && insurance.Status != types.INSURANCE_STATUS_UNPAIRING {
 			return nil, sdkerrors.Wrapf(types.ErrInvalidInsuranceStatus, "id: %d, status: %s", insurance.Id, insurance.Status)
 		}
 
@@ -232,7 +232,9 @@ func (k Keeper) HandleQueuedWithdrawInsuranceRequests(ctx sdk.Context) ([]types.
 		if !found {
 			return nil, sdkerrors.Wrapf(types.ErrNotFoundChunk, "id: %d", insurance.ChunkId)
 		}
-		chunk.SetStatus(types.CHUNK_STATUS_UNPAIRING)
+		if chunk.Status == types.CHUNK_STATUS_PAIRED {
+			chunk.SetStatus(types.CHUNK_STATUS_UNPAIRING)
+		}
 		chunk.UnpairingInsuranceId = chunk.PairedInsuranceId
 		chunk.PairedInsuranceId = 0
 		insurance.SetStatus(types.INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAWAL)
@@ -604,13 +606,6 @@ func (k Keeper) QueueLiquidUnstake(ctx sdk.Context, msg *types.MsgLiquidUnstake)
 			return false, types.ErrNotFoundInsurance
 		}
 
-		// Check if there is queued a withdraw request for paired insurance.
-		// If so, skip this chunk because it will be started to be unpairing in the upcoming epoch.
-		_, found = k.GetWithdrawInsuranceRequest(ctx, pairedInsurance.Id)
-		if found {
-			return false, nil
-		}
-
 		if _, ok := validatorMap[pairedInsurance.ValidatorAddress]; !ok {
 			// If validator is not in map, get validator from staking keeper
 			validator, found := k.stakingKeeper.GetValidator(ctx, pairedInsurance.GetValidator())
@@ -784,9 +779,8 @@ func (k Keeper) DoWithdrawInsurance(ctx sdk.Context, msg *types.MsgWithdrawInsur
 	// If insurance is paired then queue request
 	// If insurnace is unpaired then immediately withdraw insurance
 	switch insurance.Status {
-	case types.INSURANCE_STATUS_PAIRED:
+	case types.INSURANCE_STATUS_PAIRED, types.INSURANCE_STATUS_UNPAIRING:
 		withdrawRequest = types.NewWithdrawInsuranceRequest(msg.Id)
-		// If paired chunk have queued liquid unstaking request, then it cannot be started to be withdrawn
 		k.SetWithdrawInsuranceRequest(ctx, withdrawRequest)
 	case types.INSURANCE_STATUS_UNPAIRED:
 		// Withdraw immediately
@@ -1255,6 +1249,16 @@ func (k Keeper) handlePairedChunk(ctx sdk.Context, chunk types.Chunk) error {
 		if penalty.GT(insuranceBalance.Amount.ToDec()) {
 			insuranceOutOfBalance = true
 			k.startUnpairing(ctx, pairedInsurance, chunk)
+			// send all insurance balance to chunk
+			if err = k.bankKeeper.SendCoins(
+				ctx,
+				pairedInsurance.DerivedAddress(),
+				chunk.DerivedAddress(),
+				sdk.NewCoins(insuranceBalance),
+			); err != nil {
+				return err
+			}
+
 			// start unbonding of chunk because it is damaged
 			if _, err = k.stakingKeeper.Undelegate(
 				ctx, chunk.DerivedAddress(),
