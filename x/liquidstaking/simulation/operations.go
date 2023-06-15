@@ -1,16 +1,15 @@
 package simulation
 
 import (
+	"math/rand"
+
 	"github.com/Canto-Network/Canto/v6/app"
 	"github.com/Canto-Network/Canto/v6/x/liquidstaking/keeper"
 	"github.com/Canto-Network/Canto/v6/x/liquidstaking/types"
-	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
 	"github.com/cosmos/cosmos-sdk/x/simulation"
-	"math/rand"
 )
 
 // Simulation operation weights constants.
@@ -78,109 +77,20 @@ func WeightedOperations(appParams simtypes.AppParams, cdc codec.JSONCodec, ak ty
 	})
 
 	return simulation.WeightedOperations{
-		simulation.NewWeightedOperation(
-			weightMsgLiquidStake,
-			SimulateMsgLiquidStake(ak, bk, k),
-		),
+		// simulation.NewWeightedOperation(
+		// 	weightMsgLiquidStake,
+		// 	SimulateMsgLiquidStake(ak, bk, k),
+		// ),
 	}
 }
 
-func SimulateMsgLiquidStake(ak types.AccountKeeper, bk types.BankKeeper, k keeper.Keeper) simtypes.Operation {
-	return func(
-		r *rand.Rand, app *baseapp.BaseApp, ctx sdk.Context, accs []simtypes.Account, chainID string,
-	) (simtypes.OperationMsg, []simtypes.FutureOperation, error) {
-		simAccount, _ := simtypes.RandomAcc(r, accs)
-		account := ak.GetAccount(ctx, simAccount.Address)
-		delegator := account.GetAddress()
-		spendable := bk.SpendableCoins(ctx, delegator)
-
-		amount := msg.Amount
-
-		if err = k.ShouldBeBondDenom(ctx, amount.Denom); err != nil {
-			return
-		}
-		// Liquid stakers can send amount of tokens corresponding multiple of chunk size and create multiple chunks
-		if err = k.ShouldBeMultipleOfChunkSize(amount.Amount); err != nil {
-			return
-		}
-		chunksToCreate := amount.Amount.Quo(types.ChunkSize).Int64()
-
-		availableChunkSlots := k.GetAvailableChunkSlots(ctx).Int64()
-		if (availableChunkSlots - chunksToCreate) < 0 {
-			err = sdkerrors.Wrapf(
-				types.ErrExceedAvailableChunks,
-				"requested chunks to create: %d, available chunks: %d",
-				chunksToCreate,
-				availableChunkSlots,
-			)
-			return
-		}
-
-		pairingInsurances, validatorMap := k.getPairingInsurances(ctx)
-		if chunksToCreate > int64(len(pairingInsurances)) {
-			err = types.ErrNoPairingInsurance
-			return
-		}
-
-		nas := k.GetNetAmountState(ctx)
-		types.SortInsurances(validatorMap, pairingInsurances, false)
-		totalNewShares := sdk.ZeroDec()
-		totalLsTokenMintAmount := sdk.ZeroInt()
-		for i := int64(0); i < chunksToCreate; i++ {
-			cheapestInsurance := pairingInsurances[0]
-			pairingInsurances = pairingInsurances[1:]
-
-			// Now we have the cheapest pairing insurance and valid msg liquid stake! Let's create a chunk
-			// Create a chunk
-			chunkId := k.getNextChunkIdWithUpdate(ctx)
-			chunk := types.NewChunk(chunkId)
-
-			// Escrow liquid staker's coins
-			if err = k.bankKeeper.SendCoins(
-				ctx,
-				delAddr,
-				chunk.DerivedAddress(),
-				sdk.NewCoins(sdk.NewCoin(amount.Denom, types.ChunkSize)),
-			); err != nil {
-				return
-			}
-			validator := validatorMap[cheapestInsurance.ValidatorAddress]
-
-			// Delegate to the validator
-			// Delegator: DerivedAddress(chunk.Id)
-			// Validator: insurance.ValidatorAddress
-			// Amount: msg.Amount
-			chunk, cheapestInsurance, newShares, err = k.pairChunkAndInsurance(
-				ctx,
-				chunk,
-				cheapestInsurance,
-				validator,
-			)
-			if err != nil {
-				return
-			}
-			totalNewShares = totalNewShares.Add(newShares)
-
-			liquidBondDenom := k.GetLiquidBondDenom(ctx)
-			// Mint the liquid staking token
-			lsTokenMintAmount = amount.Amount
-			if nas.LsTokensTotalSupply.IsPositive() {
-				lsTokenMintAmount = types.NativeTokenToLiquidStakeToken(amount.Amount, nas.LsTokensTotalSupply, nas.NetAmount)
-			}
-			if !lsTokenMintAmount.IsPositive() {
-				err = sdkerrors.Wrapf(types.ErrInvalidAmount, "amount must be greater than or equal to %s", amount.String())
-				return
-			}
-			mintedCoin := sdk.NewCoin(liquidBondDenom, lsTokenMintAmount)
-			if err = k.bankKeeper.MintCoins(ctx, types.ModuleName, sdk.NewCoins(mintedCoin)); err != nil {
-				return
-			}
-			totalLsTokenMintAmount = totalLsTokenMintAmount.Add(lsTokenMintAmount)
-			if err = k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, delAddr, sdk.NewCoins(mintedCoin)); err != nil {
-				return
-			}
-			chunks = append(chunks, chunk)
-		}
-		return
-	}
-}
+// TODO: Implement simulation
+// func SimulateMsgLiquidStake(ak types.AccountKeeper, bk types.BankKeeper, k keeper.Keeper) simtypes.Operation {
+// 	return func(
+// 		r *rand.Rand, app *baseapp.BaseApp, ctx sdk.Context, accs []simtypes.Account, chainID string,
+// 	) (simtypes.OperationMsg, []simtypes.FutureOperation, error) {
+// 		simAccount, _ := simtypes.RandomAcc(r, accs)
+// 		account := ak.GetAccount(ctx, simAccount.Address)
+// 		delegator := account.GetAddress()
+// 	}
+// }
