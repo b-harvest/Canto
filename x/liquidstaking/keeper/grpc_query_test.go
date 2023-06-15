@@ -147,7 +147,7 @@ func (suite *KeeperTestSuite) TestGRPCChunk() {
 }
 
 func (suite *KeeperTestSuite) TestGRPCInsurances() {
-	suite.setupLiquidStakeTestingEnv(testingEnvOptions{
+	env := suite.setupLiquidStakeTestingEnv(testingEnvOptions{
 		desc:                  "",
 		numVals:               3,
 		fixedValFeeRate:       tenPercentFeeRate,
@@ -182,7 +182,7 @@ func (suite *KeeperTestSuite) TestGRPCInsurances() {
 			},
 		},
 		{
-			"query only paired chunks",
+			"query only paired insurances",
 			&types.QueryInsurancesRequest{
 				Status: types.INSURANCE_STATUS_PAIRED,
 			},
@@ -192,9 +192,29 @@ func (suite *KeeperTestSuite) TestGRPCInsurances() {
 			},
 		},
 		{
-			"query only pairing chunks",
+			"query only pairing insurances",
 			&types.QueryInsurancesRequest{
 				Status: types.INSURANCE_STATUS_PAIRING,
+			},
+			false,
+			func(response *types.QueryInsurancesResponse) {
+				suite.Len(response.Insurances, 2)
+			},
+		},
+		{
+			"query by provider address",
+			&types.QueryInsurancesRequest{
+				ProviderAddress: env.providers[0].String(),
+			},
+			false,
+			func(response *types.QueryInsurancesResponse) {
+				suite.Len(response.Insurances, 1)
+			},
+		},
+		{
+			"query by validator address",
+			&types.QueryInsurancesRequest{
+				ValidatorAddress: env.valAddrs[0].String(),
 			},
 			false,
 			func(response *types.QueryInsurancesResponse) {
