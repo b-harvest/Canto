@@ -7,14 +7,14 @@ import (
 
 func (suite *KeeperTestSuite) TestGRPCParams() {
 	resp, err := suite.app.LiquidStakingKeeper.Params(sdk.WrapSDKContext(suite.ctx), &types.QueryParamsRequest{})
-	suite.Require().NoError(err)
-	suite.Require().Equal(suite.app.LiquidStakingKeeper.GetParams(suite.ctx), resp.Params)
+	suite.NoError(err)
+	suite.Equal(suite.app.LiquidStakingKeeper.GetParams(suite.ctx), resp.Params)
 }
 
 func (suite *KeeperTestSuite) TestGRPCEpoch() {
 	resp, err := suite.app.LiquidStakingKeeper.Epoch(sdk.WrapSDKContext(suite.ctx), &types.QueryEpochRequest{})
-	suite.Require().NoError(err)
-	suite.Require().Equal(suite.app.LiquidStakingKeeper.GetEpoch(suite.ctx), resp.Epoch)
+	suite.NoError(err)
+	suite.Equal(suite.app.LiquidStakingKeeper.GetEpoch(suite.ctx), resp.Epoch)
 }
 
 func (suite *KeeperTestSuite) TestGRPCChunks() {
@@ -49,7 +49,7 @@ func (suite *KeeperTestSuite) TestGRPCChunks() {
 			&types.QueryChunksRequest{},
 			false,
 			func(response *types.QueryChunksResponse) {
-				suite.Require().Len(response.Chunks, 3)
+				suite.Len(response.Chunks, 3)
 			},
 		},
 		{
@@ -59,7 +59,7 @@ func (suite *KeeperTestSuite) TestGRPCChunks() {
 			},
 			false,
 			func(response *types.QueryChunksResponse) {
-				suite.Require().Len(response.Chunks, 3)
+				suite.Len(response.Chunks, 3)
 			},
 		},
 		{
@@ -69,17 +69,17 @@ func (suite *KeeperTestSuite) TestGRPCChunks() {
 			},
 			false,
 			func(response *types.QueryChunksResponse) {
-				suite.Require().Len(response.Chunks, 0)
+				suite.Len(response.Chunks, 0)
 			},
 		},
 	} {
 		suite.Run(tc.name, func() {
 			resp, err := suite.app.LiquidStakingKeeper.Chunks(sdk.WrapSDKContext(suite.ctx), tc.req)
 			if tc.expectErr {
-				suite.Require().Error(err)
+				suite.Error(err)
 				return
 			}
-			suite.Require().NoError(err)
+			suite.NoError(err)
 			if tc.postRun != nil {
 				tc.postRun(resp)
 			}
@@ -135,10 +135,10 @@ func (suite *KeeperTestSuite) TestGRPCChunk() {
 		suite.Run(tc.name, func() {
 			resp, err := suite.app.LiquidStakingKeeper.Chunk(sdk.WrapSDKContext(suite.ctx), tc.req)
 			if tc.expectErr {
-				suite.Require().Error(err)
+				suite.Error(err)
 				return
 			}
-			suite.Require().NoError(err)
+			suite.NoError(err)
 			if tc.postRun != nil {
 				tc.postRun(resp)
 			}
@@ -178,7 +178,7 @@ func (suite *KeeperTestSuite) TestGRPCInsurances() {
 			&types.QueryInsurancesRequest{},
 			false,
 			func(response *types.QueryInsurancesResponse) {
-				suite.Require().Len(response.Insurances, 5)
+				suite.Len(response.Insurances, 5)
 			},
 		},
 		{
@@ -188,7 +188,7 @@ func (suite *KeeperTestSuite) TestGRPCInsurances() {
 			},
 			false,
 			func(response *types.QueryInsurancesResponse) {
-				suite.Require().Len(response.Insurances, 3)
+				suite.Len(response.Insurances, 3)
 			},
 		},
 		{
@@ -198,17 +198,17 @@ func (suite *KeeperTestSuite) TestGRPCInsurances() {
 			},
 			false,
 			func(response *types.QueryInsurancesResponse) {
-				suite.Require().Len(response.Insurances, 2)
+				suite.Len(response.Insurances, 2)
 			},
 		},
 	} {
 		suite.Run(tc.name, func() {
 			resp, err := suite.app.LiquidStakingKeeper.Insurances(sdk.WrapSDKContext(suite.ctx), tc.req)
 			if tc.expectErr {
-				suite.Require().Error(err)
+				suite.Error(err)
 				return
 			}
-			suite.Require().NoError(err)
+			suite.NoError(err)
 			if tc.postRun != nil {
 				tc.postRun(resp)
 			}
@@ -263,10 +263,10 @@ func (suite *KeeperTestSuite) TestGRPCInsurance() {
 		suite.Run(tc.name, func() {
 			resp, err := suite.app.LiquidStakingKeeper.Insurance(sdk.WrapSDKContext(suite.ctx), tc.req)
 			if tc.expectErr {
-				suite.Require().Error(err)
+				suite.Error(err)
 				return
 			}
-			suite.Require().NoError(err)
+			suite.NoError(err)
 			if tc.postRun != nil {
 				tc.postRun(resp)
 			}
@@ -317,17 +317,213 @@ func (suite *KeeperTestSuite) TestGRPCWithdrawInsuranceRequests() {
 			false,
 			func(response *types.QueryWithdrawInsuranceRequestsResponse) {
 				// Only paired or unpairing insurances can have withdraw requests.
-				suite.Require().Len(response.WithdrawInsuranceRequests, 3)
+				suite.Len(response.WithdrawInsuranceRequests, 3)
+			},
+		},
+		{
+			"query by provider  address",
+			&types.QueryWithdrawInsuranceRequestsRequest{
+				ProviderAddress: env.providers[0].String(),
+			},
+			false,
+			func(response *types.QueryWithdrawInsuranceRequestsResponse) {
+				suite.Len(response.WithdrawInsuranceRequests, 1)
+				insurance, found := suite.app.LiquidStakingKeeper.GetInsurance(suite.ctx, response.WithdrawInsuranceRequests[0].InsuranceId)
+				suite.True(found)
+				suite.True(insurance.Equal(env.insurances[0]))
 			},
 		},
 	} {
 		suite.Run(tc.name, func() {
 			resp, err := suite.app.LiquidStakingKeeper.WithdrawInsuranceRequests(sdk.WrapSDKContext(suite.ctx), tc.req)
 			if tc.expectErr {
-				suite.Require().Error(err)
+				suite.Error(err)
 				return
 			}
-			suite.Require().NoError(err)
+			suite.NoError(err)
+			if tc.postRun != nil {
+				tc.postRun(resp)
+			}
+		})
+	}
+}
+
+func (suite *KeeperTestSuite) TestGRPCWithdrawInsuranceRequest() {
+	env := suite.setupLiquidStakeTestingEnv(testingEnvOptions{
+		desc:                  "",
+		numVals:               3,
+		fixedValFeeRate:       tenPercentFeeRate,
+		valFeeRates:           nil,
+		fixedPower:            1,
+		powers:                nil,
+		numInsurances:         5,
+		fixedInsuranceFeeRate: tenPercentFeeRate,
+		insuranceFeeRates:     nil,
+		numPairedChunks:       3,
+		fundingAccountBalance: types.ChunkSize.MulRaw(1000),
+	})
+	// 3 providers requests withdraw.
+	// 3 withdraw insurance requests will be queued.
+	for i := 0; i < 3; i++ {
+		suite.app.LiquidStakingKeeper.DoWithdrawInsurance(
+			suite.ctx,
+			types.NewMsgWithdrawInsurance(
+				env.providers[i].String(),
+				env.insurances[i].Id,
+			),
+		)
+	}
+	for _, tc := range []struct {
+		name      string
+		req       *types.QueryWithdrawInsuranceRequestRequest
+		expectErr bool
+		postRun   func(response *types.QueryWithdrawInsuranceRequestResponse)
+	}{
+		{
+			"nil request",
+			nil,
+			true,
+			nil,
+		},
+		{
+			"invalid request",
+			&types.QueryWithdrawInsuranceRequestRequest{},
+			true,
+			nil,
+		},
+		{
+			"query by id",
+			&types.QueryWithdrawInsuranceRequestRequest{
+				Id: 1,
+			},
+			false,
+			func(response *types.QueryWithdrawInsuranceRequestResponse) {
+				_, found := suite.app.LiquidStakingKeeper.GetWithdrawInsuranceRequest(
+					suite.ctx, response.WithdrawInsuranceRequest.InsuranceId,
+				)
+				suite.True(found)
+			},
+		},
+		{
+			"query by id",
+			&types.QueryWithdrawInsuranceRequestRequest{
+				Id: 1,
+			},
+			false,
+			func(response *types.QueryWithdrawInsuranceRequestResponse) {
+				_, found := suite.app.LiquidStakingKeeper.GetWithdrawInsuranceRequest(
+					suite.ctx, response.WithdrawInsuranceRequest.InsuranceId,
+				)
+				suite.True(found)
+			},
+		},
+		{
+			"query by non existing id",
+			&types.QueryWithdrawInsuranceRequestRequest{
+				Id: 100,
+			},
+			true,
+			func(response *types.QueryWithdrawInsuranceRequestResponse) {
+				_, found := suite.app.LiquidStakingKeeper.GetWithdrawInsuranceRequest(
+					suite.ctx, response.WithdrawInsuranceRequest.InsuranceId,
+				)
+				suite.False(found)
+			},
+		},
+	} {
+		suite.Run(tc.name, func() {
+			resp, err := suite.app.LiquidStakingKeeper.WithdrawInsuranceRequest(sdk.WrapSDKContext(suite.ctx), tc.req)
+			if tc.expectErr {
+				suite.Error(err)
+				return
+			}
+			suite.NoError(err)
+			if tc.postRun != nil {
+				tc.postRun(resp)
+			}
+		})
+	}
+}
+
+func (suite *KeeperTestSuite) TestGRPCUnpairingForUnstakingChunkInfos() {
+	env := suite.setupLiquidStakeTestingEnv(testingEnvOptions{
+		desc:                  "",
+		numVals:               3,
+		fixedValFeeRate:       tenPercentFeeRate,
+		valFeeRates:           nil,
+		fixedPower:            1,
+		powers:                nil,
+		numInsurances:         3,
+		fixedInsuranceFeeRate: tenPercentFeeRate,
+		insuranceFeeRates:     nil,
+		numPairedChunks:       3,
+		fundingAccountBalance: types.ChunkSize.MulRaw(1000),
+	})
+	// 3 delegators requests liquid unstake.
+	// 3 unpairing for unstaking requests will be queued.
+	for i := 0; i < len(env.pairedChunks); i++ {
+		_, _, err := suite.app.LiquidStakingKeeper.QueueLiquidUnstake(
+			suite.ctx,
+			types.NewMsgLiquidUnstake(
+				env.delegators[i].String(),
+				sdk.NewCoin(suite.denom, types.ChunkSize),
+			),
+		)
+		suite.NoError(err)
+	}
+	for _, tc := range []struct {
+		name      string
+		req       *types.QueryUnpairingForUnstakingChunkInfosRequest
+		expectErr bool
+		postRun   func(response *types.QueryUnpairingForUnstakingChunkInfosResponse)
+	}{
+		{
+			"nil request",
+			nil,
+			true,
+			nil,
+		},
+		{
+			"query all",
+			&types.QueryUnpairingForUnstakingChunkInfosRequest{},
+			false,
+			func(response *types.QueryUnpairingForUnstakingChunkInfosResponse) {
+				suite.Len(response.UnpairingForUnstakingChunkInfos, len(env.pairedChunks))
+			},
+		},
+		{
+			"query queued info by delegator address",
+			&types.QueryUnpairingForUnstakingChunkInfosRequest{
+				DelegatorAddress: env.delegators[0].String(),
+				Queued:           true,
+			},
+			false,
+			func(response *types.QueryUnpairingForUnstakingChunkInfosResponse) {
+				suite.Len(response.UnpairingForUnstakingChunkInfos, 1)
+			},
+		},
+		{
+			"query in-progress info by delegator address",
+			&types.QueryUnpairingForUnstakingChunkInfosRequest{
+				DelegatorAddress: env.delegators[0].String(),
+				Queued:           true,
+			},
+			false,
+			func(response *types.QueryUnpairingForUnstakingChunkInfosResponse) {
+				suite.Len(response.UnpairingForUnstakingChunkInfos, 1)
+				chunk, found := suite.app.LiquidStakingKeeper.GetChunk(suite.ctx, response.UnpairingForUnstakingChunkInfos[0].ChunkId)
+				suite.True(found)
+				suite.True(chunk.Equal(env.pairedChunks[2]))
+			},
+		},
+	} {
+		suite.Run(tc.name, func() {
+			resp, err := suite.app.LiquidStakingKeeper.UnpairingForUnstakingChunkInfos(sdk.WrapSDKContext(suite.ctx), tc.req)
+			if tc.expectErr {
+				suite.Error(err)
+				return
+			}
+			suite.NoError(err)
 			if tc.postRun != nil {
 				tc.postRun(resp)
 			}

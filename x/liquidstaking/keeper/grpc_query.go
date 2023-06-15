@@ -196,7 +196,7 @@ func (k Keeper) UnpairingForUnstakingChunkInfos(c context.Context, req *types.Qu
 		}
 		if req.Queued {
 			// Only return queued(=not yet started) liquid unstake.
-			if chunk.Status != types.CHUNK_STATUS_UNPAIRING_FOR_UNSTAKING {
+			if chunk.Status == types.CHUNK_STATUS_UNPAIRING_FOR_UNSTAKING {
 				return false, nil
 			}
 		}

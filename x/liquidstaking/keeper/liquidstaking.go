@@ -601,6 +601,12 @@ func (k Keeper) QueueLiquidUnstake(ctx sdk.Context, msg *types.MsgLiquidUnstake)
 		if chunk.Status != types.CHUNK_STATUS_PAIRED {
 			return false, nil
 		}
+		// check whether the chunk is already have unstaking requests in queue.
+		_, found := k.GetUnpairingForUnstakingChunkInfo(ctx, chunk.Id)
+		if found {
+			return false, nil
+		}
+
 		pairedInsurance, found := k.GetInsurance(ctx, chunk.PairedInsuranceId)
 		if found == false {
 			return false, types.ErrNotFoundInsurance
