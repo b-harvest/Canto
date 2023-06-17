@@ -40,7 +40,7 @@ func GetQueryCmd(queryRoute string) *cobra.Command {
 		CmdQueryUnpairingForUnstakingChunkInfosRequest(),
 		CmdQueryChunkSizeRequest(),
 		CmdQueryMinimumCollateral(),
-		CmdQueryStatesRequest(),
+		CmdQueryStates(),
 	)
 
 	return cmd
@@ -543,8 +543,8 @@ $ %s query %s minimum-collateral
 	return cmd
 }
 
-// CmdQueryStatesRequest implements a command that will return states in liquidstaking module.
-func CmdQueryStatesRequest() *cobra.Command {
+// CmdQueryStates implements a command that will return states in liquidstaking module.
+func CmdQueryStates() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "states",
 		Args:  cobra.ExactArgs(0),

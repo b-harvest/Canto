@@ -744,5 +744,4 @@ func (suite *KeeperTestSuite) TestGRPCStates() {
 			}
 		})
 	}
-
 }
