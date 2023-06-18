@@ -553,9 +553,9 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (chunk
 
 		liquidBondDenom := k.GetLiquidBondDenom(ctx)
 		// Mint the liquid staking token
-		lsTokenMintAmount = amount.Amount
+		lsTokenMintAmount = types.ChunkSize
 		if nas.LsTokensTotalSupply.IsPositive() {
-			lsTokenMintAmount = types.NativeTokenToLiquidStakeToken(amount.Amount, nas.LsTokensTotalSupply, nas.NetAmount)
+			lsTokenMintAmount = types.NativeTokenToLiquidStakeToken(lsTokenMintAmount, nas.LsTokensTotalSupply, nas.NetAmount)
 		}
 		if !lsTokenMintAmount.IsPositive() {
 			err = sdkerrors.Wrapf(types.ErrInvalidAmount, "amount must be greater than or equal to %s", amount.String())

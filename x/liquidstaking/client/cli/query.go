@@ -36,9 +36,9 @@ func GetQueryCmd(queryRoute string) *cobra.Command {
 		CmdQueryInsurance(),
 		CmdQueryWithdrawInsuranceRequests(),
 		CmdQueryWithdrawInsuranceRequest(),
-		CmdQueryUnpairingForUnstakingChunkInfosRequests(),
-		CmdQueryUnpairingForUnstakingChunkInfosRequest(),
-		CmdQueryChunkSizeRequest(),
+		CmdQueryUnpairingForUnstakingChunkInfos(),
+		CmdQueryUnpairingForUnstakingChunkInfo(),
+		CmdQueryChunkSize(),
 		CmdQueryMinimumCollateral(),
 		CmdQueryStates(),
 	)
@@ -168,7 +168,7 @@ $ %s query %s chunks --status [CHUNK_STATUS_PAIRING | CHUNK_STATUS_PAIRED | CHUN
 // CmdQueryChunk implements a command that will return a Chunk given a chunk id
 func CmdQueryChunk() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "chunk [chunkId]",
+		Use:     "chunk [chunk-id]",
 		Args:    cobra.ExactArgs(1),
 		Short:   "Query the Chunk associated with a given chunk id",
 		Example: fmt.Sprintf("%s query %s chunk 1", version.AppName, types.ModuleName),
@@ -263,7 +263,7 @@ $ %s query %s insurances --validator-address cantovaloper1gxl6usug4cz60yhpsjj7vw
 // CmdQueryInsurance implements a command that will return a Chunk given an insurance id
 func CmdQueryInsurance() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "insurance [insuranceId]",
+		Use:     "insurance [insurance-id]",
 		Args:    cobra.ExactArgs(1),
 		Short:   "Query the Insurance associated with a given insurance id",
 		Example: fmt.Sprintf("%s query liquidstaking insurance 1", version.AppName),
@@ -390,8 +390,8 @@ $ %s query %s withdraw-insurance-request 1
 	return cmd
 }
 
-// CmdQueryUnpairingForUnstakingChunkInfosRequests implements a command that will return unpairing for unstaking chunk infos requests in liquidstaking module.
-func CmdQueryUnpairingForUnstakingChunkInfosRequests() *cobra.Command {
+// CmdQueryUnpairingForUnstakingChunkInfos implements a command that will return unpairing for unstaking chunk infos requests in liquidstaking module.
+func CmdQueryUnpairingForUnstakingChunkInfos() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "unpairing-for-unstaking-chunk-infos [optional flags]",
 		Args:  cobra.ExactArgs(0),
@@ -439,8 +439,8 @@ $ %s query %s unpairing-for-unstaking-chunk-infos
 	return cmd
 }
 
-// CmdQueryUnpairingForUnstakingChunkInfosRequest implements a command that will return unpairing for unstaking chunk info in liquidstaking module.
-func CmdQueryUnpairingForUnstakingChunkInfosRequest() *cobra.Command {
+// CmdQueryUnpairingForUnstakingChunkInfo implements a command that will return unpairing for unstaking chunk info in liquidstaking module.
+func CmdQueryUnpairingForUnstakingChunkInfo() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "unpairing-for-unstaking-chunk-info [chunk-id]",
 		Args:  cobra.ExactArgs(1),
@@ -477,8 +477,8 @@ $ %s query %s unpairing-for-unstaking-chunk-info 1
 	return cmd
 }
 
-// CmdQueryChunkSizeRequest implements a command that will return chunk size in liquidstaking module.
-func CmdQueryChunkSizeRequest() *cobra.Command {
+// CmdQueryChunkSize implements a command that will return chunk size in liquidstaking module.
+func CmdQueryChunkSize() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "chunk-size",
 		Args:  cobra.ExactArgs(0),

@@ -98,7 +98,7 @@ $ %s tx %s liquid-unstake 5000000acanto --from mykey
 				return err
 			}
 
-			coin, err := sdk.ParseCoinNormalized(args[1])
+			coin, err := sdk.ParseCoinNormalized(args[0])
 			if err != nil {
 				return err
 			}
@@ -168,11 +168,11 @@ $ %s tx %s provide-insurance cantovaloper1gxl6usug4cz60yhpsjj7vw7vzysrz772yxjzsf
 
 func NewCancelProvideInsuranceCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "cancel-provide-insurance",
+		Use:   "cancel-provide-insurance [insurance-id]",
 		Args:  cobra.ExactArgs(1),
-		Short: "cancel insurance provide for chunk",
+		Short: "cancel providing insurance for chunk",
 		Long: strings.TrimSpace(
-			fmt.Sprintf(`cancel-provide-insurance for chunk.
+			fmt.Sprintf(`cancel providing insurance for chunk.
 
 Example:
 $ %s tx %s cancel-provide-insurance 1 --from mykey
@@ -209,7 +209,7 @@ $ %s tx %s cancel-provide-insurance 1 --from mykey
 func NewDepositInsuranceCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "deposit-insurance",
-		Args:  cobra.ExactArgs(1),
+		Args:  cobra.ExactArgs(2),
 		Short: "deposit more coins to insurance",
 		Long: strings.TrimSpace(
 			fmt.Sprintf(`Deposit-inusrance.

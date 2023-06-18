@@ -38,7 +38,10 @@ func (nas NetAmountState) Equal(nas2 NetAmountState) bool {
 		nas.TotalUnbondingBalance.Equal(nas2.TotalUnbondingBalance) &&
 		nas.NetAmount.Equal(nas2.NetAmount) &&
 		nas.MintRate.Equal(nas2.MintRate) &&
-		nas.RewardModuleAccBalance.Equal(nas2.RewardModuleAccBalance)
+		nas.RewardModuleAccBalance.Equal(nas2.RewardModuleAccBalance) &&
+		nas.UtilizationRatio.Equal(nas2.UtilizationRatio) &&
+		nas.DiscountRate.Equal(nas2.DiscountRate) &&
+		nas.FeeRate.Equal(nas2.FeeRate)
 }
 
 func (nas NetAmountState) IsZeroState() bool {
