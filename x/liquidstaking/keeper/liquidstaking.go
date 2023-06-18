@@ -11,7 +11,7 @@ import (
 )
 
 // CollectRewardAndFee collects reward of chunk and
-// distribute to a module(=fee), reward pool and insurance.
+// distributes it to insurance, dynamic fee and reward module account.
 // 1. Send commission to insurance based on chunk reward.
 // 2. Deduct dynamic fee from remaining and burn it.
 // 3. Send rest of rewards to reward module account.
@@ -47,11 +47,14 @@ func (k Keeper) CollectRewardAndFee(
 			remainingReward,
 		)
 	}
-	fmt.Printf("Collect Reward for validator: %s\n", insurance.GetValidator())
-	fmt.Printf("Delegation Reward: %s\n", delegationRewards.String())
-	fmt.Printf("Insurance Commission: %s\n", insuranceCommissions.String())
-	fmt.Printf("Dynamic Fee: %s\n", dynamicFees.String())
-	fmt.Printf("Reamining Reward: %s\n", remainingRewards.String())
+	// TODO: Remove prints when production.
+	{
+		fmt.Printf("Collect Reward for validator: %s\n", insurance.GetValidator())
+		fmt.Printf("Delegation Reward: %s\n", delegationRewards.String())
+		fmt.Printf("Insurance Commission: %s\n", insuranceCommissions.String())
+		fmt.Printf("Dynamic Fee: %s\n", dynamicFees.String())
+		fmt.Printf("Reamining Reward: %s\n", remainingRewards.String())
+	}
 
 	var inputs []banktypes.Input
 	var outputs []banktypes.Output
@@ -59,6 +62,7 @@ func (k Keeper) CollectRewardAndFee(
 	case 0:
 		return
 	default:
+		// Dynamic Fee can be zero if the utilization rate is low.
 		if !dynamicFees.IsZero() {
 			// Collect dynamic fee and burn it first.
 			if err := k.bankKeeper.SendCoinsFromAccountToModule(ctx, chunk.DerivedAddress(), types.ModuleName, dynamicFees); err != nil {
@@ -94,7 +98,7 @@ func (k Keeper) DistributeReward(ctx sdk.Context) {
 		case types.CHUNK_STATUS_PAIRED:
 			insurance, found = k.GetInsurance(ctx, chunk.PairedInsuranceId)
 			if !found {
-				panic(types.ErrNotFoundInsurance.Error())
+				return true, sdkerrors.Wrapf(types.ErrNotFoundInsurance, "chunk id: %d", chunk.Id)
 			}
 		default:
 			return false, nil
@@ -104,14 +108,6 @@ func (k Keeper) DistributeReward(ctx sdk.Context) {
 		if err == types.ErrNotFoundValidator {
 			return true, err
 		}
-		// TODO: remove print when go to production
-		fmt.Printf("Chunk %d Balance Before Withdraw Delegation Rewards\n", chunk.Id)
-		// TODO: remove when go to production
-		bal := k.bankKeeper.GetBalance(ctx, chunk.DerivedAddress(), "acanto")
-		if bal.IsPositive() {
-			panic("chunk %d balance is not zero")
-		}
-		fmt.Println(bal.String())
 		_, err = k.distributionKeeper.WithdrawDelegationRewards(ctx, chunk.DerivedAddress(), validator.GetOperator())
 		// chunk balance -> chunk reward address
 		if err != nil {
@@ -1116,16 +1112,16 @@ func (k Keeper) completeLiquidUnstake(ctx sdk.Context, chunk types.Chunk) error 
 	if err = k.burnEscrowedLsTokens(ctx, lsTokensToBurn); err != nil {
 		return err
 	}
-	// TODO: remove panic after fuzzing tests, it will be better to send chunk balance instead of unstakedTokens
-	chunkBalance := k.bankKeeper.GetBalance(ctx, chunk.DerivedAddress(), bondDenom)
-	if !types.ChunkSize.Sub(penalty).Equal(chunkBalance.Amount) {
-		panic("investigating it")
-	}
+	chunkBalances := k.bankKeeper.GetAllBalances(ctx, chunk.DerivedAddress())
+	// TODO: un-comment below lines while fuzzing tests to check when below condition is true
+	// if !types.ChunkSize.Sub(penalty).Equal(chunkBalances.AmountOf(bondDenom)) {
+	// 	panic("investigating it")
+	// }
 	if err = k.bankKeeper.SendCoins(
 		ctx,
 		chunk.DerivedAddress(),
 		info.GetDelegator(),
-		sdk.NewCoins(unstakedTokens),
+		chunkBalances,
 	); err != nil {
 		return err
 	}
@@ -1226,7 +1222,6 @@ func (k Keeper) handlePairedChunk(ctx sdk.Context, chunk types.Chunk) error {
 
 	validator, found := k.stakingKeeper.GetValidator(ctx, pairedInsurance.GetValidator())
 	err = k.IsValidValidator(ctx, validator, found)
-	// TODO: Should we un-pair insurances which have invalid validator?
 	if err == types.ErrNotFoundValidator {
 		return sdkerrors.Wrapf(err, "validator: %s", pairedInsurance.GetValidator())
 	}
@@ -1255,15 +1250,6 @@ func (k Keeper) handlePairedChunk(ctx sdk.Context, chunk types.Chunk) error {
 		if penalty.GT(insuranceBalance.Amount.ToDec()) {
 			insuranceOutOfBalance = true
 			k.startUnpairing(ctx, pairedInsurance, chunk)
-			// send all insurance balance to chunk
-			if err = k.bankKeeper.SendCoins(
-				ctx,
-				pairedInsurance.DerivedAddress(),
-				chunk.DerivedAddress(),
-				sdk.NewCoins(insuranceBalance),
-			); err != nil {
-				return err
-			}
 
 			// start unbonding of chunk because it is damaged
 			if _, err = k.stakingKeeper.Undelegate(
@@ -1273,6 +1259,9 @@ func (k Keeper) handlePairedChunk(ctx sdk.Context, chunk types.Chunk) error {
 			); err != nil {
 				return err
 			}
+			// Insurance do not cover penalty at this time.
+			// It will cover penalty at next epoch when chunk unpairing is finished.
+			// Check the handleUnpairingChunk method.
 		} else {
 			// Insurance can cover penalty
 			// 1. Send penalty to chunk
@@ -1311,7 +1300,11 @@ func (k Keeper) handlePairedChunk(ctx sdk.Context, chunk types.Chunk) error {
 		k.startUnpairing(ctx, pairedInsurance, chunk)
 	}
 
-	// TODO: use IsValidValidator but should it be handled above?
+	// TODO: 삭제해야할 로직. 여기서 일괄적으로 chunk와 insurance의 상태를 변경해버리면,
+	// 변경되는 chunk와 insurance는 의례 거쳤어야 할 패널티 커버 과정을 건너 뛰어버린다.
+	// 커버를 다 할 수 있는 상황이면 그나마 괜찮은데, 커버를 못하는 상황에서 패널티 커버가 스킵되면
+	// chunk의 경우 Unbonding 을 거쳐야하는데 그 과정이 생략되어 버린다.
+	// 이후 rank에서 멀쩡한 chunk 취급을 받을 가능성도 높아져 버린다.
 	if err := k.IsValidValidator(ctx, validator, found); err != nil {
 		// Find all insurances which have same validator with this
 		var invalidInsurances []types.Insurance

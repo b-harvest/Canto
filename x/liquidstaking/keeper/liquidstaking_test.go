@@ -2575,6 +2575,57 @@ func (suite *KeeperTestSuite) TestDoClaimDiscountedRewardFail() {
 	}
 }
 
+// TestChunkPositiveBalanceBeforeEpoch tests scenario where someone sends coins to chunk.
+// This is a special case because the chunk is not a normal account.
+func (suite *KeeperTestSuite) TestChunkPositiveBalanceBeforeEpoch() {
+	env := suite.setupLiquidStakeTestingEnv(
+		testingEnvOptions{
+			"TestDoClaimDiscountedReward",
+			3,
+			tenPercentFeeRate,
+			nil,
+			onePower,
+			nil,
+			3,
+			tenPercentFeeRate,
+			nil,
+			3,
+			types.ChunkSize.MulRaw(500),
+		},
+	)
+	suite.ctx = suite.advanceHeight(suite.ctx, 1, "pass 1 reward epoch")
+	// send some coins to chunk before epoch
+	coin := sdk.NewCoin(suite.denom, sdk.NewInt(100))
+	suite.NoError(
+		suite.app.BankKeeper.SendCoins(
+			suite.ctx,
+			fundingAccount,
+			env.pairedChunks[0].DerivedAddress(),
+			sdk.NewCoins(coin),
+		),
+	)
+
+	suite.ctx = suite.advanceEpoch(suite.ctx)
+	suite.ctx = suite.advanceHeight(suite.ctx, 1, "liquid staking endblocker is triggered")
+
+	originTotalInsuranceCommissions, _ := sdk.NewIntFromString("17999928000287925000")
+	originReardModuleAccBalance, _ := sdk.NewIntFromString("161999352002591325000")
+	nas := suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
+	{
+		additionalCommissions := coin.Amount.ToDec().Mul(tenPercentFeeRate).TruncateInt()
+		suite.Equal(
+			additionalCommissions.String(),
+			nas.TotalInsuranceCommissions.Sub(originTotalInsuranceCommissions).String(),
+			"total insurance commissions should be increased by 10% of the sent coins",
+		)
+		suite.Equal(
+			coin.Sub(sdk.NewCoin(suite.denom, additionalCommissions)).Amount.String(),
+			nas.RewardModuleAccBalance.Sub(originReardModuleAccBalance).String(),
+			"reward module account balance should be increased by 90% of the sent coins",
+		)
+	}
+}
+
 func (suite *KeeperTestSuite) downTimeSlashing(
 	ctx sdk.Context, downValPubKey cryptotypes.PubKey, power int64, called int, blockTime time.Duration,
 ) (penalty sdk.Int) {
