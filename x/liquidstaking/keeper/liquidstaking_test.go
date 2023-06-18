@@ -356,6 +356,9 @@ func (suite *KeeperTestSuite) TestLiquidStakeWithAdvanceBlocks() {
 			TotalUnpairedInsuranceCommissions:  sdk.ZeroInt(),
 			TotalUnbondingBalance:              sdk.ZeroInt(),
 			RewardModuleAccBalance:             sdk.ZeroInt(),
+			UtilizationRatio:                   sdk.MustNewDecFromStr("0.005999999856000003"),
+			DiscountRate:                       sdk.ZeroDec(),
+			FeeRate:                            sdk.ZeroDec(),
 		}), "no epoch(=1 block in test) processed yet, so there are no mint rate change and remaining rewards yet")
 	}
 
@@ -441,6 +444,9 @@ func (suite *KeeperTestSuite) TestLiquidUnstakeWithAdvanceBlocks() {
 			TotalUnpairedInsuranceCommissions:  sdk.ZeroInt(),
 			TotalUnbondingBalance:              sdk.ZeroInt(),
 			RewardModuleAccBalance:             sdk.ZeroInt(),
+			UtilizationRatio:                   sdk.MustNewDecFromStr("0.005999999856000003"),
+			DiscountRate:                       sdk.ZeroDec(),
+			FeeRate:                            sdk.ZeroDec(),
 		}), "no epoch(=1 block in test) processed yet, so there are no mint rate change and remaining rewards yet")
 	}
 	// advance 1 block(= epoch period in test environment) so reward is accumulated which means mint rate is changed
