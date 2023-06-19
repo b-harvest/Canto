@@ -9,7 +9,7 @@ import (
 func (suite *KeeperTestSuite) TestChunksInvariant() {
 	env := suite.setupLiquidStakeTestingEnv(
 		testingEnvOptions{
-			"TestDoWithdrawInsuranceCommission",
+			"TestChunksInvariant",
 			3,
 			TenPercentFeeRate,
 			nil,
@@ -156,6 +156,184 @@ func (suite *KeeperTestSuite) TestChunksInvariant() {
 
 	origin, _ = suite.app.LiquidStakingKeeper.GetChunk(suite.ctx, toBeUnstakedChunks[0].Id)
 	suite.checkUnpairingAndUnpairingForUnstakingChunks(suite.ctx, origin)
+}
+
+func (suite *KeeperTestSuite) TestInsurancesInvariant() {
+	env := suite.setupLiquidStakeTestingEnv(
+		testingEnvOptions{
+			"TestInsurancesInvariant",
+			3,
+			TenPercentFeeRate,
+			nil,
+			onePower,
+			nil,
+			3,
+			TenPercentFeeRate,
+			nil,
+			2,
+			types.ChunkSize.MulRaw(500),
+		},
+	)
+
+	// 1: PAIRING INSURANCE
+	// first, create pairing insurance
+	origin, _ := suite.app.LiquidStakingKeeper.GetInsurance(suite.ctx, env.insurances[2].Id)
+	suite.Equal(types.INSURANCE_STATUS_PAIRING, origin.Status)
+	// forcefully change status of pairing insurance
+	{
+		mutated := origin
+		mutated.Status = types.INSURANCE_STATUS_UNSPECIFIED
+		suite.app.LiquidStakingKeeper.SetInsurance(suite.ctx, mutated)
+		_, broken := keeper.InsurancesInvariant(suite.app.LiquidStakingKeeper)(suite.ctx)
+		suite.True(broken, "pairing insurance must have valid status")
+		// recover
+		suite.app.LiquidStakingKeeper.SetInsurance(suite.ctx, origin)
+		suite.mustPassInvariants()
+	}
+
+	// 2: PAIRED INSURANCE
+	origin, _ = suite.app.LiquidStakingKeeper.GetInsurance(suite.ctx, env.insurances[0].Id)
+	suite.Equal(types.INSURANCE_STATUS_PAIRED, origin.Status)
+	// forcefully change status of paired insurance
+	{
+		mutated := origin
+		mutated.Status = types.INSURANCE_STATUS_UNSPECIFIED
+		suite.app.LiquidStakingKeeper.SetInsurance(suite.ctx, mutated)
+		_, broken := keeper.InsurancesInvariant(suite.app.LiquidStakingKeeper)(suite.ctx)
+		suite.True(broken, "paired insurance must have valid status")
+		// recover
+		suite.app.LiquidStakingKeeper.SetInsurance(suite.ctx, origin)
+		suite.mustPassInvariants()
+	}
+
+	// forcefully change paired chunk id
+	{
+		mutated := origin
+		mutated.ChunkId = 5
+		suite.app.LiquidStakingKeeper.SetInsurance(suite.ctx, mutated)
+		_, broken := keeper.InsurancesInvariant(suite.app.LiquidStakingKeeper)(suite.ctx)
+		suite.True(broken, "paired insurance must have valid chunk id")
+		// recover
+		suite.app.LiquidStakingKeeper.SetInsurance(suite.ctx, origin)
+		suite.mustPassInvariants()
+	}
+
+	// forcefully change paired chunk's status
+	{
+		originChunk, _ := suite.app.LiquidStakingKeeper.GetChunk(suite.ctx, origin.ChunkId)
+		mutated := originChunk
+		mutated.Status = types.CHUNK_STATUS_UNSPECIFIED
+		suite.app.LiquidStakingKeeper.SetChunk(suite.ctx, mutated)
+		_, broken := keeper.InsurancesInvariant(suite.app.LiquidStakingKeeper)(suite.ctx)
+		suite.True(broken, "paired insurance must have valid chunk's status")
+		// recover
+		suite.app.LiquidStakingKeeper.SetChunk(suite.ctx, originChunk)
+		suite.mustPassInvariants()
+	}
+
+	// 3: UNPAIRING INSURANCE
+	toBeUnstakedChunks, _, err := suite.app.LiquidStakingKeeper.QueueLiquidUnstake(
+		suite.ctx, types.NewMsgLiquidUnstake(
+			env.delegators[0].String(),
+			sdk.NewCoin(suite.denom, types.ChunkSize),
+		))
+	suite.NoError(err)
+	suite.ctx = suite.advanceEpoch(suite.ctx)
+	suite.ctx = suite.advanceHeight(suite.ctx, 1, "unstaking chunk started")
+
+	originChunk, _ := suite.app.LiquidStakingKeeper.GetChunk(suite.ctx, toBeUnstakedChunks[0].Id)
+	origin, _ = suite.app.LiquidStakingKeeper.GetInsurance(suite.ctx, originChunk.UnpairingInsuranceId)
+	suite.NotEqual(types.Empty, origin.ChunkId)
+	// forcefully empty chunk id
+	{
+		mutated := origin
+		mutated.ChunkId = types.Empty
+		suite.app.LiquidStakingKeeper.SetInsurance(suite.ctx, mutated)
+		_, broken := keeper.InsurancesInvariant(suite.app.LiquidStakingKeeper)(suite.ctx)
+		suite.True(broken, "unpairing insurance must have valid chunk id")
+		// recover
+		suite.app.LiquidStakingKeeper.SetInsurance(suite.ctx, origin)
+		suite.mustPassInvariants()
+	}
+
+	// forcefully delete chunk
+	{
+		suite.app.LiquidStakingKeeper.DeleteChunk(suite.ctx, origin.ChunkId)
+		_, broken := keeper.InsurancesInvariant(suite.app.LiquidStakingKeeper)(suite.ctx)
+		suite.True(broken, "unpairing insurance must have valid chunk id")
+		// recover
+		suite.app.LiquidStakingKeeper.SetChunk(suite.ctx, originChunk)
+		suite.mustPassInvariants()
+	}
+
+	// 4: UNPAIRED INSURANCE
+	suite.ctx = suite.advanceEpoch(suite.ctx)
+	suite.ctx = suite.advanceHeight(suite.ctx, 1, "unstaking chunk finished")
+
+	origin, _ = suite.app.LiquidStakingKeeper.GetInsurance(suite.ctx, originChunk.UnpairingInsuranceId)
+	suite.Equal(types.INSURANCE_STATUS_UNPAIRED, origin.Status)
+
+	// forcefully change chunk id of unpaired insurance
+	{
+		mutated := origin
+		mutated.ChunkId = 2
+		suite.app.LiquidStakingKeeper.SetInsurance(suite.ctx, mutated)
+		_, broken := keeper.InsurancesInvariant(suite.app.LiquidStakingKeeper)(suite.ctx)
+		suite.True(broken, "unpaired insurance must have valid status")
+		// recover
+		suite.app.LiquidStakingKeeper.SetInsurance(suite.ctx, origin)
+		suite.mustPassInvariants()
+	}
+
+	// 5: UNPAIRING FOR WITHDRAWAL
+	origin, _, err = suite.app.LiquidStakingKeeper.DoWithdrawInsurance(
+		suite.ctx,
+		types.NewMsgWithdrawInsurance(
+			env.providers[0].String(),
+			env.insurances[0].Id,
+		),
+	)
+	suite.NoError(err)
+	suite.ctx = suite.advanceEpoch(suite.ctx)
+	suite.ctx = suite.advanceHeight(suite.ctx, 1, "unpairing for withdrawal started")
+
+	origin, _ = suite.app.LiquidStakingKeeper.GetInsurance(suite.ctx, origin.Id)
+	suite.Equal(types.INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAWAL, origin.Status)
+	originChunk, _ = suite.app.LiquidStakingKeeper.GetChunk(suite.ctx, origin.ChunkId)
+
+	// forcefully empty chunk id
+	{
+		mutated := origin
+		mutated.ChunkId = types.Empty
+		suite.app.LiquidStakingKeeper.SetInsurance(suite.ctx, mutated)
+		_, broken := keeper.InsurancesInvariant(suite.app.LiquidStakingKeeper)(suite.ctx)
+		suite.True(broken, "unpairing for withdrawal insurance must have valid chunk id")
+		// recover
+		suite.app.LiquidStakingKeeper.SetInsurance(suite.ctx, origin)
+		suite.mustPassInvariants()
+	}
+
+	// forcefully delete chunk
+	{
+		suite.app.LiquidStakingKeeper.DeleteChunk(suite.ctx, origin.ChunkId)
+		_, broken := keeper.InsurancesInvariant(suite.app.LiquidStakingKeeper)(suite.ctx)
+		suite.True(broken, "unpairing for withdrawal insurance must have chunk")
+		// recover
+		suite.app.LiquidStakingKeeper.SetChunk(suite.ctx, originChunk)
+		suite.mustPassInvariants()
+	}
+
+	// forcefully change status of chunk as invalid
+	{
+		mutated := originChunk
+		mutated.Status = types.CHUNK_STATUS_PAIRING
+		suite.app.LiquidStakingKeeper.SetChunk(suite.ctx, mutated)
+		_, broken := keeper.InsurancesInvariant(suite.app.LiquidStakingKeeper)(suite.ctx)
+		suite.True(broken, "unpairing for withdrawal insurance must have valid unpairing insurance id")
+		// recover
+		suite.app.LiquidStakingKeeper.SetChunk(suite.ctx, originChunk)
+		suite.mustPassInvariants()
+	}
 }
 
 func (suite *KeeperTestSuite) checkUnpairingAndUnpairingForUnstakingChunks(

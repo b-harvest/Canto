@@ -227,7 +227,7 @@ func InsurancesInvariant(k Keeper) sdk.Invariant {
 					brokenCount++
 					return false, nil
 				}
-				if chunk.Status == types.CHUNK_STATUS_PAIRING {
+				if chunk.Status == types.CHUNK_STATUS_PAIRING || chunk.Status == types.CHUNK_STATUS_UNSPECIFIED {
 					msg += fmt.Sprintf("unpairing for withdrawal insurance(id: %d) have invalid chunk status: %s\n", insurance.Id, chunk.Status)
 					brokenCount++
 					return false, nil

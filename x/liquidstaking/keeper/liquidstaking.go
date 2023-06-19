@@ -1431,7 +1431,9 @@ func (k Keeper) pairChunkAndInsurance(
 
 func (k Keeper) rePairChunkAndInsurance(ctx sdk.Context, chunk types.Chunk, newInsurance, outInsurance types.Insurance) {
 	chunk.UnpairingInsuranceId = outInsurance.Id
-	outInsurance.SetStatus(types.INSURANCE_STATUS_UNPAIRING)
+	if outInsurance.Status != types.INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAWAL {
+		outInsurance.SetStatus(types.INSURANCE_STATUS_UNPAIRING)
+	}
 	chunk.PairedInsuranceId = newInsurance.Id
 	newInsurance.ChunkId = chunk.Id
 	newInsurance.SetStatus(types.INSURANCE_STATUS_PAIRED)
