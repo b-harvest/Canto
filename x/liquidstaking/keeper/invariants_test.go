@@ -4,7 +4,113 @@ import (
 	"github.com/Canto-Network/Canto/v6/x/liquidstaking/keeper"
 	"github.com/Canto-Network/Canto/v6/x/liquidstaking/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	"github.com/cosmos/cosmos-sdk/x/staking"
+	"time"
 )
+
+func (suite *KeeperTestSuite) TestNetAmountInvariant() {
+	env := suite.setupLiquidStakeTestingEnv(
+		testingEnvOptions{
+			"TestNetAmountInvariant",
+			3,
+			TenPercentFeeRate,
+			nil,
+			onePower,
+			nil,
+			1,
+			TenPercentFeeRate,
+			nil,
+			1,
+			types.ChunkSize.MulRaw(500),
+		},
+	)
+	_, broken := keeper.ChunksInvariant(suite.app.LiquidStakingKeeper)(suite.ctx)
+	suite.False(broken, "completely normal")
+
+	suite.ctx = suite.advanceHeight(suite.ctx, 29, "rewards accumulated")
+	suite.ctx = suite.advanceEpoch(suite.ctx)
+	suite.ctx = suite.advanceHeight(suite.ctx, 1, "module epoch reached")
+
+	nas := suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
+	oneChunk, oneInsurance := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
+	suite.True(nas.Equal(types.NetAmountState{
+		LsTokensTotalSupply:                types.ChunkSize,
+		TotalChunksBalance:                 sdk.ZeroInt(),
+		TotalDelShares:                     types.ChunkSize.ToDec(),
+		TotalRemainingRewards:              sdk.ZeroDec(),
+		TotalRemainingInsuranceCommissions: sdk.ZeroDec(),
+		TotalLiquidTokens:                  types.ChunkSize,
+		TotalInsuranceTokens:               oneInsurance.Amount,
+		TotalInsuranceCommissions:          sdk.MustNewDecFromStr("269996760038879525000").TruncateInt(),
+		TotalPairedInsuranceTokens:         oneInsurance.Amount,
+		TotalPairedInsuranceCommissions:    sdk.MustNewDecFromStr("269996760038879525000").TruncateInt(),
+		TotalUnpairingInsuranceTokens:      sdk.ZeroInt(),
+		TotalUnpairingInsuranceCommissions: sdk.ZeroInt(),
+		TotalUnpairedInsuranceTokens:       sdk.ZeroInt(),
+		TotalUnpairedInsuranceCommissions:  sdk.ZeroInt(),
+		TotalUnbondingBalance:              sdk.ZeroInt(),
+		NetAmount:                          sdk.MustNewDecFromStr("252429970840349915725000"),
+		MintRate:                           sdk.MustNewDecFromStr("0.990373683313988266"),
+		RewardModuleAccBalance:             sdk.MustNewDecFromStr("2429970840349915725000").TruncateInt(),
+		UtilizationRatio:                   sdk.MustNewDecFromStr("0.001999951953154277"),
+		DiscountRate:                       sdk.MustNewDecFromStr("0.009719883361399663"),
+		FeeRate:                            sdk.ZeroDec(),
+	}))
+
+	// forcefully make net amount zero
+	{
+		cachedCtx, _ := suite.ctx.CacheContext()
+		completionTime, err := suite.app.StakingKeeper.Undelegate(
+			cachedCtx,
+			env.pairedChunks[0].DerivedAddress(),
+			env.insurances[0].GetValidator(),
+			types.ChunkSize.ToDec(),
+		)
+		// change completion time to duration from cachedCtx.BlockTime()
+		suite.NoError(err)
+		cachedCtx = cachedCtx.WithBlockHeight(
+			cachedCtx.BlockHeight() + 1000,
+		).WithBlockTime(
+			completionTime.Add(time.Hour),
+		)
+		staking.EndBlocker(cachedCtx, suite.app.StakingKeeper)
+
+		oneChunkCoins := sdk.NewCoins(oneChunk)
+		reward := sdk.NewCoins(sdk.NewCoin(suite.denom, nas.RewardModuleAccBalance))
+		inputs := []banktypes.Input{
+			banktypes.NewInput(env.pairedChunks[0].DerivedAddress(), oneChunkCoins),
+			banktypes.NewInput(types.RewardPool, reward),
+		}
+		outputs := []banktypes.Output{
+			banktypes.NewOutput(sdk.AccAddress("1"), oneChunkCoins),
+			banktypes.NewOutput(sdk.AccAddress("1"), reward),
+		}
+
+		suite.NoError(suite.app.BankKeeper.InputOutputCoins(cachedCtx, inputs, outputs))
+		_, broken = keeper.NetAmountInvariant(suite.app.LiquidStakingKeeper)(cachedCtx)
+		suite.True(broken, "net amount is zero")
+	}
+
+	// forcefully burn all ls tokens
+	{
+		cachedCtx, _ := suite.ctx.CacheContext()
+		lsTokenBal := suite.app.BankKeeper.GetBalance(cachedCtx, env.delegators[0], types.DefaultLiquidBondDenom)
+		suite.NoError(suite.app.BankKeeper.SendCoinsFromAccountToModule(
+			cachedCtx,
+			env.delegators[0],
+			types.ModuleName,
+			sdk.NewCoins(lsTokenBal),
+		))
+		suite.NoError(suite.app.BankKeeper.BurnCoins(
+			cachedCtx,
+			types.ModuleName,
+			sdk.NewCoins(lsTokenBal),
+		))
+		_, broken = keeper.NetAmountInvariant(suite.app.LiquidStakingKeeper)(cachedCtx)
+		suite.True(broken, "ls token is zero, but total liquid tokens is not zero")
+	}
+}
 
 func (suite *KeeperTestSuite) TestChunksInvariant() {
 	env := suite.setupLiquidStakeTestingEnv(
@@ -174,6 +280,8 @@ func (suite *KeeperTestSuite) TestInsurancesInvariant() {
 			types.ChunkSize.MulRaw(500),
 		},
 	)
+	_, broken := keeper.ChunksInvariant(suite.app.LiquidStakingKeeper)(suite.ctx)
+	suite.False(broken, "completely normal")
 
 	// 1: PAIRING INSURANCE
 	// first, create pairing insurance
@@ -352,6 +460,8 @@ func (suite *KeeperTestSuite) TestUnpairingForUnstakingChunkInfosInvariant() {
 			types.ChunkSize.MulRaw(500),
 		},
 	)
+	_, broken := keeper.ChunksInvariant(suite.app.LiquidStakingKeeper)(suite.ctx)
+	suite.False(broken, "completely normal")
 
 	// 1: Unstake
 	_, infos, err := suite.app.LiquidStakingKeeper.QueueLiquidUnstake(
@@ -421,6 +531,8 @@ func (suite *KeeperTestSuite) TestWithdrawInsuranceRequestsInvariant() {
 			types.ChunkSize.MulRaw(500),
 		},
 	)
+	_, broken := keeper.ChunksInvariant(suite.app.LiquidStakingKeeper)(suite.ctx)
+	suite.False(broken, "completely normal")
 
 	_, req, err := suite.app.LiquidStakingKeeper.DoWithdrawInsurance(
 		suite.ctx,
