@@ -13,16 +13,18 @@ var (
 	_ sdk.Msg = &MsgDepositInsurance{}
 	_ sdk.Msg = &MsgWithdrawInsurance{}
 	_ sdk.Msg = &MsgWithdrawInsuranceCommission{}
+	_ sdk.Msg = &MsgClaimDiscountedReward{}
 )
 
 const (
 	TypeMsgLiquidStake                 = "liquid_stake"
 	TypeMsgLiquidUnstake               = "liquid_unstake"
-	TypeMsgProvideInsurance            = "insurance_provide"
-	TypeMsgCancelInsurance             = "cancel_insurance"
+	TypeMsgProvideInsurance            = "provide_insurance"
+	TypeMsgCancelProvideInsurance      = "cancel_provide_insurance"
 	TypeMsgDepositInsurance            = "deposit_insurance"
 	TypeMsgWithdrawInsurance           = "withdraw_insurance"
 	TypeMsgWithdrawInsuranceCommission = "withdraw_insurance_commission"
+	TypeMsgClaimDiscountedReward       = "claim_discounted_reward"
 )
 
 func NewMsgLiquidStake(delegatorAddress string, amount sdk.Coin) *MsgLiquidStake {
@@ -129,7 +131,7 @@ func NewMsgCancelProvideInsurance(providerAddress string, insuranceId uint64) *M
 	}
 }
 func (msg MsgCancelProvideInsurance) Route() string { return RouterKey }
-func (msg MsgCancelProvideInsurance) Type() string  { return TypeMsgCancelInsurance }
+func (msg MsgCancelProvideInsurance) Type() string  { return TypeMsgCancelProvideInsurance }
 func (msg MsgCancelProvideInsurance) ValidateBasic() error {
 	if _, err := sdk.AccAddressFromBech32(msg.ProviderAddress); err != nil {
 		return sdkerrors.Wrapf(err, "invalid provider address %s", msg.ProviderAddress)
@@ -242,7 +244,7 @@ func NewMsgClaimDiscountedReward(requesterAddress string, amount sdk.Coin, minim
 	}
 }
 func (msg MsgClaimDiscountedReward) Route() string { return RouterKey }
-func (msg MsgClaimDiscountedReward) Type() string  { return TypeMsgWithdrawInsurance }
+func (msg MsgClaimDiscountedReward) Type() string  { return TypeMsgClaimDiscountedReward }
 func (msg MsgClaimDiscountedReward) ValidateBasic() error {
 	if _, err := sdk.AccAddressFromBech32(msg.RequesterAddress); err != nil {
 		return sdkerrors.Wrapf(err, "invalid requester address %s", msg.RequesterAddress)

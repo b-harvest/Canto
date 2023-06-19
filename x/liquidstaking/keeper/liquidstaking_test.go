@@ -2428,15 +2428,18 @@ func (suite *KeeperTestSuite) TestDoClaimDiscountedReward() {
 		},
 	)
 	type expected struct {
-		discountRate        string
-		beforeMintRate      string
-		beforeTokenBal      string
-		beforeLsTokenBal    string
-		afterMintRate       string
-		afterTokenBal       string
-		afterLsTokenBal     string
-		increasedMintRate   string
-		decreasedLsTokenBal string
+		discountRate                string
+		lsTokenToGetAll             string
+		claimAmount                 string
+		claimAmountBiggerThanReward bool
+		beforeMintRate              string
+		beforeTokenBal              string
+		beforeLsTokenBal            string
+		afterMintRate               string
+		afterTokenBal               string
+		afterLsTokenBal             string
+		increasedMintRate           string
+		decreasedLsTokenBal         string
 	}
 
 	liquidBondDenom := suite.app.LiquidStakingKeeper.GetLiquidBondDenom(suite.ctx)
@@ -2447,10 +2450,13 @@ func (suite *KeeperTestSuite) TestDoClaimDiscountedReward() {
 		msg *types.MsgClaimDiscountedReward
 	}{
 		{
-			"discounted little",
+			"discounted little and claim all",
 			100,
 			expected{
 				"0.003239996112004665",
+				"8047671917274489906849",
+				"251625263904734654486785",
+				true,
 				"0.996770467560542769",
 				"0",
 				"250000000000000000000000",
@@ -2462,27 +2468,76 @@ func (suite *KeeperTestSuite) TestDoClaimDiscountedReward() {
 			},
 			types.NewMsgClaimDiscountedReward(
 				env.delegators[0].String(),
-				sdk.NewCoin(liquidBondDenom, DefaultInflationAmt.MulRaw(100)),
+				sdk.NewCoin(liquidBondDenom, types.ChunkSize),
 				sdk.MustNewDecFromStr("0.002"),
 			),
 		},
 		{
-			"discounted a lot",
-			1000,
+			"discounted little and claim little",
+			100,
 			expected{
-				"0.030000000000000000",
-				"0.968616851665805890",
+				"0.003239996112004665",
+				"8047671917274489906849",
+				"1006",
+				false,
+				"0.996770467560542769",
 				"0",
 				"250000000000000000000000",
-				"0.996000000000000000",
-				"80999902800116637750000",
-				"240000000000000000000000",
-				"0.027383148334194110",
-				"10000000000000000000000",
+				"0.996770467560542769",
+				"1006",
+				"249999999999999999999000",
+				"0.000000000000000000",
+				"1000",
 			},
 			types.NewMsgClaimDiscountedReward(
 				env.delegators[0].String(),
-				sdk.NewCoin(liquidBondDenom, DefaultInflationAmt.MulRaw(100)),
+				sdk.NewCoin(liquidBondDenom, sdk.NewInt(1000)),
+				sdk.MustNewDecFromStr("0.002"),
+			),
+		},
+		{
+			"discounted a lot and claim all",
+			1000,
+			expected{
+				"0.030000000000000000",
+				"76104134710420714265643",
+				"266082464206197591875507",
+				true,
+				"0.968616851665805890",
+				"0",
+				"250000000000000000000000",
+				"0.969558346115831714",
+				"80999902800116637750000",
+				"173895865289579285734357",
+				"0.000941494450025824",
+				"76104134710420714265643",
+			},
+			types.NewMsgClaimDiscountedReward(
+				env.delegators[0].String(),
+				sdk.NewCoin(liquidBondDenom, types.ChunkSize),
+				sdk.MustNewDecFromStr("0.03"),
+			),
+		},
+		{
+			"discounted a lot and claim little",
+			1000,
+			expected{
+				"0.030000000000000000",
+				"76104134710420714265643",
+				"106432985",
+				false,
+				"0.968616851665805890",
+				"0",
+				"250000000000000000000000",
+				"0.968616851665805892",
+				"106432985",
+				"249999999999999900000000",
+				"0.000000000000000002",
+				"100000000",
+			},
+			types.NewMsgClaimDiscountedReward(
+				env.delegators[0].String(),
+				sdk.NewCoin(liquidBondDenom, sdk.NewInt(100000000)),
 				sdk.MustNewDecFromStr("0.03"),
 			),
 		},
@@ -2496,12 +2551,23 @@ func (suite *KeeperTestSuite) TestDoClaimDiscountedReward() {
 			cachedCtx = suite.advanceHeight(cachedCtx, 1, "liquid staking endblocker is triggered")
 			requester := tc.msg.GetRequestser()
 			suite.Equal(tc.expected.discountRate, suite.app.LiquidStakingKeeper.CalcDiscountRate(cachedCtx).String())
+			discountRate := suite.app.LiquidStakingKeeper.CalcDiscountRate(cachedCtx)
+			discountedMintRate := suite.app.LiquidStakingKeeper.GetNetAmountState(cachedCtx).MintRate.Mul(
+				sdk.OneDec().Sub(discountRate),
+			)
+			claimableAmt := suite.app.BankKeeper.GetBalance(cachedCtx, types.RewardPool, suite.denom)
+			lsTokenToGetAll := claimableAmt.Amount.ToDec().Mul(discountedMintRate).Ceil().TruncateInt()
+			claimAmt := tc.msg.Amount.Amount.ToDec().Quo(discountedMintRate).TruncateInt()
+			suite.Equal(tc.lsTokenToGetAll, lsTokenToGetAll.String())
+			suite.Equal(tc.claimAmount, claimAmt.String())
+			suite.Equal(tc.claimAmountBiggerThanReward, claimAmt.GT(claimableAmt.Amount))
 			suite.Equal(tc.expected.beforeTokenBal, suite.app.BankKeeper.GetBalance(cachedCtx, requester, suite.denom).Amount.String())
 			beforeLsTokenBal := suite.app.BankKeeper.GetBalance(cachedCtx, requester, liquidBondDenom).Amount
 			suite.Equal(tc.expected.beforeLsTokenBal, beforeLsTokenBal.String())
 			beforeMintRate := suite.app.LiquidStakingKeeper.GetNetAmountState(cachedCtx).MintRate
 			suite.Equal(tc.expected.beforeMintRate, beforeMintRate.String())
-			suite.NoError(suite.app.LiquidStakingKeeper.DoClaimDiscountedReward(cachedCtx, tc.msg))
+			_, _, err := suite.app.LiquidStakingKeeper.DoClaimDiscountedReward(cachedCtx, tc.msg)
+			suite.NoError(err)
 			suite.Equal(tc.afterTokenBal, suite.app.BankKeeper.GetBalance(cachedCtx, requester, suite.denom).Amount.String())
 			afterLsTokenBal := suite.app.BankKeeper.GetBalance(cachedCtx, requester, liquidBondDenom).Amount
 			suite.Equal(tc.expected.afterLsTokenBal, afterLsTokenBal.String())
@@ -2569,7 +2635,7 @@ func (suite *KeeperTestSuite) TestDoClaimDiscountedRewardFail() {
 
 	for _, tc := range tcs {
 		suite.Run(tc.name, func() {
-			err := suite.app.LiquidStakingKeeper.DoClaimDiscountedReward(suite.ctx, tc.msg)
+			_, _, err := suite.app.LiquidStakingKeeper.DoClaimDiscountedReward(suite.ctx, tc.msg)
 			suite.ErrorContains(err, tc.expectedErr.Error())
 		})
 	}

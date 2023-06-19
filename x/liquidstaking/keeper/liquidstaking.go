@@ -475,7 +475,12 @@ func (k Keeper) RePairRankedInsurances(
 }
 
 // TODO: Test with very large number of chunks
-func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (chunks []types.Chunk, newShares sdk.Dec, lsTokenMintAmount sdk.Int, err error) {
+func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (
+	chunks []types.Chunk,
+	newShares sdk.Dec,
+	lsTokenMintAmount sdk.Int,
+	err error,
+) {
 	delAddr := msg.GetDelegator()
 	amount := msg.Amount
 
@@ -858,7 +863,11 @@ func (k Keeper) DoDepositInsurance(ctx sdk.Context, msg *types.MsgDepositInsuran
 }
 
 // DoClaimDiscountedReward claims discounted reward by paying lstoken.
-func (k Keeper) DoClaimDiscountedReward(ctx sdk.Context, msg *types.MsgClaimDiscountedReward) (err error) {
+func (k Keeper) DoClaimDiscountedReward(ctx sdk.Context, msg *types.MsgClaimDiscountedReward) (
+	claim sdk.Coins,
+	discountedMintRate sdk.Dec,
+	err error,
+) {
 	if err = k.ShouldBeLiquidBondDenom(ctx, msg.Amount.Denom); err != nil {
 		return
 	}
@@ -871,7 +880,7 @@ func (k Keeper) DoClaimDiscountedReward(ctx sdk.Context, msg *types.MsgClaimDisc
 		return
 	}
 	nas := k.GetNetAmountState(ctx)
-	discountedMintRate := nas.MintRate.Mul(sdk.OneDec().Sub(discountRate))
+	discountedMintRate = nas.MintRate.Mul(sdk.OneDec().Sub(discountRate))
 
 	var claimableAmt sdk.Coin
 	var burnAmt sdk.Coin
@@ -881,6 +890,9 @@ func (k Keeper) DoClaimDiscountedReward(ctx sdk.Context, msg *types.MsgClaimDisc
 
 	// claim amount = (ls token amount / discounted mint rate)
 	claimAmt := burnAmt.Amount.ToDec().Quo(discountedMintRate).TruncateInt()
+	fmt.Println("claimAmt", claimAmt)
+	maximumLsToken := claimableAmt.Amount.ToDec().Mul(discountedMintRate).Ceil().TruncateInt()
+	fmt.Println("maximumLsToken", maximumLsToken)
 	// Requester can claim only up to claimable amount
 	if claimAmt.GT(claimableAmt.Amount) {
 		// requester cannot claim more than claimable amount
@@ -893,11 +905,12 @@ func (k Keeper) DoClaimDiscountedReward(ctx sdk.Context, msg *types.MsgClaimDisc
 		return
 	}
 	// send claimAmt to requester (error)
+	claim = sdk.NewCoins(sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), claimAmt))
 	if err = k.bankKeeper.SendCoins(
 		ctx,
 		types.RewardPool,
 		msg.GetRequestser(),
-		sdk.NewCoins(claimableAmt),
+		claim,
 	); err != nil {
 		return
 	}
