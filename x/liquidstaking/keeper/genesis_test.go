@@ -42,7 +42,7 @@ func (suite *KeeperTestSuite) TestImportExportGenesis() {
 
 	valAddrs, _ := suite.CreateValidators(
 		[]int64{onePower, onePower, onePower},
-		tenPercentFeeRate,
+		TenPercentFeeRate,
 		nil,
 	)
 
@@ -61,7 +61,7 @@ func (suite *KeeperTestSuite) TestImportExportGenesis() {
 				providers[i].String(),
 				valAddrs[i].String(),
 				providerBalances[i],
-				tenPercentFeeRate,
+				TenPercentFeeRate,
 			),
 		)
 		suite.NoError(err)

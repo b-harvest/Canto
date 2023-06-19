@@ -25,7 +25,7 @@ import (
 )
 
 var onePower int64 = 1
-var tenPercentFeeRate = sdk.NewDecWithPrec(10, 2)
+var TenPercentFeeRate = sdk.NewDecWithPrec(10, 2)
 
 // fundingAccount is a rich account.
 // Any accounts created during tests except validators must get funding from this account.
@@ -123,7 +123,7 @@ func (suite *KeeperTestSuite) TestProvideInsurance() {
 	suite.resetEpochs()
 	valAddrs, _ := suite.CreateValidators(
 		[]int64{onePower, onePower, onePower},
-		tenPercentFeeRate,
+		TenPercentFeeRate,
 		nil,
 	)
 	suite.fundAccount(suite.ctx, fundingAccount, types.ChunkSize.MulRaw(500))
@@ -182,7 +182,7 @@ func (suite *KeeperTestSuite) TestLiquidStakeSuccess() {
 	suite.resetEpochs()
 	valAddrs, _ := suite.CreateValidators(
 		[]int64{onePower, onePower, onePower},
-		tenPercentFeeRate,
+		TenPercentFeeRate,
 		nil,
 	)
 	suite.fundAccount(suite.ctx, fundingAccount, types.ChunkSize.MulRaw(500))
@@ -234,7 +234,7 @@ func (suite *KeeperTestSuite) TestLiquidStakeFail() {
 	suite.resetEpochs()
 	valAddrs, _ := suite.CreateValidators(
 		[]int64{onePower, onePower, onePower},
-		tenPercentFeeRate,
+		TenPercentFeeRate,
 		nil,
 	)
 	oneChunk, oneInsurance := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
@@ -309,12 +309,12 @@ func (suite *KeeperTestSuite) TestLiquidStakeFail() {
 }
 
 func (suite *KeeperTestSuite) TestLiquidStakeWithAdvanceBlocks() {
-	fixedInsuranceFeeRate := tenPercentFeeRate
+	fixedInsuranceFeeRate := TenPercentFeeRate
 	env := suite.setupLiquidStakeTestingEnv(
 		testingEnvOptions{
 			"TestLiquidStakeWithAdvanceBlocks",
 			3,
-			tenPercentFeeRate,
+			TenPercentFeeRate,
 			nil,
 			onePower,
 			nil,
@@ -400,12 +400,12 @@ func (suite *KeeperTestSuite) TestLiquidStakeWithAdvanceBlocks() {
 }
 
 func (suite *KeeperTestSuite) TestLiquidUnstakeWithAdvanceBlocks() {
-	fixedInsuranceFeeRate := tenPercentFeeRate
+	fixedInsuranceFeeRate := TenPercentFeeRate
 	env := suite.setupLiquidStakeTestingEnv(
 		testingEnvOptions{
 			"TestLiquidUnstakeWithAdvanceBlocks",
 			3,
-			tenPercentFeeRate,
+			TenPercentFeeRate,
 			nil,
 			onePower,
 			nil,
@@ -638,7 +638,7 @@ func (suite *KeeperTestSuite) TestQueueLiquidUnstakeFail() {
 	suite.resetEpochs()
 	valAddrs, _ := suite.CreateValidators(
 		[]int64{onePower, onePower, onePower},
-		tenPercentFeeRate,
+		TenPercentFeeRate,
 		nil,
 	)
 	suite.fundAccount(suite.ctx, fundingAccount, types.ChunkSize.MulRaw(500))
@@ -724,7 +724,7 @@ func (suite *KeeperTestSuite) TestCancelProvideInsuranceSuccess() {
 	suite.resetEpochs()
 	valAddrs, _ := suite.CreateValidators(
 		[]int64{onePower, onePower, onePower},
-		tenPercentFeeRate,
+		TenPercentFeeRate,
 		nil,
 	)
 	suite.fundAccount(suite.ctx, fundingAccount, types.ChunkSize.MulRaw(500))
@@ -750,12 +750,12 @@ func (suite *KeeperTestSuite) TestDoCancelProvideInsuranceFail() {
 		testingEnvOptions{
 			"TestDoCancelProvideInsuranceFail",
 			3,
-			tenPercentFeeRate,
+			TenPercentFeeRate,
 			nil,
 			onePower,
 			nil,
 			3,
-			tenPercentFeeRate,
+			TenPercentFeeRate,
 			nil,
 			1,
 			types.ChunkSize.MulRaw(500),
@@ -809,12 +809,12 @@ func (suite *KeeperTestSuite) TestDoWithdrawInsurance() {
 		testingEnvOptions{
 			"TestDoWithdrawInsurance",
 			3,
-			tenPercentFeeRate,
+			TenPercentFeeRate,
 			nil,
 			onePower,
 			nil,
 			3,
-			tenPercentFeeRate,
+			TenPercentFeeRate,
 			nil,
 			3,
 			types.ChunkSize.MulRaw(500),
@@ -864,7 +864,7 @@ func (suite *KeeperTestSuite) TestDoWithdrawInsuranceFail() {
 	suite.resetEpochs()
 	valAddrs, _ := suite.CreateValidators(
 		[]int64{onePower, onePower, onePower},
-		tenPercentFeeRate,
+		TenPercentFeeRate,
 		nil,
 	)
 	suite.fundAccount(suite.ctx, fundingAccount, types.ChunkSize.MulRaw(500))
@@ -914,12 +914,12 @@ func (suite *KeeperTestSuite) TestDoWithdrawInsuranceFail() {
 }
 
 func (suite *KeeperTestSuite) TestDoWithdrawInsuranceCommission() {
-	fixedInsuranceFeeRate := tenPercentFeeRate
+	fixedInsuranceFeeRate := TenPercentFeeRate
 	env := suite.setupLiquidStakeTestingEnv(
 		testingEnvOptions{
 			"TestDoWithdrawInsuranceCommission",
 			3,
-			tenPercentFeeRate,
+			TenPercentFeeRate,
 			nil,
 			onePower,
 			nil,
@@ -978,7 +978,7 @@ func (suite *KeeperTestSuite) TestDoWithdrawInsuranceCommission() {
 func (suite *KeeperTestSuite) TestDoWithdrawInsuranceCommissionFail() {
 	valAddrs, _ := suite.CreateValidators(
 		[]int64{onePower, onePower, onePower},
-		tenPercentFeeRate,
+		TenPercentFeeRate,
 		nil,
 	)
 	suite.fundAccount(suite.ctx, fundingAccount, types.ChunkSize.MulRaw(500))
@@ -989,7 +989,7 @@ func (suite *KeeperTestSuite) TestDoWithdrawInsuranceCommissionFail() {
 		providers,
 		valAddrs,
 		providerBalances,
-		tenPercentFeeRate,
+		TenPercentFeeRate,
 		nil,
 	)
 	tcs := []struct {
@@ -1028,7 +1028,7 @@ func (suite *KeeperTestSuite) TestDoWithdrawInsuranceCommissionFail() {
 func (suite *KeeperTestSuite) TestDoDepositInsurance() {
 	validators, _ := suite.CreateValidators(
 		[]int64{1, 1, 1},
-		tenPercentFeeRate,
+		TenPercentFeeRate,
 		nil,
 	)
 	suite.fundAccount(suite.ctx, fundingAccount, types.ChunkSize.MulRaw(500))
@@ -1039,7 +1039,7 @@ func (suite *KeeperTestSuite) TestDoDepositInsurance() {
 		providers,
 		validators,
 		[]sdk.Coin{oneInsurance, oneInsurance, oneInsurance},
-		tenPercentFeeRate,
+		TenPercentFeeRate,
 		nil,
 	) // all providers still have 100 acanto after provide insurance
 
@@ -1057,7 +1057,7 @@ func (suite *KeeperTestSuite) TestDoDepositInsurance() {
 func (suite *KeeperTestSuite) TestDoDepositInsuranceFail() {
 	valAddrs, _ := suite.CreateValidators(
 		[]int64{onePower, onePower, onePower},
-		tenPercentFeeRate,
+		TenPercentFeeRate,
 		nil,
 	)
 	suite.fundAccount(suite.ctx, fundingAccount, types.ChunkSize.MulRaw(500))
@@ -1068,7 +1068,7 @@ func (suite *KeeperTestSuite) TestDoDepositInsuranceFail() {
 		providers,
 		valAddrs,
 		providerBalances,
-		tenPercentFeeRate,
+		TenPercentFeeRate,
 		nil,
 	)
 	tcs := []struct {
@@ -1120,12 +1120,12 @@ func (suite *KeeperTestSuite) TestRankInsurances() {
 		testingEnvOptions{
 			"TestRankInsurances",
 			3,
-			tenPercentFeeRate,
+			TenPercentFeeRate,
 			nil,
 			onePower,
 			nil,
 			3,
-			tenPercentFeeRate,
+			TenPercentFeeRate,
 			nil,
 			3,
 			types.ChunkSize.MulRaw(500),
@@ -1195,12 +1195,12 @@ func (suite *KeeperTestSuite) TestEndBlocker() {
 		testingEnvOptions{
 			"TestEndBlocker",
 			3,
-			tenPercentFeeRate,
+			TenPercentFeeRate,
 			nil,
 			onePower,
 			nil,
 			3,
-			tenPercentFeeRate,
+			TenPercentFeeRate,
 			nil,
 			3,
 			types.ChunkSize.MulRaw(500),
@@ -1248,7 +1248,7 @@ func (suite *KeeperTestSuite) TestEndBlocker() {
 	_, oneInsurance := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
 	newValAddrs, _ := suite.CreateValidators(
 		[]int64{onePower, onePower, onePower},
-		tenPercentFeeRate,
+		TenPercentFeeRate,
 		nil,
 	)
 	newProviders, newProviderBalances := suite.AddTestAddrsWithFunding(fundingAccount, 3, oneInsurance.Amount)
@@ -1369,19 +1369,19 @@ func (suite *KeeperTestSuite) TestPairedChunkTombstonedAndRedelegated() {
 		testingEnvOptions{
 			"TestPairedChunkTombstonedAndRedelegated",
 			3,
-			tenPercentFeeRate,
+			TenPercentFeeRate,
 			nil,
 			onePower,
 			nil,
 			10,
-			tenPercentFeeRate,
+			TenPercentFeeRate,
 			nil,
 			3,
 			types.ChunkSize.MulRaw(500),
 		},
 	)
 	unitDelegationRewardPerRewardEpoch, _ := sdk.NewIntFromString("29999880000479750000")
-	unitInsuranceCommissionPerRewardEpoch, _ := suite.getUnitDistribution(unitDelegationRewardPerRewardEpoch, tenPercentFeeRate)
+	unitInsuranceCommissionPerRewardEpoch, _ := suite.getUnitDistribution(unitDelegationRewardPerRewardEpoch, TenPercentFeeRate)
 
 	suite.ctx = suite.advanceHeight(suite.ctx, 1, "liquid staking started")
 	fmt.Println(suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx))
@@ -1562,7 +1562,7 @@ func (suite *KeeperTestSuite) TestPairedChunkTombstonedAndUnpaired() {
 		},
 	)
 	unitDelegationRewardPerRewardEpoch, _ := sdk.NewIntFromString("29999880000479750000")
-	unitInsuranceCommissionPerRewardEpoch, _ := suite.getUnitDistribution(unitDelegationRewardPerRewardEpoch, tenPercentFeeRate)
+	unitInsuranceCommissionPerRewardEpoch, _ := suite.getUnitDistribution(unitDelegationRewardPerRewardEpoch, TenPercentFeeRate)
 
 	suite.ctx = suite.advanceHeight(suite.ctx, 1, "liquid staking started")
 	fmt.Println(suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx))
@@ -1957,12 +1957,12 @@ func (suite *KeeperTestSuite) TestUnpairingForUnstakingChunkTombstoned() {
 		testingEnvOptions{
 			"TestUnpairingForUnstakingChunkTombstoned",
 			3,
-			tenPercentFeeRate,
+			TenPercentFeeRate,
 			nil,
 			onePower,
 			nil,
 			3,
-			tenPercentFeeRate,
+			TenPercentFeeRate,
 			nil,
 			3,
 			types.ChunkSize.MulRaw(500),
@@ -1995,7 +1995,7 @@ func (suite *KeeperTestSuite) TestUnpairingForUnstakingChunkTombstoned() {
 
 	// 29999994 + 14999997(1 / num paired chunks)
 	unitDelegationRewardPerRewardEpoch, _ := sdk.NewIntFromString("44999991000000000000")
-	_, pureUnitRewardPerRewardEpoch := suite.getUnitDistribution(unitDelegationRewardPerRewardEpoch, tenPercentFeeRate)
+	_, pureUnitRewardPerRewardEpoch := suite.getUnitDistribution(unitDelegationRewardPerRewardEpoch, TenPercentFeeRate)
 
 	var pairedInsuranceBalanceAfterUnstakingStarted sdk.Coin
 	var pairedInsuranceCommissionAfterUnstakingStarted sdk.Coin
@@ -2188,7 +2188,7 @@ func (suite *KeeperTestSuite) TestCumulativePenaltyByMultipleDownTimeSlashingAnd
 			// Let's create 2 chunk and 2 insurance
 			oneChunk, oneInsurance := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
 			providers, providerBalances := suite.AddTestAddrsWithFunding(fundingAccount, 2, oneInsurance.Amount)
-			suite.provideInsurances(suite.ctx, providers, valAddrs, providerBalances, tenPercentFeeRate, nil)
+			suite.provideInsurances(suite.ctx, providers, valAddrs, providerBalances, TenPercentFeeRate, nil)
 			delegators, delegatorBalances := suite.AddTestAddrsWithFunding(fundingAccount, 2, oneChunk.Amount)
 			pairedChunks := suite.liquidStakes(suite.ctx, delegators, delegatorBalances)
 			suite.ctx = suite.ctx.WithBlockHeight(suite.ctx.BlockHeight() + 1)
@@ -2279,7 +2279,7 @@ func (suite *KeeperTestSuite) TestCumulativePenaltyByMultipleDownTimeSlashingAnd
 }
 
 func (suite *KeeperTestSuite) TestDynamicFee() {
-	fixedInsuranceFeeRate := tenPercentFeeRate
+	fixedInsuranceFeeRate := TenPercentFeeRate
 	tcs := []struct {
 		name                     string
 		numVals                  int
@@ -2325,7 +2325,7 @@ func (suite *KeeperTestSuite) TestDynamicFee() {
 				testingEnvOptions{
 					tc.name,
 					tc.numVals,
-					tenPercentFeeRate,
+					TenPercentFeeRate,
 					nil,
 					onePower,
 					nil,
@@ -2349,7 +2349,7 @@ func (suite *KeeperTestSuite) TestDynamicFee() {
 			}
 			beforeNas := suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
 			unitDelegationRewardPerRewardEpoch, _ := sdk.NewIntFromString(tc.unitDelegationReward)
-			_, pureUnitRewardPerRewardEpoch := suite.getUnitDistribution(unitDelegationRewardPerRewardEpoch, tenPercentFeeRate)
+			_, pureUnitRewardPerRewardEpoch := suite.getUnitDistribution(unitDelegationRewardPerRewardEpoch, TenPercentFeeRate)
 			suite.ctx = suite.advanceEpoch(suite.ctx)
 			suite.ctx = suite.advanceHeight(suite.ctx, 1, "got rewards and dynamic fee is charged")
 			nas := suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
@@ -2369,12 +2369,12 @@ func (suite *KeeperTestSuite) TestCalcDiscountRate() {
 		testingEnvOptions{
 			"TestCalcDiscountRate",
 			3,
-			tenPercentFeeRate,
+			TenPercentFeeRate,
 			nil,
 			onePower,
 			nil,
 			3,
-			tenPercentFeeRate,
+			TenPercentFeeRate,
 			nil,
 			1,
 			types.ChunkSize.MulRaw(500),
@@ -2416,12 +2416,12 @@ func (suite *KeeperTestSuite) TestDoClaimDiscountedReward() {
 		testingEnvOptions{
 			"TestDoClaimDiscountedReward",
 			3,
-			tenPercentFeeRate,
+			TenPercentFeeRate,
 			nil,
 			onePower,
 			nil,
 			10,
-			tenPercentFeeRate,
+			TenPercentFeeRate,
 			nil,
 			10,
 			types.ChunkSize.MulRaw(500),
@@ -2518,12 +2518,12 @@ func (suite *KeeperTestSuite) TestDoClaimDiscountedRewardFail() {
 		testingEnvOptions{
 			"TestDoClaimDiscountedRewardFail",
 			3,
-			tenPercentFeeRate,
+			TenPercentFeeRate,
 			nil,
 			onePower,
 			nil,
 			3,
-			tenPercentFeeRate,
+			TenPercentFeeRate,
 			nil,
 			1,
 			types.ChunkSize.MulRaw(500),
@@ -2582,12 +2582,12 @@ func (suite *KeeperTestSuite) TestChunkPositiveBalanceBeforeEpoch() {
 		testingEnvOptions{
 			"TestChunkPositiveBalanceBeforeEpoch",
 			3,
-			tenPercentFeeRate,
+			TenPercentFeeRate,
 			nil,
 			onePower,
 			nil,
 			3,
-			tenPercentFeeRate,
+			TenPercentFeeRate,
 			nil,
 			3,
 			types.ChunkSize.MulRaw(500),
@@ -2612,7 +2612,7 @@ func (suite *KeeperTestSuite) TestChunkPositiveBalanceBeforeEpoch() {
 	originReardModuleAccBalance, _ := sdk.NewIntFromString("161999352002591325000")
 	nas := suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
 	{
-		additionalCommissions := coin.Amount.ToDec().Mul(tenPercentFeeRate).TruncateInt()
+		additionalCommissions := coin.Amount.ToDec().Mul(TenPercentFeeRate).TruncateInt()
 		suite.Equal(
 			additionalCommissions.String(),
 			nas.TotalInsuranceCommissions.Sub(originTotalInsuranceCommissions).String(),
@@ -2633,12 +2633,12 @@ func (suite *KeeperTestSuite) TestRePairChunkWhichGotWithdrawInsuranceRequest() 
 		testingEnvOptions{
 			"TestRePairChunkWhichGotWithdrawInsuranceRequest",
 			3,
-			tenPercentFeeRate,
+			TenPercentFeeRate,
 			nil,
 			onePower,
 			nil,
 			3,
-			tenPercentFeeRate,
+			TenPercentFeeRate,
 			nil,
 			1,
 			types.ChunkSize.MulRaw(500),

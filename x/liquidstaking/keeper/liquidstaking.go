@@ -763,7 +763,7 @@ func (k Keeper) DoCancelProvideInsurance(ctx sdk.Context, msg *types.MsgCancelPr
 // DoWithdrawInsurance withdraws insurance immediately if it is unpaired.
 // If it is paired then it will be queued and unpaired at the epoch.
 func (k Keeper) DoWithdrawInsurance(ctx sdk.Context, msg *types.MsgWithdrawInsurance) (
-	withdrawnInsurance types.Insurance,
+	insurance types.Insurance,
 	withdrawRequest types.WithdrawInsuranceRequest,
 	err error,
 ) {

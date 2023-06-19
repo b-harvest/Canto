@@ -82,6 +82,7 @@ func ChunksInvariant(k Keeper) sdk.Invariant {
 				// must have paired insurance
 				if chunk.PairedInsuranceId == types.Empty {
 					msg += fmt.Sprintf("paired chunk(id: %d) have empty paired insurance\n", chunk.Id)
+					brokenCount++
 					return false, nil
 				}
 				insurance, found := k.GetInsurance(ctx, chunk.PairedInsuranceId)
