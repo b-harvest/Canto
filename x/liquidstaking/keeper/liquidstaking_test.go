@@ -2580,7 +2580,7 @@ func (suite *KeeperTestSuite) TestDoClaimDiscountedRewardFail() {
 func (suite *KeeperTestSuite) TestChunkPositiveBalanceBeforeEpoch() {
 	env := suite.setupLiquidStakeTestingEnv(
 		testingEnvOptions{
-			"TestDoClaimDiscountedReward",
+			"TestChunkPositiveBalanceBeforeEpoch",
 			3,
 			tenPercentFeeRate,
 			nil,
@@ -2624,6 +2624,51 @@ func (suite *KeeperTestSuite) TestChunkPositiveBalanceBeforeEpoch() {
 			"reward module account balance should be increased by 90% of the sent coins",
 		)
 	}
+}
+
+// TestRePairChunkWhichGotWithdrawInsuranceRequest tests scenario where a chunk starts unpairing
+// at epoch by handling withdraw insurance request and then re-pair at current epoch with another insurance.
+func (suite *KeeperTestSuite) TestRePairChunkWhichGotWithdrawInsuranceRequest() {
+	env := suite.setupLiquidStakeTestingEnv(
+		testingEnvOptions{
+			"TestRePairChunkWhichGotWithdrawInsuranceRequest",
+			3,
+			tenPercentFeeRate,
+			nil,
+			onePower,
+			nil,
+			3,
+			tenPercentFeeRate,
+			nil,
+			1,
+			types.ChunkSize.MulRaw(500),
+		},
+	)
+	chunkBeforeRePair := env.pairedChunks[0]
+	toBeWithdrawn := env.insurances[0].Id
+	_, req, err := suite.app.LiquidStakingKeeper.DoWithdrawInsurance(
+		suite.ctx,
+		types.NewMsgWithdrawInsurance(
+			env.providers[0].String(),
+			env.insurances[0].Id,
+		),
+	)
+	suite.NoError(err)
+	suite.Equal(toBeWithdrawn, req.InsuranceId)
+
+	suite.ctx = suite.advanceEpoch(suite.ctx)
+	suite.ctx = suite.advanceHeight(suite.ctx, 1, "liquid staking endblocker is triggered")
+	chunkAfterRePair, _ := suite.app.LiquidStakingKeeper.GetChunk(suite.ctx, chunkBeforeRePair.Id)
+	suite.NotEqual(toBeWithdrawn, chunkAfterRePair.PairedInsuranceId)
+	suite.Equal(toBeWithdrawn, chunkAfterRePair.UnpairingInsuranceId)
+
+	suite.ctx = suite.advanceEpoch(suite.ctx)
+	suite.ctx = suite.advanceHeight(suite.ctx, 1, "liquid staking endblocker is triggered")
+
+	withdrawnInsurance, _ := suite.app.LiquidStakingKeeper.GetInsurance(suite.ctx, toBeWithdrawn)
+	chunkAfterRePair, _ = suite.app.LiquidStakingKeeper.GetChunk(suite.ctx, chunkBeforeRePair.Id)
+	suite.Equal(types.INSURANCE_STATUS_UNPAIRED, withdrawnInsurance.Status)
+	suite.Equal(types.Empty, chunkAfterRePair.UnpairingInsuranceId, "unpairing insurance id should be cleared")
 }
 
 func (suite *KeeperTestSuite) downTimeSlashing(
