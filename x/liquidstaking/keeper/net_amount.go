@@ -91,8 +91,8 @@ func (k Keeper) GetNetAmountState(ctx sdk.Context) (nas types.NetAmountState) {
 		TotalUnpairingInsuranceTokens:      totalUnpairingInsuranceTokens,
 		TotalUnbondingChunksBalance:        totalUnbondingChunksBalance.TruncateInt(),
 	}
-	nas.MintRate = nas.CalcMintRate()
 	nas.NetAmount = nas.CalcNetAmount(k.bankKeeper.GetBalance(ctx, types.RewardPool, bondDenom).Amount)
+	nas.MintRate = nas.CalcMintRate()
 	nas.RewardModuleAccBalance = k.bankKeeper.GetBalance(ctx, types.RewardPool, bondDenom).Amount
 	nas.FeeRate, nas.UtilizationRatio = k.CalcDynamicFeeRate(ctx)
 	nas.RemainingChunkSlots = k.GetAvailableChunkSlots(ctx)

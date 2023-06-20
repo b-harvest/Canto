@@ -345,7 +345,7 @@ func (suite *KeeperTestSuite) TestLiquidStakeWithAdvanceBlocks() {
 			RewardModuleAccBalance:             sdk.ZeroInt(),
 			FeeRate:                            sdk.ZeroDec(),
 			UtilizationRatio:                   sdk.MustNewDecFromStr("0.005999999856000003"),
-			RemainingChunkSlots:                sdk.ZeroInt(),
+			RemainingChunkSlots:                sdk.NewInt(47),
 			DiscountRate:                       sdk.ZeroDec(),
 			TotalDelShares:                     currentLiquidatedTokens.ToDec(),
 			TotalRemainingRewards:              sdk.ZeroDec(),
@@ -429,6 +429,7 @@ func (suite *KeeperTestSuite) TestLiquidUnstakeWithAdvanceBlocks() {
 			RewardModuleAccBalance:             sdk.ZeroInt(),
 			FeeRate:                            sdk.ZeroDec(),
 			UtilizationRatio:                   sdk.MustNewDecFromStr("0.005999999856000003"),
+			RemainingChunkSlots:                sdk.NewInt(47),
 			DiscountRate:                       sdk.ZeroDec(),
 			TotalDelShares:                     currentLiquidatedTokens.ToDec(),
 			TotalRemainingRewards:              sdk.ZeroDec(),
@@ -2801,6 +2802,7 @@ func (suite *KeeperTestSuite) getUnitDistribution(
 }
 
 func (suite *KeeperTestSuite) calcTotalInsuranceCommissions(status types.InsuranceStatus) (totalCommission sdk.Int) {
+	totalCommission = sdk.ZeroInt()
 	suite.app.LiquidStakingKeeper.IterateAllInsurances(suite.ctx, func(insurance types.Insurance) (bool, error) {
 		if insurance.Status == status {
 			commission := suite.app.BankKeeper.GetBalance(suite.ctx, insurance.FeePoolAddress(), suite.denom)

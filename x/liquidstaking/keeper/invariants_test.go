@@ -43,7 +43,7 @@ func (suite *KeeperTestSuite) TestNetAmountInvariant() {
 		RewardModuleAccBalance:             sdk.MustNewDecFromStr("2429970840349915725000").TruncateInt(),
 		FeeRate:                            sdk.ZeroDec(),
 		UtilizationRatio:                   sdk.MustNewDecFromStr("0.001999951953154277"),
-		RemainingChunkSlots:                sdk.ZeroInt(),
+		RemainingChunkSlots:                sdk.NewInt(49),
 		DiscountRate:                       sdk.MustNewDecFromStr("0.009719883361399663"),
 		TotalDelShares:                     types.ChunkSize.ToDec(),
 		TotalRemainingRewards:              sdk.ZeroDec(),
@@ -52,7 +52,7 @@ func (suite *KeeperTestSuite) TestNetAmountInvariant() {
 		TotalInsuranceTokens:               oneInsurance.Amount,
 		TotalPairedInsuranceTokens:         oneInsurance.Amount,
 		TotalUnpairingInsuranceTokens:      sdk.ZeroInt(),
-		TotalRemainingInsuranceCommissions: sdk.ZeroDec(),
+		TotalRemainingInsuranceCommissions: sdk.MustNewDecFromStr("269996760038879525000"),
 	}))
 
 	// forcefully make net amount zero
