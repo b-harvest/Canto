@@ -1318,32 +1318,8 @@ func (k Keeper) handlePairedChunk(ctx sdk.Context, chunk types.Chunk) error {
 		k.startUnpairing(ctx, pairedInsurance, chunk)
 	}
 
-	// TODO: 삭제해야할 로직. 여기서 일괄적으로 chunk와 insurance의 상태를 변경해버리면,
-	// 변경되는 chunk와 insurance는 의례 거쳤어야 할 패널티 커버 과정을 건너 뛰어버린다.
-	// 커버를 다 할 수 있는 상황이면 그나마 괜찮은데, 커버를 못하는 상황에서 패널티 커버가 스킵되면
-	// chunk의 경우 Unbonding 을 거쳐야하는데 그 과정이 생략되어 버린다.
-	// 이후 rank에서 멀쩡한 chunk 취급을 받을 가능성도 높아져 버린다.
 	if err := k.IsValidValidator(ctx, validator, found); err != nil {
-		// Find all insurances which have same validator with this
-		var invalidInsurances []types.Insurance
-		if err = k.IterateAllInsurances(ctx, func(insurance types.Insurance) (bool, error) {
-			if insurance.Status != types.INSURANCE_STATUS_PAIRED {
-				return false, nil
-			}
-			if insurance.GetValidator().Equals(pairedInsurance.GetValidator()) {
-				invalidInsurances = append(invalidInsurances, insurance)
-			}
-			return false, nil
-		}); err != nil {
-			return err
-		}
-		for _, insurance := range invalidInsurances {
-			chunk, found := k.GetChunk(ctx, insurance.ChunkId)
-			if !found {
-				return sdkerrors.Wrapf(types.ErrNotFoundChunk, "chunk id: %d", insurance.ChunkId)
-			}
-			k.startUnpairing(ctx, insurance, chunk)
-		}
+		k.startUnpairing(ctx, pairedInsurance, chunk)
 	}
 
 	unpairingInsurance, found := k.GetInsurance(ctx, chunk.UnpairingInsuranceId)

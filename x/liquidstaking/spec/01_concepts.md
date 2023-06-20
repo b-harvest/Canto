@@ -67,12 +67,15 @@ The fee is calculated as follows: `fee = (delegation reward - insurance commissi
 * if softCap <= u <= optimal then, **fee rate =** `r0 + ((u - softcap) / (optimal - softcap) x slope1)`
 * if optimal < u <= hardCap then, **fee rate =** `r0 + slope1 + ((min(u, hardcap) - optimal) / (hardcap - optimal) x slope2)`
 
-An explanation of the parameters used in the above formula can be found in [](08_params.md).
+An explanation of the parameters used in the above formula can be found in [](08_params.md). 
 
-Fee is burned and the rest of the delegation reward goes to the reward pool.
+Fee rate is calculated at the beginning of the epoch and applied to every chunk delegation rewards.
+Calculated fee with fee rate is burned and the rest of the delegation reward goes to the reward pool.
 
-## Reward withdrawal 
+## Reward withdrawal at discounted price
 
 The rewards accumulated on the **reward module account** can be withdrawn by anyone who has lsToken, at a discounted price.
 
 The discount rate is calculated as follows: `discount rate = reward module account's balance / (num paired chunks * chunk size)`
+
+The cap is 3% so the discount rate cannot exceed 3%.
