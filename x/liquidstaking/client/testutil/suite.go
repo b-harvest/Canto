@@ -146,6 +146,7 @@ func (suite *IntegrationTestSuite) TestLiquidStaking() {
 		FeeRate:                            sdk.ZeroDec(),
 		UtilizationRatio:                   sdk.MustNewDecFromStr("0.0004"),
 		RemainingChunkSlots:                sdk.NewInt(498),
+		NumPairedChunks:                    sdk.NewInt(2),
 		DiscountRate:                       sdk.ZeroDec(),
 		TotalDelShares:                     types.ChunkSize.MulRaw(2).ToDec(),
 		TotalRemainingRewards:              sdk.ZeroDec(),
