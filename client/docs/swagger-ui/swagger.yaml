@@ -178,9 +178,7 @@ paths:
         - name: pagination.reverse
           description: >-
             reverse is set to true if results are to be returned in the
-            descending
-
-            order.
+            descending order.
 
 
             Since: cosmos-sdk 0.43
@@ -384,9 +382,7 @@ paths:
         - name: pagination.reverse
           description: >-
             reverse is set to true if results are to be returned in the
-            descending
-
-            order.
+            descending order.
 
 
             Since: cosmos-sdk 0.43
@@ -672,9 +668,7 @@ paths:
                         type: string
                         title: >-
                           // usage_incentives defines the proportion of the
-                          minted minted_denom that
-
-                          is
+                          minted minted_denom that is
 
                           // to be allocated to the incentives module address
 
@@ -1016,63 +1010,68 @@ paths:
                 items:
                   type: object
                   properties:
-                    id:
+                    chunk:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uint64
+                          title: Id of the chunk
+                        paired_insurance_id:
+                          type: string
+                          format: uint64
+                          title: Id of Paired insurance, 0 means no insurance
+                        unpairing_insurance_id:
+                          type: string
+                          format: uint64
+                        status:
+                          title: Status of the chunk
+                          type: string
+                          enum:
+                            - CHUNK_STATUS_UNSPECIFIED
+                            - CHUNK_STATUS_PAIRING
+                            - CHUNK_STATUS_PAIRED
+                            - CHUNK_STATUS_UNPAIRING
+                            - CHUNK_STATUS_UNPAIRING_FOR_UNSTAKING
+                          default: CHUNK_STATUS_UNSPECIFIED
+                          description: >-
+                            ChunkStatus defines the status of the chunk.
+
+                             - CHUNK_STATUS_PAIRING: This status indicates that the chunk is ready to be paired with an
+                            insurance.
+                             - CHUNK_STATUS_PAIRED: A chunk is paired with an insurance that has the lowest fee rate.
+                            The fee rate is determined by the sum of the
+                            insurance fee rate set by
+
+                            the insurance provider and the commission fee rate
+                            set by the validator
+
+                            designated by the insurance provider.
+                             - CHUNK_STATUS_UNPAIRING: A paired chunk enters this status when paired insurance is started to be
+                            withdrawn or is insufficient (meaning the insurance
+                            balance is below the
+
+                            minimum requirement to be considered valid
+                            insurance) or the validator of
+
+                            the insurance becomes tombstoned.
+                             - CHUNK_STATUS_UNPAIRING_FOR_UNSTAKING: When a delegator (also known as a liquid staker) sends a MsgLiquidUnstake,
+                            it is queued as a PendingLiquidUnstake. At the end
+                            of the epoch,
+
+                            the actual undelegation is triggered and the chunk
+                            enters this state.
+
+                            Once the unbonding period is over in next epoch, the
+                            staked tokens are
+
+                            returned to the delegator's account and the
+                            associated chunk object is
+
+                            removed.
+                      description: Chunk defines the chunk of the module.
+                    derived_address:
                       type: string
-                      format: uint64
-                      title: Id of the chunk
-                    paired_insurance_id:
-                      type: string
-                      format: uint64
-                      title: Id of Paired insurance, 0 means no insurance
-                    unpairing_insurance_id:
-                      type: string
-                      format: uint64
-                    status:
-                      title: Status of the chunk
-                      type: string
-                      enum:
-                        - CHUNK_STATUS_UNSPECIFIED
-                        - CHUNK_STATUS_PAIRING
-                        - CHUNK_STATUS_PAIRED
-                        - CHUNK_STATUS_UNPAIRING
-                        - CHUNK_STATUS_UNPAIRING_FOR_UNSTAKING
-                      default: CHUNK_STATUS_UNSPECIFIED
-                      description: >-
-                        ChunkStatus defines the status of the chunk.
-
-                         - CHUNK_STATUS_PAIRING: This status indicates that the chunk is ready to be paired with an
-                        insurance.
-                         - CHUNK_STATUS_PAIRED: A chunk is paired with an insurance that has the lowest fee rate.
-                        The fee rate is determined by the sum of the insurance
-                        fee rate set by
-
-                        the insurance provider and the commission fee rate set
-                        by the validator
-
-                        designated by the insurance provider.
-                         - CHUNK_STATUS_UNPAIRING: A paired chunk enters this status when paired insurance is started to be
-                        withdrawn or is insufficient (meaning the insurance
-                        balance is below the
-
-                        minimum requirement to be considered valid insurance) or
-                        the validator of
-
-                        the insurance becomes tombstoned.
-                         - CHUNK_STATUS_UNPAIRING_FOR_UNSTAKING: When a delegator (also known as a liquid staker) sends a MsgLiquidUnstake,
-                        it is queued as a PendingLiquidUnstake. At the end of
-                        the epoch,
-
-                        the actual undelegation is triggered and the chunk
-                        enters this state.
-
-                        Once the unbonding period is over in next epoch, the
-                        staked tokens are
-
-                        returned to the delegator's account and the associated
-                        chunk object is
-
-                        removed.
-                  description: Chunk defines the chunk of the module.
               pagination:
                 type: object
                 properties:
@@ -1217,9 +1216,7 @@ paths:
         - name: pagination.reverse
           description: >-
             reverse is set to true if results are to be returned in the
-            descending
-
-            order.
+            descending order.
 
 
             Since: cosmos-sdk 0.43
@@ -1242,7 +1239,7 @@ paths:
           schema:
             type: object
             properties:
-              infos:
+              unpairing_for_unstaking_chunk_infos:
                 type: array
                 items:
                   type: object
@@ -1367,9 +1364,7 @@ paths:
         - name: pagination.reverse
           description: >-
             reverse is set to true if results are to be returned in the
-            descending
-
-            order.
+            descending order.
 
 
             Since: cosmos-sdk 0.43
@@ -1448,6 +1443,8 @@ paths:
 
                       removed.
                 description: Chunk defines the chunk of the module.
+              derived_address:
+                type: string
         default:
           description: An unexpected error response.
           schema:
@@ -1492,7 +1489,7 @@ paths:
           schema:
             type: object
             properties:
-              info:
+              unpairing_for_unstaking_chunk_info:
                 type: object
                 properties:
                   chunk_id:
@@ -1598,79 +1595,86 @@ paths:
                 items:
                   type: object
                   properties:
-                    id:
+                    insurance:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uint64
+                          title: Id of the insurance
+                        validator_address:
+                          type: string
+                          title: Address of the validator
+                        provider_address:
+                          type: string
+                          title: Address of the insurance provider
+                        fee_rate:
+                          type: string
+                          title: Fee rate of the insurance
+                        chunk_id:
+                          type: string
+                          format: uint64
+                          title: Id of the chunk for which the insurance has a duty
+                        status:
+                          title: Status of the insurance
+                          type: string
+                          enum:
+                            - INSURANCE_STATUS_UNSPECIFIED
+                            - INSURANCE_STATUS_PAIRING
+                            - INSURANCE_STATUS_PAIRED
+                            - INSURANCE_STATUS_UNPAIRING
+                            - INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAWAL
+                            - INSURANCE_STATUS_UNPAIRED
+                          default: INSURANCE_STATUS_UNSPECIFIED
+                          description: >-
+                            InsuranceStatus defines the status of the insurance.
+
+                             - INSURANCE_STATUS_PAIRING: This is the default status of an insurance when an insurance provider sends
+                            a MsgProvideInsurance. This status indicates that
+                            the insurance is ready to
+
+                            be paired with a chunk. When an empty slot is
+                            available and either
+
+                            msgLiquidStake is received or pairing chunks have
+                            been created in the
+
+                            recent epoch, the insurance with the lowest fee will
+                            be paired with the
+
+                            chunk. Once paired, the insurance contract can be
+                            cancelled using
+
+                            MsgCancelProvideInsurance.
+                             - INSURANCE_STATUS_PAIRED: An insurance is paired with a chunk. While the insurance is in this status,
+                            it serves as a form of protection for the chunk by
+                            insuring it against
+
+                            unexpected loss that may occur due to validator
+                            slashing. This ensures that
+
+                            the chunk remains same size and maximize its staking
+                            rewards.
+                             - INSURANCE_STATUS_UNPAIRING: A paired insurance enters this status when it no longer has enough balance
+                            to cover slashing penalties, when the validator is
+                            tombstoned, or
+
+                            when the paired chunk is started to be undelegated.
+
+                            At the next epoch, unpairing will be unpaired.
+                             - INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAWAL: A paired insurance enters this status when there are
+                            queued withdrawal insurance requests created by
+                            MsgWithdrawInsurance at the
+
+                            epoch.
+                             - INSURANCE_STATUS_UNPAIRED: Unpairing insurances from previous epoch enters this status.
+                            Unpaired insurance can be withdrawn immediately by
+                            MsgWithdrawInsurance.
+                      description: Insurance defines the insurance of the module.
+                    derived_address:
                       type: string
-                      format: uint64
-                      title: Id of the insurance
-                    validator_address:
+                    fee_pool_address:
                       type: string
-                      title: Address of the validator
-                    provider_address:
-                      type: string
-                      title: Address of the insurance provider
-                    fee_rate:
-                      type: string
-                      title: Fee rate of the insurance
-                    chunk_id:
-                      type: string
-                      format: uint64
-                      title: Id of the chunk for which the insurance has a duty
-                    status:
-                      title: Status of the insurance
-                      type: string
-                      enum:
-                        - INSURANCE_STATUS_UNSPECIFIED
-                        - INSURANCE_STATUS_PAIRING
-                        - INSURANCE_STATUS_PAIRED
-                        - INSURANCE_STATUS_UNPAIRING
-                        - INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAWAL
-                        - INSURANCE_STATUS_UNPAIRED
-                      default: INSURANCE_STATUS_UNSPECIFIED
-                      description: >-
-                        InsuranceStatus defines the status of the insurance.
-
-                         - INSURANCE_STATUS_PAIRING: This is the default status of an insurance when an insurance provider sends
-                        a MsgProvideInsurance. This status indicates that the
-                        insurance is ready to
-
-                        be paired with a chunk. When an empty slot is available
-                        and either
-
-                        msgLiquidStake is received or pairing chunks have been
-                        created in the
-
-                        recent epoch, the insurance with the lowest fee will be
-                        paired with the
-
-                        chunk. Once paired, the insurance contract can be
-                        cancelled using
-
-                        MsgCancelProvideInsurance.
-                         - INSURANCE_STATUS_PAIRED: An insurance is paired with a chunk. While the insurance is in this status,
-                        it serves as a form of protection for the chunk by
-                        insuring it against
-
-                        unexpected loss that may occur due to validator
-                        slashing. This ensures that
-
-                        the chunk remains same size and maximize its staking
-                        rewards.
-                         - INSURANCE_STATUS_UNPAIRING: A paired insurance enters this status when it no longer has enough balance
-                        to cover slashing penalties, when the validator is
-                        tombstoned, or
-
-                        when the paired chunk is started to be undelegated.
-
-                        At the next epoch, unpairing will be unpaired.
-                         - INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAWAL: A paired insurance enters this status when there are
-                        queued withdrawal insurance requests created by
-                        MsgWithdrawInsurance at the
-
-                        epoch.
-                         - INSURANCE_STATUS_UNPAIRED: Unpairing insurances from previous epoch enters this status.
-                        Unpaired insurance can be withdrawn immediately by
-                        MsgWithdrawInsurance.
-                  description: Insurance defines the insurance of the module.
               pagination:
                 type: object
                 properties:
@@ -1832,9 +1836,7 @@ paths:
         - name: pagination.reverse
           description: >-
             reverse is set to true if results are to be returned in the
-            descending
-
-            order.
+            descending order.
 
 
             Since: cosmos-sdk 0.43
@@ -1855,7 +1857,7 @@ paths:
           schema:
             type: object
             properties:
-              reqs:
+              withdraw_insurance_requests:
                 type: array
                 items:
                   type: object
@@ -1968,9 +1970,7 @@ paths:
         - name: pagination.reverse
           description: >-
             reverse is set to true if results are to be returned in the
-            descending
-
-            order.
+            descending order.
 
 
             Since: cosmos-sdk 0.43
@@ -2065,6 +2065,10 @@ paths:
                       Unpaired insurance can be withdrawn immediately by
                       MsgWithdrawInsurance.
                 description: Insurance defines the insurance of the module.
+              derived_address:
+                type: string
+              fee_pool_address:
+                type: string
         default:
           description: An unexpected error response.
           schema:
@@ -2105,7 +2109,7 @@ paths:
           schema:
             type: object
             properties:
-              req:
+              withdraw_insurance_request:
                 type: object
                 properties:
                   insurance_id:
@@ -2315,17 +2319,38 @@ paths:
 
                       last Epoch + all unbonding delegation tokens of unpairing
                       chunks
+                  total_liquid_tokens:
+                    type: string
+                    title: >-
+                      The token amount worth of all delegation shares of all
+                      paired chunks
+
+                      (slashing applied amount)
+                  reward_module_acc_balance:
+                    type: string
+                    title: Balance of reward module account
+                  fee_rate:
+                    type: string
+                    title: Fee rate applied when deduct module fee at epoch
+                  utilization_ratio:
+                    type: string
+                    title: Utilization ratio
+                  remaining_chunk_slots:
+                    type: string
+                    title: How many chunks which can be created left?
+                  discount_rate:
+                    type: string
+                    title: Discount rate applied when withdraw rewards
                   total_del_shares:
                     type: string
-                    title: Total shares of all paired chunks
+                    title: |-
+                      --- Chunk related fields
+                      Total shares of all paired chunks
                   total_remaining_rewards:
                     type: string
                     title: >-
                       The cumulative reward of all chunks delegations from the
                       last distribution
-                  total_remaining_insurance_commissions:
-                    type: string
-                    title: The cumulative commissions of all insurances
                   total_chunks_balance:
                     type: string
                     description: >-
@@ -2339,61 +2364,33 @@ paths:
 
                       balance of DerivedAddress(Chunk.Id) after un-bonding
                       period is finished.
-                  total_liquid_tokens:
-                    type: string
-                    title: >-
-                      The token amount worth of all delegation shares of all
-                      paired chunks
-
-                      (slashing applied amount)
-                  total_insurance_tokens:
-                    type: string
-                    title: >-
-                      The sum of all insurances' amount (=
-                      DerivedAddress(Insurance.Id).Balance)
-                  total_insurance_commissions:
-                    type: string
-                    title: The sum of all insurances' commissions
-                  total_paired_insurance_tokens:
-                    type: string
-                    title: |-
-                      The sum of all paired insurances' amount (=
-                      DerivedAddress(Insurance.Id).Balance)
-                  total_paired_insurance_commissions:
-                    type: string
-                    title: The sum of all paired insurances' commissions
-                  total_unpairing_insurance_tokens:
-                    type: string
-                    title: |-
-                      The sum of all unpairing insurances' amount (=
-                      DerivedAddress(Insurance.Id).Balance)
-                  total_unpairing_insurance_commissions:
-                    type: string
-                    title: The sum of all unpairing insurances' commissions
-                  total_unpaired_insurance_tokens:
-                    type: string
-                    title: |-
-                      The sum of all unpaired insurances' amount (=
-                      DerivedAddress(Insurance.Id).Balance)
-                  total_unpaired_insurance_commissions:
-                    type: string
-                    title: The sum of all unpaired insurances' commissions
-                  total_unbonding_balance:
+                  total_unbonding_chunks_balance:
                     type: string
                     title: >-
                       The sum of unbonding balance of all chunks in Unpairing
                       and
 
                       UnpairingForUnstaking
-                  reward_module_acc_balance:
+                  total_insurance_tokens:
                     type: string
-                    title: Balance of reward module account
-                  utilization_ratio:
+                    title: >-
+                      --- Insurance related fields
+
+                      The sum of all insurances' amount (=
+                      DerivedAddress(Insurance.Id).Balance)
+                  total_paired_insurance_tokens:
                     type: string
-                  discount_rate:
+                    title: |-
+                      The sum of all paired insurances' amount (=
+                      DerivedAddress(Insurance.Id).Balance)
+                  total_unpairing_insurance_tokens:
                     type: string
-                  fee_rate:
+                    title: |-
+                      The sum of all unpairing insurances' amount (=
+                      DerivedAddress(Insurance.Id).Balance)
+                  total_remaining_insurance_commissions:
                     type: string
+                    title: The cumulative commissions of all insurances
                 description: >-
                   NetAmountState is type for net amount raw data and mint rate,
                   This is a value
@@ -2867,9 +2864,7 @@ paths:
         BaseFee queries the base fee of the parent block of the current block,
 
         it's similar to feemarket module's method, but also checks london
-        hardfork
-
-        status.
+        hardfork status.
       operationId: BaseFee
       responses:
         '200':
@@ -4141,9 +4136,7 @@ paths:
                         type: string
                         title: >-
                           EIP-3675 (TheMerge) switch block (nil = no fork, 0 =
-                          already in merge
-
-                          proceedings)
+                          already in merge proceedings)
                     description: >-
                       ChainConfig defines the Ethereum ChainConfig parameters
                       using *sdk.Int values
@@ -4153,7 +4146,7 @@ paths:
                     type: boolean
                     description: >-
                       Allow unprotected transactions defines if replay-protected
-                      (i.e non EIP155
+                      (i.e non EIP155 
 
                       signed) transactions can be executed on the state machine.
                 title: Params defines the EVM module parameters
@@ -4577,7 +4570,7 @@ paths:
         - Query
   /ethermint/evm/v1/trace_block:
     get:
-      summary: |-
+      summary: >-
         TraceBlock implements the `debug_traceBlockByNumber` and
         `debug_traceBlockByHash` rpc api
       operationId: TraceBlock
@@ -4910,9 +4903,7 @@ paths:
         - name: trace_config.overrides.merge_fork_block
           description: >-
             EIP-3675 (TheMerge) switch block (nil = no fork, 0 = already in
-            merge
-
-            proceedings).
+            merge proceedings).
           in: query
           required: false
           type: string
@@ -5358,9 +5349,7 @@ paths:
         - name: trace_config.overrides.merge_fork_block
           description: >-
             EIP-3675 (TheMerge) switch block (nil = no fork, 0 = already in
-            merge
-
-            proceedings).
+            merge proceedings).
           in: query
           required: false
           type: string
@@ -5741,9 +5730,7 @@ paths:
                     type: string
                     title: >-
                       min_gas_price defines the minimum gas price value for
-                      cosmos and eth
-
-                      transactions
+                      cosmos and eth transactions
                   min_gas_multiplier:
                     type: string
                     title: >-
@@ -5953,9 +5940,7 @@ paths:
         - name: pagination.reverse
           description: >-
             reverse is set to true if results are to be returned in the
-            descending
-
-            order.
+            descending order.
 
 
             Since: cosmos-sdk 0.43
@@ -6773,9 +6758,7 @@ paths:
         - name: pagination.reverse
           description: >-
             reverse is set to true if results are to be returned in the
-            descending
-
-            order.
+            descending order.
 
 
             Since: cosmos-sdk 0.43
@@ -7923,9 +7906,7 @@ paths:
         - name: pagination.reverse
           description: >-
             reverse is set to true if results are to be returned in the
-            descending
-
-            order.
+            descending order.
 
 
             Since: cosmos-sdk 0.43
@@ -9778,9 +9759,7 @@ paths:
         - name: pagination.reverse
           description: >-
             reverse is set to true if results are to be returned in the
-            descending
-
-            order.
+            descending order.
 
 
             Since: cosmos-sdk 0.43
@@ -11382,9 +11361,7 @@ paths:
         - name: pagination.reverse
           description: >-
             reverse is set to true if results are to be returned in the
-            descending
-
-            order.
+            descending order.
 
 
             Since: cosmos-sdk 0.43
@@ -13203,9 +13180,7 @@ paths:
         - name: pagination.reverse
           description: >-
             reverse is set to true if results are to be returned in the
-            descending
-
-            order.
+            descending order.
 
 
             Since: cosmos-sdk 0.43
@@ -13835,9 +13810,7 @@ paths:
         - name: pagination.reverse
           description: >-
             reverse is set to true if results are to be returned in the
-            descending
-
-            order.
+            descending order.
 
 
             Since: cosmos-sdk 0.43
@@ -15299,9 +15272,7 @@ paths:
         - name: pagination.reverse
           description: >-
             reverse is set to true if results are to be returned in the
-            descending
-
-            order.
+            descending order.
 
 
             Since: cosmos-sdk 0.43
@@ -15762,9 +15733,7 @@ paths:
         - name: pagination.reverse
           description: >-
             reverse is set to true if results are to be returned in the
-            descending
-
-            order.
+            descending order.
 
 
             Since: cosmos-sdk 0.43
@@ -16598,9 +16567,7 @@ paths:
                       was set, its value is undefined otherwise
             description: >-
               QueryGrantsResponse is the response type for the
-              Query/Authorizations RPC
-
-              method.
+              Query/Authorizations RPC method.
         default:
           description: An unexpected error response.
           schema:
@@ -16802,9 +16769,7 @@ paths:
         - name: msg_type_url
           description: >-
             Optional, msg_type_url, when set, will query only grants matching
-            given msg
-
-            type.
+            given msg type.
           in: query
           required: false
           type: string
@@ -16857,9 +16822,7 @@ paths:
         - name: pagination.reverse
           description: >-
             reverse is set to true if results are to be returned in the
-            descending
-
-            order.
+            descending order.
 
 
             Since: cosmos-sdk 0.43
@@ -17071,9 +17034,9 @@ paths:
                   description: 'Since: cosmos-sdk 0.45.2'
                   title: >-
                     GrantAuthorization extends a grant with both the addresses
-                    of the grantee and
+                    of the grantee and granter.
 
-                    granter. It is used in genesis.proto and query.proto
+                    It is used in genesis.proto and query.proto
                 description: grants is a list of grants granted to the grantee.
               pagination:
                 description: pagination defines an pagination for the response.
@@ -17095,9 +17058,7 @@ paths:
                       was set, its value is undefined otherwise
             description: >-
               QueryGranteeGrantsResponse is the response type for the
-              Query/GranteeGrants
-
-              RPC method.
+              Query/GranteeGrants RPC method.
         default:
           description: An unexpected error response.
           schema:
@@ -17341,9 +17302,7 @@ paths:
         - name: pagination.reverse
           description: >-
             reverse is set to true if results are to be returned in the
-            descending
-
-            order.
+            descending order.
 
 
             Since: cosmos-sdk 0.43
@@ -17555,9 +17514,9 @@ paths:
                   description: 'Since: cosmos-sdk 0.45.2'
                   title: >-
                     GrantAuthorization extends a grant with both the addresses
-                    of the grantee and
+                    of the grantee and granter.
 
-                    granter. It is used in genesis.proto and query.proto
+                    It is used in genesis.proto and query.proto
                 description: grants is a list of grants granted by the granter.
               pagination:
                 description: pagination defines an pagination for the response.
@@ -17579,9 +17538,7 @@ paths:
                       was set, its value is undefined otherwise
             description: >-
               QueryGranterGrantsResponse is the response type for the
-              Query/GranterGrants
-
-              RPC method.
+              Query/GranterGrants RPC method.
         default:
           description: An unexpected error response.
           schema:
@@ -17825,9 +17782,7 @@ paths:
         - name: pagination.reverse
           description: >-
             reverse is set to true if results are to be returned in the
-            descending
-
-            order.
+            descending order.
 
 
             Since: cosmos-sdk 0.43
@@ -17964,9 +17919,7 @@ paths:
         - name: pagination.reverse
           description: >-
             reverse is set to true if results are to be returned in the
-            descending
-
-            order.
+            descending order.
 
 
             Since: cosmos-sdk 0.43
@@ -18040,7 +17993,7 @@ paths:
         - Query
   /cosmos/bank/v1beta1/denoms_metadata:
     get:
-      summary: |-
+      summary: >-
         DenomsMetadata queries the client metadata for all registered coin
         denominations.
       operationId: DenomsMetadata
@@ -18146,9 +18099,9 @@ paths:
                       was set, its value is undefined otherwise
             description: >-
               QueryDenomsMetadataResponse is the response type for the
-              Query/DenomsMetadata
+              Query/DenomsMetadata RPC
 
-              RPC method.
+              method.
         default:
           description: An unexpected error response.
           schema:
@@ -18221,9 +18174,7 @@ paths:
         - name: pagination.reverse
           description: >-
             reverse is set to true if results are to be returned in the
-            descending
-
-            order.
+            descending order.
 
 
             Since: cosmos-sdk 0.43
@@ -18315,9 +18266,9 @@ paths:
                   a basic token.
             description: >-
               QueryDenomMetadataResponse is the response type for the
-              Query/DenomMetadata
+              Query/DenomMetadata RPC
 
-              RPC method.
+              method.
         default:
           description: An unexpected error response.
           schema:
@@ -18455,9 +18406,9 @@ paths:
                       was set, its value is undefined otherwise
             description: >-
               QuerySpendableBalancesResponse defines the gRPC response structure
-              for
+              for querying
 
-              querying an account's spendable balances.
+              an account's spendable balances.
         default:
           description: An unexpected error response.
           schema:
@@ -18535,9 +18486,7 @@ paths:
         - name: pagination.reverse
           description: >-
             reverse is set to true if results are to be returned in the
-            descending
-
-            order.
+            descending order.
 
 
             Since: cosmos-sdk 0.43
@@ -18672,9 +18621,7 @@ paths:
         - name: pagination.reverse
           description: >-
             reverse is set to true if results are to be returned in the
-            descending
-
-            order.
+            descending order.
 
 
             Since: cosmos-sdk 0.43
@@ -19386,9 +19333,7 @@ paths:
         - name: pagination.reverse
           description: >-
             reverse is set to true if results are to be returned in the
-            descending
-
-            order.
+            descending order.
 
 
             Since: cosmos-sdk 0.43
@@ -19420,9 +19365,7 @@ paths:
                     type: string
                     description: >-
                       grantee is the address of the user being granted an
-                      allowance of another
-
-                      user's funds.
+                      allowance of another user's funds.
                   allowance:
                     description: allowance can be any of basic and filtered fee allowance.
                     type: object
@@ -19496,9 +19439,7 @@ paths:
                   context
             description: >-
               QueryAllowanceResponse is the response type for the
-              Query/Allowance RPC
-
-              method.
+              Query/Allowance RPC method.
         default:
           description: An unexpected error response.
           schema:
@@ -19699,9 +19640,7 @@ paths:
         - name: grantee
           description: >-
             grantee is the address of the user being granted an allowance of
-            another
-
-            user's funds.
+            another user's funds.
           in: path
           required: true
           type: string
@@ -19731,9 +19670,7 @@ paths:
                       type: string
                       description: >-
                         grantee is the address of the user being granted an
-                        allowance of another
-
-                        user's funds.
+                        allowance of another user's funds.
                     allowance:
                       description: >-
                         allowance can be any of basic and filtered fee
@@ -19828,9 +19765,7 @@ paths:
                       was set, its value is undefined otherwise
             description: >-
               QueryAllowancesResponse is the response type for the
-              Query/Allowances RPC
-
-              method.
+              Query/Allowances RPC method.
         default:
           description: An unexpected error response.
           schema:
@@ -20074,9 +20009,7 @@ paths:
         - name: pagination.reverse
           description: >-
             reverse is set to true if results are to be returned in the
-            descending
-
-            order.
+            descending order.
 
 
             Since: cosmos-sdk 0.43
@@ -20535,9 +20468,7 @@ paths:
         - name: pagination.reverse
           description: >-
             reverse is set to true if results are to be returned in the
-            descending
-
-            order.
+            descending order.
 
 
             Since: cosmos-sdk 0.43
@@ -21766,9 +21697,7 @@ paths:
         - name: pagination.reverse
           description: >-
             reverse is set to true if results are to be returned in the
-            descending
-
-            order.
+            descending order.
 
 
             Since: cosmos-sdk 0.43
@@ -22549,9 +22478,7 @@ paths:
         - name: pagination.reverse
           description: >-
             reverse is set to true if results are to be returned in the
-            descending
-
-            order.
+            descending order.
 
 
             Since: cosmos-sdk 0.43
@@ -23375,9 +23302,7 @@ paths:
         - name: pagination.reverse
           description: >-
             reverse is set to true if results are to be returned in the
-            descending
-
-            order.
+            descending order.
 
 
             Since: cosmos-sdk 0.43
@@ -23753,11 +23678,9 @@ paths:
                         bonded
 
                         in a block and may have signed a precommit or not. This
-                        in conjunction with
+                        in conjunction with the
 
-                        the `SignedBlocksWindow` param determines the index in
-                        the
-
+                        `SignedBlocksWindow` param determines the index in the
                         `MissedBlocksBitArray`.
                     jailed_until:
                       type: string
@@ -23769,12 +23692,10 @@ paths:
                       type: boolean
                       description: >-
                         Whether or not a validator has been tombstoned (killed
-                        out of validator
+                        out of validator set). It is set
 
-                        set). It is set once the validator commits an
-                        equivocation or for any other
-
-                        configured misbehiavor.
+                        once the validator commits an equivocation or for any
+                        other configured misbehiavor.
                     missed_blocks_counter:
                       type: string
                       format: int64
@@ -23893,9 +23814,7 @@ paths:
         - name: pagination.reverse
           description: >-
             reverse is set to true if results are to be returned in the
-            descending
-
-            order.
+            descending order.
 
 
             Since: cosmos-sdk 0.43
@@ -23933,10 +23852,9 @@ paths:
                       bonded
 
                       in a block and may have signed a precommit or not. This in
-                      conjunction with
+                      conjunction with the
 
-                      the `SignedBlocksWindow` param determines the index in the
-
+                      `SignedBlocksWindow` param determines the index in the
                       `MissedBlocksBitArray`.
                   jailed_until:
                     type: string
@@ -23948,12 +23866,10 @@ paths:
                     type: boolean
                     description: >-
                       Whether or not a validator has been tombstoned (killed out
-                      of validator
+                      of validator set). It is set
 
-                      set). It is set once the validator commits an equivocation
-                      or for any other
-
-                      configured misbehiavor.
+                      once the validator commits an equivocation or for any
+                      other configured misbehiavor.
                   missed_blocks_counter:
                     type: string
                     format: int64
@@ -24335,9 +24251,7 @@ paths:
         - name: pagination.reverse
           description: >-
             reverse is set to true if results are to be returned in the
-            descending
-
-            order.
+            descending order.
 
 
             Since: cosmos-sdk 0.43
@@ -24373,16 +24287,12 @@ paths:
                           type: string
                           description: >-
                             validator_src_address is the validator redelegation
-                            source operator
-
-                            address.
+                            source operator address.
                         validator_dst_address:
                           type: string
                           description: >-
                             validator_dst_address is the validator redelegation
-                            destination operator
-
-                            address.
+                            destination operator address.
                         entries:
                           type: array
                           items:
@@ -24410,7 +24320,6 @@ paths:
                                 description: >-
                                   shares_dst is the amount of
                                   destination-validator shares created by
-
                                   redelegation.
                             description: >-
                               RedelegationEntry defines a redelegation object
@@ -24452,7 +24361,6 @@ paths:
                                 description: >-
                                   shares_dst is the amount of
                                   destination-validator shares created by
-
                                   redelegation.
                             description: >-
                               RedelegationEntry defines a redelegation object
@@ -24752,9 +24660,7 @@ paths:
         - name: pagination.reverse
           description: >-
             reverse is set to true if results are to be returned in the
-            descending
-
-            order.
+            descending order.
 
 
             Since: cosmos-sdk 0.43
@@ -24813,9 +24719,7 @@ paths:
                             type: string
                             description: >-
                               initial_balance defines the tokens initially
-                              scheduled to receive at
-
-                              completion.
+                              scheduled to receive at completion.
                           balance:
                             type: string
                             description: >-
@@ -25097,9 +25001,7 @@ paths:
         - name: pagination.reverse
           description: >-
             reverse is set to true if results are to be returned in the
-            descending
-
-            order.
+            descending order.
 
 
             Since: cosmos-sdk 0.43
@@ -25129,9 +25031,7 @@ paths:
                       type: string
                       description: >-
                         operator_address defines the address of the validator's
-                        operator; bech
-
-                        encoded in JSON.
+                        operator; bech encoded in JSON.
                     consensus_pubkey:
                       type: object
                       properties:
@@ -25313,9 +25213,7 @@ paths:
                       type: boolean
                       description: >-
                         jailed defined whether the validator has been jailed
-                        from bonded status or
-
-                        not.
+                        from bonded status or not.
                     status:
                       description: >-
                         status is the validator status
@@ -25369,17 +25267,13 @@ paths:
                       format: int64
                       description: >-
                         unbonding_height defines, if unbonding, the height at
-                        which this validator
-
-                        has begun unbonding.
+                        which this validator has begun unbonding.
                     unbonding_time:
                       type: string
                       format: date-time
                       description: >-
                         unbonding_time defines, if unbonding, the min time for
-                        the validator to
-
-                        complete unbonding.
+                        the validator to complete unbonding.
                     commission:
                       description: commission defines the commission parameters.
                       type: object
@@ -25387,9 +25281,7 @@ paths:
                         commission_rates:
                           description: >-
                             commission_rates defines the initial commission
-                            rates to be used for
-
-                            creating a validator.
+                            rates to be used for creating a validator.
                           type: object
                           properties:
                             rate:
@@ -25401,16 +25293,13 @@ paths:
                               type: string
                               description: >-
                                 max_rate defines the maximum commission rate
-                                which validator can ever
-
-                                charge, as a fraction.
+                                which validator can ever charge, as a fraction.
                             max_change_rate:
                               type: string
                               description: >-
                                 max_change_rate defines the maximum daily
-                                increase of the validator
-
-                                commission, as a fraction.
+                                increase of the validator commission, as a
+                                fraction.
                         update_time:
                           type: string
                           format: date-time
@@ -25421,9 +25310,7 @@ paths:
                       type: string
                       description: >-
                         min_self_delegation is the validator's self declared
-                        minimum self
-
-                        delegation.
+                        minimum self delegation.
                   description: >-
                     Validator defines a validator, together with the total
                     amount of the
@@ -25713,9 +25600,7 @@ paths:
         - name: pagination.reverse
           description: >-
             reverse is set to true if results are to be returned in the
-            descending
-
-            order.
+            descending order.
 
 
             Since: cosmos-sdk 0.43
@@ -25743,9 +25628,7 @@ paths:
                     type: string
                     description: >-
                       operator_address defines the address of the validator's
-                      operator; bech
-
-                      encoded in JSON.
+                      operator; bech encoded in JSON.
                   consensus_pubkey:
                     type: object
                     properties:
@@ -25925,9 +25808,7 @@ paths:
                     type: boolean
                     description: >-
                       jailed defined whether the validator has been jailed from
-                      bonded status or
-
-                      not.
+                      bonded status or not.
                   status:
                     description: >-
                       status is the validator status
@@ -25981,17 +25862,13 @@ paths:
                     format: int64
                     description: >-
                       unbonding_height defines, if unbonding, the height at
-                      which this validator
-
-                      has begun unbonding.
+                      which this validator has begun unbonding.
                   unbonding_time:
                     type: string
                     format: date-time
                     description: >-
                       unbonding_time defines, if unbonding, the min time for the
-                      validator to
-
-                      complete unbonding.
+                      validator to complete unbonding.
                   commission:
                     description: commission defines the commission parameters.
                     type: object
@@ -25999,9 +25876,7 @@ paths:
                       commission_rates:
                         description: >-
                           commission_rates defines the initial commission rates
-                          to be used for
-
-                          creating a validator.
+                          to be used for creating a validator.
                         type: object
                         properties:
                           rate:
@@ -26013,16 +25888,12 @@ paths:
                             type: string
                             description: >-
                               max_rate defines the maximum commission rate which
-                              validator can ever
-
-                              charge, as a fraction.
+                              validator can ever charge, as a fraction.
                           max_change_rate:
                             type: string
                             description: >-
                               max_change_rate defines the maximum daily increase
-                              of the validator
-
-                              commission, as a fraction.
+                              of the validator commission, as a fraction.
                       update_time:
                         type: string
                         format: date-time
@@ -26033,9 +25904,7 @@ paths:
                     type: string
                     description: >-
                       min_self_delegation is the validator's self declared
-                      minimum self
-
-                      delegation.
+                      minimum self delegation.
                 description: >-
                   Validator defines a validator, together with the total amount
                   of the
@@ -26364,9 +26233,7 @@ paths:
                           type: string
                           description: >-
                             operator_address defines the address of the
-                            validator's operator; bech
-
-                            encoded in JSON.
+                            validator's operator; bech encoded in JSON.
                         consensus_pubkey:
                           type: object
                           properties:
@@ -26549,9 +26416,7 @@ paths:
                           type: boolean
                           description: >-
                             jailed defined whether the validator has been jailed
-                            from bonded status or
-
-                            not.
+                            from bonded status or not.
                         status:
                           description: >-
                             status is the validator status
@@ -26605,17 +26470,13 @@ paths:
                           format: int64
                           description: >-
                             unbonding_height defines, if unbonding, the height
-                            at which this validator
-
-                            has begun unbonding.
+                            at which this validator has begun unbonding.
                         unbonding_time:
                           type: string
                           format: date-time
                           description: >-
                             unbonding_time defines, if unbonding, the min time
-                            for the validator to
-
-                            complete unbonding.
+                            for the validator to complete unbonding.
                         commission:
                           description: commission defines the commission parameters.
                           type: object
@@ -26623,9 +26484,7 @@ paths:
                             commission_rates:
                               description: >-
                                 commission_rates defines the initial commission
-                                rates to be used for
-
-                                creating a validator.
+                                rates to be used for creating a validator.
                               type: object
                               properties:
                                 rate:
@@ -26637,16 +26496,14 @@ paths:
                                   type: string
                                   description: >-
                                     max_rate defines the maximum commission rate
-                                    which validator can ever
-
-                                    charge, as a fraction.
+                                    which validator can ever charge, as a
+                                    fraction.
                                 max_change_rate:
                                   type: string
                                   description: >-
                                     max_change_rate defines the maximum daily
-                                    increase of the validator
-
-                                    commission, as a fraction.
+                                    increase of the validator commission, as a
+                                    fraction.
                             update_time:
                               type: string
                               format: date-time
@@ -26657,9 +26514,7 @@ paths:
                           type: string
                           description: >-
                             min_self_delegation is the validator's self declared
-                            minimum self
-
-                            delegation.
+                            minimum self delegation.
                       description: >-
                         Validator defines a validator, together with the total
                         amount of the
@@ -26912,9 +26767,7 @@ paths:
                     format: int64
                     description: >-
                       max_entries is the max entries for either unbonding
-                      delegation or
-
-                      redelegation (per pair/trio).
+                      delegation or redelegation (per pair/trio).
                   historical_entries:
                     type: integer
                     format: int64
@@ -27347,9 +27200,7 @@ paths:
                       type: string
                       description: >-
                         operator_address defines the address of the validator's
-                        operator; bech
-
-                        encoded in JSON.
+                        operator; bech encoded in JSON.
                     consensus_pubkey:
                       type: object
                       properties:
@@ -27531,9 +27382,7 @@ paths:
                       type: boolean
                       description: >-
                         jailed defined whether the validator has been jailed
-                        from bonded status or
-
-                        not.
+                        from bonded status or not.
                     status:
                       description: >-
                         status is the validator status
@@ -27587,17 +27436,13 @@ paths:
                       format: int64
                       description: >-
                         unbonding_height defines, if unbonding, the height at
-                        which this validator
-
-                        has begun unbonding.
+                        which this validator has begun unbonding.
                     unbonding_time:
                       type: string
                       format: date-time
                       description: >-
                         unbonding_time defines, if unbonding, the min time for
-                        the validator to
-
-                        complete unbonding.
+                        the validator to complete unbonding.
                     commission:
                       description: commission defines the commission parameters.
                       type: object
@@ -27605,9 +27450,7 @@ paths:
                         commission_rates:
                           description: >-
                             commission_rates defines the initial commission
-                            rates to be used for
-
-                            creating a validator.
+                            rates to be used for creating a validator.
                           type: object
                           properties:
                             rate:
@@ -27619,16 +27462,13 @@ paths:
                               type: string
                               description: >-
                                 max_rate defines the maximum commission rate
-                                which validator can ever
-
-                                charge, as a fraction.
+                                which validator can ever charge, as a fraction.
                             max_change_rate:
                               type: string
                               description: >-
                                 max_change_rate defines the maximum daily
-                                increase of the validator
-
-                                commission, as a fraction.
+                                increase of the validator commission, as a
+                                fraction.
                         update_time:
                           type: string
                           format: date-time
@@ -27639,9 +27479,7 @@ paths:
                       type: string
                       description: >-
                         min_self_delegation is the validator's self declared
-                        minimum self
-
-                        delegation.
+                        minimum self delegation.
                   description: >-
                     Validator defines a validator, together with the total
                     amount of the
@@ -27931,9 +27769,7 @@ paths:
         - name: pagination.reverse
           description: >-
             reverse is set to true if results are to be returned in the
-            descending
-
-            order.
+            descending order.
 
 
             Since: cosmos-sdk 0.43
@@ -27959,9 +27795,7 @@ paths:
                     type: string
                     description: >-
                       operator_address defines the address of the validator's
-                      operator; bech
-
-                      encoded in JSON.
+                      operator; bech encoded in JSON.
                   consensus_pubkey:
                     type: object
                     properties:
@@ -28141,9 +27975,7 @@ paths:
                     type: boolean
                     description: >-
                       jailed defined whether the validator has been jailed from
-                      bonded status or
-
-                      not.
+                      bonded status or not.
                   status:
                     description: >-
                       status is the validator status
@@ -28197,17 +28029,13 @@ paths:
                     format: int64
                     description: >-
                       unbonding_height defines, if unbonding, the height at
-                      which this validator
-
-                      has begun unbonding.
+                      which this validator has begun unbonding.
                   unbonding_time:
                     type: string
                     format: date-time
                     description: >-
                       unbonding_time defines, if unbonding, the min time for the
-                      validator to
-
-                      complete unbonding.
+                      validator to complete unbonding.
                   commission:
                     description: commission defines the commission parameters.
                     type: object
@@ -28215,9 +28043,7 @@ paths:
                       commission_rates:
                         description: >-
                           commission_rates defines the initial commission rates
-                          to be used for
-
-                          creating a validator.
+                          to be used for creating a validator.
                         type: object
                         properties:
                           rate:
@@ -28229,16 +28055,12 @@ paths:
                             type: string
                             description: >-
                               max_rate defines the maximum commission rate which
-                              validator can ever
-
-                              charge, as a fraction.
+                              validator can ever charge, as a fraction.
                           max_change_rate:
                             type: string
                             description: >-
                               max_change_rate defines the maximum daily increase
-                              of the validator
-
-                              commission, as a fraction.
+                              of the validator commission, as a fraction.
                       update_time:
                         type: string
                         format: date-time
@@ -28249,9 +28071,7 @@ paths:
                     type: string
                     description: >-
                       min_self_delegation is the validator's self declared
-                      minimum self
-
-                      delegation.
+                      minimum self delegation.
                 description: >-
                   Validator defines a validator, together with the total amount
                   of the
@@ -28800,9 +28620,7 @@ paths:
         - name: pagination.reverse
           description: >-
             reverse is set to true if results are to be returned in the
-            descending
-
-            order.
+            descending order.
 
 
             Since: cosmos-sdk 0.43
@@ -29120,9 +28938,7 @@ paths:
                           type: string
                           description: >-
                             initial_balance defines the tokens initially
-                            scheduled to receive at
-
-                            completion.
+                            scheduled to receive at completion.
                         balance:
                           type: string
                           description: balance defines the tokens to receive at completion.
@@ -29390,9 +29206,7 @@ paths:
                             type: string
                             description: >-
                               initial_balance defines the tokens initially
-                              scheduled to receive at
-
-                              completion.
+                              scheduled to receive at completion.
                           balance:
                             type: string
                             description: >-
@@ -29674,9 +29488,7 @@ paths:
         - name: pagination.reverse
           description: >-
             reverse is set to true if results are to be returned in the
-            descending
-
-            order.
+            descending order.
 
 
             Since: cosmos-sdk 0.43
@@ -30219,9 +30031,7 @@ paths:
         - name: pagination.reverse
           description: >-
             reverse is set to true if results are to be returned in the
-            descending
-
-            order.
+            descending order.
 
 
             Since: cosmos-sdk 0.43
@@ -30230,8 +30040,7 @@ paths:
           type: boolean
         - name: order_by
           description: |2-
-             - ORDER_BY_UNSPECIFIED: ORDER_BY_UNSPECIFIED specifies an unknown sorting order. OrderBy defaults
-            to ASC in this case.
+             - ORDER_BY_UNSPECIFIED: ORDER_BY_UNSPECIFIED specifies an unknown sorting order. OrderBy defaults to ASC in this case.
              - ORDER_BY_ASC: ORDER_BY_ASC defines ascending order
              - ORDER_BY_DESC: ORDER_BY_DESC defines descending order
           in: query
@@ -30788,17 +30597,15 @@ paths:
                 default: BROADCAST_MODE_UNSPECIFIED
                 description: >-
                   BroadcastMode specifies the broadcast mode for the
-                  TxService.Broadcast RPC
-
-                  method.
+                  TxService.Broadcast RPC method.
 
                    - BROADCAST_MODE_UNSPECIFIED: zero-value for mode ordering
-                   - BROADCAST_MODE_BLOCK: BROADCAST_MODE_BLOCK defines a tx broadcasting mode where the client waits
-                  for the tx to be committed in a block.
-                   - BROADCAST_MODE_SYNC: BROADCAST_MODE_SYNC defines a tx broadcasting mode where the client waits
-                  for a CheckTx execution response only.
-                   - BROADCAST_MODE_ASYNC: BROADCAST_MODE_ASYNC defines a tx broadcasting mode where the client
-                  returns immediately.
+                   - BROADCAST_MODE_BLOCK: BROADCAST_MODE_BLOCK defines a tx broadcasting mode where the client waits for
+                  the tx to be committed in a block.
+                   - BROADCAST_MODE_SYNC: BROADCAST_MODE_SYNC defines a tx broadcasting mode where the client waits for
+                  a CheckTx execution response only.
+                   - BROADCAST_MODE_ASYNC: BROADCAST_MODE_ASYNC defines a tx broadcasting mode where the client returns
+                  immediately.
             description: >-
               BroadcastTxRequest is the request type for the
               Service.BroadcastTxRequest
@@ -31061,9 +30868,7 @@ paths:
         - name: pagination.reverse
           description: >-
             reverse is set to true if results are to be returned in the
-            descending
-
-            order.
+            descending order.
 
 
             Since: cosmos-sdk 0.43
@@ -31849,9 +31654,7 @@ paths:
                       validators.
             description: >-
               GetLatestBlockResponse is the response type for the
-              Query/GetLatestBlock RPC
-
-              method.
+              Query/GetLatestBlock RPC method.
         default:
           description: An unexpected error response.
           schema:
@@ -32614,9 +32417,7 @@ paths:
                       validators.
             description: >-
               GetBlockByHeightResponse is the response type for the
-              Query/GetBlockByHeight
-
-              RPC method.
+              Query/GetBlockByHeight RPC method.
         default:
           description: An unexpected error response.
           schema:
@@ -33515,7 +33316,7 @@ paths:
                       PageRequest.count_total
 
                       was set, its value is undefined otherwise
-            description: |-
+            description: >-
               GetLatestValidatorSetResponse is the response type for the
               Query/GetValidatorSetByHeight RPC method.
         default:
@@ -33757,9 +33558,7 @@ paths:
         - name: pagination.reverse
           description: >-
             reverse is set to true if results are to be returned in the
-            descending
-
-            order.
+            descending order.
 
 
             Since: cosmos-sdk 0.43
@@ -33990,7 +33789,7 @@ paths:
                       PageRequest.count_total
 
                       was set, its value is undefined otherwise
-            description: |-
+            description: >-
               GetValidatorSetByHeightResponse is the response type for the
               Query/GetValidatorSetByHeight RPC method.
         default:
@@ -34237,9 +34036,7 @@ paths:
         - name: pagination.reverse
           description: >-
             reverse is set to true if results are to be returned in the
-            descending
-
-            order.
+            descending order.
 
 
             Since: cosmos-sdk 0.43
@@ -34366,9 +34163,10 @@ definitions:
           is set.
       reverse:
         type: boolean
-        description: |-
+        description: >-
           reverse is set to true if results are to be returned in the descending
           order.
+
 
           Since: cosmos-sdk 0.43
     description: |-
@@ -34955,9 +34753,7 @@ definitions:
         type: string
         title: >-
           // usage_incentives defines the proportion of the minted minted_denom
-          that
-
-          is
+          that is
 
           // to be allocated to the incentives module address
 
@@ -35025,9 +34821,7 @@ definitions:
             type: string
             title: >-
               // usage_incentives defines the proportion of the minted
-              minted_denom that
-
-              is
+              minted_denom that is
 
               // to be allocated to the incentives module address
 
@@ -35132,9 +34926,7 @@ definitions:
                 type: string
                 title: >-
                   // usage_incentives defines the proportion of the minted
-                  minted_denom that
-
-                  is
+                  minted_denom that is
 
                   // to be allocated to the incentives module address
 
@@ -35556,17 +35348,36 @@ definitions:
           chunk's native token balance + all delegation tokens of paired chunks
 
           last Epoch + all unbonding delegation tokens of unpairing chunks
+      total_liquid_tokens:
+        type: string
+        title: |-
+          The token amount worth of all delegation shares of all paired chunks
+          (slashing applied amount)
+      reward_module_acc_balance:
+        type: string
+        title: Balance of reward module account
+      fee_rate:
+        type: string
+        title: Fee rate applied when deduct module fee at epoch
+      utilization_ratio:
+        type: string
+        title: Utilization ratio
+      remaining_chunk_slots:
+        type: string
+        title: How many chunks which can be created left?
+      discount_rate:
+        type: string
+        title: Discount rate applied when withdraw rewards
       total_del_shares:
         type: string
-        title: Total shares of all paired chunks
+        title: |-
+          --- Chunk related fields
+          Total shares of all paired chunks
       total_remaining_rewards:
         type: string
         title: >-
           The cumulative reward of all chunks delegations from the last
           distribution
-      total_remaining_insurance_commissions:
-        type: string
-        title: The cumulative commissions of all insurances
       total_chunks_balance:
         type: string
         description: >-
@@ -35580,57 +35391,31 @@ definitions:
 
           balance of DerivedAddress(Chunk.Id) after un-bonding period is
           finished.
-      total_liquid_tokens:
+      total_unbonding_chunks_balance:
         type: string
         title: |-
-          The token amount worth of all delegation shares of all paired chunks
-          (slashing applied amount)
+          The sum of unbonding balance of all chunks in Unpairing and
+          UnpairingForUnstaking
       total_insurance_tokens:
         type: string
         title: >-
+          --- Insurance related fields
+
           The sum of all insurances' amount (=
           DerivedAddress(Insurance.Id).Balance)
-      total_insurance_commissions:
-        type: string
-        title: The sum of all insurances' commissions
       total_paired_insurance_tokens:
         type: string
         title: |-
           The sum of all paired insurances' amount (=
           DerivedAddress(Insurance.Id).Balance)
-      total_paired_insurance_commissions:
-        type: string
-        title: The sum of all paired insurances' commissions
       total_unpairing_insurance_tokens:
         type: string
         title: |-
           The sum of all unpairing insurances' amount (=
           DerivedAddress(Insurance.Id).Balance)
-      total_unpairing_insurance_commissions:
+      total_remaining_insurance_commissions:
         type: string
-        title: The sum of all unpairing insurances' commissions
-      total_unpaired_insurance_tokens:
-        type: string
-        title: |-
-          The sum of all unpaired insurances' amount (=
-          DerivedAddress(Insurance.Id).Balance)
-      total_unpaired_insurance_commissions:
-        type: string
-        title: The sum of all unpaired insurances' commissions
-      total_unbonding_balance:
-        type: string
-        title: |-
-          The sum of unbonding balance of all chunks in Unpairing and
-          UnpairingForUnstaking
-      reward_module_acc_balance:
-        type: string
-        title: Balance of reward module account
-      utilization_ratio:
-        type: string
-      discount_rate:
-        type: string
-      fee_rate:
-        type: string
+        title: The cumulative commissions of all insurances
     description: >-
       NetAmountState is type for net amount raw data and mint rate, This is a
       value
@@ -35748,6 +35533,8 @@ definitions:
 
               removed.
         description: Chunk defines the chunk of the module.
+      derived_address:
+        type: string
   canto.liquidstaking.v1.QueryChunkSizeResponse:
     type: object
     properties:
@@ -35771,62 +35558,68 @@ definitions:
         items:
           type: object
           properties:
-            id:
+            chunk:
+              type: object
+              properties:
+                id:
+                  type: string
+                  format: uint64
+                  title: Id of the chunk
+                paired_insurance_id:
+                  type: string
+                  format: uint64
+                  title: Id of Paired insurance, 0 means no insurance
+                unpairing_insurance_id:
+                  type: string
+                  format: uint64
+                status:
+                  title: Status of the chunk
+                  type: string
+                  enum:
+                    - CHUNK_STATUS_UNSPECIFIED
+                    - CHUNK_STATUS_PAIRING
+                    - CHUNK_STATUS_PAIRED
+                    - CHUNK_STATUS_UNPAIRING
+                    - CHUNK_STATUS_UNPAIRING_FOR_UNSTAKING
+                  default: CHUNK_STATUS_UNSPECIFIED
+                  description: >-
+                    ChunkStatus defines the status of the chunk.
+
+                     - CHUNK_STATUS_PAIRING: This status indicates that the chunk is ready to be paired with an
+                    insurance.
+                     - CHUNK_STATUS_PAIRED: A chunk is paired with an insurance that has the lowest fee rate.
+                    The fee rate is determined by the sum of the insurance fee
+                    rate set by
+
+                    the insurance provider and the commission fee rate set by
+                    the validator
+
+                    designated by the insurance provider.
+                     - CHUNK_STATUS_UNPAIRING: A paired chunk enters this status when paired insurance is started to be
+                    withdrawn or is insufficient (meaning the insurance balance
+                    is below the
+
+                    minimum requirement to be considered valid insurance) or the
+                    validator of
+
+                    the insurance becomes tombstoned.
+                     - CHUNK_STATUS_UNPAIRING_FOR_UNSTAKING: When a delegator (also known as a liquid staker) sends a MsgLiquidUnstake,
+                    it is queued as a PendingLiquidUnstake. At the end of the
+                    epoch,
+
+                    the actual undelegation is triggered and the chunk enters
+                    this state.
+
+                    Once the unbonding period is over in next epoch, the staked
+                    tokens are
+
+                    returned to the delegator's account and the associated chunk
+                    object is
+
+                    removed.
+              description: Chunk defines the chunk of the module.
+            derived_address:
               type: string
-              format: uint64
-              title: Id of the chunk
-            paired_insurance_id:
-              type: string
-              format: uint64
-              title: Id of Paired insurance, 0 means no insurance
-            unpairing_insurance_id:
-              type: string
-              format: uint64
-            status:
-              title: Status of the chunk
-              type: string
-              enum:
-                - CHUNK_STATUS_UNSPECIFIED
-                - CHUNK_STATUS_PAIRING
-                - CHUNK_STATUS_PAIRED
-                - CHUNK_STATUS_UNPAIRING
-                - CHUNK_STATUS_UNPAIRING_FOR_UNSTAKING
-              default: CHUNK_STATUS_UNSPECIFIED
-              description: >-
-                ChunkStatus defines the status of the chunk.
-
-                 - CHUNK_STATUS_PAIRING: This status indicates that the chunk is ready to be paired with an
-                insurance.
-                 - CHUNK_STATUS_PAIRED: A chunk is paired with an insurance that has the lowest fee rate.
-                The fee rate is determined by the sum of the insurance fee rate
-                set by
-
-                the insurance provider and the commission fee rate set by the
-                validator
-
-                designated by the insurance provider.
-                 - CHUNK_STATUS_UNPAIRING: A paired chunk enters this status when paired insurance is started to be
-                withdrawn or is insufficient (meaning the insurance balance is
-                below the
-
-                minimum requirement to be considered valid insurance) or the
-                validator of
-
-                the insurance becomes tombstoned.
-                 - CHUNK_STATUS_UNPAIRING_FOR_UNSTAKING: When a delegator (also known as a liquid staker) sends a MsgLiquidUnstake,
-                it is queued as a PendingLiquidUnstake. At the end of the epoch,
-
-                the actual undelegation is triggered and the chunk enters this
-                state.
-
-                Once the unbonding period is over in next epoch, the staked
-                tokens are
-
-                returned to the delegator's account and the associated chunk
-                object is
-
-                removed.
-          description: Chunk defines the chunk of the module.
       pagination:
         type: object
         properties:
@@ -35945,6 +35738,10 @@ definitions:
               Unpaired insurance can be withdrawn immediately by
               MsgWithdrawInsurance.
         description: Insurance defines the insurance of the module.
+      derived_address:
+        type: string
+      fee_pool_address:
+        type: string
   canto.liquidstaking.v1.QueryInsurancesResponse:
     type: object
     properties:
@@ -35953,78 +35750,86 @@ definitions:
         items:
           type: object
           properties:
-            id:
+            insurance:
+              type: object
+              properties:
+                id:
+                  type: string
+                  format: uint64
+                  title: Id of the insurance
+                validator_address:
+                  type: string
+                  title: Address of the validator
+                provider_address:
+                  type: string
+                  title: Address of the insurance provider
+                fee_rate:
+                  type: string
+                  title: Fee rate of the insurance
+                chunk_id:
+                  type: string
+                  format: uint64
+                  title: Id of the chunk for which the insurance has a duty
+                status:
+                  title: Status of the insurance
+                  type: string
+                  enum:
+                    - INSURANCE_STATUS_UNSPECIFIED
+                    - INSURANCE_STATUS_PAIRING
+                    - INSURANCE_STATUS_PAIRED
+                    - INSURANCE_STATUS_UNPAIRING
+                    - INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAWAL
+                    - INSURANCE_STATUS_UNPAIRED
+                  default: INSURANCE_STATUS_UNSPECIFIED
+                  description: >-
+                    InsuranceStatus defines the status of the insurance.
+
+                     - INSURANCE_STATUS_PAIRING: This is the default status of an insurance when an insurance provider sends
+                    a MsgProvideInsurance. This status indicates that the
+                    insurance is ready to
+
+                    be paired with a chunk. When an empty slot is available and
+                    either
+
+                    msgLiquidStake is received or pairing chunks have been
+                    created in the
+
+                    recent epoch, the insurance with the lowest fee will be
+                    paired with the
+
+                    chunk. Once paired, the insurance contract can be cancelled
+                    using
+
+                    MsgCancelProvideInsurance.
+                     - INSURANCE_STATUS_PAIRED: An insurance is paired with a chunk. While the insurance is in this status,
+                    it serves as a form of protection for the chunk by insuring
+                    it against
+
+                    unexpected loss that may occur due to validator slashing.
+                    This ensures that
+
+                    the chunk remains same size and maximize its staking
+                    rewards.
+                     - INSURANCE_STATUS_UNPAIRING: A paired insurance enters this status when it no longer has enough balance
+                    to cover slashing penalties, when the validator is
+                    tombstoned, or
+
+                    when the paired chunk is started to be undelegated.
+
+                    At the next epoch, unpairing will be unpaired.
+                     - INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAWAL: A paired insurance enters this status when there are
+                    queued withdrawal insurance requests created by
+                    MsgWithdrawInsurance at the
+
+                    epoch.
+                     - INSURANCE_STATUS_UNPAIRED: Unpairing insurances from previous epoch enters this status.
+                    Unpaired insurance can be withdrawn immediately by
+                    MsgWithdrawInsurance.
+              description: Insurance defines the insurance of the module.
+            derived_address:
               type: string
-              format: uint64
-              title: Id of the insurance
-            validator_address:
+            fee_pool_address:
               type: string
-              title: Address of the validator
-            provider_address:
-              type: string
-              title: Address of the insurance provider
-            fee_rate:
-              type: string
-              title: Fee rate of the insurance
-            chunk_id:
-              type: string
-              format: uint64
-              title: Id of the chunk for which the insurance has a duty
-            status:
-              title: Status of the insurance
-              type: string
-              enum:
-                - INSURANCE_STATUS_UNSPECIFIED
-                - INSURANCE_STATUS_PAIRING
-                - INSURANCE_STATUS_PAIRED
-                - INSURANCE_STATUS_UNPAIRING
-                - INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAWAL
-                - INSURANCE_STATUS_UNPAIRED
-              default: INSURANCE_STATUS_UNSPECIFIED
-              description: >-
-                InsuranceStatus defines the status of the insurance.
-
-                 - INSURANCE_STATUS_PAIRING: This is the default status of an insurance when an insurance provider sends
-                a MsgProvideInsurance. This status indicates that the insurance
-                is ready to
-
-                be paired with a chunk. When an empty slot is available and
-                either
-
-                msgLiquidStake is received or pairing chunks have been created
-                in the
-
-                recent epoch, the insurance with the lowest fee will be paired
-                with the
-
-                chunk. Once paired, the insurance contract can be cancelled
-                using
-
-                MsgCancelProvideInsurance.
-                 - INSURANCE_STATUS_PAIRED: An insurance is paired with a chunk. While the insurance is in this status,
-                it serves as a form of protection for the chunk by insuring it
-                against
-
-                unexpected loss that may occur due to validator slashing. This
-                ensures that
-
-                the chunk remains same size and maximize its staking rewards.
-                 - INSURANCE_STATUS_UNPAIRING: A paired insurance enters this status when it no longer has enough balance
-                to cover slashing penalties, when the validator is tombstoned,
-                or
-
-                when the paired chunk is started to be undelegated.
-
-                At the next epoch, unpairing will be unpaired.
-                 - INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAWAL: A paired insurance enters this status when there are
-                queued withdrawal insurance requests created by
-                MsgWithdrawInsurance at the
-
-                epoch.
-                 - INSURANCE_STATUS_UNPAIRED: Unpairing insurances from previous epoch enters this status.
-                Unpaired insurance can be withdrawn immediately by
-                MsgWithdrawInsurance.
-          description: Insurance defines the insurance of the module.
       pagination:
         type: object
         properties:
@@ -36144,17 +35949,38 @@ definitions:
               chunks
 
               last Epoch + all unbonding delegation tokens of unpairing chunks
+          total_liquid_tokens:
+            type: string
+            title: >-
+              The token amount worth of all delegation shares of all paired
+              chunks
+
+              (slashing applied amount)
+          reward_module_acc_balance:
+            type: string
+            title: Balance of reward module account
+          fee_rate:
+            type: string
+            title: Fee rate applied when deduct module fee at epoch
+          utilization_ratio:
+            type: string
+            title: Utilization ratio
+          remaining_chunk_slots:
+            type: string
+            title: How many chunks which can be created left?
+          discount_rate:
+            type: string
+            title: Discount rate applied when withdraw rewards
           total_del_shares:
             type: string
-            title: Total shares of all paired chunks
+            title: |-
+              --- Chunk related fields
+              Total shares of all paired chunks
           total_remaining_rewards:
             type: string
             title: >-
               The cumulative reward of all chunks delegations from the last
               distribution
-          total_remaining_insurance_commissions:
-            type: string
-            title: The cumulative commissions of all insurances
           total_chunks_balance:
             type: string
             description: >-
@@ -36168,59 +35994,31 @@ definitions:
 
               balance of DerivedAddress(Chunk.Id) after un-bonding period is
               finished.
-          total_liquid_tokens:
+          total_unbonding_chunks_balance:
             type: string
-            title: >-
-              The token amount worth of all delegation shares of all paired
-              chunks
-
-              (slashing applied amount)
+            title: |-
+              The sum of unbonding balance of all chunks in Unpairing and
+              UnpairingForUnstaking
           total_insurance_tokens:
             type: string
             title: >-
+              --- Insurance related fields
+
               The sum of all insurances' amount (=
               DerivedAddress(Insurance.Id).Balance)
-          total_insurance_commissions:
-            type: string
-            title: The sum of all insurances' commissions
           total_paired_insurance_tokens:
             type: string
             title: |-
               The sum of all paired insurances' amount (=
               DerivedAddress(Insurance.Id).Balance)
-          total_paired_insurance_commissions:
-            type: string
-            title: The sum of all paired insurances' commissions
           total_unpairing_insurance_tokens:
             type: string
             title: |-
               The sum of all unpairing insurances' amount (=
               DerivedAddress(Insurance.Id).Balance)
-          total_unpairing_insurance_commissions:
+          total_remaining_insurance_commissions:
             type: string
-            title: The sum of all unpairing insurances' commissions
-          total_unpaired_insurance_tokens:
-            type: string
-            title: |-
-              The sum of all unpaired insurances' amount (=
-              DerivedAddress(Insurance.Id).Balance)
-          total_unpaired_insurance_commissions:
-            type: string
-            title: The sum of all unpaired insurances' commissions
-          total_unbonding_balance:
-            type: string
-            title: |-
-              The sum of unbonding balance of all chunks in Unpairing and
-              UnpairingForUnstaking
-          reward_module_acc_balance:
-            type: string
-            title: Balance of reward module account
-          utilization_ratio:
-            type: string
-          discount_rate:
-            type: string
-          fee_rate:
-            type: string
+            title: The cumulative commissions of all insurances
         description: >-
           NetAmountState is type for net amount raw data and mint rate, This is
           a value
@@ -36232,7 +36030,7 @@ definitions:
   canto.liquidstaking.v1.QueryUnpairingForUnstakingChunkInfoResponse:
     type: object
     properties:
-      info:
+      unpairing_for_unstaking_chunk_info:
         type: object
         properties:
           chunk_id:
@@ -36248,7 +36046,7 @@ definitions:
   canto.liquidstaking.v1.QueryUnpairingForUnstakingChunkInfosResponse:
     type: object
     properties:
-      infos:
+      unpairing_for_unstaking_chunk_infos:
         type: array
         items:
           type: object
@@ -36291,7 +36089,7 @@ definitions:
   canto.liquidstaking.v1.QueryWithdrawInsuranceRequestResponse:
     type: object
     properties:
-      req:
+      withdraw_insurance_request:
         type: object
         properties:
           insurance_id:
@@ -36301,7 +36099,7 @@ definitions:
   canto.liquidstaking.v1.QueryWithdrawInsuranceRequestsResponse:
     type: object
     properties:
-      reqs:
+      withdraw_insurance_requests:
         type: array
         items:
           type: object
@@ -36415,7 +36213,7 @@ definitions:
           activated)
       merge_fork_block:
         type: string
-        title: |-
+        title: >-
           EIP-3675 (TheMerge) switch block (nil = no fork, 0 = already in merge
           proceedings)
     description: >-
@@ -36821,9 +36619,7 @@ definitions:
             type: string
             title: >-
               EIP-3675 (TheMerge) switch block (nil = no fork, 0 = already in
-              merge
-
-              proceedings)
+              merge proceedings)
         description: >-
           ChainConfig defines the Ethereum ChainConfig parameters using *sdk.Int
           values
@@ -36833,7 +36629,7 @@ definitions:
         type: boolean
         description: >-
           Allow unprotected transactions defines if replay-protected (i.e non
-          EIP155
+          EIP155 
 
           signed) transactions can be executed on the state machine.
     title: Params defines the EVM module parameters
@@ -36992,9 +36788,7 @@ definitions:
                 type: string
                 title: >-
                   EIP-3675 (TheMerge) switch block (nil = no fork, 0 = already
-                  in merge
-
-                  proceedings)
+                  in merge proceedings)
             description: >-
               ChainConfig defines the Ethereum ChainConfig parameters using
               *sdk.Int values
@@ -37004,7 +36798,7 @@ definitions:
             type: boolean
             description: >-
               Allow unprotected transactions defines if replay-protected (i.e
-              non EIP155
+              non EIP155 
 
               signed) transactions can be executed on the state machine.
         title: Params defines the EVM module parameters
@@ -37149,9 +36943,7 @@ definitions:
             type: string
             title: >-
               EIP-3675 (TheMerge) switch block (nil = no fork, 0 = already in
-              merge
-
-              proceedings)
+              merge proceedings)
         description: >-
           ChainConfig defines the Ethereum ChainConfig parameters using *sdk.Int
           values
@@ -37195,7 +36987,7 @@ definitions:
         description: base fee for EIP-1559 blocks.
       min_gas_price:
         type: string
-        title: |-
+        title: >-
           min_gas_price defines the minimum gas price value for cosmos and eth
           transactions
       min_gas_multiplier:
@@ -37256,9 +37048,7 @@ definitions:
             type: string
             title: >-
               min_gas_price defines the minimum gas price value for cosmos and
-              eth
-
-              transactions
+              eth transactions
           min_gas_multiplier:
             type: string
             title: |-
@@ -42177,9 +41967,9 @@ definitions:
     description: 'Since: cosmos-sdk 0.45.2'
     title: >-
       GrantAuthorization extends a grant with both the addresses of the grantee
-      and
+      and granter.
 
-      granter. It is used in genesis.proto and query.proto
+      It is used in genesis.proto and query.proto
   cosmos.authz.v1beta1.QueryGranteeGrantsResponse:
     type: object
     properties:
@@ -42367,9 +42157,9 @@ definitions:
           description: 'Since: cosmos-sdk 0.45.2'
           title: >-
             GrantAuthorization extends a grant with both the addresses of the
-            grantee and
+            grantee and granter.
 
-            granter. It is used in genesis.proto and query.proto
+            It is used in genesis.proto and query.proto
         description: grants is a list of grants granted to the grantee.
       pagination:
         description: pagination defines an pagination for the response.
@@ -42391,9 +42181,7 @@ definitions:
               was set, its value is undefined otherwise
     description: >-
       QueryGranteeGrantsResponse is the response type for the
-      Query/GranteeGrants
-
-      RPC method.
+      Query/GranteeGrants RPC method.
   cosmos.authz.v1beta1.QueryGranterGrantsResponse:
     type: object
     properties:
@@ -42581,9 +42369,9 @@ definitions:
           description: 'Since: cosmos-sdk 0.45.2'
           title: >-
             GrantAuthorization extends a grant with both the addresses of the
-            grantee and
+            grantee and granter.
 
-            granter. It is used in genesis.proto and query.proto
+            It is used in genesis.proto and query.proto
         description: grants is a list of grants granted by the granter.
       pagination:
         description: pagination defines an pagination for the response.
@@ -42605,9 +42393,7 @@ definitions:
               was set, its value is undefined otherwise
     description: >-
       QueryGranterGrantsResponse is the response type for the
-      Query/GranterGrants
-
-      RPC method.
+      Query/GranterGrants RPC method.
   cosmos.authz.v1beta1.QueryGrantsResponse:
     type: object
     properties:
@@ -42810,7 +42596,7 @@ definitions:
               PageRequest.count_total
 
               was set, its value is undefined otherwise
-    description: |-
+    description: >-
       QueryGrantsResponse is the response type for the Query/Authorizations RPC
       method.
   cosmos.bank.v1beta1.DenomUnit:
@@ -43057,9 +42843,9 @@ definitions:
           a basic token.
     description: >-
       QueryDenomMetadataResponse is the response type for the
-      Query/DenomMetadata
+      Query/DenomMetadata RPC
 
-      RPC method.
+      method.
   cosmos.bank.v1beta1.QueryDenomsMetadataResponse:
     type: object
     properties:
@@ -43154,9 +42940,9 @@ definitions:
               was set, its value is undefined otherwise
     description: >-
       QueryDenomsMetadataResponse is the response type for the
-      Query/DenomsMetadata
+      Query/DenomsMetadata RPC
 
-      RPC method.
+      method.
   cosmos.bank.v1beta1.QueryParamsResponse:
     type: object
     properties:
@@ -43219,9 +43005,11 @@ definitions:
               PageRequest.count_total
 
               was set, its value is undefined otherwise
-    description: |-
+    description: >-
       QuerySpendableBalancesResponse defines the gRPC response structure for
-      querying an account's spendable balances.
+      querying
+
+      an account's spendable balances.
   cosmos.bank.v1beta1.QuerySupplyOfResponse:
     type: object
     properties:
@@ -43623,9 +43411,7 @@ definitions:
         type: string
         description: >-
           grantee is the address of the user being granted an allowance of
-          another
-
-          user's funds.
+          another user's funds.
       allowance:
         description: allowance can be any of basic and filtered fee allowance.
         type: object
@@ -43705,9 +43491,7 @@ definitions:
             type: string
             description: >-
               grantee is the address of the user being granted an allowance of
-              another
-
-              user's funds.
+              another user's funds.
           allowance:
             description: allowance can be any of basic and filtered fee allowance.
             type: object
@@ -43774,7 +43558,7 @@ definitions:
                   Must be a valid serialized protocol buffer of the above
                   specified type.
         title: Grant is stored in the KVStore to record a grant with full context
-    description: |-
+    description: >-
       QueryAllowanceResponse is the response type for the Query/Allowance RPC
       method.
   cosmos.feegrant.v1beta1.QueryAllowancesResponse:
@@ -43794,9 +43578,7 @@ definitions:
               type: string
               description: >-
                 grantee is the address of the user being granted an allowance of
-                another
-
-                user's funds.
+                another user's funds.
             allowance:
               description: allowance can be any of basic and filtered fee allowance.
               type: object
@@ -43884,7 +43666,7 @@ definitions:
               PageRequest.count_total
 
               was set, its value is undefined otherwise
-    description: |-
+    description: >-
       QueryAllowancesResponse is the response type for the Query/Allowances RPC
       method.
   cosmos.evidence.v1beta1.QueryAllEvidenceResponse:
@@ -45574,10 +45356,9 @@ definitions:
               Index which is incremented each time the validator was a bonded
 
               in a block and may have signed a precommit or not. This in
-              conjunction with
+              conjunction with the
 
-              the `SignedBlocksWindow` param determines the index in the
-
+              `SignedBlocksWindow` param determines the index in the
               `MissedBlocksBitArray`.
           jailed_until:
             type: string
@@ -45589,11 +45370,9 @@ definitions:
             type: boolean
             description: >-
               Whether or not a validator has been tombstoned (killed out of
-              validator
+              validator set). It is set
 
-              set). It is set once the validator commits an equivocation or for
-              any other
-
+              once the validator commits an equivocation or for any other
               configured misbehiavor.
           missed_blocks_counter:
             type: string
@@ -45635,10 +45414,9 @@ definitions:
                 Index which is incremented each time the validator was a bonded
 
                 in a block and may have signed a precommit or not. This in
-                conjunction with
+                conjunction with the
 
-                the `SignedBlocksWindow` param determines the index in the
-
+                `SignedBlocksWindow` param determines the index in the
                 `MissedBlocksBitArray`.
             jailed_until:
               type: string
@@ -45650,11 +45428,9 @@ definitions:
               type: boolean
               description: >-
                 Whether or not a validator has been tombstoned (killed out of
-                validator
+                validator set). It is set
 
-                set). It is set once the validator commits an equivocation or
-                for any other
-
+                once the validator commits an equivocation or for any other
                 configured misbehiavor.
             missed_blocks_counter:
               type: string
@@ -45716,10 +45492,9 @@ definitions:
           Index which is incremented each time the validator was a bonded
 
           in a block and may have signed a precommit or not. This in conjunction
-          with
+          with the
 
-          the `SignedBlocksWindow` param determines the index in the
-
+          `SignedBlocksWindow` param determines the index in the
           `MissedBlocksBitArray`.
       jailed_until:
         type: string
@@ -45731,12 +45506,10 @@ definitions:
         type: boolean
         description: >-
           Whether or not a validator has been tombstoned (killed out of
-          validator
+          validator set). It is set
 
-          set). It is set once the validator commits an equivocation or for any
-          other
-
-          configured misbehiavor.
+          once the validator commits an equivocation or for any other configured
+          misbehiavor.
       missed_blocks_counter:
         type: string
         format: int64
@@ -45769,7 +45542,7 @@ definitions:
     type: object
     properties:
       commission_rates:
-        description: |-
+        description: >-
           commission_rates defines the initial commission rates to be used for
           creating a validator.
         type: object
@@ -45781,16 +45554,12 @@ definitions:
             type: string
             description: >-
               max_rate defines the maximum commission rate which validator can
-              ever
-
-              charge, as a fraction.
+              ever charge, as a fraction.
           max_change_rate:
             type: string
             description: >-
               max_change_rate defines the maximum daily increase of the
-              validator
-
-              commission, as a fraction.
+              validator commission, as a fraction.
       update_time:
         type: string
         format: date-time
@@ -45804,12 +45573,12 @@ definitions:
         description: rate is the commission rate charged to delegators, as a fraction.
       max_rate:
         type: string
-        description: |-
+        description: >-
           max_rate defines the maximum commission rate which validator can ever
           charge, as a fraction.
       max_change_rate:
         type: string
-        description: |-
+        description: >-
           max_change_rate defines the maximum daily increase of the validator
           commission, as a fraction.
     description: >-
@@ -45977,9 +45746,7 @@ definitions:
               type: string
               description: >-
                 operator_address defines the address of the validator's
-                operator; bech
-
-                encoded in JSON.
+                operator; bech encoded in JSON.
             consensus_pubkey:
               type: object
               properties:
@@ -46153,9 +45920,7 @@ definitions:
               type: boolean
               description: >-
                 jailed defined whether the validator has been jailed from bonded
-                status or
-
-                not.
+                status or not.
             status:
               description: status is the validator status (bonded/unbonding/unbonded).
               type: string
@@ -46201,17 +45966,13 @@ definitions:
               format: int64
               description: >-
                 unbonding_height defines, if unbonding, the height at which this
-                validator
-
-                has begun unbonding.
+                validator has begun unbonding.
             unbonding_time:
               type: string
               format: date-time
               description: >-
                 unbonding_time defines, if unbonding, the min time for the
-                validator to
-
-                complete unbonding.
+                validator to complete unbonding.
             commission:
               description: commission defines the commission parameters.
               type: object
@@ -46219,9 +45980,7 @@ definitions:
                 commission_rates:
                   description: >-
                     commission_rates defines the initial commission rates to be
-                    used for
-
-                    creating a validator.
+                    used for creating a validator.
                   type: object
                   properties:
                     rate:
@@ -46233,16 +45992,12 @@ definitions:
                       type: string
                       description: >-
                         max_rate defines the maximum commission rate which
-                        validator can ever
-
-                        charge, as a fraction.
+                        validator can ever charge, as a fraction.
                     max_change_rate:
                       type: string
                       description: >-
                         max_change_rate defines the maximum daily increase of
-                        the validator
-
-                        commission, as a fraction.
+                        the validator commission, as a fraction.
                 update_time:
                   type: string
                   format: date-time
@@ -46253,9 +46008,7 @@ definitions:
               type: string
               description: >-
                 min_self_delegation is the validator's self declared minimum
-                self
-
-                delegation.
+                self delegation.
           description: >-
             Validator defines a validator, together with the total amount of the
 
@@ -46300,7 +46053,7 @@ definitions:
       max_entries:
         type: integer
         format: int64
-        description: |-
+        description: >-
           max_entries is the max entries for either unbonding delegation or
           redelegation (per pair/trio).
       historical_entries:
@@ -46487,9 +46240,7 @@ definitions:
                     type: string
                     description: >-
                       initial_balance defines the tokens initially scheduled to
-                      receive at
-
-                      completion.
+                      receive at completion.
                   balance:
                     type: string
                     description: balance defines the tokens to receive at completion.
@@ -46533,9 +46284,7 @@ definitions:
             type: string
             description: >-
               operator_address defines the address of the validator's operator;
-              bech
-
-              encoded in JSON.
+              bech encoded in JSON.
           consensus_pubkey:
             type: object
             properties:
@@ -46705,9 +46454,7 @@ definitions:
             type: boolean
             description: >-
               jailed defined whether the validator has been jailed from bonded
-              status or
-
-              not.
+              status or not.
           status:
             description: status is the validator status (bonded/unbonding/unbonded).
             type: string
@@ -46753,17 +46500,13 @@ definitions:
             format: int64
             description: >-
               unbonding_height defines, if unbonding, the height at which this
-              validator
-
-              has begun unbonding.
+              validator has begun unbonding.
           unbonding_time:
             type: string
             format: date-time
             description: >-
               unbonding_time defines, if unbonding, the min time for the
-              validator to
-
-              complete unbonding.
+              validator to complete unbonding.
           commission:
             description: commission defines the commission parameters.
             type: object
@@ -46771,9 +46514,7 @@ definitions:
               commission_rates:
                 description: >-
                   commission_rates defines the initial commission rates to be
-                  used for
-
-                  creating a validator.
+                  used for creating a validator.
                 type: object
                 properties:
                   rate:
@@ -46785,23 +46526,19 @@ definitions:
                     type: string
                     description: >-
                       max_rate defines the maximum commission rate which
-                      validator can ever
-
-                      charge, as a fraction.
+                      validator can ever charge, as a fraction.
                   max_change_rate:
                     type: string
                     description: >-
                       max_change_rate defines the maximum daily increase of the
-                      validator
-
-                      commission, as a fraction.
+                      validator commission, as a fraction.
               update_time:
                 type: string
                 format: date-time
                 description: update_time is the last time the commission rate was changed.
           min_self_delegation:
             type: string
-            description: |-
+            description: >-
               min_self_delegation is the validator's self declared minimum self
               delegation.
         description: >-
@@ -46840,9 +46577,7 @@ definitions:
               type: string
               description: >-
                 operator_address defines the address of the validator's
-                operator; bech
-
-                encoded in JSON.
+                operator; bech encoded in JSON.
             consensus_pubkey:
               type: object
               properties:
@@ -47016,9 +46751,7 @@ definitions:
               type: boolean
               description: >-
                 jailed defined whether the validator has been jailed from bonded
-                status or
-
-                not.
+                status or not.
             status:
               description: status is the validator status (bonded/unbonding/unbonded).
               type: string
@@ -47064,17 +46797,13 @@ definitions:
               format: int64
               description: >-
                 unbonding_height defines, if unbonding, the height at which this
-                validator
-
-                has begun unbonding.
+                validator has begun unbonding.
             unbonding_time:
               type: string
               format: date-time
               description: >-
                 unbonding_time defines, if unbonding, the min time for the
-                validator to
-
-                complete unbonding.
+                validator to complete unbonding.
             commission:
               description: commission defines the commission parameters.
               type: object
@@ -47082,9 +46811,7 @@ definitions:
                 commission_rates:
                   description: >-
                     commission_rates defines the initial commission rates to be
-                    used for
-
-                    creating a validator.
+                    used for creating a validator.
                   type: object
                   properties:
                     rate:
@@ -47096,16 +46823,12 @@ definitions:
                       type: string
                       description: >-
                         max_rate defines the maximum commission rate which
-                        validator can ever
-
-                        charge, as a fraction.
+                        validator can ever charge, as a fraction.
                     max_change_rate:
                       type: string
                       description: >-
                         max_change_rate defines the maximum daily increase of
-                        the validator
-
-                        commission, as a fraction.
+                        the validator commission, as a fraction.
                 update_time:
                   type: string
                   format: date-time
@@ -47116,9 +46839,7 @@ definitions:
               type: string
               description: >-
                 min_self_delegation is the validator's self declared minimum
-                self
-
-                delegation.
+                self delegation.
           description: >-
             Validator defines a validator, together with the total amount of the
 
@@ -47255,9 +46976,7 @@ definitions:
                   type: string
                   description: >-
                     operator_address defines the address of the validator's
-                    operator; bech
-
-                    encoded in JSON.
+                    operator; bech encoded in JSON.
                 consensus_pubkey:
                   type: object
                   properties:
@@ -47437,9 +47156,7 @@ definitions:
                   type: boolean
                   description: >-
                     jailed defined whether the validator has been jailed from
-                    bonded status or
-
-                    not.
+                    bonded status or not.
                 status:
                   description: status is the validator status (bonded/unbonding/unbonded).
                   type: string
@@ -47485,17 +47202,13 @@ definitions:
                   format: int64
                   description: >-
                     unbonding_height defines, if unbonding, the height at which
-                    this validator
-
-                    has begun unbonding.
+                    this validator has begun unbonding.
                 unbonding_time:
                   type: string
                   format: date-time
                   description: >-
                     unbonding_time defines, if unbonding, the min time for the
-                    validator to
-
-                    complete unbonding.
+                    validator to complete unbonding.
                 commission:
                   description: commission defines the commission parameters.
                   type: object
@@ -47503,9 +47216,7 @@ definitions:
                     commission_rates:
                       description: >-
                         commission_rates defines the initial commission rates to
-                        be used for
-
-                        creating a validator.
+                        be used for creating a validator.
                       type: object
                       properties:
                         rate:
@@ -47517,16 +47228,12 @@ definitions:
                           type: string
                           description: >-
                             max_rate defines the maximum commission rate which
-                            validator can ever
-
-                            charge, as a fraction.
+                            validator can ever charge, as a fraction.
                         max_change_rate:
                           type: string
                           description: >-
                             max_change_rate defines the maximum daily increase
-                            of the validator
-
-                            commission, as a fraction.
+                            of the validator commission, as a fraction.
                     update_time:
                       type: string
                       format: date-time
@@ -47537,9 +47244,7 @@ definitions:
                   type: string
                   description: >-
                     min_self_delegation is the validator's self declared minimum
-                    self
-
-                    delegation.
+                    self delegation.
               description: >-
                 Validator defines a validator, together with the total amount of
                 the
@@ -47585,7 +47290,7 @@ definitions:
           max_entries:
             type: integer
             format: int64
-            description: |-
+            description: >-
               max_entries is the max entries for either unbonding delegation or
               redelegation (per pair/trio).
           historical_entries:
@@ -47628,16 +47333,12 @@ definitions:
                   type: string
                   description: >-
                     validator_src_address is the validator redelegation source
-                    operator
-
-                    address.
+                    operator address.
                 validator_dst_address:
                   type: string
                   description: >-
                     validator_dst_address is the validator redelegation
-                    destination operator
-
-                    address.
+                    destination operator address.
                 entries:
                   type: array
                   items:
@@ -47664,9 +47365,7 @@ definitions:
                         type: string
                         description: >-
                           shares_dst is the amount of destination-validator
-                          shares created by
-
-                          redelegation.
+                          shares created by redelegation.
                     description: >-
                       RedelegationEntry defines a redelegation object with
                       relevant metadata.
@@ -47706,9 +47405,7 @@ definitions:
                         type: string
                         description: >-
                           shares_dst is the amount of destination-validator
-                          shares created by
-
-                          redelegation.
+                          shares created by redelegation.
                     description: >-
                       RedelegationEntry defines a redelegation object with
                       relevant metadata.
@@ -47784,9 +47481,7 @@ definitions:
                   type: string
                   description: >-
                     initial_balance defines the tokens initially scheduled to
-                    receive at
-
-                    completion.
+                    receive at completion.
                 balance:
                   type: string
                   description: balance defines the tokens to receive at completion.
@@ -47884,9 +47579,7 @@ definitions:
             type: string
             description: >-
               operator_address defines the address of the validator's operator;
-              bech
-
-              encoded in JSON.
+              bech encoded in JSON.
           consensus_pubkey:
             type: object
             properties:
@@ -48056,9 +47749,7 @@ definitions:
             type: boolean
             description: >-
               jailed defined whether the validator has been jailed from bonded
-              status or
-
-              not.
+              status or not.
           status:
             description: status is the validator status (bonded/unbonding/unbonded).
             type: string
@@ -48104,17 +47795,13 @@ definitions:
             format: int64
             description: >-
               unbonding_height defines, if unbonding, the height at which this
-              validator
-
-              has begun unbonding.
+              validator has begun unbonding.
           unbonding_time:
             type: string
             format: date-time
             description: >-
               unbonding_time defines, if unbonding, the min time for the
-              validator to
-
-              complete unbonding.
+              validator to complete unbonding.
           commission:
             description: commission defines the commission parameters.
             type: object
@@ -48122,9 +47809,7 @@ definitions:
               commission_rates:
                 description: >-
                   commission_rates defines the initial commission rates to be
-                  used for
-
-                  creating a validator.
+                  used for creating a validator.
                 type: object
                 properties:
                   rate:
@@ -48136,23 +47821,19 @@ definitions:
                     type: string
                     description: >-
                       max_rate defines the maximum commission rate which
-                      validator can ever
-
-                      charge, as a fraction.
+                      validator can ever charge, as a fraction.
                   max_change_rate:
                     type: string
                     description: >-
                       max_change_rate defines the maximum daily increase of the
-                      validator
-
-                      commission, as a fraction.
+                      validator commission, as a fraction.
               update_time:
                 type: string
                 format: date-time
                 description: update_time is the last time the commission rate was changed.
           min_self_delegation:
             type: string
-            description: |-
+            description: >-
               min_self_delegation is the validator's self declared minimum self
               delegation.
         description: >-
@@ -48214,9 +47895,7 @@ definitions:
                     type: string
                     description: >-
                       initial_balance defines the tokens initially scheduled to
-                      receive at
-
-                      completion.
+                      receive at completion.
                   balance:
                     type: string
                     description: balance defines the tokens to receive at completion.
@@ -48262,9 +47941,7 @@ definitions:
               type: string
               description: >-
                 operator_address defines the address of the validator's
-                operator; bech
-
-                encoded in JSON.
+                operator; bech encoded in JSON.
             consensus_pubkey:
               type: object
               properties:
@@ -48438,9 +48115,7 @@ definitions:
               type: boolean
               description: >-
                 jailed defined whether the validator has been jailed from bonded
-                status or
-
-                not.
+                status or not.
             status:
               description: status is the validator status (bonded/unbonding/unbonded).
               type: string
@@ -48486,17 +48161,13 @@ definitions:
               format: int64
               description: >-
                 unbonding_height defines, if unbonding, the height at which this
-                validator
-
-                has begun unbonding.
+                validator has begun unbonding.
             unbonding_time:
               type: string
               format: date-time
               description: >-
                 unbonding_time defines, if unbonding, the min time for the
-                validator to
-
-                complete unbonding.
+                validator to complete unbonding.
             commission:
               description: commission defines the commission parameters.
               type: object
@@ -48504,9 +48175,7 @@ definitions:
                 commission_rates:
                   description: >-
                     commission_rates defines the initial commission rates to be
-                    used for
-
-                    creating a validator.
+                    used for creating a validator.
                   type: object
                   properties:
                     rate:
@@ -48518,16 +48187,12 @@ definitions:
                       type: string
                       description: >-
                         max_rate defines the maximum commission rate which
-                        validator can ever
-
-                        charge, as a fraction.
+                        validator can ever charge, as a fraction.
                     max_change_rate:
                       type: string
                       description: >-
                         max_change_rate defines the maximum daily increase of
-                        the validator
-
-                        commission, as a fraction.
+                        the validator commission, as a fraction.
                 update_time:
                   type: string
                   format: date-time
@@ -48538,9 +48203,7 @@ definitions:
               type: string
               description: >-
                 min_self_delegation is the validator's self declared minimum
-                self
-
-                delegation.
+                self delegation.
           description: >-
             Validator defines a validator, together with the total amount of the
 
@@ -48592,16 +48255,14 @@ definitions:
         description: delegator_address is the bech32-encoded address of the delegator.
       validator_src_address:
         type: string
-        description: |-
+        description: >-
           validator_src_address is the validator redelegation source operator
           address.
       validator_dst_address:
         type: string
         description: >-
           validator_dst_address is the validator redelegation destination
-          operator
-
-          address.
+          operator address.
       entries:
         type: array
         items:
@@ -48628,9 +48289,7 @@ definitions:
               type: string
               description: >-
                 shares_dst is the amount of destination-validator shares created
-                by
-
-                redelegation.
+                by redelegation.
           description: >-
             RedelegationEntry defines a redelegation object with relevant
             metadata.
@@ -48656,7 +48315,7 @@ definitions:
         description: initial_balance defines the initial balance when redelegation started.
       shares_dst:
         type: string
-        description: |-
+        description: >-
           shares_dst is the amount of destination-validator shares created by
           redelegation.
     description: RedelegationEntry defines a redelegation object with relevant metadata.
@@ -48685,9 +48344,7 @@ definitions:
             type: string
             description: >-
               shares_dst is the amount of destination-validator shares created
-              by
-
-              redelegation.
+              by redelegation.
         description: >-
           RedelegationEntry defines a redelegation object with relevant
           metadata.
@@ -48713,16 +48370,12 @@ definitions:
             type: string
             description: >-
               validator_src_address is the validator redelegation source
-              operator
-
-              address.
+              operator address.
           validator_dst_address:
             type: string
             description: >-
               validator_dst_address is the validator redelegation destination
-              operator
-
-              address.
+              operator address.
           entries:
             type: array
             items:
@@ -48749,9 +48402,7 @@ definitions:
                   type: string
                   description: >-
                     shares_dst is the amount of destination-validator shares
-                    created by
-
-                    redelegation.
+                    created by redelegation.
               description: >-
                 RedelegationEntry defines a redelegation object with relevant
                 metadata.
@@ -48791,9 +48442,7 @@ definitions:
                   type: string
                   description: >-
                     shares_dst is the amount of destination-validator shares
-                    created by
-
-                    redelegation.
+                    created by redelegation.
               description: >-
                 RedelegationEntry defines a redelegation object with relevant
                 metadata.
@@ -48840,9 +48489,7 @@ definitions:
               type: string
               description: >-
                 initial_balance defines the tokens initially scheduled to
-                receive at
-
-                completion.
+                receive at completion.
             balance:
               type: string
               description: balance defines the tokens to receive at completion.
@@ -48866,7 +48513,7 @@ definitions:
         description: completion_time is the unix time for unbonding completion.
       initial_balance:
         type: string
-        description: |-
+        description: >-
           initial_balance defines the tokens initially scheduled to receive at
           completion.
       balance:
@@ -48880,7 +48527,7 @@ definitions:
     properties:
       operator_address:
         type: string
-        description: |-
+        description: >-
           operator_address defines the address of the validator's operator; bech
           encoded in JSON.
       consensus_pubkey:
@@ -49046,9 +48693,7 @@ definitions:
         type: boolean
         description: >-
           jailed defined whether the validator has been jailed from bonded
-          status or
-
-          not.
+          status or not.
       status:
         description: status is the validator status (bonded/unbonding/unbonded).
         type: string
@@ -49092,17 +48737,13 @@ definitions:
         format: int64
         description: >-
           unbonding_height defines, if unbonding, the height at which this
-          validator
-
-          has begun unbonding.
+          validator has begun unbonding.
       unbonding_time:
         type: string
         format: date-time
         description: >-
           unbonding_time defines, if unbonding, the min time for the validator
-          to
-
-          complete unbonding.
+          to complete unbonding.
       commission:
         description: commission defines the commission parameters.
         type: object
@@ -49110,9 +48751,7 @@ definitions:
           commission_rates:
             description: >-
               commission_rates defines the initial commission rates to be used
-              for
-
-              creating a validator.
+              for creating a validator.
             type: object
             properties:
               rate:
@@ -49124,23 +48763,19 @@ definitions:
                 type: string
                 description: >-
                   max_rate defines the maximum commission rate which validator
-                  can ever
-
-                  charge, as a fraction.
+                  can ever charge, as a fraction.
               max_change_rate:
                 type: string
                 description: >-
                   max_change_rate defines the maximum daily increase of the
-                  validator
-
-                  commission, as a fraction.
+                  validator commission, as a fraction.
           update_time:
             type: string
             format: date-time
             description: update_time is the last time the commission rate was changed.
       min_self_delegation:
         type: string
-        description: |-
+        description: >-
           min_self_delegation is the validator's self declared minimum self
           delegation.
     description: >-
@@ -49818,28 +49453,23 @@ definitions:
             type: string
             description: >-
               if unset, the first signer is responsible for paying the fees. If
-              set, the
+              set, the specified account must pay the fees.
 
-              specified account must pay the fees. the payer must be a tx signer
-              (and
+              the payer must be a tx signer (and thus have signed this field in
+              AuthInfo).
 
-              thus have signed this field in AuthInfo). setting this field does
-              *not*
-
-              change the ordering of required signers for the transaction.
+              setting this field does *not* change the ordering of required
+              signers for the transaction.
           granter:
             type: string
             title: >-
               if set, the fee payer (either the first signer or the value of the
-              payer
+              payer field) requests that a fee grant be used
 
-              field) requests that a fee grant be used to pay fees instead of
-              the fee
+              to pay fees instead of the fee payer's own balance. If an
+              appropriate fee grant does not exist or the chain does
 
-              payer's own balance. If an appropriate fee grant does not exist or
-              the
-
-              chain does not support fee grants, this will fail
+              not support fee grants, this will fail
     description: |-
       AuthInfo describes the fee and signer modes that are used to sign a
       transaction.
@@ -49851,17 +49481,17 @@ definitions:
       - BROADCAST_MODE_SYNC
       - BROADCAST_MODE_ASYNC
     default: BROADCAST_MODE_UNSPECIFIED
-    description: |-
+    description: >-
       BroadcastMode specifies the broadcast mode for the TxService.Broadcast RPC
       method.
 
        - BROADCAST_MODE_UNSPECIFIED: zero-value for mode ordering
-       - BROADCAST_MODE_BLOCK: BROADCAST_MODE_BLOCK defines a tx broadcasting mode where the client waits
-      for the tx to be committed in a block.
-       - BROADCAST_MODE_SYNC: BROADCAST_MODE_SYNC defines a tx broadcasting mode where the client waits
-      for a CheckTx execution response only.
-       - BROADCAST_MODE_ASYNC: BROADCAST_MODE_ASYNC defines a tx broadcasting mode where the client
-      returns immediately.
+       - BROADCAST_MODE_BLOCK: BROADCAST_MODE_BLOCK defines a tx broadcasting mode where the client waits for
+      the tx to be committed in a block.
+       - BROADCAST_MODE_SYNC: BROADCAST_MODE_SYNC defines a tx broadcasting mode where the client waits for
+      a CheckTx execution response only.
+       - BROADCAST_MODE_ASYNC: BROADCAST_MODE_ASYNC defines a tx broadcasting mode where the client returns
+      immediately.
   cosmos.tx.v1beta1.BroadcastTxRequest:
     type: object
     properties:
@@ -49879,17 +49509,15 @@ definitions:
         default: BROADCAST_MODE_UNSPECIFIED
         description: >-
           BroadcastMode specifies the broadcast mode for the TxService.Broadcast
-          RPC
-
-          method.
+          RPC method.
 
            - BROADCAST_MODE_UNSPECIFIED: zero-value for mode ordering
-           - BROADCAST_MODE_BLOCK: BROADCAST_MODE_BLOCK defines a tx broadcasting mode where the client waits
-          for the tx to be committed in a block.
-           - BROADCAST_MODE_SYNC: BROADCAST_MODE_SYNC defines a tx broadcasting mode where the client waits
-          for a CheckTx execution response only.
-           - BROADCAST_MODE_ASYNC: BROADCAST_MODE_ASYNC defines a tx broadcasting mode where the client
-          returns immediately.
+           - BROADCAST_MODE_BLOCK: BROADCAST_MODE_BLOCK defines a tx broadcasting mode where the client waits for
+          the tx to be committed in a block.
+           - BROADCAST_MODE_SYNC: BROADCAST_MODE_SYNC defines a tx broadcasting mode where the client waits for
+          a CheckTx execution response only.
+           - BROADCAST_MODE_ASYNC: BROADCAST_MODE_ASYNC defines a tx broadcasting mode where the client returns
+          immediately.
     description: |-
       BroadcastTxRequest is the request type for the Service.BroadcastTxRequest
       RPC method.
@@ -50238,27 +49866,23 @@ definitions:
         type: string
         description: >-
           if unset, the first signer is responsible for paying the fees. If set,
-          the
+          the specified account must pay the fees.
 
-          specified account must pay the fees. the payer must be a tx signer
-          (and
+          the payer must be a tx signer (and thus have signed this field in
+          AuthInfo).
 
-          thus have signed this field in AuthInfo). setting this field does
-          *not*
-
-          change the ordering of required signers for the transaction.
+          setting this field does *not* change the ordering of required signers
+          for the transaction.
       granter:
         type: string
         title: >-
           if set, the fee payer (either the first signer or the value of the
-          payer
+          payer field) requests that a fee grant be used
 
-          field) requests that a fee grant be used to pay fees instead of the
-          fee
+          to pay fees instead of the fee payer's own balance. If an appropriate
+          fee grant does not exist or the chain does
 
-          payer's own balance. If an appropriate fee grant does not exist or the
-
-          chain does not support fee grants, this will fail
+          not support fee grants, this will fail
     description: >-
       Fee includes the amount of coins paid in fees and the maximum
 
@@ -50846,9 +50470,7 @@ definitions:
               was set, its value is undefined otherwise
     description: >-
       GetBlockWithTxsResponse is the response type for the
-      Service.GetBlockWithTxs
-
-      method.
+      Service.GetBlockWithTxs method.
 
 
       Since: cosmos-sdk 0.45.2
@@ -51654,9 +51276,7 @@ definitions:
     default: ORDER_BY_UNSPECIFIED
     description: >-
       - ORDER_BY_UNSPECIFIED: ORDER_BY_UNSPECIFIED specifies an unknown sorting
-      order. OrderBy defaults
-
-      to ASC in this case.
+      order. OrderBy defaults to ASC in this case.
        - ORDER_BY_ASC: ORDER_BY_ASC defines ascending order
        - ORDER_BY_DESC: ORDER_BY_DESC defines descending order
     title: OrderBy defines the sorting order
@@ -52138,7 +51758,6 @@ definitions:
               called memo,
 
               but should be called `note` instead (see
-
               https://github.com/cosmos/cosmos-sdk/issues/9122).
           timeout_height:
             type: string
@@ -52716,7 +52335,6 @@ definitions:
           memo,
 
           but should be called `note` instead (see
-
           https://github.com/cosmos/cosmos-sdk/issues/9122).
       timeout_height:
         type: string
@@ -55902,9 +55520,7 @@ definitions:
               validators.
     description: >-
       GetBlockByHeightResponse is the response type for the
-      Query/GetBlockByHeight
-
-      RPC method.
+      Query/GetBlockByHeight RPC method.
   cosmos.base.tendermint.v1beta1.GetLatestBlockResponse:
     type: object
     properties:
@@ -56462,9 +56078,7 @@ definitions:
               validators.
     description: >-
       GetLatestBlockResponse is the response type for the Query/GetLatestBlock
-      RPC
-
-      method.
+      RPC method.
   cosmos.base.tendermint.v1beta1.GetLatestValidatorSetResponse:
     type: object
     properties:
@@ -56672,7 +56286,7 @@ definitions:
               PageRequest.count_total
 
               was set, its value is undefined otherwise
-    description: |-
+    description: >-
       GetLatestValidatorSetResponse is the response type for the
       Query/GetValidatorSetByHeight RPC method.
   cosmos.base.tendermint.v1beta1.GetNodeInfoResponse:
@@ -56965,7 +56579,7 @@ definitions:
               PageRequest.count_total
 
               was set, its value is undefined otherwise
-    description: |-
+    description: >-
       GetValidatorSetByHeightResponse is the response type for the
       Query/GetValidatorSetByHeight RPC method.
   cosmos.base.tendermint.v1beta1.Module:

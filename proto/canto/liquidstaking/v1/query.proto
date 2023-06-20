@@ -119,14 +119,17 @@ message QueryChunksRequest {
 }
 
 message QueryChunksResponse {
-  repeated Chunk chunks = 1 [ (gogoproto.nullable) = false ];
+  repeated QueryChunkResponse chunks = 1 [ (gogoproto.nullable) = false ];
 
   cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
 message QueryChunkRequest { uint64 id = 1; }
 
-message QueryChunkResponse { Chunk chunk = 1 [ (gogoproto.nullable) = false ]; }
+message QueryChunkResponse {
+  Chunk chunk = 1 [ (gogoproto.nullable) = false ];
+  string derived_address = 2;
+}
 
 message QueryInsurancesRequest {
   // query all insurances in a specific status
@@ -140,7 +143,7 @@ message QueryInsurancesRequest {
 }
 
 message QueryInsurancesResponse {
-  repeated Insurance insurances = 1 [ (gogoproto.nullable) = false ];
+  repeated QueryInsuranceResponse insurances = 1 [ (gogoproto.nullable) = false ];
 
   cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
@@ -149,6 +152,8 @@ message QueryInsuranceRequest { uint64 id = 1; }
 
 message QueryInsuranceResponse {
   Insurance insurance = 1 [ (gogoproto.nullable) = false ];
+  string derived_address = 2;
+  string fee_pool_address = 3;
 }
 
 message QueryWithdrawInsuranceRequestsRequest {

@@ -1,12 +1,13 @@
 package keeper_test
 
 import (
+	"time"
+
 	"github.com/Canto-Network/Canto/v6/x/liquidstaking/keeper"
 	"github.com/Canto-Network/Canto/v6/x/liquidstaking/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/cosmos/cosmos-sdk/x/staking"
-	"time"
 )
 
 func (suite *KeeperTestSuite) TestNetAmountInvariant() {
@@ -35,27 +36,23 @@ func (suite *KeeperTestSuite) TestNetAmountInvariant() {
 	nas := suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
 	oneChunk, oneInsurance := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
 	suite.True(nas.Equal(types.NetAmountState{
+		MintRate:                           sdk.MustNewDecFromStr("0.990373683313988266"),
 		LsTokensTotalSupply:                types.ChunkSize,
-		TotalChunksBalance:                 sdk.ZeroInt(),
+		NetAmount:                          sdk.MustNewDecFromStr("252429970840349915725000"),
+		TotalLiquidTokens:                  types.ChunkSize,
+		RewardModuleAccBalance:             sdk.MustNewDecFromStr("2429970840349915725000").TruncateInt(),
+		FeeRate:                            sdk.ZeroDec(),
+		UtilizationRatio:                   sdk.MustNewDecFromStr("0.001999951953154277"),
+		RemainingChunkSlots:                sdk.ZeroInt(),
+		DiscountRate:                       sdk.MustNewDecFromStr("0.009719883361399663"),
 		TotalDelShares:                     types.ChunkSize.ToDec(),
 		TotalRemainingRewards:              sdk.ZeroDec(),
-		TotalRemainingInsuranceCommissions: sdk.ZeroDec(),
-		TotalLiquidTokens:                  types.ChunkSize,
+		TotalChunksBalance:                 sdk.ZeroInt(),
+		TotalUnbondingChunksBalance:        sdk.ZeroInt(),
 		TotalInsuranceTokens:               oneInsurance.Amount,
-		TotalInsuranceCommissions:          sdk.MustNewDecFromStr("269996760038879525000").TruncateInt(),
 		TotalPairedInsuranceTokens:         oneInsurance.Amount,
-		TotalPairedInsuranceCommissions:    sdk.MustNewDecFromStr("269996760038879525000").TruncateInt(),
 		TotalUnpairingInsuranceTokens:      sdk.ZeroInt(),
-		TotalUnpairingInsuranceCommissions: sdk.ZeroInt(),
-		TotalUnpairedInsuranceTokens:       sdk.ZeroInt(),
-		TotalUnpairedInsuranceCommissions:  sdk.ZeroInt(),
-		TotalUnbondingBalance:              sdk.ZeroInt(),
-		NetAmount:                          sdk.MustNewDecFromStr("252429970840349915725000"),
-		MintRate:                           sdk.MustNewDecFromStr("0.990373683313988266"),
-		RewardModuleAccBalance:             sdk.MustNewDecFromStr("2429970840349915725000").TruncateInt(),
-		UtilizationRatio:                   sdk.MustNewDecFromStr("0.001999951953154277"),
-		DiscountRate:                       sdk.MustNewDecFromStr("0.009719883361399663"),
-		FeeRate:                            sdk.ZeroDec(),
+		TotalRemainingInsuranceCommissions: sdk.ZeroDec(),
 	}))
 
 	// forcefully make net amount zero

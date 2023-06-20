@@ -63,7 +63,7 @@ func (k Keeper) CollectRewardAndFee(
 		return
 	default:
 		// Dynamic Fee can be zero if the utilization rate is low.
-		if !dynamicFees.IsZero() {
+		if dynamicFees.IsAllPositive() {
 			// Collect dynamic fee and burn it first.
 			if err := k.bankKeeper.SendCoinsFromAccountToModule(ctx, chunk.DerivedAddress(), types.ModuleName, dynamicFees); err != nil {
 				panic(err)
@@ -90,7 +90,9 @@ func (k Keeper) CollectRewardAndFee(
 // DistributeReward withdraws delegation rewards from all paired chunks
 // Keeper.CollectRewardAndFee will be called during withdrawing process.
 func (k Keeper) DistributeReward(ctx sdk.Context) {
-	feeRate := k.CalcDynamicFeeRate(ctx)
+	// TODO: 모듈에서 손해보는 일은 없는가?
+	// 안에서 계산해야하는 것은 아닌가?
+	feeRate, _ := k.CalcDynamicFeeRate(ctx)
 	err := k.IterateAllChunks(ctx, func(chunk types.Chunk) (bool, error) {
 		var insurance types.Insurance
 		var found bool
@@ -125,6 +127,7 @@ func (k Keeper) DistributeReward(ctx sdk.Context) {
 }
 
 // CoverSlashingAndHandleMatureUnbondings covers slashing and handles mature unbondings.
+// TODO: Why one step? 여러 스텝으로 나눌 수 없는지?
 func (k Keeper) CoverSlashingAndHandleMatureUnbondings(ctx sdk.Context) {
 	var err error
 	err = k.IterateAllChunks(ctx, func(chunk types.Chunk) (bool, error) {
@@ -173,6 +176,7 @@ func (k Keeper) HandleQueuedLiquidUnstakes(ctx sdk.Context) ([]types.Chunk, erro
 		}
 		if chunk.Status != types.CHUNK_STATUS_PAIRED {
 			// Chunk is already in unstaking process, so we skip it
+			// TODO: 이 케이스가 발생할 수 있는가? 안전장치로 넣어둔 것인가?
 			continue
 		}
 		// get insurance

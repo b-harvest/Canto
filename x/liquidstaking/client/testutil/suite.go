@@ -136,28 +136,25 @@ func (suite *IntegrationTestSuite) TestLiquidStaking() {
 	suite.NoError(err)
 	suite.NoError(suite.network.WaitForNextBlock())
 	states = suite.getStates(clientCtx)
+	fmt.Println(states.RemainingChunkSlots.String())
 	suite.True(states.Equal(types.NetAmountState{
+		MintRate:                           sdk.OneDec(),
 		LsTokensTotalSupply:                types.ChunkSize.MulRaw(2),
-		TotalChunksBalance:                 sdk.ZeroInt(),
+		NetAmount:                          types.ChunkSize.MulRaw(2).ToDec(),
+		TotalLiquidTokens:                  types.ChunkSize.MulRaw(2),
+		RewardModuleAccBalance:             sdk.ZeroInt(),
+		FeeRate:                            sdk.ZeroDec(),
+		UtilizationRatio:                   sdk.MustNewDecFromStr("0.0004"),
+		RemainingChunkSlots:                sdk.NewInt(498),
+		DiscountRate:                       sdk.ZeroDec(),
 		TotalDelShares:                     types.ChunkSize.MulRaw(2).ToDec(),
 		TotalRemainingRewards:              sdk.ZeroDec(),
-		TotalRemainingInsuranceCommissions: sdk.ZeroDec(),
-		TotalLiquidTokens:                  types.ChunkSize.MulRaw(2),
+		TotalChunksBalance:                 sdk.ZeroInt(),
+		TotalUnbondingChunksBalance:        sdk.ZeroInt(),
 		TotalInsuranceTokens:               oneInsuranceAmt.MulRaw(2),
-		TotalInsuranceCommissions:          sdk.ZeroInt(),
 		TotalPairedInsuranceTokens:         oneInsuranceAmt.MulRaw(2),
-		TotalPairedInsuranceCommissions:    sdk.ZeroInt(),
 		TotalUnpairingInsuranceTokens:      sdk.ZeroInt(),
-		TotalUnpairingInsuranceCommissions: sdk.ZeroInt(),
-		TotalUnpairedInsuranceTokens:       sdk.ZeroInt(),
-		TotalUnpairedInsuranceCommissions:  sdk.ZeroInt(),
-		TotalUnbondingBalance:              sdk.ZeroInt(),
-		NetAmount:                          types.ChunkSize.MulRaw(2).ToDec(),
-		MintRate:                           sdk.OneDec(),
-		RewardModuleAccBalance:             sdk.ZeroInt(),
-		UtilizationRatio:                   sdk.MustNewDecFromStr("0.0004"),
-		DiscountRate:                       sdk.ZeroDec(),
-		FeeRate:                            sdk.ZeroDec(),
+		TotalRemainingInsuranceCommissions: sdk.ZeroDec(),
 	}))
 
 	// liquid unstake 1 chunk

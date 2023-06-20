@@ -49,7 +49,7 @@ func NetAmountInvariant(k Keeper) sdk.Invariant {
 		// if ls tokens supply is not positive, it means that all chunks are un-paired.
 		// any unbonding balance or liquid tokens must not exist.
 		if !nas.LsTokensTotalSupply.IsPositive() &&
-			(nas.TotalUnbondingBalance.IsPositive() || nas.TotalLiquidTokens.IsPositive()) {
+			(nas.TotalUnbondingChunksBalance.IsPositive() || nas.TotalLiquidTokens.IsPositive()) {
 			return "found non-positive lsToken supply with positive unbonding balance or liquid tokens", true
 		}
 

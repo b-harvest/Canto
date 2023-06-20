@@ -54,17 +54,20 @@ These rewards are then collected to a **reward module account.**
 
 ### Dynamic Fee Rate
 
-liquidstaking module takes **a fee calculated based on utilization ratio** before delegation rewards go to the reward pool(Delegation reward -> insurance commission --(fee is burned)--> reward pool ).
+liquidstaking module takes **a fee calculated based on utilization ratio** before delegation rewards go to the reward pool
+Delegation reward are distributed as follows:
+1. insurance take commission 
+2. fee is burned
+3. rest of the delegation reward goes to the reward pool
 
-**Utilization ratio(= u)** is calculated as follows: `chunkSize * numPairedChunks / totalSupply`
+The fee is calculated as follows: `fee = (delegation reward - insurance commission) * feeRate`
 
-The fee rate is calculated as follows:
-
+**Fee rate** is calculated based on **utilization ratio** and **fee rate parameters** set by the governance.
 * if u < softCap then, **fee rate =** `r0`
 * if softCap <= u <= optimal then, **fee rate =** `r0 + ((u - softcap) / (optimal - softcap) x slope1)`
 * if optimal < u <= hardCap then, **fee rate =** `r0 + slope1 + ((min(u, hardcap) - optimal) / (hardcap - optimal) x slope2)`
 
-And the fee is calculated as follows: `fee = (delegation reward - insurance commission) * feeRate`
+An explanation of the parameters used in the above formula can be found in [](08_params.md).
 
 Fee is burned and the rest of the delegation reward goes to the reward pool.
 

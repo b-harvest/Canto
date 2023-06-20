@@ -341,24 +341,20 @@ func (suite *KeeperTestSuite) TestLiquidStakeWithAdvanceBlocks() {
 			MintRate:                           sdk.OneDec(),
 			LsTokensTotalSupply:                currentLiquidatedTokens,
 			NetAmount:                          currentLiquidatedTokens.ToDec(),
+			TotalLiquidTokens:                  currentLiquidatedTokens,
+			RewardModuleAccBalance:             sdk.ZeroInt(),
+			FeeRate:                            sdk.ZeroDec(),
+			UtilizationRatio:                   sdk.MustNewDecFromStr("0.005999999856000003"),
+			RemainingChunkSlots:                sdk.ZeroInt(),
+			DiscountRate:                       sdk.ZeroDec(),
 			TotalDelShares:                     currentLiquidatedTokens.ToDec(),
 			TotalRemainingRewards:              sdk.ZeroDec(),
-			TotalRemainingInsuranceCommissions: sdk.ZeroDec(),
 			TotalChunksBalance:                 sdk.ZeroInt(),
-			TotalLiquidTokens:                  currentLiquidatedTokens,
+			TotalUnbondingChunksBalance:        sdk.ZeroInt(),
 			TotalInsuranceTokens:               oneInsurance.Amount.Mul(sdk.NewInt(int64(len(env.insurances)))),
-			TotalInsuranceCommissions:          sdk.ZeroInt(),
 			TotalPairedInsuranceTokens:         currentInsuranceTokens,
-			TotalPairedInsuranceCommissions:    sdk.ZeroInt(),
 			TotalUnpairingInsuranceTokens:      sdk.ZeroInt(),
-			TotalUnpairingInsuranceCommissions: sdk.ZeroInt(),
-			TotalUnpairedInsuranceTokens:       sdk.ZeroInt(),
-			TotalUnpairedInsuranceCommissions:  sdk.ZeroInt(),
-			TotalUnbondingBalance:              sdk.ZeroInt(),
-			RewardModuleAccBalance:             sdk.ZeroInt(),
-			UtilizationRatio:                   sdk.MustNewDecFromStr("0.005999999856000003"),
-			DiscountRate:                       sdk.ZeroDec(),
-			FeeRate:                            sdk.ZeroDec(),
+			TotalRemainingInsuranceCommissions: sdk.ZeroDec(),
 		}), "no epoch(=1 block in test) processed yet, so there are no mint rate change and remaining rewards yet")
 	}
 
@@ -388,7 +384,7 @@ func (suite *KeeperTestSuite) TestLiquidStakeWithAdvanceBlocks() {
 			"there is a small difference because of truncating",
 		)
 		expected = unitInsuranceCommissionPerRewardEpoch.Mul(pairedChunksInt).Mul(sdk.NewInt(suite.rewardEpochCount))
-		actual = nas.TotalPairedInsuranceCommissions
+		actual = suite.calcTotalInsuranceCommissions(types.INSURANCE_STATUS_PAIRED)
 		suite.Equal(
 			"75000",
 			actual.Sub(expected).String(),
@@ -429,24 +425,19 @@ func (suite *KeeperTestSuite) TestLiquidUnstakeWithAdvanceBlocks() {
 			MintRate:                           sdk.OneDec(),
 			LsTokensTotalSupply:                currentLiquidatedTokens,
 			NetAmount:                          currentLiquidatedTokens.ToDec(),
-			TotalDelShares:                     currentLiquidatedTokens.ToDec(),
-			TotalRemainingRewards:              sdk.ZeroDec(),
-			TotalRemainingInsuranceCommissions: sdk.ZeroDec(),
-			TotalChunksBalance:                 sdk.ZeroInt(),
 			TotalLiquidTokens:                  currentLiquidatedTokens,
-			TotalInsuranceTokens:               oneInsurance.Amount.Mul(sdk.NewInt(int64(len(env.insurances)))),
-			TotalInsuranceCommissions:          sdk.ZeroInt(),
-			TotalPairedInsuranceTokens:         currentInsuranceTokens,
-			TotalPairedInsuranceCommissions:    sdk.ZeroInt(),
-			TotalUnpairingInsuranceTokens:      sdk.ZeroInt(),
-			TotalUnpairingInsuranceCommissions: sdk.ZeroInt(),
-			TotalUnpairedInsuranceTokens:       sdk.ZeroInt(),
-			TotalUnpairedInsuranceCommissions:  sdk.ZeroInt(),
-			TotalUnbondingBalance:              sdk.ZeroInt(),
 			RewardModuleAccBalance:             sdk.ZeroInt(),
+			FeeRate:                            sdk.ZeroDec(),
 			UtilizationRatio:                   sdk.MustNewDecFromStr("0.005999999856000003"),
 			DiscountRate:                       sdk.ZeroDec(),
-			FeeRate:                            sdk.ZeroDec(),
+			TotalDelShares:                     currentLiquidatedTokens.ToDec(),
+			TotalRemainingRewards:              sdk.ZeroDec(),
+			TotalChunksBalance:                 sdk.ZeroInt(),
+			TotalUnbondingChunksBalance:        sdk.ZeroInt(),
+			TotalInsuranceTokens:               oneInsurance.Amount.Mul(sdk.NewInt(int64(len(env.insurances)))),
+			TotalPairedInsuranceTokens:         currentInsuranceTokens,
+			TotalUnpairingInsuranceTokens:      sdk.ZeroInt(),
+			TotalRemainingInsuranceCommissions: sdk.ZeroDec(),
 		}), "no epoch(=1 block in test) processed yet, so there are no mint rate change and remaining rewards yet")
 	}
 	// advance 1 block(= epoch period in test environment) so reward is accumulated which means mint rate is changed
@@ -526,7 +517,7 @@ func (suite *KeeperTestSuite) TestLiquidUnstakeWithAdvanceBlocks() {
 			"unstaking is not finished so ls tokens total supply must not be changed",
 		)
 		suite.Equal(
-			nas.TotalUnbondingBalance.String(),
+			nas.TotalUnbondingChunksBalance.String(),
 			oneChunk.Amount.String(),
 			"unstaking 1 chunk is started which means undelegate is already triggered",
 		)
@@ -541,29 +532,16 @@ func (suite *KeeperTestSuite) TestLiquidUnstakeWithAdvanceBlocks() {
 				"so reward module got %d chunk's rewards", pairedChunksInt.Int64()),
 		)
 		expected = unitInsuranceCommissionPerRewardEpoch.Mul(sdk.NewInt(suite.rewardEpochCount))
-		actual = nas.TotalUnpairingInsuranceCommissions
+		actual = suite.calcTotalInsuranceCommissions(types.INSURANCE_STATUS_UNPAIRING)
 		// there is a diff because of truncation
 		suite.Equal(
 			"25000",
-			actual.Sub(expected).String(),
-		)
-		expected = unitInsuranceCommissionPerRewardEpoch.Mul(sdk.NewInt(suite.rewardEpochCount).Mul(sdk.NewInt(2)))
-		actual = nas.TotalPairedInsuranceCommissions.Sub(beforeNas.TotalPairedInsuranceCommissions)
-		suite.Equal(
-			"50000",
 			actual.Sub(expected).String(),
 		)
 		suite.Equal(
 			oneInsurance.Amount.String(),
 			nas.TotalUnpairingInsuranceTokens.Sub(beforeNas.TotalUnpairingInsuranceTokens).String(),
 			"",
-		)
-		expected = unitInsuranceCommissionPerRewardEpoch.Mul(sdk.NewInt(suite.rewardEpochCount))
-		actual = nas.TotalUnpairingInsuranceCommissions.Sub(beforeNas.TotalUnpairingInsuranceCommissions)
-		suite.Equal(
-			"25000",
-			actual.Sub(expected).String(),
-			"TotalUnpairingInsuranceTokens must be increased by insurance commission per epoch",
 		)
 		suite.True(nas.MintRate.LT(beforeNas.MintRate), "mint rate decreased because of reward is accumulated")
 	}
@@ -598,16 +576,11 @@ func (suite *KeeperTestSuite) TestLiquidUnstakeWithAdvanceBlocks() {
 	afterBondDenomBalance := suite.app.BankKeeper.GetBalance(suite.ctx, undelegator, env.bondDenom).Amount
 	// Get bondDeno balance of undelegator
 	{
-		suite.Equal(
-			oneInsurance.Amount.String(),
-			nas.TotalUnpairedInsuranceTokens.Sub(beforeNas.TotalUnpairedInsuranceTokens).String(),
-			"unstkaing 1 chunk is finished so the insurance is released",
-		)
 		suite.Equal(beforeNas.TotalDelShares.String(), nas.TotalDelShares.String())
 		suite.Equal(beforeNas.TotalLiquidTokens.String(), nas.TotalLiquidTokens.String())
 		suite.Equal(
-			beforeNas.TotalUnbondingBalance.Sub(oneChunk.Amount).String(),
-			nas.TotalUnbondingBalance.String(),
+			beforeNas.TotalUnbondingChunksBalance.Sub(oneChunk.Amount).String(),
+			nas.TotalUnbondingChunksBalance.String(),
 			"unstaking(=unbonding) is finished",
 		)
 		suite.True(nas.LsTokensTotalSupply.LT(beforeNas.LsTokensTotalSupply), "ls tokens are burned")
@@ -619,12 +592,6 @@ func (suite *KeeperTestSuite) TestLiquidUnstakeWithAdvanceBlocks() {
 			"461697084450000",
 			expected.Sub(actual).String(),
 			"reward module account balance must be increased by pure reward per epoch * reward epoch count",
-		)
-		expected = unitInsuranceCommissionPerRewardEpoch.Mul(pairedChunksInt)
-		actual = nas.TotalPairedInsuranceCommissions.Sub(beforeNas.TotalPairedInsuranceCommissions)
-		suite.Equal(
-			"51299676050000",
-			expected.Sub(actual).String(),
 		)
 		suite.Equal(
 			afterBondDenomBalance.String(),
@@ -2337,14 +2304,15 @@ func (suite *KeeperTestSuite) TestDynamicFee() {
 				},
 			)
 			{
+				feeRate, u := suite.app.LiquidStakingKeeper.CalcDynamicFeeRate(suite.ctx)
 				// Check current state before reaching epoch
 				suite.Equal(
 					tc.u.String(),
-					suite.app.LiquidStakingKeeper.CalcUtilizationRatio(suite.ctx).String(),
+					u.String(),
 				)
 				suite.Equal(
 					tc.dynamicFeeRate.String(),
-					suite.app.LiquidStakingKeeper.CalcDynamicFeeRate(suite.ctx).String(),
+					feeRate.String(),
 				)
 			}
 			beforeNas := suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
@@ -2674,16 +2642,10 @@ func (suite *KeeperTestSuite) TestChunkPositiveBalanceBeforeEpoch() {
 	suite.ctx = suite.advanceEpoch(suite.ctx)
 	suite.ctx = suite.advanceHeight(suite.ctx, 1, "liquid staking endblocker is triggered")
 
-	originTotalInsuranceCommissions, _ := sdk.NewIntFromString("17999928000287925000")
 	originReardModuleAccBalance, _ := sdk.NewIntFromString("161999352002591325000")
 	nas := suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
 	{
 		additionalCommissions := coin.Amount.ToDec().Mul(TenPercentFeeRate).TruncateInt()
-		suite.Equal(
-			additionalCommissions.String(),
-			nas.TotalInsuranceCommissions.Sub(originTotalInsuranceCommissions).String(),
-			"total insurance commissions should be increased by 10% of the sent coins",
-		)
 		suite.Equal(
 			coin.Sub(sdk.NewCoin(suite.denom, additionalCommissions)).Amount.String(),
 			nas.RewardModuleAccBalance.Sub(originReardModuleAccBalance).String(),
@@ -2836,4 +2798,15 @@ func (suite *KeeperTestSuite) getUnitDistribution(
 	fmt.Println("unitInsuranceCommissionPerRewardEpoch: ", unitInsuranceCommissionPerRewardEpoch.String())
 	fmt.Println("pureUnitRewardPerRewardEpoch: ", pureUnitRewardPerRewardEpoch.String())
 	return unitInsuranceCommissionPerRewardEpoch, pureUnitRewardPerRewardEpoch
+}
+
+func (suite *KeeperTestSuite) calcTotalInsuranceCommissions(status types.InsuranceStatus) (totalCommission sdk.Int) {
+	suite.app.LiquidStakingKeeper.IterateAllInsurances(suite.ctx, func(insurance types.Insurance) (bool, error) {
+		if insurance.Status == status {
+			commission := suite.app.BankKeeper.GetBalance(suite.ctx, insurance.FeePoolAddress(), suite.denom)
+			totalCommission = totalCommission.Add(commission.Amount)
+		}
+		return false, nil
+	})
+	return
 }

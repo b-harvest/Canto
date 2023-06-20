@@ -15,14 +15,9 @@ func (k Keeper) GetNetAmountState(ctx sdk.Context) (nas types.NetAmountState) {
 	totalRemainingInsuranceCommissions := sdk.ZeroDec()
 	totalLiquidTokens := sdk.ZeroInt()
 	totalInsuranceTokens := sdk.ZeroInt()
-	totalInsuranceCommissions := sdk.ZeroInt()
 	totalPairedInsuranceTokens := sdk.ZeroInt()
-	totalPairedInsuranceCommissions := sdk.ZeroInt()
 	totalUnpairingInsuranceTokens := sdk.ZeroInt()
-	totalUnpairingInsuranceCommissions := sdk.ZeroInt()
-	totalUnpairedInsuranceTokens := sdk.ZeroInt()
-	totalUnpairedInsuranceCommissions := sdk.ZeroInt()
-	totalUnbondingBalance := sdk.ZeroDec()
+	totalUnbondingChunksBalance := sdk.ZeroDec()
 
 	err := k.IterateAllChunks(ctx, func(chunk types.Chunk) (stop bool, err error) {
 		balance := k.bankKeeper.GetBalance(ctx, chunk.DerivedAddress(), k.stakingKeeper.BondDenom(ctx))
@@ -45,16 +40,16 @@ func (k Keeper) GetNetAmountState(ctx sdk.Context) (nas types.NetAmountState) {
 			totalLiquidTokens = totalLiquidTokens.Add(tokens)
 			cachedCtx, _ := ctx.CacheContext()
 			endingPeriod := k.distributionKeeper.IncrementValidatorPeriod(cachedCtx, validator)
-			delReward := k.distributionKeeper.CalculateDelegationRewards(cachedCtx, validator, delegation, endingPeriod)
-			insuranceCommission := delReward.MulDec(pairedInsurance.FeeRate)
-			totalRemainingInsuranceCommissions = totalRemainingInsuranceCommissions.Add(insuranceCommission.AmountOf(bondDenom))
+			delRewards := k.distributionKeeper.CalculateDelegationRewards(cachedCtx, validator, delegation, endingPeriod)
+			delReward := delRewards.AmountOf(bondDenom)
+			insuranceCommission := delReward.Mul(pairedInsurance.FeeRate)
 			// insuranceCommission is not reward of module
 			pureReward := delReward.Sub(insuranceCommission)
-			totalRemainingRewards = totalRemainingRewards.Add(pureReward.AmountOf(bondDenom))
+			totalRemainingRewards = totalRemainingRewards.Add(pureReward)
 		} else {
 			k.stakingKeeper.IterateDelegatorUnbondingDelegations(ctx, chunk.DerivedAddress(), func(ubd stakingtypes.UnbondingDelegation) (stop bool) {
 				for _, entry := range ubd.Entries {
-					totalUnbondingBalance = totalUnbondingBalance.Add(entry.Balance.ToDec())
+					totalUnbondingChunksBalance = totalUnbondingChunksBalance.Add(entry.Balance.ToDec())
 				}
 				return false
 			})
@@ -72,16 +67,12 @@ func (k Keeper) GetNetAmountState(ctx sdk.Context) (nas types.NetAmountState) {
 		switch insurance.Status {
 		case types.INSURANCE_STATUS_PAIRED:
 			totalPairedInsuranceTokens = totalPairedInsuranceTokens.Add(insuranceBalance.Amount)
-			totalPairedInsuranceCommissions = totalPairedInsuranceCommissions.Add(commission.Amount)
 		case types.INSURANCE_STATUS_UNPAIRING:
 			totalUnpairingInsuranceTokens = totalUnpairingInsuranceTokens.Add(insuranceBalance.Amount)
-			totalUnpairingInsuranceCommissions = totalUnpairingInsuranceCommissions.Add(commission.Amount)
 		case types.INSURANCE_STATUS_UNPAIRED:
-			totalUnpairedInsuranceTokens = totalUnpairedInsuranceTokens.Add(insuranceBalance.Amount)
-			totalUnpairedInsuranceCommissions = totalUnpairedInsuranceCommissions.Add(commission.Amount)
 		}
 		totalInsuranceTokens = totalInsuranceTokens.Add(insuranceBalance.Amount)
-		totalInsuranceCommissions = totalInsuranceCommissions.Add(commission.Amount)
+		totalRemainingInsuranceCommissions = totalRemainingInsuranceCommissions.Add(commission.Amount.ToDec())
 		return false, nil
 	})
 	if err != nil {
@@ -90,26 +81,21 @@ func (k Keeper) GetNetAmountState(ctx sdk.Context) (nas types.NetAmountState) {
 
 	nas = types.NetAmountState{
 		LsTokensTotalSupply:                k.bankKeeper.GetSupply(ctx, liquidBondDenom).Amount,
+		TotalLiquidTokens:                  totalLiquidTokens,
 		TotalChunksBalance:                 totalChunksBalance.TruncateInt(),
 		TotalDelShares:                     totalDelShares,
 		TotalRemainingRewards:              totalRemainingRewards,
 		TotalRemainingInsuranceCommissions: totalRemainingInsuranceCommissions,
-		TotalLiquidTokens:                  totalLiquidTokens,
 		TotalInsuranceTokens:               totalInsuranceTokens,
-		TotalInsuranceCommissions:          totalInsuranceCommissions,
 		TotalPairedInsuranceTokens:         totalPairedInsuranceTokens,
-		TotalPairedInsuranceCommissions:    totalPairedInsuranceCommissions,
 		TotalUnpairingInsuranceTokens:      totalUnpairingInsuranceTokens,
-		TotalUnpairingInsuranceCommissions: totalUnpairingInsuranceCommissions,
-		TotalUnpairedInsuranceTokens:       totalUnpairedInsuranceTokens,
-		TotalUnpairedInsuranceCommissions:  totalUnpairedInsuranceCommissions,
-		TotalUnbondingBalance:              totalUnbondingBalance.TruncateInt(),
+		TotalUnbondingChunksBalance:        totalUnbondingChunksBalance.TruncateInt(),
 	}
-	nas.RewardModuleAccBalance = k.bankKeeper.GetBalance(ctx, types.RewardPool, bondDenom).Amount
-	nas.UtilizationRatio = k.CalcUtilizationRatio(ctx)
-	nas.DiscountRate = k.CalcDiscountRate(ctx)
-	nas.FeeRate = k.CalcDynamicFeeRate(ctx)
-	nas.NetAmount = nas.CalcNetAmount(k.bankKeeper.GetBalance(ctx, types.RewardPool, bondDenom).Amount)
 	nas.MintRate = nas.CalcMintRate()
+	nas.NetAmount = nas.CalcNetAmount(k.bankKeeper.GetBalance(ctx, types.RewardPool, bondDenom).Amount)
+	nas.RewardModuleAccBalance = k.bankKeeper.GetBalance(ctx, types.RewardPool, bondDenom).Amount
+	nas.FeeRate, nas.UtilizationRatio = k.CalcDynamicFeeRate(ctx)
+	nas.RemainingChunkSlots = k.GetAvailableChunkSlots(ctx)
+	nas.DiscountRate = k.CalcDiscountRate(ctx)
 	return
 }
