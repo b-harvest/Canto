@@ -156,9 +156,6 @@ $ %s query %s chunks --status [CHUNK_STATUS_PAIRING | CHUNK_STATUS_PAIRED | CHUN
 			if err != nil {
 				return err
 			}
-			for i, chunkResponse := range response.Chunks {
-				response.Chunks[i].DerivedAddress = chunkResponse.Chunk.DerivedAddress().String()
-			}
 			return clientCtx.PrintProto(response)
 		},
 	}
@@ -194,8 +191,6 @@ func CmdQueryChunk() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			response.DerivedAddress = response.Chunk.DerivedAddress().String()
-
 			return clientCtx.PrintProto(response)
 		},
 	}
@@ -255,11 +250,6 @@ $ %s query %s insurances --validator-address cantovaloper1gxl6usug4cz60yhpsjj7vw
 				return err
 			}
 
-			for i, insuranceResponse := range response.Insurances {
-				response.Insurances[i].DerivedAddress = insuranceResponse.Insurance.DerivedAddress().String()
-				response.Insurances[i].FeePoolAddress = insuranceResponse.Insurance.FeePoolAddress().String()
-			}
-
 			return clientCtx.PrintProto(response)
 		},
 	}
@@ -295,8 +285,6 @@ func CmdQueryInsurance() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			response.DerivedAddress = response.Insurance.DerivedAddress().String()
-			response.FeePoolAddress = response.Insurance.FeePoolAddress().String()
 			return clientCtx.PrintProto(response)
 		},
 	}

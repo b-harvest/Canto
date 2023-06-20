@@ -34,7 +34,7 @@ func (k Keeper) Chunks(c context.Context, req *types.QueryChunksRequest) (*types
 	ctx := sdk.UnwrapSDKContext(c)
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefixChunk)
 
-	var chunks []types.Chunk
+	var chunks []types.QueryChunkResponse
 	pageRes, err := query.FilteredPaginate(store, req.Pagination, func(key []byte, value []byte, accumulate bool) (bool, error) {
 		var chunk types.Chunk
 		if err := k.cdc.Unmarshal(value, &chunk); err != nil {
@@ -46,7 +46,11 @@ func (k Keeper) Chunks(c context.Context, req *types.QueryChunksRequest) (*types
 		}
 
 		if accumulate {
-			chunks = append(chunks, chunk)
+
+			chunks = append(chunks, types.QueryChunkResponse{
+				Chunk:          chunk,
+				DerivedAddress: chunk.DerivedAddress().String(),
+			})
 		}
 
 		return true, nil
@@ -79,7 +83,7 @@ func (k Keeper) Insurances(c context.Context, req *types.QueryInsurancesRequest)
 	ctx := sdk.UnwrapSDKContext(c)
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefixInsurance)
 
-	var insurances []types.Insurance
+	var insurances []types.QueryInsuranceResponse
 	pageRes, err := query.FilteredPaginate(store, req.Pagination, func(key []byte, value []byte, accumulate bool) (bool, error) {
 		var insurance types.Insurance
 		if err := k.cdc.Unmarshal(value, &insurance); err != nil {
@@ -99,7 +103,11 @@ func (k Keeper) Insurances(c context.Context, req *types.QueryInsurancesRequest)
 		}
 
 		if accumulate {
-			insurances = append(insurances, insurance)
+			insurances = append(insurances, types.QueryInsuranceResponse{
+				Insurance:      insurance,
+				DerivedAddress: insurance.DerivedAddress().String(),
+				FeePoolAddress: insurance.FeePoolAddress().String(),
+			})
 		}
 
 		return true, nil
@@ -120,7 +128,11 @@ func (k Keeper) Insurance(c context.Context, req *types.QueryInsuranceRequest) (
 	if !found {
 		return nil, status.Errorf(codes.NotFound, "no insurance is associated with Insurance Id %d", req.Id)
 	}
-	return &types.QueryInsuranceResponse{Insurance: insurance}, nil
+	return &types.QueryInsuranceResponse{
+		Insurance:      insurance,
+		DerivedAddress: insurance.DerivedAddress().String(),
+		FeePoolAddress: insurance.FeePoolAddress().String(),
+	}, nil
 }
 
 func (k Keeper) WithdrawInsuranceRequests(c context.Context, req *types.QueryWithdrawInsuranceRequestsRequest) (*types.QueryWithdrawInsuranceRequestsResponse, error) {
