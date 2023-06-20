@@ -44,6 +44,7 @@ func (suite *KeeperTestSuite) TestNetAmountInvariant() {
 		FeeRate:                            sdk.ZeroDec(),
 		UtilizationRatio:                   sdk.MustNewDecFromStr("0.001999951953154277"),
 		RemainingChunkSlots:                sdk.NewInt(49),
+		NumPairedChunks:                    sdk.NewInt(1),
 		DiscountRate:                       sdk.MustNewDecFromStr("0.009719883361399663"),
 		TotalDelShares:                     types.ChunkSize.ToDec(),
 		TotalRemainingRewards:              sdk.ZeroDec(),

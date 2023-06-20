@@ -236,14 +236,26 @@ message NetAmountState {
 
 
   // --- Chunk related fields
+  // The number of paired chunks
+  string num_paired_chunks = 10 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+
+  // Current chunk size tokens
+  string chunk_size = 11 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ]
+  ;
   // Total shares of all paired chunks
-  string total_del_shares = 10 [
+  string total_del_shares = 12 [
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
     (gogoproto.nullable) = false
   ];
 
   // The cumulative reward of all chunks delegations from the last distribution
-  string total_remaining_rewards = 11 [
+  string total_remaining_rewards = 13 [
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
     (gogoproto.nullable) = false
   ];
@@ -252,41 +264,41 @@ message NetAmountState {
   // Note: Paired chunks can be pairing status for various reasons (such as lack
   // of insurance). In such cases, the delegated native tokens returns to the
   // balance of DerivedAddress(Chunk.Id) after un-bonding period is finished.
-  string total_chunks_balance = 12 [
+  string total_chunks_balance = 14 [
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
     (gogoproto.nullable) = false
   ];
 
   // The sum of unbonding balance of all chunks in Unpairing and
   // UnpairingForUnstaking
-  string total_unbonding_chunks_balance = 13 [
+  string total_unbonding_chunks_balance = 15 [
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
     (gogoproto.nullable) = false
   ];
 
   // --- Insurance related fields
   // The sum of all insurances' amount (= DerivedAddress(Insurance.Id).Balance)
-  string total_insurance_tokens = 14 [
+  string total_insurance_tokens = 16 [
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
     (gogoproto.nullable) = false
   ];
 
   // The sum of all paired insurances' amount (=
   // DerivedAddress(Insurance.Id).Balance)
-  string total_paired_insurance_tokens = 15 [
+  string total_paired_insurance_tokens = 17 [
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
     (gogoproto.nullable) = false
   ];
 
   // The sum of all unpairing insurances' amount (=
   // DerivedAddress(Insurance.Id).Balance)
-  string total_unpairing_insurance_tokens = 16 [
+  string total_unpairing_insurance_tokens = 18 [
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
     (gogoproto.nullable) = false
   ];
 
   // The cumulative commissions of all insurances
-  string total_remaining_insurance_commissions = 17 [
+  string total_remaining_insurance_commissions = 19 [
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
     (gogoproto.nullable) = false
   ];

@@ -37,7 +37,9 @@ func (nas NetAmountState) Equal(nas2 NetAmountState) bool {
 		nas.TotalInsuranceTokens.Equal(nas2.TotalInsuranceTokens) &&
 		nas.TotalPairedInsuranceTokens.Equal(nas2.TotalPairedInsuranceTokens) &&
 		nas.TotalUnpairingInsuranceTokens.Equal(nas2.TotalUnpairingInsuranceTokens) &&
-		nas.TotalRemainingInsuranceCommissions.Equal(nas2.TotalRemainingInsuranceCommissions)
+		nas.TotalRemainingInsuranceCommissions.Equal(nas2.TotalRemainingInsuranceCommissions) &&
+		nas.NumPairedChunks.Equal(nas2.NumPairedChunks)
+	// Don't check ChunkSize because it is constant defined in module.
 }
 
 // IsZeroState checks if the NetAmountState is initial state or not.
@@ -58,6 +60,9 @@ func (nas NetAmountState) IsZeroState() bool {
 		nas.TotalRemainingRewards.IsZero() &&
 		nas.TotalChunksBalance.IsZero() &&
 		nas.TotalUnbondingChunksBalance.IsZero() &&
+		nas.NumPairedChunks.IsZero() &&
+		// Don't check ChunkSize because it is constant defined in module.
+		// nas.ChunkSize
 		// Total insurances includes Pairing insurances, so we should skip this
 		// nas.TotalInsuranceTokens.IsZero() &&
 		nas.TotalPairedInsuranceTokens.IsZero() &&

@@ -18,12 +18,15 @@ func (k Keeper) GetNetAmountState(ctx sdk.Context) (nas types.NetAmountState) {
 	totalPairedInsuranceTokens := sdk.ZeroInt()
 	totalUnpairingInsuranceTokens := sdk.ZeroInt()
 	totalUnbondingChunksBalance := sdk.ZeroDec()
+	numPairedChunks := sdk.ZeroInt()
 
 	err := k.IterateAllChunks(ctx, func(chunk types.Chunk) (stop bool, err error) {
 		balance := k.bankKeeper.GetBalance(ctx, chunk.DerivedAddress(), k.stakingKeeper.BondDenom(ctx))
 		totalChunksBalance = totalChunksBalance.Add(balance.Amount.ToDec())
 
-		if chunk.PairedInsuranceId != 0 {
+		switch chunk.Status {
+		case types.CHUNK_STATUS_PAIRED:
+			numPairedChunks = numPairedChunks.Add(sdk.OneInt())
 			// chunk is paired which means have delegation
 			pairedInsurance, _ := k.GetInsurance(ctx, chunk.PairedInsuranceId)
 			valAddr, err := sdk.ValAddressFromBech32(pairedInsurance.ValidatorAddress)
@@ -46,7 +49,7 @@ func (k Keeper) GetNetAmountState(ctx sdk.Context) (nas types.NetAmountState) {
 			// insuranceCommission is not reward of module
 			pureReward := delReward.Sub(insuranceCommission)
 			totalRemainingRewards = totalRemainingRewards.Add(pureReward)
-		} else {
+		default:
 			k.stakingKeeper.IterateDelegatorUnbondingDelegations(ctx, chunk.DerivedAddress(), func(ubd stakingtypes.UnbondingDelegation) (stop bool) {
 				for _, entry := range ubd.Entries {
 					totalUnbondingChunksBalance = totalUnbondingChunksBalance.Add(entry.Balance.ToDec())
@@ -85,11 +88,13 @@ func (k Keeper) GetNetAmountState(ctx sdk.Context) (nas types.NetAmountState) {
 		TotalChunksBalance:                 totalChunksBalance.TruncateInt(),
 		TotalDelShares:                     totalDelShares,
 		TotalRemainingRewards:              totalRemainingRewards,
+		TotalUnbondingChunksBalance:        totalUnbondingChunksBalance.TruncateInt(),
+		NumPairedChunks:                    numPairedChunks,
+		ChunkSize:                          types.ChunkSize,
 		TotalRemainingInsuranceCommissions: totalRemainingInsuranceCommissions,
 		TotalInsuranceTokens:               totalInsuranceTokens,
 		TotalPairedInsuranceTokens:         totalPairedInsuranceTokens,
 		TotalUnpairingInsuranceTokens:      totalUnpairingInsuranceTokens,
-		TotalUnbondingChunksBalance:        totalUnbondingChunksBalance.TruncateInt(),
 	}
 	nas.NetAmount = nas.CalcNetAmount(k.bankKeeper.GetBalance(ctx, types.RewardPool, bondDenom).Amount)
 	nas.MintRate = nas.CalcMintRate()
