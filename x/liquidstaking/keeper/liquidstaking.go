@@ -233,13 +233,14 @@ func (k Keeper) HandleQueuedWithdrawInsuranceRequests(ctx sdk.Context) ([]types.
 			return nil, sdkerrors.Wrapf(types.ErrNotFoundChunk, "id: %d", insurance.ChunkId)
 		}
 		if chunk.Status == types.CHUNK_STATUS_PAIRED {
+			// If not paired, state change already happened in CoverSlashingAndHandleMatureUnbondings
 			chunk.SetStatus(types.CHUNK_STATUS_UNPAIRING)
+			chunk.UnpairingInsuranceId = chunk.PairedInsuranceId
+			chunk.PairedInsuranceId = 0
+			k.SetChunk(ctx, chunk)
 		}
-		chunk.UnpairingInsuranceId = chunk.PairedInsuranceId
-		chunk.PairedInsuranceId = 0
 		insurance.SetStatus(types.INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAWAL)
 		k.SetInsurance(ctx, insurance)
-		k.SetChunk(ctx, chunk)
 		k.DeleteWithdrawInsuranceRequest(ctx, insurance.Id)
 		withdrawnInsurances = append(withdrawnInsurances, insurance)
 	}

@@ -2700,6 +2700,66 @@ func (suite *KeeperTestSuite) TestRePairChunkWhichGotWithdrawInsuranceRequest() 
 	suite.Equal(types.Empty, chunkAfterRePair.UnpairingInsuranceId, "unpairing insurance id should be cleared")
 }
 
+// TestTargetChunkGotBothUnstakeAndWithdrawInsuranceReqs tests scenario where a chunk got both
+// unstake and withdraw insurance requests at the same epoch.
+func (suite *KeeperTestSuite) TestTargetChunkGotBothUnstakeAndWithdrawInsuranceReqs() {
+	env := suite.setupLiquidStakeTestingEnv(
+		testingEnvOptions{
+			"TestTargetChunkGotBothUnstakeAndWithdrawInsuranceReqs",
+			3,
+			TenPercentFeeRate,
+			nil,
+			onePower,
+			nil,
+			1,
+			TenPercentFeeRate,
+			nil,
+			1,
+			types.ChunkSize.MulRaw(500),
+		},
+	)
+	_, _, err := suite.app.LiquidStakingKeeper.QueueLiquidUnstake(
+		suite.ctx,
+		types.NewMsgLiquidUnstake(
+			env.delegators[0].String(),
+			sdk.NewCoin(suite.denom, types.ChunkSize),
+		),
+	)
+	suite.NoError(err)
+	_, _, err = suite.app.LiquidStakingKeeper.DoWithdrawInsurance(
+		suite.ctx,
+		types.NewMsgWithdrawInsurance(
+			env.providers[0].String(),
+			env.insurances[0].Id,
+		),
+	)
+	suite.NoError(err)
+	suite.ctx = suite.advanceEpoch(suite.ctx)
+	suite.ctx = suite.advanceHeight(suite.ctx, 1, "liquid staking endblocker is triggered")
+
+	chunk, _ := suite.app.LiquidStakingKeeper.GetChunk(suite.ctx, env.pairedChunks[0].Id)
+	suite.Equal(types.CHUNK_STATUS_UNPAIRING_FOR_UNSTAKING, chunk.Status)
+	insurance, _ := suite.app.LiquidStakingKeeper.GetInsurance(suite.ctx, env.insurances[0].Id)
+	suite.Equal(types.INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAWAL, insurance.Status)
+
+	beforeDelegatorBalance := suite.app.BankKeeper.GetBalance(suite.ctx, env.delegators[0], suite.denom)
+
+	suite.ctx = suite.advanceEpoch(suite.ctx)
+	suite.ctx = suite.advanceHeight(suite.ctx, 1, "unstaking and withdrawal end")
+
+	afterDelegatorBalance := suite.app.BankKeeper.GetBalance(suite.ctx, env.delegators[0], suite.denom)
+	oneChunk, oneInsurance := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
+	unpairedInsuranceBal := suite.app.BankKeeper.GetBalance(suite.ctx, env.insurances[0].DerivedAddress(), suite.denom)
+	suite.True(
+		unpairedInsuranceBal.IsGTE(oneInsurance),
+		"unpaired insurance got its coins back",
+	)
+	suite.Equal(
+		beforeDelegatorBalance.Add(oneChunk).String(),
+		afterDelegatorBalance.String(),
+	)
+}
+
 func (suite *KeeperTestSuite) downTimeSlashing(
 	ctx sdk.Context, downValPubKey cryptotypes.PubKey, power int64, called int, blockTime time.Duration,
 ) (penalty sdk.Int) {
