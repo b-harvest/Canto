@@ -823,7 +823,10 @@ func (k Keeper) DoWithdrawInsurance(ctx sdk.Context, msg *types.MsgWithdrawInsur
 }
 
 // DoWithdrawInsuranceCommission withdraws insurance commission immediately.
-func (k Keeper) DoWithdrawInsuranceCommission(ctx sdk.Context, msg *types.MsgWithdrawInsuranceCommission) (err error) {
+func (k Keeper) DoWithdrawInsuranceCommission(
+	ctx sdk.Context,
+	msg *types.MsgWithdrawInsuranceCommission,
+) (balances sdk.Coins, err error) {
 	providerAddr := msg.GetProvider()
 	insuranceId := msg.Id
 
@@ -841,7 +844,10 @@ func (k Keeper) DoWithdrawInsuranceCommission(ctx sdk.Context, msg *types.MsgWit
 	}
 
 	// Get all balances of the insurance
-	balances := k.bankKeeper.GetAllBalances(ctx, insurance.FeePoolAddress())
+	balances = k.bankKeeper.GetAllBalances(ctx, insurance.FeePoolAddress())
+	if balances.Empty() {
+		return
+	}
 	inputs := []banktypes.Input{
 		banktypes.NewInput(insurance.FeePoolAddress(), balances),
 	}

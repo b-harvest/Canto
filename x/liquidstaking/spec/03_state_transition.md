@@ -1,6 +1,4 @@
-<!--
-order: 3
--->
+<!-- order: 3 -->
 
 # State Transition
 

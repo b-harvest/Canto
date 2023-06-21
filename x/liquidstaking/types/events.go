@@ -15,6 +15,7 @@ const (
 	AttributeKeyDelegator                      = "delegator"
 	AttributeKeyRequester                      = "requester"
 	AttributeKeyInsuranceProvider              = "insurance_provider"
+	AttributeKeyWithdrawnInsuranceCommission   = "withdrawn_insurance_commission"
 	AttributeKeyNewShares                      = "new_shares"
 	AttributeKeyLsTokenMintedAmount            = "lstoken_minted_amount"
 	AttributeKeyEscrowedLsTokens               = "escrowed_lstokens"

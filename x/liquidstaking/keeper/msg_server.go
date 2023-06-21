@@ -172,7 +172,7 @@ func (k Keeper) WithdrawInsurance(goCtx context.Context, msg *types.MsgWithdrawI
 
 func (k Keeper) WithdrawInsuranceCommission(goCtx context.Context, msg *types.MsgWithdrawInsuranceCommission) (*types.MsgWithdrawInsuranceCommissionResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	err := k.DoWithdrawInsuranceCommission(ctx, msg)
+	balances, err := k.DoWithdrawInsuranceCommission(ctx, msg)
 	if err != nil {
 		return nil, err
 	}
@@ -185,6 +185,7 @@ func (k Keeper) WithdrawInsuranceCommission(goCtx context.Context, msg *types.Ms
 			types.EventTypeMsgWithdrawInsuranceCommission,
 			sdk.NewAttribute(types.AttributeKeyInsuranceId, strconv.FormatUint(msg.Id, 10)),
 			sdk.NewAttribute(types.AttributeKeyInsuranceProvider, msg.ProviderAddress),
+			sdk.NewAttribute(types.AttributeKeyWithdrawnInsuranceCommission, balances.String()),
 		),
 	})
 
