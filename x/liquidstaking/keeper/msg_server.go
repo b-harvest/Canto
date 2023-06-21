@@ -206,6 +206,7 @@ func (k Keeper) ClaimDiscountedReward(goCtx context.Context, msg *types.MsgClaim
 		sdk.NewEvent(
 			types.EventTypeMsgClaimDiscountedReward,
 			sdk.NewAttribute(types.AttributeKeyRequester, msg.RequesterAddress),
+			sdk.NewAttribute(sdk.AttributeKeyAmount, msg.Amount.String()),
 			sdk.NewAttribute(types.AttributeKeyClaimTokens, claim.String()),
 			sdk.NewAttribute(types.AttributeKeyDiscountedMintRate, discountedMintRate.String()),
 		),

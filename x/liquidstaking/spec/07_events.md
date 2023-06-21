@@ -28,7 +28,7 @@ The `liquidstaking` module emits the following events:
 | liquid_unstake | amount            | {msg.Amount}             |
 | liquid_unstake | escrowed_lstokens | {escrowedLsTokens}       |
 | message        | module            | liquidstaking            |
-| message        | action            | liquid_stake             |
+| message        | action            | liquid_unstake           |
 | message        | sender            | {senderAddress}          |
 
 
@@ -87,3 +87,14 @@ The `liquidstaking` module emits the following events:
 | message            | sender                                | {senderAddress}                 |
 
 
+### MsgClaimDiscountedReward
+
+| Type                    | Attribute Key        | Attribute Value         |
+|-------------------------|----------------------|-------------------------|
+| claim_discounted_reward | requester            | {msg.RequesterAddress}  |
+| claim_discounted_reward | amount               | {msg.Amount}            |
+| claim_discounted_reward | claim_tokens         | {claim}                 |
+| claim_discounted_reward | discounted_mint_rate | {discountedMintRate}    |
+| message                 | module               | liquidstaking           |
+| message                 | action               | claim_discounted_reward |
+| message                 | sender               | {senderAddress}         |
