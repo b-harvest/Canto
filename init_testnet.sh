@@ -1,5 +1,22 @@
-KEY="mykey"
-KEY2="mykey2"
+#{
+#   "address": "9472F66238D1C730BA4081DE1B10362EF4634AE4",
+#   "pub_key": {
+#     "type": "tendermint/PubKeyEd25519",
+#     "value": "Q3tNXrIRokD05nNdNFZSROSU81kI47BbnL7zkcxB/WY="
+#   },
+#   "priv_key": {
+#     "type": "tendermint/PrivKeyEd25519",
+#     "value": "jGIbnQEh+vfC6kLKAO9fceulfV3g6cSLlt0SUZEKMKlDe01eshGiQPTmc100VlJE5JTzWQjjsFucvvORzEH9Zg=="
+#   }
+#}
+WOOD="wood"
+WOOD_PUBKEY='{"@type":"/cosmos.crypto.ed25519.PubKey","key":"Q3tNXrIRokD05nNdNFZSROSU81kI47BbnL7zkcxB/WY="}'
+ARHEN="arhen"
+#ARHEN_PUBKEY='{"@type":"/ethermint.crypto.v1.ethsecp256k1.PubKey","key":"A+RwzqKr4NyhIsAK7NeXeFwbZm5vA6Qt0A1rh7YqX3lo"}'
+ARHEN_PUBKEY='{"@type":"/cosmos.crypto.ed25519.PubKey","key":"3N7y8v7SMkwgRoOhtyZ6/WHR2qcFjyFV2hhHCrZhShE="}'
+GAVIN="gavin"
+#GAVIN_PUBKEY='{"@type":"/ethermint.crypto.v1.ethsecp256k1.PubKey","key":"A/JbNhr249zvdIL1UaPfG2dESBug2fcq4rRK179aTszy"}'
+GAVIN_PUBKEY='{"@type":"/cosmos.crypto.ed25519.PubKey","key":"u8tfMH1+46ZZOV7ffkFezYUdGWN3+YxEuq96e6PQ8UI="}'
 CHAINID="canto_7701-1"
 MONIKER="plex-validator"
 KEYRING="test"
@@ -21,8 +38,9 @@ cantod config keyring-backend $KEYRING
 cantod config chain-id $CHAINID
 
 # if $KEY exists it should be deleted
-cantod keys add $KEY --keyring-backend $KEYRING --algo $KEYALGO
-cantod keys add $KEY2 --keyring-backend $KEYRING --algo $KEYALGO
+cantod keys add $WOOD --keyring-backend $KEYRING --algo $KEYALGO
+cantod keys add $ARHEN --keyring-backend $KEYRING --algo $KEYALGO
+cantod keys add $GAVIN --keyring-backend $KEYRING --algo $KEYALGO
 
 # Set moniker and chain-id for Canto (Moniker can be anything, chain-id must be an integer)
 cantod init $MONIKER --chain-id $CHAINID
@@ -70,20 +88,24 @@ if [[ $1 == "pending" ]]; then
 fi
 
 # Allocate genesis accounts (cosmos formatted addresses)
-cantod add-genesis-account $KEY 964723926400000000000000000acanto --keyring-backend $KEYRING
-cantod add-genesis-account $KEY2 35276073600000000000000000acanto --keyring-backend $KEYRING
-                                 
+cantod add-genesis-account $WOOD 964723926400000000000000000acanto --keyring-backend $KEYRING
+cantod add-genesis-account $ARHEN 35276073600000000000000000acanto --keyring-backend $KEYRING
+cantod add-genesis-account $GAVIN 50000000000000000000000000acanto --keyring-backend $KEYRING
+
 # Update total supply with claim values
 #validators_supply=$(cat $HOME/.cantod/config/genesis.json | jq -r '.app_state["bank"]["supply"][0]["amount"]')
 # Bc is required to add this big numbers
 # total_supply=$(bc <<< "$amount_to_claim+$validators_supply")
-total_supply=1000000000000000000000000000
+total_supply=1050000000000000000000000000
 cat $HOME/.cantod/config/genesis.json | jq -r --arg total_supply "$total_supply" '.app_state["bank"]["supply"][0]["amount"]=$total_supply' > $HOME/.cantod/config/tmp_genesis.json && mv $HOME/.cantod/config/tmp_genesis.json $HOME/.cantod/config/genesis.json
 
 echo $KEYRING
 echo $KEY
 # Sign genesis transaction
-cantod gentx $KEY2 100000000000000000000000acanto --keyring-backend $KEYRING --chain-id $CHAINID
+mkdir $HOME/.cantod/config/gentx
+cantod gentx $WOOD 900000000000000000000000acanto --keyring-backend $KEYRING --chain-id $CHAINID --output-document $HOME/.cantod/config/gentx/gentx-1.json --pubkey $WOOD_PUBKEY
+#cantod gentx $ARHEN 100000000000000000000000acanto --keyring-backend $KEYRING --chain-id $CHAINID --output-document $HOME/.cantod/config/gentx/gentx-2.json --pubkey $ARHEN_PUBKEY
+#cantod gentx $GAVIN 100000000000000000000000acanto --keyring-backend $KEYRING --chain-id $CHAINID --output-document $HOME/.cantod/config/gentx/gentx-3.json --pubkey $GAVIN_PUBKEY
 #cantod gentx $KEY2 1000000000000000000000acanto --keyring-backend $KEYRING --chain-id $CHAINID
 
 # Collect genesis tx
@@ -97,5 +119,5 @@ if [[ $1 == "pending" ]]; then
 fi
 
 # Start the node (remove the --pruning=nothing flag if historical queries are not needed)
-cantod start --pruning=nothing --trace --log_level trace --minimum-gas-prices=1.000acanto --json-rpc.api eth,txpool,personal,net,debug,web3 --rpc.laddr "tcp://0.0.0.0:26657" --api.enable true --api.enabled-unsafe-cors true
+#cantod start --pruning=nothing --trace --log_level trace --minimum-gas-prices=1.000acanto --json-rpc.api eth,txpool,personal,net,debug,web3 --rpc.laddr "tcp://0.0.0.0:26657" --api.enable true --api.enabled-unsafe-cors true
 
