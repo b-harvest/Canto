@@ -166,7 +166,6 @@ func (k Keeper) CoverSlashingAndHandleMatureUnbondings(ctx sdk.Context) {
 // 8. Delete pending liquid unstake
 func (k Keeper) HandleQueuedLiquidUnstakes(ctx sdk.Context) ([]types.Chunk, error) {
 	var unstakedChunks []types.Chunk
-	// TODO: Should use Queue for processing in sequence? MintRate is ok?, insurance issue? etc...
 	infos := k.GetAllUnpairingForUnstakingChunkInfos(ctx)
 	for _, info := range infos {
 		// Get chunk
@@ -175,8 +174,8 @@ func (k Keeper) HandleQueuedLiquidUnstakes(ctx sdk.Context) ([]types.Chunk, erro
 			return nil, sdkerrors.Wrapf(types.ErrNotFoundChunk, "id: %d", info.ChunkId)
 		}
 		if chunk.Status != types.CHUNK_STATUS_PAIRED {
-			// Chunk is already in unstaking process, so we skip it
-			// TODO: 이 케이스가 발생할 수 있는가? 안전장치로 넣어둔 것인가?
+			// When it is queued with chunk, it must be paired but not now.
+			// (e.g. validator got huge slash after unstake request is queued, so the chunk is not valid now)
 			continue
 		}
 		// get insurance
@@ -201,6 +200,26 @@ func (k Keeper) HandleQueuedLiquidUnstakes(ctx sdk.Context) ([]types.Chunk, erro
 		unstakedChunks = append(unstakedChunks, chunk)
 	}
 	return unstakedChunks, nil
+}
+
+// HandleUnprocessedQueuedLiquidUnstakes checks if there are any unprocessed queued liquid unstakes.
+// And if there are any, refund the escrowed ls tokens to requester and delete the info.
+func (k Keeper) HandleUnprocessedQueuedLiquidUnstakes(ctx sdk.Context) error {
+	infos := k.GetAllUnpairingForUnstakingChunkInfos(ctx)
+	for _, info := range infos {
+		chunk, found := k.GetChunk(ctx, info.ChunkId)
+		if !found {
+			return sdkerrors.Wrapf(types.ErrNotFoundChunk, "id: %d", info.ChunkId)
+		}
+		if chunk.Status != types.CHUNK_STATUS_UNPAIRING_FOR_UNSTAKING {
+			// Unstaking is not processed. Let's refund the chunk and delete info.
+			if err := k.bankKeeper.SendCoins(ctx, types.LsTokenEscrowAcc, info.GetDelegator(), sdk.NewCoins(info.EscrowedLstokens)); err != nil {
+				return err
+			}
+			k.DeleteUnpairingForUnstakingChunkInfo(ctx, info.ChunkId)
+		}
+	}
+	return nil
 }
 
 // HandleQueuedWithdrawInsuranceRequests processes withdraw insurance requests that were queued before the epoch.

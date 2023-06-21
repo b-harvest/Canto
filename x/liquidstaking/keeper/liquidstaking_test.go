@@ -2834,12 +2834,16 @@ func (suite *KeeperTestSuite) TestOnlyOnePairedChunkGotDamagedSoNoChunksAvailabl
 	staking.EndBlocker(suite.ctx, suite.app.StakingKeeper)
 	liquidstakingkeeper.EndBlocker(suite.ctx, suite.app.LiquidStakingKeeper)
 	_, found := suite.app.LiquidStakingKeeper.GetUnpairingForUnstakingChunkInfo(suite.ctx, infos[0].ChunkId)
-	suite.True(found, "still exist!")
+	suite.False(
+		found,
+		"When unstake request is queued, matched chunk was fine but after validator got slashed, "+
+			"chunk is not available to unstake and info is deleted.",
+	)
 	delBal = suite.app.BankKeeper.GetBalance(suite.ctx, delegators[0], types.DefaultLiquidBondDenom)
 	suite.Equal(
-		"0",
-		delBal.Amount.String(),
-		"delegator's lstoken is still escrowed, it will not get back",
+		infos[0].EscrowedLstokens.String(),
+		delBal.String(),
+		"delegator's get back escrowed ls tokens, because unstake is not processed",
 	)
 }
 
