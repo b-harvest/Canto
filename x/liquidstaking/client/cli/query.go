@@ -422,6 +422,13 @@ $ %s query %s unpairing-for-unstaking-chunk-infos
 				}
 				request.DelegatorAddress = delegatorAddress
 			}
+			queued, _ := cmd.Flags().GetString(Queued)
+			if queued != "" {
+				request.Queued, err = strconv.ParseBool(queued)
+				if err != nil {
+					return err
+				}
+			}
 			queryClient := types.NewQueryClient(clientCtx)
 			// Query store
 			response, err := queryClient.UnpairingForUnstakingChunkInfos(context.Background(), request)
