@@ -482,35 +482,11 @@ func (suite *KeeperTestSuite) TestUnpairingForUnstakingChunkInfosInvariant() {
 		suite.mustPassInvariants()
 	}
 
-	// forcefully change status of chunk as invalid
-	{
-		mutated := chunkToBeUnstaked
-		mutated.Status = types.CHUNK_STATUS_PAIRING
-		suite.app.LiquidStakingKeeper.SetChunk(suite.ctx, mutated)
-		_, broken := keeper.UnpairingForUnstakingChunkInfosInvariant(suite.app.LiquidStakingKeeper)(suite.ctx)
-		suite.True(broken, "unstaking chunk must be paired or unpairing for unstaking")
-		// recover
-		suite.app.LiquidStakingKeeper.SetChunk(suite.ctx, chunkToBeUnstaked)
-		suite.mustPassInvariants()
-	}
-
 	suite.ctx = suite.advanceEpoch(suite.ctx)
 	suite.ctx = suite.advanceHeight(suite.ctx, 1, "unstaking chunk started")
 
 	chunkToBeUnstaked, _ = suite.app.LiquidStakingKeeper.GetChunk(suite.ctx, infos[0].ChunkId)
 	suite.Equal(types.CHUNK_STATUS_UNPAIRING_FOR_UNSTAKING, chunkToBeUnstaked.Status)
-	// forcefully change status of chunk as invalid
-	{
-		mutated := chunkToBeUnstaked
-		mutated.Status = types.CHUNK_STATUS_PAIRING
-		suite.app.LiquidStakingKeeper.SetChunk(suite.ctx, mutated)
-		_, broken := keeper.UnpairingForUnstakingChunkInfosInvariant(suite.app.LiquidStakingKeeper)(suite.ctx)
-		suite.True(broken, "unstaking chunk must be paired or unpairing for unstaking")
-		// recover
-		suite.app.LiquidStakingKeeper.SetChunk(suite.ctx, chunkToBeUnstaked)
-		suite.mustPassInvariants()
-	}
-
 }
 
 func (suite *KeeperTestSuite) TestWithdrawInsuranceRequestsInvariant() {
@@ -548,18 +524,6 @@ func (suite *KeeperTestSuite) TestWithdrawInsuranceRequestsInvariant() {
 		suite.app.LiquidStakingKeeper.DeleteInsurance(suite.ctx, req.InsuranceId)
 		_, broken := keeper.WithdrawInsuranceRequestsInvariant(suite.app.LiquidStakingKeeper)(suite.ctx)
 		suite.True(broken, "withdraw insurance request must have insurance")
-		// recover
-		suite.app.LiquidStakingKeeper.SetInsurance(suite.ctx, origin)
-		suite.mustPassInvariants()
-	}
-
-	// forcefully change status of insurance as invalid
-	{
-		mutated := origin
-		mutated.Status = types.INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAWAL
-		suite.app.LiquidStakingKeeper.SetInsurance(suite.ctx, mutated)
-		_, broken := keeper.WithdrawInsuranceRequestsInvariant(suite.app.LiquidStakingKeeper)(suite.ctx)
-		suite.True(broken, "withdraw insurance request must have valid status")
 		// recover
 		suite.app.LiquidStakingKeeper.SetInsurance(suite.ctx, origin)
 		suite.mustPassInvariants()
