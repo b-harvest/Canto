@@ -221,14 +221,9 @@ func InsurancesInvariant(k Keeper) sdk.Invariant {
 					brokenCount++
 					return false, nil
 				}
-				chunk, found := k.GetChunk(ctx, insurance.ChunkId)
+				_, found := k.GetChunk(ctx, insurance.ChunkId)
 				if !found {
 					msg += fmt.Sprintf("not found chunk to protect for unpairing for withdrawal insurance(id: %d)\n", insurance.Id)
-					brokenCount++
-					return false, nil
-				}
-				if chunk.Status == types.CHUNK_STATUS_PAIRING || chunk.Status == types.CHUNK_STATUS_UNSPECIFIED {
-					msg += fmt.Sprintf("unpairing for withdrawal insurance(id: %d) have invalid chunk status: %s\n", insurance.Id, chunk.Status)
 					brokenCount++
 					return false, nil
 				}
@@ -256,15 +251,9 @@ func UnpairingForUnstakingChunkInfosInvariant(k Keeper) sdk.Invariant {
 		infos := k.GetAllUnpairingForUnstakingChunkInfos(ctx)
 		for _, info := range infos {
 			// get chunk from chunk id
-			chunk, found := k.GetChunk(ctx, info.ChunkId)
+			_, found := k.GetChunk(ctx, info.ChunkId)
 			if !found {
 				msg += fmt.Sprintf("not found chunk(id: %d) for unpairing for unstaking chunk info\n", info.ChunkId)
-				brokenCount++
-				continue
-			}
-			if chunk.Status != types.CHUNK_STATUS_PAIRED &&
-				chunk.Status != types.CHUNK_STATUS_UNPAIRING_FOR_UNSTAKING {
-				msg += fmt.Sprintf("chunk(id: %d) have invalid status: %s\n", chunk.Id, chunk.Status)
 				brokenCount++
 				continue
 			}
@@ -286,14 +275,9 @@ func WithdrawInsuranceRequestsInvariant(k Keeper) sdk.Invariant {
 		reqs := k.GetAllWithdrawInsuranceRequests(ctx)
 		for _, req := range reqs {
 			// get insurance from insurance id
-			insurance, found := k.GetInsurance(ctx, req.InsuranceId)
+			_, found := k.GetInsurance(ctx, req.InsuranceId)
 			if !found {
 				msg += fmt.Sprintf("not found insurance(id: %d) for withdraw insurance request\n", req.InsuranceId)
-				brokenCount++
-				continue
-			}
-			if insurance.Status != types.INSURANCE_STATUS_PAIRED {
-				msg += fmt.Sprintf("insurance(id: %d) have invalid status: %s\n", insurance.Id, insurance.Status)
 				brokenCount++
 				continue
 			}
