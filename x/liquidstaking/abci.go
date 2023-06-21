@@ -16,6 +16,8 @@ func EndBlocker(ctx sdk.Context, k keeper.Keeper) {
 		if _, err := k.HandleQueuedLiquidUnstakes(ctx); err != nil {
 			panic(err)
 		}
+		// TODO: remaining queued liquid unstake infos should be deleted
+		// - get escrowed ls tokens to liquid unstaker if info is still remained and unbonding is not started for some reason
 		if _, err := k.HandleQueuedWithdrawInsuranceRequests(ctx); err != nil {
 			panic(err)
 		}

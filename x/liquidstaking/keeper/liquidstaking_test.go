@@ -2762,6 +2762,87 @@ func (suite *KeeperTestSuite) TestTargetChunkGotBothUnstakeAndWithdrawInsuranceR
 	)
 }
 
+// TODO: Add additional logic in abci to handle this case
+func (suite *KeeperTestSuite) TestOnlyOnePairedChunkGotDamagedSoNoChunksAvailableToUnstake() {
+	initialHeight := int64(1)
+	suite.ctx = suite.ctx.WithBlockHeight(initialHeight) // make sure we start with clean height
+	suite.fundAccount(suite.ctx, fundingAccount, types.ChunkSize.MulRaw(500))
+	valNum := 2
+	addrs, _ := suite.AddTestAddrsWithFunding(fundingAccount, valNum, suite.app.StakingKeeper.TokensFromConsensusPower(suite.ctx, 200))
+	valAddrs := simapp.ConvertAddrsToValAddrs(addrs)
+	pubKeys := suite.createTestPubKeys(valNum)
+	tstaking := teststaking.NewHelper(suite.T(), suite.ctx, suite.app.StakingKeeper)
+	tstaking.Denom = suite.app.StakingKeeper.BondDenom(suite.ctx)
+	power := int64(100)
+	selfDelegations := make([]sdk.Int, valNum)
+	// create validators which have the same power
+	for i, valAddr := range valAddrs {
+		selfDelegations[i] = tstaking.CreateValidatorWithValPower(valAddr, pubKeys[i], power, true)
+	}
+	staking.EndBlocker(suite.ctx, suite.app.StakingKeeper)
+
+	// Let's create 1 chunk and 1 insurance
+	oneChunk, oneInsurance := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
+	providers, providerBalances := suite.AddTestAddrsWithFunding(fundingAccount, 1, oneInsurance.Amount)
+	suite.provideInsurances(suite.ctx, providers, valAddrs, providerBalances, TenPercentFeeRate, nil)
+	delegators, delegatorBalances := suite.AddTestAddrsWithFunding(fundingAccount, 1, oneChunk.Amount)
+	suite.liquidStakes(suite.ctx, delegators, delegatorBalances)
+	suite.ctx = suite.ctx.WithBlockHeight(suite.ctx.BlockHeight() + 1)
+	staking.EndBlocker(suite.ctx, suite.app.StakingKeeper)
+
+	// Queue liquid unstake before huge slashing started
+	_, infos, err := suite.app.LiquidStakingKeeper.QueueLiquidUnstake(
+		suite.ctx,
+		types.NewMsgLiquidUnstake(
+			delegators[0].String(),
+			sdk.NewCoin(suite.denom, oneChunk.Amount),
+		),
+	)
+	suite.NoError(err)
+	delBal := suite.app.BankKeeper.GetBalance(suite.ctx, delegators[0], types.DefaultLiquidBondDenom)
+	suite.Equal(
+		"0",
+		delBal.Amount.String(),
+		"delegator's lstoken is escrowed",
+	)
+
+	downValAddr := valAddrs[0]
+	downValPubKey := pubKeys[0]
+	//toBeUnpairedChunk := pairedChunks[0]
+
+	epoch := suite.app.LiquidStakingKeeper.GetEpoch(suite.ctx)
+	epochTime := suite.ctx.BlockTime().Add(epoch.Duration)
+	called := 0
+	// huge slashing started
+	for {
+		validator, _ := suite.app.StakingKeeper.GetValidatorByConsAddr(suite.ctx, sdk.GetConsAddress(downValPubKey))
+		suite.downTimeSlashing(
+			suite.ctx,
+			downValPubKey,
+			validator.GetConsensusPower(suite.app.StakingKeeper.PowerReduction(suite.ctx)),
+			called,
+			time.Second,
+		)
+		suite.unjail(suite.ctx, downValAddr, downValPubKey, time.Second)
+		called++
+
+		if suite.ctx.BlockTime().After(epochTime) {
+			break
+		}
+	}
+	suite.ctx = suite.advanceEpoch(suite.ctx)
+	staking.EndBlocker(suite.ctx, suite.app.StakingKeeper)
+	liquidstakingkeeper.EndBlocker(suite.ctx, suite.app.LiquidStakingKeeper)
+	_, found := suite.app.LiquidStakingKeeper.GetUnpairingForUnstakingChunkInfo(suite.ctx, infos[0].ChunkId)
+	suite.True(found, "still exist!")
+	delBal = suite.app.BankKeeper.GetBalance(suite.ctx, delegators[0], types.DefaultLiquidBondDenom)
+	suite.Equal(
+		"0",
+		delBal.Amount.String(),
+		"delegator's lstoken is still escrowed, it will not get back",
+	)
+}
+
 func (suite *KeeperTestSuite) downTimeSlashing(
 	ctx sdk.Context, downValPubKey cryptotypes.PubKey, power int64, called int, blockTime time.Duration,
 ) (penalty sdk.Int) {

@@ -457,7 +457,7 @@ func (k Keeper) RePairRankedInsurances(
 	for _, outInsurance := range rankOutInsurances {
 		// Pop cheapest insurance
 		newInsurance := newInsurancesWithDifferentValidators[0]
-		newInsurancesWithDifferentValidators = newInsurancesWithDifferentValidators[1:] // TODO: check out of index can be happen or not
+		newInsurancesWithDifferentValidators = newInsurancesWithDifferentValidators[1:]
 		chunk := rankOutInsuranceChunkMap[outInsurance.Id]
 
 		// get delegation shares of srcValidator
@@ -895,9 +895,6 @@ func (k Keeper) DoClaimDiscountedReward(ctx sdk.Context, msg *types.MsgClaimDisc
 
 	// claim amount = (ls token amount / discounted mint rate)
 	claimAmt := burnAmt.Amount.ToDec().Quo(discountedMintRate).TruncateInt()
-	fmt.Println("claimAmt", claimAmt)
-	maximumLsToken := claimableAmt.Amount.ToDec().Mul(discountedMintRate).Ceil().TruncateInt()
-	fmt.Println("maximumLsToken", maximumLsToken)
 	// Requester can claim only up to claimable amount
 	if claimAmt.GT(claimableAmt.Amount) {
 		// requester cannot claim more than claimable amount
@@ -910,12 +907,11 @@ func (k Keeper) DoClaimDiscountedReward(ctx sdk.Context, msg *types.MsgClaimDisc
 		return
 	}
 	// send claimAmt to requester (error)
-	claim = sdk.NewCoins(sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), claimAmt))
 	if err = k.bankKeeper.SendCoins(
 		ctx,
 		types.RewardPool,
 		msg.GetRequestser(),
-		claim,
+		sdk.NewCoins(sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), claimAmt)),
 	); err != nil {
 		return
 	}

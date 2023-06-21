@@ -48,8 +48,8 @@ func (msg MsgLiquidStake) GetSignBytes() []byte {
 	return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(&msg))
 }
 func (msg MsgLiquidStake) GetSigners() []sdk.AccAddress {
-	funder := sdk.MustAccAddressFromBech32(msg.DelegatorAddress)
-	return []sdk.AccAddress{funder}
+	delegator := sdk.MustAccAddressFromBech32(msg.DelegatorAddress)
+	return []sdk.AccAddress{delegator}
 }
 
 func (msg MsgLiquidStake) GetDelegator() sdk.AccAddress {
@@ -78,8 +78,8 @@ func (msg MsgLiquidUnstake) GetSignBytes() []byte {
 	return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(&msg))
 }
 func (msg MsgLiquidUnstake) GetSigners() []sdk.AccAddress {
-	funder := sdk.MustAccAddressFromBech32(msg.DelegatorAddress)
-	return []sdk.AccAddress{funder}
+	delegator := sdk.MustAccAddressFromBech32(msg.DelegatorAddress)
+	return []sdk.AccAddress{delegator}
 }
 
 func (msg MsgLiquidUnstake) GetDelegator() sdk.AccAddress {
@@ -104,14 +104,17 @@ func (msg MsgProvideInsurance) ValidateBasic() error {
 	if !msg.Amount.IsValid() {
 		return sdkerrors.Wrapf(sdkerrors.ErrInvalidCoins, "invalid amount %s", msg.Amount)
 	}
+	if msg.FeeRate.IsNil() {
+		return ErrInvalidFeeRate
+	}
 	return nil
 }
 func (msg MsgProvideInsurance) GetSignBytes() []byte {
 	return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(&msg))
 }
 func (msg MsgProvideInsurance) GetSigners() []sdk.AccAddress {
-	funder := sdk.MustAccAddressFromBech32(msg.ProviderAddress)
-	return []sdk.AccAddress{funder}
+	provider := sdk.MustAccAddressFromBech32(msg.ProviderAddress)
+	return []sdk.AccAddress{provider}
 }
 
 func (msg MsgProvideInsurance) GetProvider() sdk.AccAddress {
@@ -142,8 +145,8 @@ func (msg MsgCancelProvideInsurance) GetSignBytes() []byte {
 	return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(&msg))
 }
 func (msg MsgCancelProvideInsurance) GetSigners() []sdk.AccAddress {
-	funder := sdk.MustAccAddressFromBech32(msg.ProviderAddress)
-	return []sdk.AccAddress{funder}
+	provider := sdk.MustAccAddressFromBech32(msg.ProviderAddress)
+	return []sdk.AccAddress{provider}
 }
 
 func (msg MsgCancelProvideInsurance) GetProvider() sdk.AccAddress {
@@ -173,8 +176,8 @@ func (msg MsgDepositInsurance) GetSignBytes() []byte {
 	return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(&msg))
 }
 func (msg MsgDepositInsurance) GetSigners() []sdk.AccAddress {
-	funder := sdk.MustAccAddressFromBech32(msg.ProviderAddress)
-	return []sdk.AccAddress{funder}
+	provider := sdk.MustAccAddressFromBech32(msg.ProviderAddress)
+	return []sdk.AccAddress{provider}
 }
 
 func (msg MsgDepositInsurance) GetProvider() sdk.AccAddress {
