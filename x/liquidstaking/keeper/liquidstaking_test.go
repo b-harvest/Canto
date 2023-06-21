@@ -142,7 +142,7 @@ func (suite *KeeperTestSuite) TestProvideInsurance() {
 				ProviderAddress:  providers[0].String(),
 				ValidatorAddress: valAddrs[0].String(),
 				Amount:           oneInsurance,
-				FeeRate:          sdk.ZeroDec(),
+				FeeRate:          TenPercentFeeRate,
 			},
 			func(ctx sdk.Context, createdInsurance types.Insurance) {
 				insurance, found := suite.app.LiquidStakingKeeper.GetInsurance(ctx, createdInsurance.Id)
@@ -157,7 +157,7 @@ func (suite *KeeperTestSuite) TestProvideInsurance() {
 				ProviderAddress:  providers[0].String(),
 				ValidatorAddress: valAddrs[0].String(),
 				Amount:           oneInsurance.SubAmount(sdk.NewInt(1)),
-				FeeRate:          sdk.Dec{},
+				FeeRate:          TenPercentFeeRate,
 			},
 			nil,
 			"amount must be greater than minimum coverage",
