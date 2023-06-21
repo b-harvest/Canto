@@ -1084,7 +1084,6 @@ func (k Keeper) completeInsuranceDuty(ctx sdk.Context, insurance types.Insurance
 }
 
 // completeLiquidStake completes liquid stake.
-// TODO: write TC for penalty situation
 func (k Keeper) completeLiquidUnstake(ctx sdk.Context, chunk types.Chunk) error {
 	if chunk.Status != types.CHUNK_STATUS_UNPAIRING_FOR_UNSTAKING {
 		return sdkerrors.Wrapf(types.ErrInvalidChunkStatus, "chunk status: %s", chunk.Status)

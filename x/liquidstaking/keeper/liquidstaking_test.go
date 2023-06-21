@@ -928,7 +928,7 @@ func (suite *KeeperTestSuite) TestDoWithdrawInsuranceCommission() {
 
 	beforeProviderBalance := suite.app.BankKeeper.GetBalance(suite.ctx, provider, suite.denom)
 	// withdraw insurance commission
-	err := suite.app.LiquidStakingKeeper.DoWithdrawInsuranceCommission(
+	_, err := suite.app.LiquidStakingKeeper.DoWithdrawInsuranceCommission(
 		suite.ctx,
 		types.NewMsgWithdrawInsuranceCommission(
 			targetInsurance.ProviderAddress,
@@ -986,7 +986,7 @@ func (suite *KeeperTestSuite) TestDoWithdrawInsuranceCommissionFail() {
 	}
 
 	for _, tc := range tcs {
-		err := suite.app.LiquidStakingKeeper.DoWithdrawInsuranceCommission(suite.ctx, tc.msg)
+		_, err := suite.app.LiquidStakingKeeper.DoWithdrawInsuranceCommission(suite.ctx, tc.msg)
 		if tc.expectedErr == nil {
 			suite.NoError(err)
 		}
@@ -2762,7 +2762,9 @@ func (suite *KeeperTestSuite) TestTargetChunkGotBothUnstakeAndWithdrawInsuranceR
 	)
 }
 
-// TODO: Add additional logic in abci to handle this case
+// TestOnlyOnePairedChunkGotDamagedSoNoChunksAvailableToUnstake tests scenario where
+// matched chunk with unstaking request got damaged during period(queued ~ epoch), so it cannot be unstaked at epoch.
+// The unstake request will be canceled and the coins will be returned to the delegator.
 func (suite *KeeperTestSuite) TestOnlyOnePairedChunkGotDamagedSoNoChunksAvailableToUnstake() {
 	initialHeight := int64(1)
 	suite.ctx = suite.ctx.WithBlockHeight(initialHeight) // make sure we start with clean height
