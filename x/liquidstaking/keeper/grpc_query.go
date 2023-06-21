@@ -72,7 +72,7 @@ func (k Keeper) Chunk(c context.Context, req *types.QueryChunkRequest) (*types.Q
 	if !found {
 		return nil, status.Errorf(codes.NotFound, "no chunk is associated with Chunk Id %d", req.Id)
 	}
-	return &types.QueryChunkResponse{Chunk: chunk}, nil
+	return &types.QueryChunkResponse{Chunk: chunk, DerivedAddress: chunk.DerivedAddress().String()}, nil
 }
 
 func (k Keeper) Insurances(c context.Context, req *types.QueryInsurancesRequest) (*types.QueryInsurancesResponse, error) {
