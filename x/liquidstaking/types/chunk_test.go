@@ -8,30 +8,31 @@ import (
 	"testing"
 )
 
-type chunksTestSuite struct {
+type chunkTestSuite struct {
 	suite.Suite
 }
 
-func TestChunksTestSuite(t *testing.T) {
-	suite.Run(t, new(chunksTestSuite))
+func TestChunkTestSuite(t *testing.T) {
+	suite.Run(t, new(chunkTestSuite))
 }
 
-func (suite *chunksTestSuite) TestDerivedAddress() {
+func (suite *chunkTestSuite) TestDerivedAddress() {
 	c := types.NewChunk(1)
 	suite.Equal(
 		sdk.AccAddress(crypto.AddressHash([]byte("liquidstakingchunk1"))).String(),
 		c.DerivedAddress().String(),
 	)
 	suite.Equal(
-		"A88056CA3B6E75677FD17A846C255361E3B8DA20",
+		"cosmos14zq9dj3mde6kwl7302zxcf2nv83m3k3qqnes97",
 		c.DerivedAddress().String(),
 	)
 }
 
-func (suite *chunksTestSuite) TestEqual() {
+func (suite *chunkTestSuite) TestEqual() {
 	c1 := types.NewChunk(1)
 
 	c2 := c1
+	suite.True(c1.Equal(c2))
 	c2.Id = 2
 	suite.False(c1.Equal(c2))
 
@@ -49,14 +50,14 @@ func (suite *chunksTestSuite) TestEqual() {
 	suite.False(c1.Equal(c2))
 }
 
-func (suite *chunksTestSuite) TestSetStatus() {
+func (suite *chunkTestSuite) TestSetStatus() {
 	c := types.NewChunk(1)
 	suite.Equal(types.CHUNK_STATUS_PAIRING, c.Status)
 	c.SetStatus(types.CHUNK_STATUS_PAIRED)
 	suite.Equal(types.CHUNK_STATUS_PAIRED, c.Status)
 }
 
-func (suite *chunksTestSuite) TestValidate() {
+func (suite *chunkTestSuite) TestValidate() {
 	c := types.NewChunk(2)
 	suite.NoError(c.Validate(2))
 	suite.Error(c.Validate(1))
@@ -64,7 +65,7 @@ func (suite *chunksTestSuite) TestValidate() {
 	suite.Error(c.Validate(2))
 }
 
-func (suite *chunksTestSuite) TestHasPairedInsurance() {
+func (suite *chunkTestSuite) TestHasPairedInsurance() {
 	c := types.NewChunk(1)
 	suite.False(c.HasPairedInsurance())
 	c.PairedInsuranceId = 1
