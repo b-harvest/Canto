@@ -242,9 +242,9 @@ func (suite *insuranceTestSuite) TestSetStatus() {
 }
 
 func (suite *insuranceTestSuite) TestValidate() {
-	i := types.NewInsurance(1, sdk.AccAddress("test").String(), sdk.ValAddress("testval").String(), sdk.NewDecWithPrec(5, 2))
-	suite.NoError(i.Validate(1))
+	i := types.NewInsurance(3, sdk.AccAddress("test").String(), sdk.ValAddress("testval").String(), sdk.NewDecWithPrec(5, 2))
+	suite.NoError(i.Validate(3))
 	suite.Error(i.Validate(2))
 	i.SetStatus(types.INSURANCE_STATUS_UNSPECIFIED)
-	suite.Error(i.Validate(1))
+	suite.Error(i.Validate(3))
 }
