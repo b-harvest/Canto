@@ -23,7 +23,7 @@ func (suite *netAmountTestSuite) TestCalcNetAmount() {
 		TotalRemainingRewards:       sdk.MustNewDecFromStr("160000000000000000000"),
 	}
 	suite.Equal(
-		"500320000000000000000000",
+		"500320000000000000000000.000000000000000000",
 		nas.CalcNetAmount(sdk.MustNewDecFromStr("160000000000000000000").TruncateInt()).String(),
 	)
 }
