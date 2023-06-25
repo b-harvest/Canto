@@ -39,8 +39,11 @@ func (msg MsgLiquidStake) ValidateBasic() error {
 	if _, err := sdk.AccAddressFromBech32(msg.DelegatorAddress); err != nil {
 		return sdkerrors.Wrapf(err, "invalid delegator address %s", msg.DelegatorAddress)
 	}
-	if !msg.Amount.IsValid() {
-		return sdkerrors.Wrapf(sdkerrors.ErrInvalidCoins, "invalid amount %s", msg.Amount)
+	if ok := msg.Amount.IsZero(); ok {
+		return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "staking amount must not be zero")
+	}
+	if err := msg.Amount.Validate(); err != nil {
+		return err
 	}
 	return nil
 }
