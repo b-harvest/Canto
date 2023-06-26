@@ -4,11 +4,28 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	"strconv"
 
 	"github.com/tendermint/tendermint/libs/log"
 
 	"github.com/Canto-Network/Canto/v6/x/liquidstaking/types"
 )
+
+var (
+	enableAdvanceEpoch = "false" // Set this to "true" using build flags to enable AdvanceEpoch msg handling.
+
+	// EnableAdvanceEpoch indicates whether msgServer accepts MsgAdvanceEpoch or not.
+	// Never set this to true in production mode. Doing that will expose serious attack vector.
+	EnableAdvanceEpoch = false
+)
+
+func init() {
+	var err error
+	EnableAdvanceEpoch, err = strconv.ParseBool(enableAdvanceEpoch)
+	if err != nil {
+		panic(err)
+	}
+}
 
 // Keeper of the inflation store
 type Keeper struct {

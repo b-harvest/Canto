@@ -31,4 +31,5 @@ var (
 	ErrInvalidEpochDuration                          = sdkerrors.Register(ModuleName, 30032, "epoch duration must be same with unbonding time")
 	ErrInvalidEpochStartTime                         = sdkerrors.Register(ModuleName, 30033, "epoch start time must be before current time")
 	ErrInvalidFeeRate                                = sdkerrors.Register(ModuleName, 30034, "fee rate must not be nil")
+	ErrNotReachedEpoch                               = sdkerrors.Register(ModuleName, 30035, "not reached epoch")
 )

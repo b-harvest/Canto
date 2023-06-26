@@ -213,3 +213,12 @@ func (k Keeper) ClaimDiscountedReward(goCtx context.Context, msg *types.MsgClaim
 	})
 	return &types.MsgClaimDiscountedRewardResponse{}, nil
 }
+
+func (k Keeper) AdvanceEpoch(goCtx context.Context, msg *types.MsgAdvanceEpoch) (*types.MsgAdvanceEpochResponse, error) {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+	err := k.DoAdvanceEpoch(ctx, msg)
+	if err != nil {
+		return nil, err
+	}
+	return &types.MsgAdvanceEpochResponse{}, nil
+}

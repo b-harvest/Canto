@@ -21,6 +21,7 @@ PROJECT := canto
 DOCKER_IMAGE := $(NAMESPACE)/$(PROJECT)
 COMMIT_HASH := $(shell git rev-parse --short=7 HEAD)
 DOCKER_TAG := $(COMMIT_HASH)
+REPO=github.com/Canto-Network/Canto/v6
 
 export GO111MODULE = on
 
@@ -75,6 +76,8 @@ ldflags = -X github.com/cosmos/cosmos-sdk/version.Name=canto \
           -X "github.com/cosmos/cosmos-sdk/version.BuildTags=$(build_tags_comma_sep)" \
           -X github.com/tendermint/tendermint/version.TMCoreSemVer=$(TMVERSION)
 
+testing_ldflags = -X $(REPO)/x/liquidstaking/keeper.enableAdvanceEpoch=true \
+
 # DB backend selection
 ifeq (cleveldb,$(findstring cleveldb,$(COSMOS_BUILD_OPTIONS)))
   ldflags += -X github.com/cosmos/cosmos-sdk/types.DBBackend=cleveldb
@@ -106,6 +109,8 @@ ifeq (,$(findstring nostrip,$(COSMOS_BUILD_OPTIONS)))
   BUILD_FLAGS += -trimpath
 endif
 
+TESTING_BUILD_FLAGS := -tags "$(build_tags)" -ldflags '$(ldflags) $(testing_ldflags)'
+
 # # The below include contains the tools and runsim targets.
 # include contrib/devtools/Makefile
 
@@ -121,6 +126,9 @@ build-linux:
 
 $(BUILD_TARGETS): go.sum $(BUILDDIR)/
 	go $@ $(BUILD_FLAGS) $(BUILD_ARGS) ./...
+
+install-testing: go.sum
+	go install $(TESTING_BUILD_FLAGS) $(BUILD_ARGS) ./...
 
 $(BUILDDIR)/:
 	mkdir -p $(BUILDDIR)/

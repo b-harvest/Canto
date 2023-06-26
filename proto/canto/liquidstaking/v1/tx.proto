@@ -47,6 +47,10 @@ service Msg {
     option (google.api.http).post =
         "/canto/liquidstaking/v1/tx/claim_discounted_reward";
   };
+
+  rpc AdvanceEpoch(MsgAdvanceEpoch) returns (MsgAdvanceEpochResponse) {
+    option (google.api.http).post = "/canto/liquidstaking/v1/tx/advance_epoch";
+  };
 }
 
 message MsgLiquidStake {
@@ -159,3 +163,10 @@ message MsgClaimDiscountedReward {
 }
 
 message MsgClaimDiscountedRewardResponse {}
+
+message MsgAdvanceEpoch {
+  // requester_address is the address of the user who want to advance the epoch.
+  string requester_address = 1;
+}
+
+message MsgAdvanceEpochResponse {}
