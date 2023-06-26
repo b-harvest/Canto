@@ -977,43 +977,6 @@ func (k Keeper) DoClaimDiscountedReward(ctx sdk.Context, msg *types.MsgClaimDisc
 	return
 }
 
-// DoAdvanceEpoch do all the jobs when epoch is reached and advance epoch.
-// Currently, it executes endblock logics.
-func (k Keeper) DoAdvanceEpoch(ctx sdk.Context, _ *types.MsgAdvanceEpoch) error {
-	if EnableAdvanceEpoch {
-		epoch := k.GetEpoch(ctx)
-		if ctx.BlockTime().Before(epoch.StartTime) {
-			ctx = ctx.WithBlockTime(epoch.StartTime)
-		}
-		ctx = ctx.WithBlockTime(ctx.BlockTime().Add(epoch.Duration))
-		if !k.IsEpochReached(ctx) {
-			return sdkerrors.Wrapf(types.ErrNotReachedEpoch, "it must be reached epoch: %d", epoch.CurrentNumber)
-		}
-		k.DistributeReward(ctx)
-		k.CoverSlashingAndHandleMatureUnbondings(ctx)
-		if _, err := k.HandleQueuedLiquidUnstakes(ctx); err != nil {
-			return err
-		}
-		if err := k.HandleUnprocessedQueuedLiquidUnstakes(ctx); err != nil {
-			return err
-		}
-		if _, err := k.HandleQueuedWithdrawInsuranceRequests(ctx); err != nil {
-			return err
-		}
-		newlyRankedInInsurances, rankOutInsurances, err := k.RankInsurances(ctx)
-		if err != nil {
-			return err
-		}
-		if err = k.RePairRankedInsurances(ctx, newlyRankedInInsurances, rankOutInsurances); err != nil {
-			return err
-		}
-		k.IncrementEpoch(ctx)
-		return nil
-	} else {
-		return fmt.Errorf("AdvanceEpoch is disabled")
-	}
-}
-
 // CalcDiscountRate calculates the current discount rate.
 // reward module account's balance / (num paired chunks * chunk size)
 func (k Keeper) CalcDiscountRate(ctx sdk.Context) sdk.Dec {

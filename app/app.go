@@ -4,10 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/armon/go-metrics"
+	"github.com/cosmos/cosmos-sdk/telemetry"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 
 	"github.com/gorilla/mux"
 	"github.com/rakyll/statik/fs"
@@ -150,6 +153,16 @@ import (
 	v5 "github.com/Canto-Network/Canto/v6/app/upgrades/v5"
 )
 
+var (
+	enableAdvanceEpoch = "false" // Set this to "true" using build flags to enable AdvanceEpoch msg handling.
+
+	// EnableAdvanceEpoch indicates whether msgServer accepts MsgAdvanceEpoch or not.
+	// Never set this to true in production mode. Doing that will expose serious attack vector.
+	EnableAdvanceEpoch = false
+
+	EpochPerBlock = -1
+)
+
 func init() {
 	userHomeDir, err := os.UserHomeDir()
 	if err != nil {
@@ -163,6 +176,11 @@ func init() {
 	// modify fee market parameter defaults through global
 	feemarkettypes.DefaultMinGasPrice = sdk.NewDec(20_000_000_000)
 	feemarkettypes.DefaultMinGasMultiplier = sdk.NewDecWithPrec(5, 1)
+
+	EnableAdvanceEpoch, err = strconv.ParseBool(enableAdvanceEpoch)
+	if err != nil {
+		panic(err)
+	}
 }
 
 // Name defines the application binary name
@@ -854,6 +872,107 @@ func (app *Canto) BeginBlocker(ctx sdk.Context, req abci.RequestBeginBlock) abci
 
 // EndBlocker updates every end block
 func (app *Canto) EndBlocker(ctx sdk.Context, req abci.RequestEndBlock) abci.ResponseEndBlock {
+	// SET ldflag for enableAdvanceEpoch or epochPerBlock on app.go
+	// https://kodeit.dev/go-injecting-variable-values-during-building-binary-creating-build-script/
+	defer func() {
+		if EnableAdvanceEpoch {
+			if int(ctx.BlockHeight())%EpochPerBlock == 0 {
+				// mimic the begin block logic of inflation module
+				{
+					epochMintProvision, found := app.InflationKeeper.GetEpochMintProvision(ctx)
+					if !found {
+						panic("epoch mint provision not found")
+					}
+					inflationParams := app.InflationKeeper.GetParams(ctx)
+					mintedCoin := sdk.NewCoin(inflationParams.MintDenom, epochMintProvision.TruncateInt())
+					staking, communityPool, err := app.InflationKeeper.MintAndAllocateInflation(ctx, mintedCoin)
+					if err != nil {
+						panic(err)
+					}
+					defer func() {
+						if mintedCoin.Amount.IsInt64() {
+							telemetry.IncrCounterWithLabels(
+								[]string{"inflation", "allocate", "total"},
+								float32(mintedCoin.Amount.Int64()),
+								[]metrics.Label{telemetry.NewLabel("denom", mintedCoin.Denom)},
+							)
+						}
+						if staking.AmountOf(mintedCoin.Denom).IsInt64() {
+							telemetry.IncrCounterWithLabels(
+								[]string{"inflation", "allocate", "staking", "total"},
+								float32(staking.AmountOf(mintedCoin.Denom).Int64()),
+								[]metrics.Label{telemetry.NewLabel("denom", mintedCoin.Denom)},
+							)
+						}
+						if communityPool.AmountOf(mintedCoin.Denom).IsInt64() {
+							telemetry.IncrCounterWithLabels(
+								[]string{"inflation", "allocate", "community_pool", "total"},
+								float32(communityPool.AmountOf(mintedCoin.Denom).Int64()),
+								[]metrics.Label{telemetry.NewLabel("denom", mintedCoin.Denom)},
+							)
+						}
+					}()
+
+					ctx.EventManager().EmitEvent(
+						sdk.NewEvent(
+							inflationtypes.EventTypeMint,
+							sdk.NewAttribute(inflationtypes.AttributeEpochNumber, fmt.Sprintf("%d", -1)),
+							sdk.NewAttribute(inflationtypes.AttributeKeyEpochProvisions, epochMintProvision.String()),
+							sdk.NewAttribute(sdk.AttributeKeyAmount, mintedCoin.Amount.String()),
+						),
+					)
+				}
+
+				feeCollector := app.AccountKeeper.GetModuleAddress(authtypes.FeeCollectorName)
+				// mimic the begin block logic of distribution module
+				{
+					feeCollectorBalance := app.BankKeeper.GetAllBalances(ctx, feeCollector)
+					rewardsToBeDistributed := feeCollectorBalance.AmountOf(sdk.DefaultBondDenom)
+
+					// mimic distribution.BeginBlock (AllocateTokens, get rewards from feeCollector, AllocateTokensToValidator, add remaining to feePool)
+					err := app.BankKeeper.SendCoinsFromModuleToModule(ctx, authtypes.FeeCollectorName, distrtypes.ModuleName, feeCollectorBalance)
+					if err != nil {
+						panic(err)
+					}
+					totalRewards := sdk.ZeroDec()
+					totalPower := int64(0)
+					app.StakingKeeper.IterateBondedValidatorsByPower(s.ctx, func(index int64, validator stakingtypes.ValidatorI) (stop bool) {
+						consPower := validator.GetConsensusPower(s.app.StakingKeeper.PowerReduction(s.ctx))
+						totalPower = totalPower + consPower
+						return false
+					})
+					if totalPower != 0 {
+						s.app.StakingKeeper.IterateBondedValidatorsByPower(s.ctx, func(index int64, validator stakingtypes.ValidatorI) (stop bool) {
+							consPower := validator.GetConsensusPower(s.app.StakingKeeper.PowerReduction(s.ctx))
+							powerFraction := sdk.NewDec(consPower).QuoTruncate(sdk.NewDec(totalPower))
+							reward := rewardsToBeDistributed.ToDec().MulTruncate(powerFraction)
+							s.app.DistrKeeper.AllocateTokensToValidator(s.ctx, validator, sdk.DecCoins{{Denom: sdk.DefaultBondDenom, Amount: reward}})
+							totalRewards = totalRewards.Add(reward)
+							return false
+						})
+					}
+					remaining := rewardsToBeDistributed.ToDec().Sub(totalRewards)
+					s.Require().False(remaining.GT(sdk.NewDec(1)))
+					feePool := s.app.DistrKeeper.GetFeePool(s.ctx)
+					feePool.CommunityPool = feePool.CommunityPool.Add(sdk.DecCoins{{Denom: sdk.DefaultBondDenom, Amount: remaining}}...)
+					s.app.DistrKeeper.SetFeePool(s.ctx, feePool)
+					if withBeginBlock {
+						// liquid validator set update, rebalancing, withdraw rewards, re-stake
+						liquidstaking.BeginBlocker(s.ctx, s.app.LiquidStakingKeeper)
+					}
+					staking.EndBlocker(s.ctx, *s.app.StakingKeeper)
+
+				}
+
+				// call staking endblocker
+				staking.EndBlocker(ctx, app.StakingKeeper)
+
+				// call liquidstaking endblocker
+				liquidstaking.EndBlocker(ctx, app.LiquidStakingKeeper)
+			}
+		}
+	}()
+
 	return app.mm.EndBlock(ctx, req)
 }
 

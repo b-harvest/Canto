@@ -2850,6 +2850,171 @@ func (suite *KeeperTestSuite) TestOnlyOnePairedChunkGotDamagedSoNoChunksAvailabl
 	)
 }
 
+// TODO: Re-delegating validator has down-time slashing history, then shares are not equal to chunk size?
+// But it should have same value with chunk size when converted to tokens. This part should be verified.
+// 1. v1 - c1 and v2 - c2
+// 2. v1 slashed
+// 3. unstake c1
+// 4. v1 - x and v2 - c2
+// 5. provide cheapest insurance for v1
+// 6. v1 - c2 and v2 - x (re-delegate)
+func (suite *KeeperTestSuite) TestRedelegateToSlashedValidator() {
+	initialHeight := int64(1)
+	suite.ctx = suite.ctx.WithBlockHeight(initialHeight) // make sure we start with clean height
+	suite.fundAccount(suite.ctx, fundingAccount, types.ChunkSize.MulRaw(500))
+	valNum := 2
+	addrs, _ := suite.AddTestAddrsWithFunding(fundingAccount, valNum, suite.app.StakingKeeper.TokensFromConsensusPower(suite.ctx, 200))
+	valAddrs := simapp.ConvertAddrsToValAddrs(addrs)
+	pubKeys := suite.createTestPubKeys(valNum)
+	tstaking := teststaking.NewHelper(suite.T(), suite.ctx, suite.app.StakingKeeper)
+	tstaking.Denom = suite.app.StakingKeeper.BondDenom(suite.ctx)
+	power := int64(100)
+	selfDelegations := make([]sdk.Int, valNum)
+	// create validators which have the same power
+	for i, valAddr := range valAddrs {
+		selfDelegations[i] = tstaking.CreateValidatorWithValPower(valAddr, pubKeys[i], power, true)
+	}
+	staking.EndBlocker(suite.ctx, suite.app.StakingKeeper)
+
+	// Let's create 2 chunk and 2 insurance
+	oneChunk, oneInsurance := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
+	providers, providerBalances := suite.AddTestAddrsWithFunding(fundingAccount, 2, oneInsurance.Amount)
+	suite.provideInsurances(
+		suite.ctx,
+		providers,
+		valAddrs,
+		providerBalances,
+		sdk.ZeroDec(),
+		[]sdk.Dec{sdk.NewDecWithPrec(5, 2), TenPercentFeeRate},
+	)
+	delegators, delegatorBalances := suite.AddTestAddrsWithFunding(fundingAccount, 2, oneChunk.Amount)
+	suite.liquidStakes(suite.ctx, delegators, delegatorBalances)
+	suite.ctx = suite.ctx.WithBlockHeight(suite.ctx.BlockHeight() + 1)
+	staking.EndBlocker(suite.ctx, suite.app.StakingKeeper)
+
+	downValAddr := valAddrs[0]
+	downValPubKey := pubKeys[0]
+	//toBeUnpairedChunk := pairedChunks[0]
+
+	epoch := suite.app.LiquidStakingKeeper.GetEpoch(suite.ctx)
+	epochTime := suite.ctx.BlockTime().Add(epoch.Duration)
+	called := 0
+	for {
+		// downtime 5 times, so insurance can cover this penalty
+		if called == 5 {
+			break
+		}
+		validator, _ := suite.app.StakingKeeper.GetValidatorByConsAddr(suite.ctx, sdk.GetConsAddress(downValPubKey))
+		suite.downTimeSlashing(
+			suite.ctx,
+			downValPubKey,
+			validator.GetConsensusPower(suite.app.StakingKeeper.PowerReduction(suite.ctx)),
+			called,
+			time.Second,
+		)
+		suite.unjail(suite.ctx, downValAddr, downValPubKey, time.Second)
+		called++
+
+		if suite.ctx.BlockTime().After(epochTime) {
+			break
+		}
+	}
+
+	// Queue liquid unstake before huge slashing started
+	_, _, err := suite.app.LiquidStakingKeeper.QueueLiquidUnstake(
+		suite.ctx,
+		types.NewMsgLiquidUnstake(
+			delegators[1].String(),
+			sdk.NewCoin(suite.denom, oneChunk.Amount),
+		),
+	)
+	suite.NoError(err)
+	suite.ctx = suite.advanceEpoch(suite.ctx)
+	// unbonding chunk triggered
+	staking.EndBlocker(suite.ctx, suite.app.StakingKeeper)
+	liquidstakingkeeper.EndBlocker(suite.ctx, suite.app.LiquidStakingKeeper)
+
+	suite.ctx = suite.advanceEpoch(suite.ctx)
+	// unbonding finished
+	staking.EndBlocker(suite.ctx, suite.app.StakingKeeper)
+	liquidstakingkeeper.EndBlocker(suite.ctx, suite.app.LiquidStakingKeeper)
+
+	// now v1-x and v2-c2
+	// let's provide insurance for v1 with very cheap fee rate
+	anotherProviders, anotherProviderBalances := suite.AddTestAddrsWithFunding(fundingAccount, 1, oneInsurance.Amount)
+	suite.provideInsurances(
+		suite.ctx, anotherProviders,
+		[]sdk.ValAddress{downValAddr},
+		anotherProviderBalances, sdk.ZeroDec(),
+		[]sdk.Dec{sdk.ZeroDec()}, // very attractive fee rate
+	)
+	suite.ctx = suite.advanceEpoch(suite.ctx)
+	// re-delegation will be started
+	staking.EndBlocker(suite.ctx, suite.app.StakingKeeper)
+	liquidstakingkeeper.EndBlocker(suite.ctx, suite.app.LiquidStakingKeeper)
+}
+
+// TestUnpairingInsuranceCoversSlashingBeforeRedelegationHeight tests scenario where
+// unpairing insurance covers slashing penalty happened before re-delegation height.
+func (suite *KeeperTestSuite) TestUnpairingInsuranceCoversSlashingBeforeRedelegationHeight() {
+	// validator - chunk - (paired insurance, unpairing insurance)
+	// v1 - c1 - (i1, x), v2 - x - (x, x)
+	// provide insurance i2 with lower fee which direct v2
+	// advance blocks
+	// epoch
+	// re-delegate
+	//   v1 - x - (x, x), v2 - c1 - (i2, i1) - checkpoint1
+	// double-sign slashing for before checkpoint1
+	// i1 should cover that slashing penalty at the next epoch
+	env := suite.setupLiquidStakeTestingEnv(
+		testingEnvOptions{
+			"TestUnpairingInsuranceCoversSlashingBeforeRedelegationHeight",
+			2,
+			TenPercentFeeRate,
+			nil,
+			onePower,
+			nil,
+			1,
+			TenPercentFeeRate,
+			nil,
+			1,
+			types.ChunkSize.MulRaw(500),
+		},
+	)
+	chunk := env.pairedChunks[0]
+	srcVal := env.valAddrs[0]
+	srcValPubKey := env.pubKeys[0]
+	dstVal := env.valAddrs[1]
+	onePercentFeeRate := sdk.NewDecWithPrec(1, 2)
+	_, oneInsurance := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
+	providers, providerBals := suite.AddTestAddrsWithFunding(fundingAccount, 1, oneInsurance.Amount)
+	// provide insurance with lower fee
+	suite.provideInsurances(suite.ctx, providers, []sdk.ValAddress{env.valAddrs[1]}, providerBals, onePercentFeeRate, nil)
+	suite.ctx = suite.advanceEpoch(suite.ctx)
+	suite.ctx = suite.advanceHeight(suite.ctx, 1, "re-delegation")
+
+	redelegation, found := suite.app.StakingKeeper.GetRedelegation(suite.ctx, chunk.DerivedAddress(), srcVal, dstVal)
+	suite.True(found)
+	suite.Len(redelegation.Entries, 1)
+
+	suite.ctx = suite.advanceHeight(suite.ctx, 10, "checkpoint0")
+	h := suite.ctx.BlockHeight()
+	suite.ctx = suite.advanceHeight(suite.ctx, 10, "checkpoint1")
+
+	val := suite.app.StakingKeeper.Validator(suite.ctx, srcVal)
+	power := val.GetConsensusPower(suite.app.StakingKeeper.PowerReduction(suite.ctx))
+	evidence := &evidencetypes.Equivocation{
+		// double-sign slashing happened between checkpoint0 and checkpoint1
+		Height:           h,
+		Time:             time.Now(),
+		Power:            power,
+		ConsensusAddress: sdk.ConsAddress(srcValPubKey.Address()).String(),
+	}
+	suite.app.EvidenceKeeper.HandleEquivocationEvidence(suite.ctx, evidence)
+	suite.ctx = suite.advanceEpoch(suite.ctx)
+	suite.ctx = suite.advanceHeight(suite.ctx, 1, "unpairing insurance should covers slashing penalty")
+}
+
 func (suite *KeeperTestSuite) downTimeSlashing(
 	ctx sdk.Context, downValPubKey cryptotypes.PubKey, power int64, called int, blockTime time.Duration,
 ) (penalty sdk.Int) {
