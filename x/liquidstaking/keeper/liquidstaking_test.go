@@ -2852,13 +2852,14 @@ func (suite *KeeperTestSuite) TestOnlyOnePairedChunkGotDamagedSoNoChunksAvailabl
 
 // TODO: Re-delegating validator has down-time slashing history, then shares are not equal to chunk size?
 // But it should have same value with chunk size when converted to tokens. This part should be verified.
-// 1. v1 - c1 and v2 - c2
+// 1. v1 - c1 - (i1, x) and v2 - c2 - (i2, x)
 // 2. v1 slashed
 // 3. unstake c1
-// 4. v1 - x and v2 - c2
-// 5. provide cheapest insurance for v1
-// 6. v1 - c2 and v2 - x (re-delegate)
+// 4. v1 - x - (x, x) and v2 - c2 - (i2, x)
+// 5. provide cheap insurance i3 for v1
+// 6. v1 - c2 - (i3, i2) and v2 - x - (x, x)
 func (suite *KeeperTestSuite) TestRedelegateToSlashedValidator() {
+	fmt.Println(suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx))
 	initialHeight := int64(1)
 	suite.ctx = suite.ctx.WithBlockHeight(initialHeight) // make sure we start with clean height
 	suite.fundAccount(suite.ctx, fundingAccount, types.ChunkSize.MulRaw(500))
@@ -2889,8 +2890,7 @@ func (suite *KeeperTestSuite) TestRedelegateToSlashedValidator() {
 	)
 	delegators, delegatorBalances := suite.AddTestAddrsWithFunding(fundingAccount, 2, oneChunk.Amount)
 	suite.liquidStakes(suite.ctx, delegators, delegatorBalances)
-	suite.ctx = suite.ctx.WithBlockHeight(suite.ctx.BlockHeight() + 1)
-	staking.EndBlocker(suite.ctx, suite.app.StakingKeeper)
+	suite.ctx = suite.advanceHeight(suite.ctx, 1, "v1 - c1 - (i1, x) and v2 - c2 - (i2, x)")
 
 	downValAddr := valAddrs[0]
 	downValPubKey := pubKeys[0]
@@ -2920,7 +2920,8 @@ func (suite *KeeperTestSuite) TestRedelegateToSlashedValidator() {
 		}
 	}
 
-	// Queue liquid unstake before huge slashing started
+	nas := suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
+	fmt.Println(nas)
 	_, _, err := suite.app.LiquidStakingKeeper.QueueLiquidUnstake(
 		suite.ctx,
 		types.NewMsgLiquidUnstake(
@@ -2930,17 +2931,11 @@ func (suite *KeeperTestSuite) TestRedelegateToSlashedValidator() {
 	)
 	suite.NoError(err)
 	suite.ctx = suite.advanceEpoch(suite.ctx)
-	// unbonding chunk triggered
-	staking.EndBlocker(suite.ctx, suite.app.StakingKeeper)
-	liquidstakingkeeper.EndBlocker(suite.ctx, suite.app.LiquidStakingKeeper)
+	suite.ctx = suite.advanceHeight(suite.ctx, 1, "unbonding chunk triggered")
 
 	suite.ctx = suite.advanceEpoch(suite.ctx)
-	// unbonding finished
-	staking.EndBlocker(suite.ctx, suite.app.StakingKeeper)
-	liquidstakingkeeper.EndBlocker(suite.ctx, suite.app.LiquidStakingKeeper)
+	suite.ctx = suite.advanceHeight(suite.ctx, 1, "v1 - x - (x, x) and v2 - c2 - (i2, x)")
 
-	// now v1-x and v2-c2
-	// let's provide insurance for v1 with very cheap fee rate
 	anotherProviders, anotherProviderBalances := suite.AddTestAddrsWithFunding(fundingAccount, 1, oneInsurance.Amount)
 	suite.provideInsurances(
 		suite.ctx, anotherProviders,
@@ -2949,9 +2944,7 @@ func (suite *KeeperTestSuite) TestRedelegateToSlashedValidator() {
 		[]sdk.Dec{sdk.ZeroDec()}, // very attractive fee rate
 	)
 	suite.ctx = suite.advanceEpoch(suite.ctx)
-	// re-delegation will be started
-	staking.EndBlocker(suite.ctx, suite.app.StakingKeeper)
-	liquidstakingkeeper.EndBlocker(suite.ctx, suite.app.LiquidStakingKeeper)
+	suite.ctx = suite.advanceHeight(suite.ctx, 1, "re-delegation is started")
 }
 
 // TestUnpairingInsuranceCoversSlashingBeforeRedelegationHeight tests scenario where
