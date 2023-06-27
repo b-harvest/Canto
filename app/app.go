@@ -4,13 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/armon/go-metrics"
-	"github.com/cosmos/cosmos-sdk/telemetry"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
+
+	"github.com/armon/go-metrics"
+	"github.com/cosmos/cosmos-sdk/telemetry"
 
 	"github.com/gorilla/mux"
 	"github.com/rakyll/statik/fs"
@@ -155,12 +156,13 @@ import (
 
 var (
 	enableAdvanceEpoch = "false" // Set this to "true" using build flags to enable AdvanceEpoch msg handling.
+	epochPerBlock      = "-1"
 
-	// EnableAdvanceEpoch indicates whether msgServer accepts MsgAdvanceEpoch or not.
+	// EnableAdvanceEpoch and EpochBlock indicates whether we forcefully advance epoch or not.
+	// If those values are enabled, then it will forcefully change the block time and advance epoch.
 	// Never set this to true in production mode. Doing that will expose serious attack vector.
 	EnableAdvanceEpoch = false
-
-	EpochPerBlock = -1
+	EpochPerBlock      = -1
 )
 
 func init() {
@@ -180,6 +182,12 @@ func init() {
 	EnableAdvanceEpoch, err = strconv.ParseBool(enableAdvanceEpoch)
 	if err != nil {
 		panic(err)
+	}
+	if EnableAdvanceEpoch {
+		EpochPerBlock, err = strconv.Atoi(epochPerBlock)
+		if err != nil {
+			panic(err)
+		}
 	}
 }
 
@@ -872,12 +880,19 @@ func (app *Canto) BeginBlocker(ctx sdk.Context, req abci.RequestBeginBlock) abci
 
 // EndBlocker updates every end block
 func (app *Canto) EndBlocker(ctx sdk.Context, req abci.RequestEndBlock) abci.ResponseEndBlock {
-	// SET ldflag for enableAdvanceEpoch or epochPerBlock on app.go
-	// https://kodeit.dev/go-injecting-variable-values-during-building-binary-creating-build-script/
 	defer func() {
+		// SET ldflag for enableAdvanceEpoch or epochPerBlock on app.go
+		// https://kodeit.dev/go-injecting-variable-values-during-building-binary-creating-build-script/
 		if EnableAdvanceEpoch {
 			if int(ctx.BlockHeight())%EpochPerBlock == 0 {
-				// mimic the begin block logic of inflation module
+				lsmEpoch := app.LiquidStakingKeeper.GetEpoch(ctx)
+				ctx = ctx.WithBlockTime(lsmEpoch.StartTime.Add(lsmEpoch.Duration))
+				// ctx = ctx.WithBlockTime(ctx.BlockTime().Add(app.StakingKeeper.UnbondingTime(ctx)))
+				staking.BeginBlocker(ctx, app.StakingKeeper)
+
+				// mimic the begin block logic of epoch module
+				// currently epoch module use hooks when begin block and inflation module
+				// implemented that hook, so actual logic is in inflation module.
 				{
 					epochMintProvision, found := app.InflationKeeper.GetEpochMintProvision(ctx)
 					if !found {
@@ -936,39 +951,51 @@ func (app *Canto) EndBlocker(ctx sdk.Context, req abci.RequestEndBlock) abci.Res
 					}
 					totalRewards := sdk.ZeroDec()
 					totalPower := int64(0)
-					app.StakingKeeper.IterateBondedValidatorsByPower(s.ctx, func(index int64, validator stakingtypes.ValidatorI) (stop bool) {
-						consPower := validator.GetConsensusPower(s.app.StakingKeeper.PowerReduction(s.ctx))
+					app.StakingKeeper.IterateBondedValidatorsByPower(ctx, func(index int64, validator stakingtypes.ValidatorI) (stop bool) {
+						consPower := validator.GetConsensusPower(app.StakingKeeper.PowerReduction(ctx))
 						totalPower = totalPower + consPower
 						return false
 					})
 					if totalPower != 0 {
-						s.app.StakingKeeper.IterateBondedValidatorsByPower(s.ctx, func(index int64, validator stakingtypes.ValidatorI) (stop bool) {
-							consPower := validator.GetConsensusPower(s.app.StakingKeeper.PowerReduction(s.ctx))
+						app.StakingKeeper.IterateBondedValidatorsByPower(ctx, func(index int64, validator stakingtypes.ValidatorI) (stop bool) {
+							consPower := validator.GetConsensusPower(app.StakingKeeper.PowerReduction(ctx))
 							powerFraction := sdk.NewDec(consPower).QuoTruncate(sdk.NewDec(totalPower))
 							reward := rewardsToBeDistributed.ToDec().MulTruncate(powerFraction)
-							s.app.DistrKeeper.AllocateTokensToValidator(s.ctx, validator, sdk.DecCoins{{Denom: sdk.DefaultBondDenom, Amount: reward}})
+							app.DistrKeeper.AllocateTokensToValidator(ctx, validator, sdk.DecCoins{{Denom: sdk.DefaultBondDenom, Amount: reward}})
 							totalRewards = totalRewards.Add(reward)
 							return false
 						})
 					}
 					remaining := rewardsToBeDistributed.ToDec().Sub(totalRewards)
-					s.Require().False(remaining.GT(sdk.NewDec(1)))
-					feePool := s.app.DistrKeeper.GetFeePool(s.ctx)
-					feePool.CommunityPool = feePool.CommunityPool.Add(sdk.DecCoins{{Denom: sdk.DefaultBondDenom, Amount: remaining}}...)
-					s.app.DistrKeeper.SetFeePool(s.ctx, feePool)
-					if withBeginBlock {
-						// liquid validator set update, rebalancing, withdraw rewards, re-stake
-						liquidstaking.BeginBlocker(s.ctx, s.app.LiquidStakingKeeper)
-					}
-					staking.EndBlocker(s.ctx, *s.app.StakingKeeper)
-
+					feePool := app.DistrKeeper.GetFeePool(ctx)
+					feePool.CommunityPool = feePool.CommunityPool.Add(sdk.DecCoins{
+						{Denom: app.StakingKeeper.BondDenom(ctx), Amount: remaining}}...)
+					app.DistrKeeper.SetFeePool(ctx, feePool)
 				}
 
-				// call staking endblocker
 				staking.EndBlocker(ctx, app.StakingKeeper)
-
-				// call liquidstaking endblocker
-				liquidstaking.EndBlocker(ctx, app.LiquidStakingKeeper)
+				// mimic liquidstaking endblocker except increasing epoch
+				{
+					app.LiquidStakingKeeper.DistributeReward(ctx)
+					app.LiquidStakingKeeper.CoverSlashingAndHandleMatureUnbondings(ctx)
+					if _, err := app.LiquidStakingKeeper.HandleQueuedLiquidUnstakes(ctx); err != nil {
+						panic(err)
+					}
+					if err := app.LiquidStakingKeeper.HandleUnprocessedQueuedLiquidUnstakes(ctx); err != nil {
+						panic(err)
+					}
+					if _, err := app.LiquidStakingKeeper.HandleQueuedWithdrawInsuranceRequests(ctx); err != nil {
+						panic(err)
+					}
+					newlyRankedInInsurances, rankOutInsurances, err := app.LiquidStakingKeeper.RankInsurances(ctx)
+					if err != nil {
+						panic(err)
+					}
+					if err = app.LiquidStakingKeeper.RePairRankedInsurances(ctx, newlyRankedInInsurances, rankOutInsurances); err != nil {
+						panic(err)
+					}
+					app.LiquidStakingKeeper.IncrementEpoch(ctx)
+				}
 			}
 		}
 	}()

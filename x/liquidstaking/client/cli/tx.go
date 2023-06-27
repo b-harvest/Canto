@@ -35,7 +35,6 @@ func GetTxCmd() *cobra.Command {
 		NewWithdrawInsuranceCmd(),
 		NewWithdrawInsuranceCommissionCmd(),
 		NewClaimDiscountedRewardCmd(),
-		NewAdvanceEpochCmd(),
 	)
 
 	return cmd
@@ -364,40 +363,6 @@ $ %s tx %s claim-discounted-reward 100lscanto 0.03 --from mykey
 			}
 
 			msg := types.NewMsgClaimDiscountedReward(clientCtx.GetFromAddress().String(), coin, minimumDiscountRate)
-			if err := msg.ValidateBasic(); err != nil {
-				return err
-			}
-
-			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
-		},
-	}
-
-	flags.AddTxFlagsToCmd(cmd)
-
-	return cmd
-}
-
-func NewAdvanceEpochCmd() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "advance-epoch",
-		Args:  cobra.ExactArgs(0),
-		Short: "advance epoch",
-		Long: strings.TrimSpace(
-			fmt.Sprintf(`Advance epoch.
-	
-Example:
-$ %s tx %s advance-epoch --from mykey
-`,
-				version.AppName, types.ModuleName,
-			),
-		),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			clientCtx, err := client.GetClientTxContext(cmd)
-			if err != nil {
-				return err
-			}
-
-			msg := types.NewMsgAdvanceEpoch(clientCtx.GetFromAddress().String())
 			if err := msg.ValidateBasic(); err != nil {
 				return err
 			}

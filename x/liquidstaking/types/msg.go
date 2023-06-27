@@ -305,28 +305,3 @@ func (msg MsgClaimDiscountedReward) GetRequestser() sdk.AccAddress {
 	addr := sdk.MustAccAddressFromBech32(msg.RequesterAddress)
 	return addr
 }
-
-func NewMsgAdvanceEpoch(requesterAddress string) *MsgAdvanceEpoch {
-	return &MsgAdvanceEpoch{
-		RequesterAddress: requesterAddress,
-	}
-}
-func (msg MsgAdvanceEpoch) Route() string { return RouterKey }
-func (msg MsgAdvanceEpoch) Type() string  { return TypeMsgAdvanceEpoch }
-func (msg MsgAdvanceEpoch) ValidateBasic() error {
-	if _, err := sdk.AccAddressFromBech32(msg.RequesterAddress); err != nil {
-		return sdkerrors.Wrapf(err, "invalid requester address %s", msg.RequesterAddress)
-	}
-	return nil
-}
-func (msg MsgAdvanceEpoch) GetSignBytes() []byte {
-	return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(&msg))
-}
-func (msg MsgAdvanceEpoch) GetSigners() []sdk.AccAddress {
-	requester := sdk.MustAccAddressFromBech32(msg.RequesterAddress)
-	return []sdk.AccAddress{requester}
-}
-func (msg MsgAdvanceEpoch) GetRequestser() sdk.AccAddress {
-	addr := sdk.MustAccAddressFromBech32(msg.RequesterAddress)
-	return addr
-}

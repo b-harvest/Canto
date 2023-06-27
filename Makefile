@@ -76,7 +76,8 @@ ldflags = -X github.com/cosmos/cosmos-sdk/version.Name=canto \
           -X "github.com/cosmos/cosmos-sdk/version.BuildTags=$(build_tags_comma_sep)" \
           -X github.com/tendermint/tendermint/version.TMCoreSemVer=$(TMVERSION)
 
-testing_ldflags = -X $(REPO)/x/liquidstaking/keeper.enableAdvanceEpoch=true \
+testing_ldflags = -X $(REPO)/app.enableAdvanceEpoch=true \
+				  -X $(REPO)/app.epochPerBlock=5
 
 # DB backend selection
 ifeq (cleveldb,$(findstring cleveldb,$(COSMOS_BUILD_OPTIONS)))
