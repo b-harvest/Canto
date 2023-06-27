@@ -83,6 +83,9 @@ type StakingKeeper interface {
 	GetAllRedelegations(
 		ctx sdk.Context, delegator sdk.AccAddress, srcValAddress, dstValAddress sdk.ValAddress,
 	) []stakingtypes.Redelegation
+	GetRedelegation(
+		ctx sdk.Context, delAddr sdk.AccAddress, valSrcAddr, valDstAddr sdk.ValAddress,
+	) (red stakingtypes.Redelegation, found bool)
 	HasReceivingRedelegation(ctx sdk.Context, delAddr sdk.AccAddress, valDstAddr sdk.ValAddress) bool
 	BlockValidatorUpdates(ctx sdk.Context) []abci.ValidatorUpdate
 	HasMaxUnbondingDelegationEntries(ctx sdk.Context,

@@ -146,6 +146,93 @@ func (k Keeper) CoverSlashingAndHandleMatureUnbondings(ctx sdk.Context) {
 	}
 }
 
+func (k Keeper) CoverRedelegationPenalty(ctx sdk.Context) error {
+	infos := k.GetAllRedelegationInfos(ctx)
+	for _, info := range infos {
+		chunk, found := k.GetChunk(ctx, info.ChunkId)
+		if !found {
+			return sdkerrors.Wrapf(types.ErrNotFoundChunk, "id: %d", info.ChunkId)
+		}
+		pairedInsurance, found := k.GetInsurance(ctx, chunk.PairedInsuranceId)
+		if !found {
+			return sdkerrors.Wrapf(types.ErrNotFoundInsurance, "chunk id: %d", chunk.Id)
+		}
+		unpairingInsurance, found := k.GetInsurance(ctx, chunk.UnpairingInsuranceId)
+		if !found {
+			return sdkerrors.Wrapf(types.ErrNotFoundInsurance, "chunk id: %d", chunk.Id)
+		}
+
+		srcValAddr := unpairingInsurance.GetValidator()
+		dstValAddr := pairedInsurance.GetValidator()
+		reDelegation, found := k.stakingKeeper.GetRedelegation(
+			ctx,
+			chunk.DerivedAddress(),
+			srcValAddr,
+			dstValAddr,
+		)
+		if !found {
+			return sdkerrors.Wrapf(
+				types.ErrNotFoundRedelegation,
+				"unpairingInsuranceId: %d, srcVal: %s/"+
+					"pairedInsuranceId: %d, dstVal: %s",
+				unpairingInsurance.Id, unpairingInsurance.GetValidator().String(),
+				pairedInsurance.Id, pairedInsurance.GetValidator().String(),
+			)
+		}
+
+		dstDel := k.stakingKeeper.Delegation(ctx, chunk.DerivedAddress(), dstValAddr)
+		diff := reDelegation.Entries[0].SharesDst.Sub(dstDel.GetShares())
+		if diff.IsPositive() {
+			dstVal, found := k.stakingKeeper.GetValidator(ctx, dstValAddr)
+			if !found {
+				return sdkerrors.Wrapf(types.ErrNotFoundValidator, "id: %s", dstValAddr)
+			}
+			bondAmt := dstVal.TokensFromShares(diff).Ceil().TruncateInt()
+			// insurance don't have to cover already covered penalty
+			notYetCoveredPenalty := bondAmt.Sub(info.Covered)
+			if notYetCoveredPenalty.IsPositive() {
+				insuranceBal := k.bankKeeper.GetBalance(
+					ctx,
+					unpairingInsurance.DerivedAddress(),
+					k.stakingKeeper.BondDenom(ctx),
+				)
+				if insuranceBal.IsZero() {
+					// insurance cannot cover anymore
+					return nil
+				}
+				if insuranceBal.Amount.LT(notYetCoveredPenalty) {
+					notYetCoveredPenalty = insuranceBal.Amount
+				}
+				if err := k.bankKeeper.SendCoins(
+					ctx,
+					unpairingInsurance.DerivedAddress(),
+					chunk.DerivedAddress(),
+					sdk.NewCoins(
+						sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), notYetCoveredPenalty),
+					),
+				); err != nil {
+					return err
+				}
+				if _, err := k.stakingKeeper.Delegate(
+					ctx,
+					chunk.DerivedAddress(),
+					notYetCoveredPenalty,
+					stakingtypes.Unbonded,
+					dstVal,
+					true,
+				); err != nil {
+					return err
+				}
+				// Now insurance covered notYetCoveredPenalty
+				coveredPenalty := notYetCoveredPenalty
+				info.Covered = info.Covered.Add(coveredPenalty)
+				k.SetRedelegationInfo(ctx, info)
+			}
+		}
+	}
+	return nil
+}
+
 // HandleQueuedLiquidUnstakes processes unstaking requests that were queued before the epoch.
 func (k Keeper) HandleQueuedLiquidUnstakes(ctx sdk.Context) ([]types.Chunk, error) {
 	var unstakedChunks []types.Chunk
@@ -518,6 +605,8 @@ func (k Keeper) RePairRankedInsurances(
 		if err != nil {
 			return err
 		}
+		// Start to track new redelegation
+		k.SetRedelegationInfo(ctx, types.NewRedelegationInfo(chunk.Id))
 		ctx.EventManager().EmitEvent(
 			sdk.NewEvent(
 				types.EventTypeBeginRedelegate,
@@ -528,6 +617,42 @@ func (k Keeper) RePairRankedInsurances(
 			),
 		)
 		k.rePairChunkAndInsurance(ctx, chunk, newInsurance, outInsurance)
+	}
+	return nil
+}
+
+func (k Keeper) DeleteFinishedRedelegationInfos(ctx sdk.Context) error {
+	infos := k.GetAllRedelegationInfos(ctx)
+	for _, info := range infos {
+		chunk, found := k.GetChunk(ctx, info.ChunkId)
+		if !found {
+			return sdkerrors.Wrapf(types.ErrNotFoundChunk, "id: %d", info.ChunkId)
+		}
+		pairedInsurance, found := k.GetInsurance(ctx, chunk.PairedInsuranceId)
+		if !found {
+			return sdkerrors.Wrapf(types.ErrNotFoundInsurance, "chunk id: %d", chunk.Id)
+		}
+		unpairingInsurance, found := k.GetInsurance(ctx, chunk.UnpairingInsuranceId)
+		if !found {
+			return sdkerrors.Wrapf(types.ErrNotFoundInsurance, "chunk id: %d", chunk.Id)
+		}
+
+		srcValAddr := unpairingInsurance.GetValidator()
+		dstValAddr := pairedInsurance.GetValidator()
+		_, found = k.stakingKeeper.GetRedelegation(
+			ctx,
+			chunk.DerivedAddress(),
+			srcValAddr,
+			dstValAddr,
+		)
+		if !found {
+			// It means re-delegation already matured at endblock of staking module
+			// So we don't have to track it anymore.
+			// If there were any slashing penalty,
+			// it is already covered at begin block of liquidstaking module.
+			// So we can delete this info.
+			k.DeleteRedelegationInfo(ctx, info.ChunkId)
+		}
 	}
 	return nil
 }

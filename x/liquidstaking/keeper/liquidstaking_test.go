@@ -2894,7 +2894,7 @@ func (suite *KeeperTestSuite) TestRedelegateToSlashedValidator() {
 
 	downValAddr := valAddrs[0]
 	downValPubKey := pubKeys[0]
-	//toBeUnpairedChunk := pairedChunks[0]
+	// toBeUnpairedChunk := pairedChunks[0]
 
 	epoch := suite.app.LiquidStakingKeeper.GetEpoch(suite.ctx)
 	epochTime := suite.ctx.BlockTime().Add(epoch.Duration)
@@ -2960,12 +2960,10 @@ func (suite *KeeperTestSuite) TestUnpairingInsuranceCoversSlashingBeforeRedelega
 	// validator - chunk - (paired insurance, unpairing insurance)
 	// v1 - c1 - (i1, x), v2 - x - (x, x)
 	// provide insurance i2 with lower fee which direct v2
-	// advance blocks
-	// epoch
-	// re-delegate
-	//   v1 - x - (x, x), v2 - c1 - (i2, i1) - checkpoint1
-	// double-sign slashing for before checkpoint1
-	// i1 should cover that slashing penalty at the next epoch
+	// reach epoch - checkpoint1
+	// begin re-delegation => v1 - x - (x, x), v2 - c1 - (i2, i1)
+	// recognized double-sign slashing for before checkpoint1
+	// i1 should cover that slashing penalty
 	env := suite.setupLiquidStakeTestingEnv(
 		testingEnvOptions{
 			"TestUnpairingInsuranceCoversSlashingBeforeRedelegationHeight",
@@ -2982,37 +2980,87 @@ func (suite *KeeperTestSuite) TestUnpairingInsuranceCoversSlashingBeforeRedelega
 		},
 	)
 	chunk := env.pairedChunks[0]
-	srcVal := env.valAddrs[0]
+	srcValAddr := env.valAddrs[0]
 	srcValPubKey := env.pubKeys[0]
-	dstVal := env.valAddrs[1]
+	unpairingInsurance := env.insurances[0]
+	suite.Equal(srcValAddr, env.insurances[0].GetValidator())
+
+	dstValAddr := env.valAddrs[1]
 	onePercentFeeRate := sdk.NewDecWithPrec(1, 2)
+	suite.True(onePercentFeeRate.LT(unpairingInsurance.FeeRate))
+
 	_, oneInsurance := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
 	providers, providerBals := suite.AddTestAddrsWithFunding(fundingAccount, 1, oneInsurance.Amount)
 	// provide insurance with lower fee
 	suite.provideInsurances(suite.ctx, providers, []sdk.ValAddress{env.valAddrs[1]}, providerBals, onePercentFeeRate, nil)
 	suite.ctx = suite.advanceEpoch(suite.ctx)
-	suite.ctx = suite.advanceHeight(suite.ctx, 1, "re-delegation")
+	suite.ctx = suite.advanceHeight(suite.ctx, 1, "checkpoint1: re-delegation")
 
-	redelegation, found := suite.app.StakingKeeper.GetRedelegation(suite.ctx, chunk.DerivedAddress(), srcVal, dstVal)
-	suite.True(found)
-	suite.Len(redelegation.Entries, 1)
+	checkPoint1 := suite.ctx.BlockHeight()
+	// Check state is correct before got slashed
+	{
+		redelegation, found := suite.app.StakingKeeper.GetRedelegation(suite.ctx, chunk.DerivedAddress(), srcValAddr, dstValAddr)
+		suite.True(found)
+		suite.Len(redelegation.Entries, 1)
+		suite.Equal(srcValAddr.String(), redelegation.ValidatorSrcAddress)
+		suite.Equal(dstValAddr.String(), redelegation.ValidatorDstAddress)
+		suite.Equal(checkPoint1, redelegation.Entries[0].CreationHeight)
+		suite.Equal(types.ChunkSize.ToDec().String(), redelegation.Entries[0].SharesDst.String())
+		del := suite.app.StakingKeeper.Delegation(suite.ctx, chunk.DerivedAddress(), dstValAddr)
+		suite.Equal(types.ChunkSize.ToDec().String(), del.GetShares().String())
+	}
 
-	suite.ctx = suite.advanceHeight(suite.ctx, 10, "checkpoint0")
-	h := suite.ctx.BlockHeight()
-	suite.ctx = suite.advanceHeight(suite.ctx, 10, "checkpoint1")
+	beforeSlashedDelShares := suite.app.StakingKeeper.Delegation(suite.ctx, chunk.DerivedAddress(), dstValAddr).GetShares()
+	beforeSlashedVal := suite.app.StakingKeeper.Validator(suite.ctx, dstValAddr)
 
-	val := suite.app.StakingKeeper.Validator(suite.ctx, srcVal)
-	power := val.GetConsensusPower(suite.app.StakingKeeper.PowerReduction(suite.ctx))
+	srcVal := suite.app.StakingKeeper.Validator(suite.ctx, srcValAddr)
+	power := srcVal.GetConsensusPower(suite.app.StakingKeeper.PowerReduction(suite.ctx))
 	evidence := &evidencetypes.Equivocation{
-		// double-sign slashing happened between checkpoint0 and checkpoint1
-		Height:           h,
+		// double-sign slashing happened before checkPoint1
+		Height:           checkPoint1 - 1,
 		Time:             time.Now(),
 		Power:            power,
 		ConsensusAddress: sdk.ConsAddress(srcValPubKey.Address()).String(),
 	}
 	suite.app.EvidenceKeeper.HandleEquivocationEvidence(suite.ctx, evidence)
+
+	slashingParams := suite.app.SlashingKeeper.GetParams(suite.ctx)
+	expectedPenalty := slashingParams.SlashFractionDoubleSign.Mul(types.ChunkSize.ToDec()).TruncateInt()
+	afterSlashedDelShares := suite.app.StakingKeeper.Delegation(suite.ctx, chunk.DerivedAddress(), dstValAddr).GetShares()
+	afterSlashedVal := suite.app.StakingKeeper.Validator(suite.ctx, dstValAddr)
+	// Slashing re-delegation calls unbond internally which deducts tokens and del shares also from Validator
+	{
+		suite.True(afterSlashedDelShares.LT(beforeSlashedDelShares))
+		suite.True(afterSlashedVal.GetDelegatorShares().LT(beforeSlashedVal.GetDelegatorShares()))
+		suite.Equal(
+			expectedPenalty.String(),
+			beforeSlashedVal.GetDelegatorShares().Sub(afterSlashedVal.GetDelegatorShares()).TruncateInt().String(),
+		)
+		suite.True(afterSlashedVal.GetTokens().LT(beforeSlashedVal.GetTokens()))
+		suite.Equal(
+			expectedPenalty.String(),
+			beforeSlashedVal.GetTokens().Sub(afterSlashedVal.GetTokens()).String(),
+		)
+	}
+
+	unpairingInsBalBeforeCover := suite.app.BankKeeper.GetBalance(suite.ctx, unpairingInsurance.DerivedAddress(), oneInsurance.Denom)
 	suite.ctx = suite.advanceEpoch(suite.ctx)
 	suite.ctx = suite.advanceHeight(suite.ctx, 1, "unpairing insurance should covers slashing penalty")
+	unpairingInsBalAfterCover := suite.app.BankKeeper.GetBalance(suite.ctx, unpairingInsurance.DerivedAddress(), oneInsurance.Denom)
+
+	afterCoverDelShares := suite.app.StakingKeeper.Delegation(suite.ctx, chunk.DerivedAddress(), dstValAddr).GetShares()
+	afterCoverVal := suite.app.StakingKeeper.Validator(suite.ctx, dstValAddr)
+	// Check state is correct after slashing penalty covered by unpairing insurance
+	{
+		suite.True(afterCoverDelShares.Equal(beforeSlashedDelShares))
+		suite.True(afterCoverVal.GetDelegatorShares().Equal(beforeSlashedVal.GetDelegatorShares()))
+		suite.True(afterCoverVal.GetTokens().Equal(beforeSlashedVal.GetTokens()))
+		suite.True(unpairingInsBalAfterCover.IsLT(unpairingInsBalBeforeCover))
+		suite.Equal(
+			expectedPenalty.String(),
+			unpairingInsBalBeforeCover.Sub(unpairingInsBalAfterCover).Amount.String(),
+		)
+	}
 }
 
 func (suite *KeeperTestSuite) downTimeSlashing(

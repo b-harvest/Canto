@@ -32,4 +32,5 @@ var (
 	ErrInvalidEpochStartTime                         = sdkerrors.Register(ModuleName, 30033, "epoch start time must be before current time")
 	ErrInvalidFeeRate                                = sdkerrors.Register(ModuleName, 30034, "fee rate must not be nil")
 	ErrNotReachedEpoch                               = sdkerrors.Register(ModuleName, 30035, "not reached epoch")
+	ErrNotFoundRedelegation                          = sdkerrors.Register(ModuleName, 30036, "redelegation not found")
 )
