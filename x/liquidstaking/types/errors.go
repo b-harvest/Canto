@@ -33,4 +33,5 @@ var (
 	ErrInvalidFeeRate                                = sdkerrors.Register(ModuleName, 30034, "fee rate must not be nil")
 	ErrNotReachedEpoch                               = sdkerrors.Register(ModuleName, 30035, "not reached epoch")
 	ErrNotFoundRedelegation                          = sdkerrors.Register(ModuleName, 30036, "redelegation not found")
+	ErrNotFoundUnpairingInsurance                    = sdkerrors.Register(ModuleName, 30037, "unpairing insurance not found")
 )

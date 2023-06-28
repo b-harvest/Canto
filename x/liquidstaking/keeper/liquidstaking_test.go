@@ -26,6 +26,7 @@ import (
 
 var onePower int64 = 1
 var TenPercentFeeRate = sdk.NewDecWithPrec(10, 2)
+var FivePercentFeeRate = sdk.NewDecWithPrec(5, 2)
 
 // fundingAccount is a rich account.
 // Any accounts created during tests except validators must get funding from this account.
@@ -1710,23 +1711,27 @@ func (suite *KeeperTestSuite) TestMultiplePairedChunksTombstonedAndRedelegated()
 		}
 	}
 
-	selfDelegationToken := suite.app.StakingKeeper.TokensFromConsensusPower(suite.ctx, onePower)
-	// handle a signature to set signing info
-	suite.app.SlashingKeeper.HandleValidatorSignature(
-		suite.ctx,
-		toBeTombstonedValidatorPubKey.Address(),
-		selfDelegationToken.Int64(),
-		true,
-	)
-	val := suite.app.StakingKeeper.Validator(suite.ctx, toBeTombstonedValidator)
-	power := val.GetConsensusPower(suite.app.StakingKeeper.PowerReduction(suite.ctx))
-	evidence := &evidencetypes.Equivocation{
-		Height:           0,
-		Time:             time.Unix(0, 0),
-		Power:            power,
-		ConsensusAddress: sdk.ConsAddress(toBeTombstonedValidatorPubKey.Address()).String(),
+	// Tombstone validator
+	{
+		selfDelegationToken := suite.app.StakingKeeper.TokensFromConsensusPower(suite.ctx, onePower)
+		// handle a signature to set signing info
+		suite.app.SlashingKeeper.HandleValidatorSignature(
+			suite.ctx,
+			toBeTombstonedValidatorPubKey.Address(),
+			selfDelegationToken.Int64(),
+			true,
+		)
+		val := suite.app.StakingKeeper.Validator(suite.ctx, toBeTombstonedValidator)
+		power := val.GetConsensusPower(suite.app.StakingKeeper.PowerReduction(suite.ctx))
+		evidence := &evidencetypes.Equivocation{
+			Height:           0,
+			Time:             time.Unix(0, 0),
+			Power:            power,
+			ConsensusAddress: sdk.ConsAddress(toBeTombstonedValidatorPubKey.Address()).String(),
+		}
+		suite.app.EvidenceKeeper.HandleEquivocationEvidence(suite.ctx, evidence)
 	}
-	suite.app.EvidenceKeeper.HandleEquivocationEvidence(suite.ctx, evidence)
+
 	suite.ctx = suite.advanceHeight(suite.ctx, 1, "one block passed afetr validator is tombstoned because of double signing")
 	fmt.Println(suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx))
 
@@ -2850,22 +2855,258 @@ func (suite *KeeperTestSuite) TestOnlyOnePairedChunkGotDamagedSoNoChunksAvailabl
 	)
 }
 
-// TODO: Re-delegating validator has down-time slashing history, then shares are not equal to chunk size?
-// But it should have same value with chunk size when converted to tokens. This part should be verified.
-// 1. v1 - c1 - (i1, x) and v2 - c2 - (i2, x)
-// 2. v1 slashed
-// 3. unstake c1
-// 4. v1 - x - (x, x) and v2 - c2 - (i2, x)
-// 5. provide cheap insurance i3 for v1
-// 6. v1 - c2 - (i3, i2) and v2 - x - (x, x)
+// TestRedelegateToSlashedValidator tests scenario where validator got slashed and re-delegated to slashed validator.
+// 1. v1 - c1 - (i2, x) and v2 - c2 - (i1, x)
+// 1-1. i1 is more expensive than i2 (remember, chunk /w most expensive insurance is unpaired first when unstake)
+// 1-2. i1, i2 are above minimum requirement, so it will not be unpaired when epoch because of lack of balance.
+// 2. v2 slashed, so i1 will cover v2's slashing penalty
+// 3. unstake c2
+// 3-1. we can process queued unstake c2 because insurance still has enough balance and paired.
+// NOW V2 have slashing history, but have no chunk
+// 4. v1 - c1 - (i2, x) and v2 - x - (x, x)
+// 5. provide cheap insurance i3 for v2
+// RE-DELEGATE v1 -> v2
+// 6. v1 - x - (x, x) and v2 - c1 - (i3, i2)
+// 7. Downtime slash v2 again, so i3 will cover v2's slashing penalty.
+// 8. But if we double sign slashing for v2, then i2 will cover v2's slashing penalty.
+// 9. After all c1 should not get damaged.
 func (suite *KeeperTestSuite) TestRedelegateToSlashedValidator() {
-	fmt.Println(suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx))
 	initialHeight := int64(1)
 	suite.ctx = suite.ctx.WithBlockHeight(initialHeight) // make sure we start with clean height
 	suite.fundAccount(suite.ctx, fundingAccount, types.ChunkSize.MulRaw(500))
 	valNum := 2
 	addrs, _ := suite.AddTestAddrsWithFunding(fundingAccount, valNum, suite.app.StakingKeeper.TokensFromConsensusPower(suite.ctx, 200))
 	valAddrs := simapp.ConvertAddrsToValAddrs(addrs)
+	v1 := valAddrs[0]
+	v2 := valAddrs[1]
+	pubKeys := suite.createTestPubKeys(valNum)
+	v2PubKey := pubKeys[1]
+	tstaking := teststaking.NewHelper(suite.T(), suite.ctx, suite.app.StakingKeeper)
+	tstaking.Denom = suite.app.StakingKeeper.BondDenom(suite.ctx)
+	power := int64(100)
+	selfDelegations := make([]sdk.Int, valNum)
+	// create validators which have the same power
+	for i, valAddr := range valAddrs {
+		selfDelegations[i] = tstaking.CreateValidatorWithValPower(valAddr, pubKeys[i], power, true)
+	}
+	staking.EndBlocker(suite.ctx, suite.app.StakingKeeper)
+
+	// Let's create 2 chunk and 2 insurance
+	oneChunk, oneInsurance := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
+	providers, providerBalances := suite.AddTestAddrsWithFunding(fundingAccount, 2, oneInsurance.Amount.MulRaw(2))
+	suite.provideInsurances(
+		suite.ctx,
+		providers,
+		// We will make v1 - i2 and v2 - i1
+		[]sdk.ValAddress{v2, v1},
+		providerBalances,
+		sdk.ZeroDec(),
+		[]sdk.Dec{TenPercentFeeRate, FivePercentFeeRate},
+	)
+	delegators, delegatorBalances := suite.AddTestAddrsWithFunding(fundingAccount, 2, oneChunk.Amount)
+	chunks := suite.liquidStakes(suite.ctx, delegators, delegatorBalances)
+	suite.Len(chunks, 2, "2 chunks are created")
+	// v1 - c1 - i2, v2 - c2 - i1
+	c1 := chunks[0]
+	c2 := chunks[1]
+	i2, _ := suite.app.LiquidStakingKeeper.GetInsurance(suite.ctx, c1.PairedInsuranceId)
+	suite.Equal(FivePercentFeeRate, i2.FeeRate)
+	suite.Equal(v1, i2.GetValidator())
+	i1, _ := suite.app.LiquidStakingKeeper.GetInsurance(suite.ctx, c2.PairedInsuranceId)
+	suite.Equal(TenPercentFeeRate, i1.FeeRate)
+	suite.Equal(v2, i1.GetValidator())
+
+	// Rewards are accumulated
+	// If we do not accumulate rewards, then it fails when we queue unstake will be failed.
+	// It because during slashing period, net amount is decreased, and minted ls token is same so the mint rate
+	// goes high. That means liquid staker don't have ls token to liquid unstake.
+	suite.ctx = suite.advanceHeight(suite.ctx, 100, "v1 - c1 - (i1, x) and v2 - c2 - (i2, x)")
+
+	downValAddr := v2
+	// let's slash v2
+	{
+		downValPubKey := v2PubKey
+		epoch := suite.app.LiquidStakingKeeper.GetEpoch(suite.ctx)
+		epochTime := suite.ctx.BlockTime().Add(epoch.Duration)
+		called := 0
+		for {
+			// downtime 5 times, so insurance can cover this penalty
+			if called == 5 {
+				break
+			}
+			validator, _ := suite.app.StakingKeeper.GetValidatorByConsAddr(suite.ctx, sdk.GetConsAddress(downValPubKey))
+			suite.downTimeSlashing(
+				suite.ctx,
+				downValPubKey,
+				validator.GetConsensusPower(suite.app.StakingKeeper.PowerReduction(suite.ctx)),
+				called,
+				time.Second,
+			)
+			suite.unjail(suite.ctx, downValAddr, downValPubKey, time.Second)
+			called++
+
+			if suite.ctx.BlockTime().After(epochTime) {
+				break
+			}
+		}
+	}
+
+	// liquid unstake c2
+	{
+		_, _, err := suite.app.LiquidStakingKeeper.QueueLiquidUnstake(
+			suite.ctx,
+			types.NewMsgLiquidUnstake(
+				delegators[1].String(),
+				sdk.NewCoin(suite.denom, oneChunk.Amount),
+			),
+		)
+		suite.NoError(err)
+	}
+	// Trigger and finish unbonding.
+	{
+		i1BalBeforeCoverPenalty := suite.app.BankKeeper.GetBalance(suite.ctx, i1.DerivedAddress(), suite.denom)
+		suite.ctx = suite.advanceEpoch(suite.ctx)
+		suite.ctx = suite.advanceHeight(suite.ctx, 1, "unbonding chunk triggered "+
+			"and slashing penalty is covered by a paired insurance")
+		i1Bal := suite.app.BankKeeper.GetBalance(suite.ctx, i1.DerivedAddress(), suite.denom)
+		suite.True(
+			i1BalBeforeCoverPenalty.Amount.GT(i1Bal.Amount),
+			"i1 covered penalty of v2, so unbonding chunk is successfully triggered",
+		)
+		i1, _ = suite.app.LiquidStakingKeeper.GetInsurance(suite.ctx, i1.Id)
+		suite.Equal(types.INSURANCE_STATUS_UNPAIRING, i1.Status, "i1 is unpairing")
+		_, found := suite.app.LiquidStakingKeeper.GetUnpairingForUnstakingChunkInfo(suite.ctx, c2.Id)
+		suite.True(found, "unpairing info is created")
+
+		suite.ctx = suite.advanceEpoch(suite.ctx)
+		suite.ctx = suite.advanceHeight(suite.ctx, 1, "v1 - c1 - (i2, x) and v2 - x - (x, x)")
+		_, found = suite.app.LiquidStakingKeeper.GetUnpairingForUnstakingChunkInfo(suite.ctx, c2.Id)
+		suite.False(found, "unstaking is finished, so unpairing info is deleted")
+		i1, _ = suite.app.LiquidStakingKeeper.GetInsurance(suite.ctx, i1.Id)
+		suite.Equal(types.INSURANCE_STATUS_UNPAIRED, i1.Status, "i1 is unpaired")
+	}
+
+	chunks = suite.app.LiquidStakingKeeper.GetAllChunks(suite.ctx)
+	suite.Len(chunks, 1, "one chunk is left")
+	leftChunk := chunks[0]
+	suite.Equal(c1.Id, leftChunk.Id)
+	suite.Equal(i2.Id, leftChunk.PairedInsuranceId, "c1 - i2 is left")
+
+	anotherProviders, anotherProviderBalances := suite.AddTestAddrsWithFunding(fundingAccount, 1, oneInsurance.Amount)
+	insurances := suite.provideInsurances(
+		suite.ctx, anotherProviders,
+		[]sdk.ValAddress{downValAddr},
+		anotherProviderBalances, sdk.ZeroDec(),
+		[]sdk.Dec{sdk.ZeroDec()}, // very attractive fee rate
+	)
+	i3 := insurances[0]
+	suite.ctx = suite.advanceEpoch(suite.ctx)
+	suite.ctx = suite.advanceHeight(suite.ctx, 1, "re-delegation is started")
+	// Check re-delegation is started or not
+	{
+		leftChunk, _ = suite.app.LiquidStakingKeeper.GetChunk(suite.ctx, leftChunk.Id)
+		suite.Equal(types.CHUNK_STATUS_PAIRED, leftChunk.Status)
+		suite.NotEqual(i2.Id, leftChunk.PairedInsuranceId)
+		suite.Equal(i2.Id, leftChunk.UnpairingInsuranceId, "i3 is new insurance and i2 is unpairing insurance")
+		suite.Equal(i3.Id, leftChunk.PairedInsuranceId, "i3 is newly paired by ranking mechanism")
+		srcInsurance, _ := suite.app.LiquidStakingKeeper.GetInsurance(suite.ctx, leftChunk.UnpairingInsuranceId)
+		dstInsurance, _ := suite.app.LiquidStakingKeeper.GetInsurance(suite.ctx, leftChunk.PairedInsuranceId)
+		red, found := suite.app.StakingKeeper.GetRedelegation(suite.ctx, leftChunk.DerivedAddress(), srcInsurance.GetValidator(), dstInsurance.GetValidator())
+		suite.True(found)
+		suite.Len(red.Entries, 1)
+		entry := red.Entries[0]
+		suite.True(entry.InitialBalance.GTE(types.ChunkSize))
+		suite.True(
+			entry.SharesDst.GTE(types.ChunkSize.ToDec()),
+			"dst validator have history of slashing, so sharesDst should be greater than chunk size",
+		)
+		dstVal := suite.app.StakingKeeper.Validator(suite.ctx, dstInsurance.GetValidator())
+		suite.Equal(v2, dstVal.GetOperator(), "v1 -> v2")
+		tokenValue := dstVal.TokensFromShares(entry.SharesDst) // If we truncate it, then this value is less than chunk size
+		suite.True(
+			tokenValue.GTE(types.ChunkSize.ToDec()),
+			"token value must not be less than chunk size, it because the slashing penalty already handled by insurance",
+		)
+	}
+
+	c1, _ = suite.app.LiquidStakingKeeper.GetChunk(suite.ctx, c1.Id)
+	i3, _ = suite.app.LiquidStakingKeeper.GetInsurance(suite.ctx, c1.PairedInsuranceId)
+	del, _ := suite.app.StakingKeeper.GetDelegation(suite.ctx, c1.DerivedAddress(), i3.GetValidator())
+	tokenValue := suite.app.StakingKeeper.Validator(suite.ctx, i3.GetValidator()).TokensFromShares(del.Shares)
+	// let's downtime slash v2 again
+	{
+		downValPubKey := v2PubKey
+		epoch := suite.app.LiquidStakingKeeper.GetEpoch(suite.ctx)
+		epochTime := suite.ctx.BlockTime().Add(epoch.Duration)
+		called := 0
+		for {
+			// downtime 5 times, so insurance can cover this penalty
+			if called == 5 {
+				break
+			}
+			validator, _ := suite.app.StakingKeeper.GetValidatorByConsAddr(suite.ctx, sdk.GetConsAddress(downValPubKey))
+			suite.downTimeSlashing(
+				suite.ctx,
+				downValPubKey,
+				validator.GetConsensusPower(suite.app.StakingKeeper.PowerReduction(suite.ctx)),
+				called,
+				time.Second,
+			)
+			suite.unjail(suite.ctx, downValAddr, downValPubKey, time.Second)
+			called++
+
+			if suite.ctx.BlockTime().After(epochTime) {
+				break
+			}
+		}
+	}
+	tokenValueAfterSlashing := suite.app.StakingKeeper.Validator(suite.ctx, i3.GetValidator()).TokensFromShares(del.Shares)
+	suite.True(
+		tokenValueAfterSlashing.LT(tokenValue),
+		"v2 is slashed, so token value must be less than before slashing",
+	)
+
+	i2Bal := suite.app.BankKeeper.GetBalance(suite.ctx, i2.DerivedAddress(), suite.denom)
+	i3Bal := suite.app.BankKeeper.GetBalance(suite.ctx, i3.DerivedAddress(), suite.denom)
+	suite.ctx = suite.advanceEpoch(suite.ctx)
+	suite.ctx = suite.advanceHeight(suite.ctx, 1, "slashed penalty will be covered by i3")
+	// Check re-delegation is still exists
+	{
+		i2BalAfter := suite.app.BankKeeper.GetBalance(suite.ctx, i2.DerivedAddress(), suite.denom)
+		i3BalAfter := suite.app.BankKeeper.GetBalance(suite.ctx, i3.DerivedAddress(), suite.denom)
+
+		suite.True(i2Bal.Equal(i2BalAfter), "i2 did not pay any penalty for current downtime slashing")
+		suite.True(i3BalAfter.IsLT(i3Bal), "i3 did pay penalty for current downtime slashing")
+		tokenValue = suite.app.StakingKeeper.Validator(suite.ctx, i3.GetValidator()).TokensFromShares(del.Shares)
+		suite.True(
+			tokenValue.GTE(types.ChunkSize.ToDec()),
+			"token value must not be less than chunk size, it because the slashing penalty already covered by insurance",
+		)
+	}
+}
+
+// TestRedelegateFromSlashedToSlashed tests re-delegation from slashed validator to slashed validator.
+// 1. v1 - c1 - (i2, x) and v2 - c2 - (i1, x)
+// 1-1. i1 is more expensive than i2 (remember, chunk /w most expensive insurance is unpaired first when unstake)
+// 1-2. i1, i2 are above minimum requirement, so it will not be unpaired when epoch because of lack of balance.
+// 2. v1 slashed, so i2 will cover v1's slashing penalty
+// 2. v2 slashed, so i1 will cover v2's slashing penalty
+// 3. unstake c2
+// 3-1. we can process queued unstake c2 because insurance still has enough balance and paired.
+// NOW V2 have slashing history, but have no chunk
+// 4. v1 - c1 - (i2, x) and v2 - x - (x, x)
+// 5. provide cheap insurance i3 for v2
+// RE-DELEGATE v1 -> v2
+// 6. v1 - x - (x, x) and v2 - c1 - (i3, i2)
+func (suite *KeeperTestSuite) TestRedelegateFromSlashedToSlashed() {
+	initialHeight := int64(1)
+	suite.ctx = suite.ctx.WithBlockHeight(initialHeight) // make sure we start with clean height
+	suite.fundAccount(suite.ctx, fundingAccount, types.ChunkSize.MulRaw(500))
+	valNum := 2
+	addrs, _ := suite.AddTestAddrsWithFunding(fundingAccount, valNum, suite.app.StakingKeeper.TokensFromConsensusPower(suite.ctx, 200))
+	valAddrs := simapp.ConvertAddrsToValAddrs(addrs)
+	v1 := valAddrs[0]
+	v2 := valAddrs[1]
 	pubKeys := suite.createTestPubKeys(valNum)
 	tstaking := teststaking.NewHelper(suite.T(), suite.ctx, suite.app.StakingKeeper)
 	tstaking.Denom = suite.app.StakingKeeper.BondDenom(suite.ctx)
@@ -2879,72 +3120,141 @@ func (suite *KeeperTestSuite) TestRedelegateToSlashedValidator() {
 
 	// Let's create 2 chunk and 2 insurance
 	oneChunk, oneInsurance := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
-	providers, providerBalances := suite.AddTestAddrsWithFunding(fundingAccount, 2, oneInsurance.Amount)
+	providers, providerBalances := suite.AddTestAddrsWithFunding(fundingAccount, 2, oneInsurance.Amount.MulRaw(2))
 	suite.provideInsurances(
 		suite.ctx,
 		providers,
-		valAddrs,
+		// We will make v1 - i2 and v2 - i1
+		[]sdk.ValAddress{v2, v1},
 		providerBalances,
 		sdk.ZeroDec(),
-		[]sdk.Dec{sdk.NewDecWithPrec(5, 2), TenPercentFeeRate},
+		[]sdk.Dec{TenPercentFeeRate, FivePercentFeeRate},
 	)
 	delegators, delegatorBalances := suite.AddTestAddrsWithFunding(fundingAccount, 2, oneChunk.Amount)
-	suite.liquidStakes(suite.ctx, delegators, delegatorBalances)
-	suite.ctx = suite.advanceHeight(suite.ctx, 1, "v1 - c1 - (i1, x) and v2 - c2 - (i2, x)")
+	chunks := suite.liquidStakes(suite.ctx, delegators, delegatorBalances)
+	suite.Len(chunks, 2, "2 chunks are created")
+	// v1 - c1 - i2, v2 - c2 - i1
+	c1 := chunks[0]
+	c2 := chunks[1]
+	i2, _ := suite.app.LiquidStakingKeeper.GetInsurance(suite.ctx, c1.PairedInsuranceId)
+	suite.Equal(FivePercentFeeRate, i2.FeeRate)
+	suite.Equal(v1, i2.GetValidator())
+	i1, _ := suite.app.LiquidStakingKeeper.GetInsurance(suite.ctx, c2.PairedInsuranceId)
+	suite.Equal(TenPercentFeeRate, i1.FeeRate)
+	suite.Equal(v2, i1.GetValidator())
 
-	downValAddr := valAddrs[0]
-	downValPubKey := pubKeys[0]
-	// toBeUnpairedChunk := pairedChunks[0]
+	// Rewards are accumulated
+	// If we do not accumulate rewards, then it fails when we queue unstake will be failed.
+	// It because during slashing period, net amount is decreased, and minted ls token is same so the mint rate
+	// goes high. That means liquid staker don't have ls token to liquid unstake.
+	suite.ctx = suite.advanceHeight(suite.ctx, 200, "v1 - c1 - (i1, x) and v2 - c2 - (i2, x)")
 
-	epoch := suite.app.LiquidStakingKeeper.GetEpoch(suite.ctx)
-	epochTime := suite.ctx.BlockTime().Add(epoch.Duration)
-	called := 0
-	for {
-		// downtime 5 times, so insurance can cover this penalty
-		if called == 5 {
-			break
-		}
-		validator, _ := suite.app.StakingKeeper.GetValidatorByConsAddr(suite.ctx, sdk.GetConsAddress(downValPubKey))
-		suite.downTimeSlashing(
-			suite.ctx,
-			downValPubKey,
-			validator.GetConsensusPower(suite.app.StakingKeeper.PowerReduction(suite.ctx)),
-			called,
-			time.Second,
-		)
-		suite.unjail(suite.ctx, downValAddr, downValPubKey, time.Second)
-		called++
+	// let's slash v1 and v2
+	{
+		for i, downValPubKey := range pubKeys {
+			downValAddr := valAddrs[i]
+			epoch := suite.app.LiquidStakingKeeper.GetEpoch(suite.ctx)
+			epochTime := suite.ctx.BlockTime().Add(epoch.Duration)
+			called := 0
+			for {
+				// downtime 5 times, so insurance can cover this penalty
+				if called == 5 {
+					break
+				}
+				validator, _ := suite.app.StakingKeeper.GetValidatorByConsAddr(suite.ctx, sdk.GetConsAddress(downValPubKey))
+				suite.downTimeSlashing(
+					suite.ctx,
+					downValPubKey,
+					validator.GetConsensusPower(suite.app.StakingKeeper.PowerReduction(suite.ctx)),
+					called,
+					time.Second,
+				)
+				suite.unjail(suite.ctx, downValAddr, downValPubKey, time.Second)
+				called++
 
-		if suite.ctx.BlockTime().After(epochTime) {
-			break
+				if suite.ctx.BlockTime().After(epochTime) {
+					break
+				}
+			}
 		}
 	}
 
-	nas := suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
-	fmt.Println(nas)
-	_, _, err := suite.app.LiquidStakingKeeper.QueueLiquidUnstake(
-		suite.ctx,
-		types.NewMsgLiquidUnstake(
-			delegators[1].String(),
-			sdk.NewCoin(suite.denom, oneChunk.Amount),
-		),
-	)
-	suite.NoError(err)
-	suite.ctx = suite.advanceEpoch(suite.ctx)
-	suite.ctx = suite.advanceHeight(suite.ctx, 1, "unbonding chunk triggered")
+	// liquid unstake c2
+	{
+		_, _, err := suite.app.LiquidStakingKeeper.QueueLiquidUnstake(
+			suite.ctx,
+			types.NewMsgLiquidUnstake(
+				delegators[1].String(),
+				sdk.NewCoin(suite.denom, oneChunk.Amount),
+			),
+		)
+		suite.NoError(err)
+	}
+	// Trigger and finish unbonding.
+	{
+		i1BalBeforeCoverPenalty := suite.app.BankKeeper.GetBalance(suite.ctx, i1.DerivedAddress(), suite.denom)
+		suite.ctx = suite.advanceEpoch(suite.ctx)
+		suite.ctx = suite.advanceHeight(suite.ctx, 1, "unbonding chunk triggered "+
+			"and slashing penalty is covered by a paired insurance")
+		i1Bal := suite.app.BankKeeper.GetBalance(suite.ctx, i1.DerivedAddress(), suite.denom)
+		suite.True(
+			i1BalBeforeCoverPenalty.Amount.GT(i1Bal.Amount),
+			"i1 covered penalty of v2, so unbonding chunk is successfully triggered",
+		)
+		i1, _ = suite.app.LiquidStakingKeeper.GetInsurance(suite.ctx, i1.Id)
+		suite.Equal(types.INSURANCE_STATUS_UNPAIRING, i1.Status, "i1 is unpairing")
+		_, found := suite.app.LiquidStakingKeeper.GetUnpairingForUnstakingChunkInfo(suite.ctx, c2.Id)
+		suite.True(found, "unpairing info is created")
 
-	suite.ctx = suite.advanceEpoch(suite.ctx)
-	suite.ctx = suite.advanceHeight(suite.ctx, 1, "v1 - x - (x, x) and v2 - c2 - (i2, x)")
+		suite.ctx = suite.advanceEpoch(suite.ctx)
+		suite.ctx = suite.advanceHeight(suite.ctx, 1, "v1 - c1 - (i2, x) and v2 - x - (x, x)")
+		_, found = suite.app.LiquidStakingKeeper.GetUnpairingForUnstakingChunkInfo(suite.ctx, c2.Id)
+		suite.False(found, "unstaking is finished, so unpairing info is deleted")
+		i1, _ = suite.app.LiquidStakingKeeper.GetInsurance(suite.ctx, i1.Id)
+		suite.Equal(types.INSURANCE_STATUS_UNPAIRED, i1.Status, "i1 is unpaired")
+	}
+
+	chunks = suite.app.LiquidStakingKeeper.GetAllChunks(suite.ctx)
+	suite.Len(chunks, 1, "one chunk is left")
+	leftChunk := chunks[0]
+	suite.Equal(c1.Id, leftChunk.Id)
+	suite.Equal(i2.Id, leftChunk.PairedInsuranceId, "c1 - i2 is left")
 
 	anotherProviders, anotherProviderBalances := suite.AddTestAddrsWithFunding(fundingAccount, 1, oneInsurance.Amount)
-	suite.provideInsurances(
+	insurances := suite.provideInsurances(
 		suite.ctx, anotherProviders,
-		[]sdk.ValAddress{downValAddr},
+		[]sdk.ValAddress{v2},
 		anotherProviderBalances, sdk.ZeroDec(),
 		[]sdk.Dec{sdk.ZeroDec()}, // very attractive fee rate
 	)
+	i3 := insurances[0]
 	suite.ctx = suite.advanceEpoch(suite.ctx)
 	suite.ctx = suite.advanceHeight(suite.ctx, 1, "re-delegation is started")
+	// Check re-delegation is started or not
+	{
+		leftChunk, _ = suite.app.LiquidStakingKeeper.GetChunk(suite.ctx, leftChunk.Id)
+		suite.NotEqual(i2.Id, leftChunk.PairedInsuranceId)
+		suite.Equal(i2.Id, leftChunk.UnpairingInsuranceId, "i3 is new insurance and i2 is unpairing insurance")
+		suite.Equal(i3.Id, leftChunk.PairedInsuranceId, "i3 is newly paired by ranking mechanism")
+		srcInsurance, _ := suite.app.LiquidStakingKeeper.GetInsurance(suite.ctx, leftChunk.UnpairingInsuranceId)
+		dstInsurance, _ := suite.app.LiquidStakingKeeper.GetInsurance(suite.ctx, leftChunk.PairedInsuranceId)
+		red, found := suite.app.StakingKeeper.GetRedelegation(suite.ctx, leftChunk.DerivedAddress(), srcInsurance.GetValidator(), dstInsurance.GetValidator())
+		suite.True(found)
+		suite.Len(red.Entries, 1)
+		entry := red.Entries[0]
+		suite.True(entry.InitialBalance.GTE(types.ChunkSize))
+		suite.True(
+			entry.SharesDst.GTE(types.ChunkSize.ToDec()),
+			"dst validator have history of slashing, so sharesDst should be greater than chunk size",
+		)
+		dstVal := suite.app.StakingKeeper.Validator(suite.ctx, dstInsurance.GetValidator())
+		suite.Equal(v2, dstVal.GetOperator(), "v1 -> v2")
+		tokenValue := dstVal.TokensFromShares(entry.SharesDst) // If we truncate it, then this value is less than chunk size
+		suite.True(
+			tokenValue.GTE(types.ChunkSize.ToDec()),
+			"token value must not be less than chunk size, it because the slashing penalty already handled by insurance",
+		)
+	}
 }
 
 // TestUnpairingInsuranceCoversSlashingBeforeRedelegationHeight tests scenario where

@@ -69,12 +69,15 @@ func (k Keeper) CollectRewardAndFee(
 		}
 
 		inputs = []banktypes.Input{
-			banktypes.NewInput(chunk.DerivedAddress(), insuranceCommissions),
 			banktypes.NewInput(chunk.DerivedAddress(), remainingRewards),
 		}
 		outputs = []banktypes.Output{
-			banktypes.NewOutput(insurance.FeePoolAddress(), insuranceCommissions),
 			banktypes.NewOutput(types.RewardPool, remainingRewards),
+		}
+
+		if insuranceCommissions.IsAllPositive() {
+			inputs = append(inputs, banktypes.NewInput(chunk.DerivedAddress(), insuranceCommissions))
+			outputs = append(outputs, banktypes.NewOutput(insurance.FeePoolAddress(), insuranceCommissions))
 		}
 	}
 	if err := k.bankKeeper.InputOutputCoins(ctx, inputs, outputs); err != nil {
@@ -170,7 +173,10 @@ func (k Keeper) CoverRedelegationPenalty(ctx sdk.Context) error {
 			srcValAddr,
 			dstValAddr,
 		)
+		// Paired chunk.UnpairingInsuranceId 가 있을 때 Re-delegation obj를 찾았을 때와
+		// 자체 state로 찾았을 때 괴리가 발생하는지
 		if !found {
+			// TODO: Fix
 			return sdkerrors.Wrapf(
 				types.ErrNotFoundRedelegation,
 				"unpairingInsuranceId: %d, srcVal: %s/"+
@@ -181,6 +187,8 @@ func (k Keeper) CoverRedelegationPenalty(ctx sdk.Context) error {
 		}
 
 		dstDel := k.stakingKeeper.Delegation(ctx, chunk.DerivedAddress(), dstValAddr)
+		// TODO: Entry가 여러 개 생길 가능성은 없는가?
+		// 100% 확신할 수 없다면 방어적으로 로직 작성
 		diff := reDelegation.Entries[0].SharesDst.Sub(dstDel.GetShares())
 		if diff.IsPositive() {
 			dstVal, found := k.stakingKeeper.GetValidator(ctx, dstValAddr)
@@ -189,6 +197,7 @@ func (k Keeper) CoverRedelegationPenalty(ctx sdk.Context) error {
 			}
 			bondAmt := dstVal.TokensFromShares(diff).Ceil().TruncateInt()
 			// insurance don't have to cover already covered penalty
+			// TODO: Covered가 발생할 케이스가 없다고 판단한다면 삭제
 			notYetCoveredPenalty := bondAmt.Sub(info.Covered)
 			if notYetCoveredPenalty.IsPositive() {
 				insuranceBal := k.bankKeeper.GetBalance(
@@ -196,12 +205,12 @@ func (k Keeper) CoverRedelegationPenalty(ctx sdk.Context) error {
 					unpairingInsurance.DerivedAddress(),
 					k.stakingKeeper.BondDenom(ctx),
 				)
-				if insuranceBal.IsZero() {
-					// insurance cannot cover anymore
-					return nil
-				}
 				if insuranceBal.Amount.LT(notYetCoveredPenalty) {
 					notYetCoveredPenalty = insuranceBal.Amount
+				}
+				if !notYetCoveredPenalty.IsPositive() {
+					// TODO: 후속조치가 필요한가?
+					continue
 				}
 				if err := k.bankKeeper.SendCoins(
 					ctx,
@@ -603,7 +612,9 @@ func (k Keeper) RePairRankedInsurances(
 			delegation.GetShares(),
 		)
 		if err != nil {
-			return err
+			// TODO: If the error came because of HasReceivingDelegation, then how can we handle this error?
+			// Just make a chunk as pairing?
+			panic(err) // TODO: Consider removing in production
 		}
 		// Start to track new redelegation
 		k.SetRedelegationInfo(ctx, types.NewRedelegationInfo(chunk.Id))
@@ -652,6 +663,9 @@ func (k Keeper) DeleteFinishedRedelegationInfos(ctx sdk.Context) error {
 			// it is already covered at begin block of liquidstaking module.
 			// So we can delete this info.
 			k.DeleteRedelegationInfo(ctx, info.ChunkId)
+			if _, _, err := k.completeInsuranceDuty(ctx, unpairingInsurance); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -1435,6 +1449,7 @@ func (k Keeper) handlePairedChunk(ctx sdk.Context, chunk types.Chunk) error {
 	// The check process should use TokensFromShares to get the current delegation value
 	tokens := validator.TokensFromShares(delegation.GetShares())
 	penalty := types.ChunkSize.ToDec().Sub(tokens)
+	var unpairingTriggered bool = false
 	if penalty.IsPositive() {
 		// TODO: Check when slashing happened and decide which insurances (unpairing or paired) should cover penalty.
 		// check penalty is bigger than insurance balance
@@ -1447,6 +1462,7 @@ func (k Keeper) handlePairedChunk(ctx sdk.Context, chunk types.Chunk) error {
 		if penalty.GT(insuranceBalance.Amount.ToDec()) {
 			insuranceOutOfBalance = true
 			k.startUnpairing(ctx, pairedInsurance, chunk)
+			unpairingTriggered = true
 
 			// start unbonding of chunk because it is damaged
 			completionTime, err := k.stakingKeeper.Undelegate(
@@ -1518,18 +1534,28 @@ func (k Keeper) handlePairedChunk(ctx sdk.Context, chunk types.Chunk) error {
 		}
 	}
 
-	if !insuranceOutOfBalance && !k.IsSufficientInsurance(ctx, pairedInsurance) {
+	if !unpairingTriggered &&
+		!insuranceOutOfBalance &&
+		!k.IsSufficientInsurance(ctx, pairedInsurance) {
 		k.startUnpairing(ctx, pairedInsurance, chunk)
+		unpairingTriggered = true
 	}
 
-	if err := k.IsValidValidator(ctx, validator, found); err != nil {
+	err = k.IsValidValidator(ctx, validator, found)
+	if !unpairingTriggered && err != nil {
 		k.startUnpairing(ctx, pairedInsurance, chunk)
+		unpairingTriggered = true
 	}
 
-	unpairingInsurance, found := k.GetInsurance(ctx, chunk.UnpairingInsuranceId)
-	if found {
-		if _, _, err = k.completeInsuranceDuty(ctx, unpairingInsurance); err != nil {
-			return err
+	if unpairingTriggered {
+		return nil
+	} else {
+		// TODO: 새로 로직을 추가하면서 필요한 작업이었는지 아니면 원래 이 로직을 그냥 타는 것이 문제였는지 확인
+		unpairingInsurance, found := k.GetInsurance(ctx, chunk.UnpairingInsuranceId)
+		if found {
+			if _, _, err = k.completeInsuranceDuty(ctx, unpairingInsurance); err != nil {
+				return err
+			}
 		}
 	}
 	return nil

@@ -6,8 +6,10 @@ import (
 )
 
 func BeginBlocker(ctx sdk.Context, k keeper.Keeper) {
-	if err := k.CoverRedelegationPenalty(ctx); err != nil {
-		panic(err)
+	if k.IsEpochReached(ctx) {
+		if err := k.CoverRedelegationPenalty(ctx); err != nil {
+			panic(err)
+		}
 	}
 }
 
