@@ -1551,6 +1551,8 @@ func (k Keeper) handlePairedChunk(ctx sdk.Context, chunk types.Chunk) error {
 		return nil
 	} else {
 		// TODO: 새로 로직을 추가하면서 필요한 작업이었는지 아니면 원래 이 로직을 그냥 타는 것이 문제였는지 확인
+		// 이 Chunk는 상태 전이가 일어난 chunk가 아닌 것이었으므로 여기서의 unpairing insurance id는 이전 epoch에서의
+		// re-delegation으로 발생한 insurance 였을 확률이 있음
 		unpairingInsurance, found := k.GetInsurance(ctx, chunk.UnpairingInsuranceId)
 		if found {
 			if _, _, err = k.completeInsuranceDuty(ctx, unpairingInsurance); err != nil {
