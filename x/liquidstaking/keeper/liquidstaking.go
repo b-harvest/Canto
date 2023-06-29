@@ -465,7 +465,7 @@ func (k Keeper) RankInsurances(ctx sdk.Context) (
 				if insurance.Status == types.INSURANCE_STATUS_PAIRED {
 					// CRITICAL & EDGE CASE:
 					// paired insurance must have valid validator
-					return false, err
+					return true, err
 				} else if insurance.Status == types.INSURANCE_STATUS_PAIRING {
 					// EDGE CASE:
 					// Skip pairing insurance which have invalid validator
