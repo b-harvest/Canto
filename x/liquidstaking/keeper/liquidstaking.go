@@ -643,6 +643,7 @@ func (k Keeper) RePairRankedInsurances(
 		validator, found := k.stakingKeeper.GetValidator(ctx, outInsurance.GetValidator())
 		err = k.IsValidValidator(ctx, validator, found)
 		if err != types.ErrTombstonedValidator {
+			// TODO: When exactly we need to track it?
 			// Start to track new redelegation
 			// We track it because some additional slashing can happened during re-delegation period.
 			// But if the reason of re-delegation is tombstoned validator, we don't need to track it.
