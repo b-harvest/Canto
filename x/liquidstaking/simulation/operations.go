@@ -91,6 +91,14 @@ func WeightedOperations(appParams simtypes.AppParams, cdc codec.JSONCodec, ak ty
 			weightMsgProvideInsurance,
 			SimulateMsgProvideInsurance(ak, bk, sk),
 		),
+		simulation.NewWeightedOperation(
+			weightMsgCancelProvideInsurance,
+			SimulateMsgCancelProvideInsurance(ak, k),
+		),
+		simulation.NewWeightedOperation(
+			weightMsgDepositInsurance,
+			SimulateMsgDepositInsurance(ak, bk, k),
+		),
 	}
 }
 
@@ -227,6 +235,112 @@ func SimulateMsgProvideInsurance(ak types.AccountKeeper, bk types.BankKeeper, sk
 		validator := validators[r.Intn(len(validators))]
 
 		msg := types.NewMsgProvideInsurance(provider.String(), validator.GetOperator().String(), collaterals[0], feeRate)
+		txCtx := simulation.OperationInput{
+			R:               r,
+			App:             app,
+			TxGen:           simapp.MakeTestEncodingConfig().TxConfig,
+			Cdc:             nil,
+			Msg:             msg,
+			MsgType:         msg.Type(),
+			CoinsSpentInMsg: spendable,
+			Context:         ctx,
+			SimAccount:      simAccount,
+			AccountKeeper:   ak,
+			Bankkeeper:      bk,
+			ModuleName:      types.ModuleName,
+		}
+		return types.GenAndDeliverTxWithFees(txCtx, Gas, Fees)
+	}
+}
+
+func SimulateMsgCancelProvideInsurance(ak types.AccountKeeper, k keeper.Keeper) simtypes.Operation {
+	return func(
+		r *rand.Rand, app *baseapp.BaseApp, ctx sdk.Context, accs []simtypes.Account, chainID string,
+	) (simtypes.OperationMsg, []simtypes.FutureOperation, error) {
+		simAccount, _ := simtypes.RandomAcc(r, accs)
+		account := ak.GetAccount(ctx, simAccount.Address)
+		provider := account.GetAddress()
+
+		cancelableInsurances := make([]types.Insurance, 0)
+		k.IterateAllInsurances(ctx, func(insurance types.Insurance) (bool, error) {
+			if insurance.GetProvider().Equals(provider) {
+				cancelableInsurances = append(cancelableInsurances, insurance)
+			}
+			return false, nil
+		})
+
+		if len(cancelableInsurances) == 0 {
+			return simtypes.NoOpMsg(types.ModuleName, types.TypeMsgCancelProvideInsurance, "no cancelable insurance"), nil, nil
+		}
+		// select randomly one insurance to cancel
+		insurance := cancelableInsurances[r.Intn(len(cancelableInsurances))]
+		msg := types.NewMsgCancelProvideInsurance(insurance.GetProvider().String(), insurance.Id)
+		txCtx := simulation.OperationInput{
+			R:               r,
+			App:             app,
+			TxGen:           simapp.MakeTestEncodingConfig().TxConfig,
+			Cdc:             nil,
+			Msg:             msg,
+			MsgType:         msg.Type(),
+			CoinsSpentInMsg: nil,
+			Context:         ctx,
+			SimAccount:      simAccount,
+			AccountKeeper:   ak,
+			Bankkeeper:      nil,
+			ModuleName:      types.ModuleName,
+		}
+		return types.GenAndDeliverTxWithFees(txCtx, Gas, Fees)
+	}
+}
+
+func SimulateMsgDepositInsurance(ak types.AccountKeeper, bk types.BankKeeper, k keeper.Keeper) simtypes.Operation {
+	return func(
+		r *rand.Rand, app *baseapp.BaseApp, ctx sdk.Context, accs []simtypes.Account, chainID string,
+	) (simtypes.OperationMsg, []simtypes.FutureOperation, error) {
+		simAccount, _ := simtypes.RandomAcc(r, accs)
+		account := ak.GetAccount(ctx, simAccount.Address)
+		provider := account.GetAddress()
+		spendable := bk.SpendableCoins(ctx, provider)
+
+		depositableInsurances := make([]types.Insurance, 0)
+		k.IterateAllInsurances(ctx, func(insurance types.Insurance) (bool, error) {
+			if insurance.GetProvider().Equals(provider) {
+				depositableInsurances = append(depositableInsurances, insurance)
+			}
+			return false, nil
+		})
+
+		if len(depositableInsurances) == 0 {
+			return simtypes.NoOpMsg(types.ModuleName, types.TypeMsgDepositInsurance, "no depositable insurance"), nil, nil
+		}
+		// select randomly one insurance to cancel
+		insurance := depositableInsurances[r.Intn(len(depositableInsurances))]
+
+		minCollateral := sdk.MustNewDecFromStr(types.MinimumCollateral)
+		collateral := sdk.NewCoin(
+			sdk.DefaultBondDenom,
+			minCollateral.Ceil().TruncateInt(),
+		)
+
+		depositPortion := types.RandomDec(r, sdk.MustNewDecFromStr("0.01"), sdk.MustNewDecFromStr("0.2"))
+		deposits := sdk.NewCoins(
+			sdk.NewCoin(
+				sdk.DefaultBondDenom,
+				collateral.Amount.ToDec().Mul(depositPortion).TruncateInt(),
+			),
+		)
+
+		if !spendable.AmountOf(sdk.DefaultBondDenom).GTE(deposits[0].Amount) {
+			if err := bk.MintCoins(ctx, types.ModuleName, deposits); err != nil {
+				panic(err)
+			}
+			if err := bk.SendCoinsFromModuleToAccount(ctx, types.ModuleName, provider, deposits); err != nil {
+				panic(err)
+			}
+			spendable = bk.SpendableCoins(ctx, provider)
+		}
+
+		msg := types.NewMsgDepositInsurance(provider.String(), insurance.Id, deposits[0])
 		txCtx := simulation.OperationInput{
 			R:               r,
 			App:             app,
