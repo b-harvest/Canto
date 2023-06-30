@@ -523,11 +523,17 @@ func (k Keeper) RePairRankedInsurances(
 	// newInsurancesWithDifferentValidators will be replaced by re-delegate
 	// because there are no rankout insurances which have same validator
 	var newInsurancesWithDifferentValidators []types.Insurance
+
+	// Create handledOutInsurances map to create list of insurances which is not handled yet.
+	handledOutInsurances := make(map[uint64]struct{})
 	// Short circuit
 	// Try to replace outInsurance with inInsurance which has same validator.
 	for _, newRankInInsurance := range newlyRankedInInsurances {
 		hasSameValidator := false
-		for oi, outInsurance := range rankOutInsurances {
+		for _, outInsurance := range rankOutInsurances {
+			if _, ok := handledOutInsurances[outInsurance.Id]; ok {
+				continue
+			}
 			// Happy case. Same validator so we can skip re-delegation
 			if newRankInInsurance.GetValidator().Equals(outInsurance.GetValidator()) {
 				// get chunk by outInsurance.ChunkId
@@ -538,8 +544,8 @@ func (k Keeper) RePairRankedInsurances(
 				// TODO: outInsurance is removed at next epoch? and also it covers penalty if slashing happened after?
 				k.rePairChunkAndInsurance(ctx, chunk, newRankInInsurance, outInsurance)
 				hasSameValidator = true
-				// Remove already checked outInsurance
-				rankOutInsurances = append(rankOutInsurances[:oi], rankOutInsurances[oi+1:]...)
+				// Remove because it already paired with a chunk
+				handledOutInsurances[outInsurance.Id] = struct{}{}
 				break
 			}
 		}
@@ -585,40 +591,31 @@ func (k Keeper) RePairRankedInsurances(
 		)
 	}
 
-	if len(newInsurancesWithDifferentValidators) == 0 {
-		for _, outInsurance := range rankOutInsurances {
-			chunk, found := k.GetChunk(ctx, outInsurance.ChunkId)
-			if !found {
-				return sdkerrors.Wrapf(types.ErrNotFoundChunk, "chunkId: %d", outInsurance.ChunkId)
-			}
-			if chunk.Status != types.CHUNK_STATUS_UNPAIRING {
-				// CRITICAL: Must be unpairing status
-				return sdkerrors.Wrapf(types.ErrInvalidChunkStatus, "chunkId: %d", outInsurance.ChunkId)
-			}
-			del, found := k.stakingKeeper.GetDelegation(ctx, chunk.DerivedAddress(), outInsurance.GetValidator())
-			if !found {
-				return sdkerrors.Wrapf(types.ErrNotFoundDelegation, "delegator: %s, validator: %s", chunk.DerivedAddress(), outInsurance.GetValidator())
-			}
-			completionTime, err := k.stakingKeeper.Undelegate(ctx, chunk.DerivedAddress(), outInsurance.GetValidator(), del.GetShares())
-			if err != nil {
-				return err
-			}
-			ctx.EventManager().EmitEvent(
-				sdk.NewEvent(
-					types.EventTypeBeginUndelegate,
-					sdk.NewAttribute(types.AttributeKeyChunkId, fmt.Sprintf("%d", chunk.Id)),
-					sdk.NewAttribute(stakingtypes.AttributeKeyValidator, outInsurance.GetValidator().String()),
-					sdk.NewAttribute(stakingtypes.AttributeKeyCompletionTime, completionTime.Format(time.RFC3339)),
-					sdk.NewAttribute(types.AttributeKeyReason, types.AttributeValueReasonNoCandidateInsurance),
-				),
-			)
-			continue
+	// What insurances are not handled yet?
+	remainedOutInsurances := make([]types.Insurance, 0)
+	for _, outInsurance := range rankOutInsurances {
+		if _, ok := handledOutInsurances[outInsurance.Id]; !ok {
+			remainedOutInsurances = append(remainedOutInsurances, outInsurance)
 		}
-		return nil
 	}
 
+	// reset handledOutInsurances to make latest map of insurances which is not handled yet.
+	handledOutInsurances = make(map[uint64]struct{})
 	// rest of rankOutInsurances are replaced with newInsurancesWithDifferentValidators
-	for _, outInsurance := range rankOutInsurances {
+	for _, outInsurance := range remainedOutInsurances {
+		if len(newInsurancesWithDifferentValidators) == 0 {
+			// We don't have any candidate to replace
+			break
+		}
+		srcVal := outInsurance.GetValidator()
+		// We don't allow chunks to re-delegate from Unbonding validator.
+		// Because we cannot expect when this re-delegation will be completed. (It depends on unbonding time of validator).
+		// Current version of this module exepects that re-delegation will be completed at endblocker of staking module in next epoch.
+		// But if validator is unbonding, it will be completed before the epoch so we cannot track it.
+		if k.stakingKeeper.Validator(ctx, srcVal).IsUnbonding() {
+			continue
+		}
+
 		// Pop cheapest insurance
 		newInsurance := newInsurancesWithDifferentValidators[0]
 		newInsurancesWithDifferentValidators = newInsurancesWithDifferentValidators[1:]
@@ -640,14 +637,10 @@ func (k Keeper) RePairRankedInsurances(
 			return err
 		}
 
-		validator, found := k.stakingKeeper.GetValidator(ctx, outInsurance.GetValidator())
-		err = k.IsValidValidator(ctx, validator, found)
-		if err != types.ErrTombstonedValidator {
-			// TODO: When exactly we need to track it?
-			// Start to track new redelegation
+		if !k.stakingKeeper.Validator(ctx, srcVal).IsUnbonded() {
+			// Start to track new redelegation which will be completed at next epoch.
 			// We track it because some additional slashing can happened during re-delegation period.
-			// But if the reason of re-delegation is tombstoned validator, we don't need to track it.
-			// Because in that case, any additional slashing can't happen.
+			// If src validator is already unbonded then we don't track it because it immediately re-delegated.
 			k.SetRedelegationInfo(ctx, types.NewRedelegationInfo(chunk.Id, completionTime))
 		}
 		ctx.EventManager().EmitEvent(
@@ -660,7 +653,47 @@ func (k Keeper) RePairRankedInsurances(
 			),
 		)
 		k.rePairChunkAndInsurance(ctx, chunk, newInsurance, outInsurance)
+		handledOutInsurances[outInsurance.Id] = struct{}{}
 	}
+
+	// What insurances are not handled yet?
+	restOutInsurances := make([]types.Insurance, 0)
+	for _, outInsurance := range remainedOutInsurances {
+		if _, ok := handledOutInsurances[outInsurance.Id]; !ok {
+			restOutInsurances = append(restOutInsurances, outInsurance)
+		}
+	}
+
+	// No more candidate insurances to replace, so just start unbonding.
+	for _, outInsurance := range restOutInsurances {
+		chunk, found := k.GetChunk(ctx, outInsurance.ChunkId)
+		if !found {
+			return sdkerrors.Wrapf(types.ErrNotFoundChunk, "chunkId: %d", outInsurance.ChunkId)
+		}
+		if chunk.Status != types.CHUNK_STATUS_UNPAIRING {
+			// CRITICAL: Must be unpairing status
+			return sdkerrors.Wrapf(types.ErrInvalidChunkStatus, "chunkId: %d", outInsurance.ChunkId)
+		}
+		del, found := k.stakingKeeper.GetDelegation(ctx, chunk.DerivedAddress(), outInsurance.GetValidator())
+		if !found {
+			return sdkerrors.Wrapf(types.ErrNotFoundDelegation, "delegator: %s, validator: %s", chunk.DerivedAddress(), outInsurance.GetValidator())
+		}
+		completionTime, err := k.stakingKeeper.Undelegate(ctx, chunk.DerivedAddress(), outInsurance.GetValidator(), del.GetShares())
+		if err != nil {
+			return err
+		}
+		ctx.EventManager().EmitEvent(
+			sdk.NewEvent(
+				types.EventTypeBeginUndelegate,
+				sdk.NewAttribute(types.AttributeKeyChunkId, fmt.Sprintf("%d", chunk.Id)),
+				sdk.NewAttribute(stakingtypes.AttributeKeyValidator, outInsurance.GetValidator().String()),
+				sdk.NewAttribute(stakingtypes.AttributeKeyCompletionTime, completionTime.Format(time.RFC3339)),
+				sdk.NewAttribute(types.AttributeKeyReason, types.AttributeValueReasonNoCandidateInsurance),
+			),
+		)
+		continue
+	}
+
 	return nil
 }
 
