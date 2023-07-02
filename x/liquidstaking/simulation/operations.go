@@ -99,6 +99,18 @@ func WeightedOperations(appParams simtypes.AppParams, cdc codec.JSONCodec, ak ty
 			weightMsgDepositInsurance,
 			SimulateMsgDepositInsurance(ak, bk, k),
 		),
+		simulation.NewWeightedOperation(
+			weightMsgWithdrawInsurance,
+			SimulateMsgWithdrawInsurance(ak, k),
+		),
+		simulation.NewWeightedOperation(
+			weightMsgWithdrawInsuranceCommission,
+			SimulateMsgWithdrawInsuranceCommission(ak, k),
+		),
+		simulation.NewWeightedOperation(
+			weightMsgClaimDiscountedReward,
+			SimulateMsgClaimDiscountedReward(ak, bk, k),
+		),
 	}
 }
 
@@ -153,33 +165,33 @@ func SimulateMsgLiquidUnstake(ak types.AccountKeeper, bk types.BankKeeper, k kee
 	return func(
 		r *rand.Rand, app *baseapp.BaseApp, ctx sdk.Context, accs []simtypes.Account, chainID string,
 	) (simtypes.OperationMsg, []simtypes.FutureOperation, error) {
-		simAccount, _ := simtypes.RandomAcc(r, accs)
-		account := ak.GetAccount(ctx, simAccount.Address)
-		delegator := account.GetAddress()
-		spendable := bk.SpendableCoins(ctx, delegator)
+		var simAccount simtypes.Account
+		var delegator sdk.AccAddress
+		var spendable sdk.Coins
 
 		nas := k.GetNetAmountState(ctx)
-		chunksToLiquidStake := int64(simtypes.RandIntBetween(r, 1, 3))
-		unstakingCoin := sdk.NewCoin(
-			sdk.DefaultBondDenom,
-			types.ChunkSize.MulRaw(chunksToLiquidStake),
-		)
-		// mustHaveCoin means ls tokens to successfully liquid unstake the coin.
-		mustHaveCoins := sdk.NewCoins(
-			sdk.NewCoin(
-				types.DefaultLiquidBondDenom,
-				unstakingCoin.Amount.ToDec().Mul(nas.MintRate).Ceil().TruncateInt(),
-			),
-		)
-		if !spendable.AmountOf(types.DefaultLiquidBondDenom).GTE(mustHaveCoins[0].Amount) {
-			if err := bk.MintCoins(ctx, types.ModuleName, mustHaveCoins); err != nil {
-				panic(err)
+		oneChunk, _ := k.GetMinimumRequirements(ctx)
+		lsTokensToPayForOneChunk := nas.MintRate.Mul(oneChunk.Amount.ToDec()).Ceil().TruncateInt()
+		for i := 0; i < len(accs); i++ {
+			simAccount, _ = simtypes.RandomAcc(r, accs)
+			account := ak.GetAccount(ctx, simAccount.Address)
+			spendable = bk.SpendableCoins(ctx, simAccount.Address)
+
+			delegator = account.GetAddress()
+			// delegator must have enough ls tokens to pay for one chunk
+			if spendable.AmountOf(types.DefaultLiquidBondDenom).GTE(lsTokensToPayForOneChunk) {
+				break
 			}
-			if err := bk.SendCoinsFromModuleToAccount(ctx, types.ModuleName, delegator, mustHaveCoins); err != nil {
-				panic(err)
-			}
-			spendable = bk.SpendableCoins(ctx, delegator)
 		}
+		if !spendable.AmountOf(types.DefaultLiquidBondDenom).GTE(lsTokensToPayForOneChunk) {
+			return simtypes.NoOpMsg(types.ModuleName, types.TypeMsgLiquidUnstake, "not enough ls tokens to liquid unstake an one chunk"), nil, nil
+		}
+
+		maxAvailableNumChunksToLiquidUnstake := spendable.AmountOf(types.DefaultLiquidBondDenom).Quo(lsTokensToPayForOneChunk)
+
+		// delegator can liquid unstake one or more chunks
+		chunksToLiquidStake := int64(simtypes.RandIntBetween(r, 1, int(maxAvailableNumChunksToLiquidUnstake.Int64())))
+		unstakingCoin := sdk.NewCoin(sdk.DefaultBondDenom, oneChunk.Amount.MulRaw(chunksToLiquidStake))
 
 		msg := types.NewMsgLiquidUnstake(delegator.String(), unstakingCoin)
 		txCtx := simulation.OperationInput{
@@ -200,6 +212,7 @@ func SimulateMsgLiquidUnstake(ak types.AccountKeeper, bk types.BankKeeper, k kee
 	}
 }
 
+// SimulateMsgProvideInsurance generates a MsgProvideInsurance with random values.
 func SimulateMsgProvideInsurance(ak types.AccountKeeper, bk types.BankKeeper, sk types.StakingKeeper) simtypes.Operation {
 	return func(
 		r *rand.Rand, app *baseapp.BaseApp, ctx sdk.Context, accs []simtypes.Account, chainID string,
@@ -253,22 +266,33 @@ func SimulateMsgProvideInsurance(ak types.AccountKeeper, bk types.BankKeeper, sk
 	}
 }
 
+// SimulateMsgCancelProvideInsurance generates a MsgCancelProvideInsurance with random values.
 func SimulateMsgCancelProvideInsurance(ak types.AccountKeeper, k keeper.Keeper) simtypes.Operation {
 	return func(
 		r *rand.Rand, app *baseapp.BaseApp, ctx sdk.Context, accs []simtypes.Account, chainID string,
 	) (simtypes.OperationMsg, []simtypes.FutureOperation, error) {
-		simAccount, _ := simtypes.RandomAcc(r, accs)
-		account := ak.GetAccount(ctx, simAccount.Address)
-		provider := account.GetAddress()
+		var simAccount simtypes.Account
+		var provider sdk.AccAddress
 
 		cancelableInsurances := make([]types.Insurance, 0)
-		k.IterateAllInsurances(ctx, func(insurance types.Insurance) (bool, error) {
-			if insurance.GetProvider().Equals(provider) {
-				cancelableInsurances = append(cancelableInsurances, insurance)
+		for i := 0; i < len(accs); i++ {
+			simAccount, _ = simtypes.RandomAcc(r, accs)
+			account := ak.GetAccount(ctx, simAccount.Address)
+			provider = account.GetAddress()
+			k.IterateAllInsurances(ctx, func(insurance types.Insurance) (bool, error) {
+				if insurance.GetProvider().Equals(provider) {
+					cancelableInsurances = append(cancelableInsurances, insurance)
+				}
+				return false, nil
+			})
+			if len(cancelableInsurances) == 0 {
+				// Initiate a new insurances
+				cancelableInsurances = cancelableInsurances[:0]
+				continue
+			} else {
+				break
 			}
-			return false, nil
-		})
-
+		}
 		if len(cancelableInsurances) == 0 {
 			return simtypes.NoOpMsg(types.ModuleName, types.TypeMsgCancelProvideInsurance, "no cancelable insurance"), nil, nil
 		}
@@ -293,23 +317,36 @@ func SimulateMsgCancelProvideInsurance(ak types.AccountKeeper, k keeper.Keeper) 
 	}
 }
 
+// SimulateMsgDepositInsurance generates a MsgDepositInsurance with random values.
 func SimulateMsgDepositInsurance(ak types.AccountKeeper, bk types.BankKeeper, k keeper.Keeper) simtypes.Operation {
 	return func(
 		r *rand.Rand, app *baseapp.BaseApp, ctx sdk.Context, accs []simtypes.Account, chainID string,
 	) (simtypes.OperationMsg, []simtypes.FutureOperation, error) {
-		simAccount, _ := simtypes.RandomAcc(r, accs)
-		account := ak.GetAccount(ctx, simAccount.Address)
-		provider := account.GetAddress()
-		spendable := bk.SpendableCoins(ctx, provider)
+		var simAccount simtypes.Account
+		var provider sdk.AccAddress
+		var spendable sdk.Coins
 
 		depositableInsurances := make([]types.Insurance, 0)
-		k.IterateAllInsurances(ctx, func(insurance types.Insurance) (bool, error) {
-			if insurance.GetProvider().Equals(provider) {
-				depositableInsurances = append(depositableInsurances, insurance)
-			}
-			return false, nil
-		})
+		for i := 0; i < len(accs); i++ {
+			simAccount, _ = simtypes.RandomAcc(r, accs)
+			account := ak.GetAccount(ctx, simAccount.Address)
+			provider = account.GetAddress()
+			spendable = bk.SpendableCoins(ctx, provider)
 
+			k.IterateAllInsurances(ctx, func(insurance types.Insurance) (bool, error) {
+				if insurance.GetProvider().Equals(provider) {
+					depositableInsurances = append(depositableInsurances, insurance)
+				}
+				return false, nil
+			})
+			if len(depositableInsurances) == 0 {
+				// Initiate a new insurances
+				depositableInsurances = depositableInsurances[:0]
+				continue
+			} else {
+				break
+			}
+		}
 		if len(depositableInsurances) == 0 {
 			return simtypes.NoOpMsg(types.ModuleName, types.TypeMsgDepositInsurance, "no depositable insurance"), nil, nil
 		}
@@ -322,7 +359,8 @@ func SimulateMsgDepositInsurance(ak types.AccountKeeper, bk types.BankKeeper, k 
 			minCollateral.Ceil().TruncateInt(),
 		)
 
-		depositPortion := types.RandomDec(r, sdk.MustNewDecFromStr("0.01"), sdk.MustNewDecFromStr("0.2"))
+		// deposit 1 % ~ 10 % of the collateral
+		depositPortion := types.RandomDec(r, sdk.MustNewDecFromStr("0.01"), sdk.MustNewDecFromStr("0.1"))
 		deposits := sdk.NewCoins(
 			sdk.NewCoin(
 				sdk.DefaultBondDenom,
@@ -341,6 +379,161 @@ func SimulateMsgDepositInsurance(ak types.AccountKeeper, bk types.BankKeeper, k 
 		}
 
 		msg := types.NewMsgDepositInsurance(provider.String(), insurance.Id, deposits[0])
+		txCtx := simulation.OperationInput{
+			R:               r,
+			App:             app,
+			TxGen:           simapp.MakeTestEncodingConfig().TxConfig,
+			Cdc:             nil,
+			Msg:             msg,
+			MsgType:         msg.Type(),
+			CoinsSpentInMsg: spendable,
+			Context:         ctx,
+			SimAccount:      simAccount,
+			AccountKeeper:   ak,
+			Bankkeeper:      bk,
+			ModuleName:      types.ModuleName,
+		}
+		return types.GenAndDeliverTxWithFees(txCtx, Gas, Fees)
+	}
+}
+
+// SimulateMsgWithdrawInsurance generates a MsgWithdrawInsurance with random values.
+func SimulateMsgWithdrawInsurance(ak types.AccountKeeper, k keeper.Keeper) simtypes.Operation {
+	return func(
+		r *rand.Rand, app *baseapp.BaseApp, ctx sdk.Context, accs []simtypes.Account, chainID string,
+	) (simtypes.OperationMsg, []simtypes.FutureOperation, error) {
+		var simAccount simtypes.Account
+		var provider sdk.AccAddress
+
+		withdrawableInsurances := make([]types.Insurance, 0)
+		for i := 0; i < len(accs); i++ {
+			simAccount, _ = simtypes.RandomAcc(r, accs)
+			account := ak.GetAccount(ctx, simAccount.Address)
+			provider = account.GetAddress()
+			k.IterateAllInsurances(ctx, func(insurance types.Insurance) (bool, error) {
+				if insurance.GetProvider().Equals(provider) {
+					withdrawableInsurances = append(withdrawableInsurances, insurance)
+				}
+				return false, nil
+			})
+			if len(withdrawableInsurances) == 0 {
+				// Initiate a new insurances
+				withdrawableInsurances = withdrawableInsurances[:0]
+				continue
+			} else {
+				break
+			}
+		}
+		if len(withdrawableInsurances) == 0 {
+			return simtypes.NoOpMsg(types.ModuleName, types.TypeMsgWithdrawInsurance, "no withdrawable insurance"), nil, nil
+		}
+		// select randomly one insurance to withdraw
+		insurance := withdrawableInsurances[r.Intn(len(withdrawableInsurances))]
+		msg := types.NewMsgWithdrawInsurance(insurance.GetProvider().String(), insurance.Id)
+		txCtx := simulation.OperationInput{
+			R:               r,
+			App:             app,
+			TxGen:           simapp.MakeTestEncodingConfig().TxConfig,
+			Cdc:             nil,
+			Msg:             msg,
+			MsgType:         msg.Type(),
+			CoinsSpentInMsg: nil,
+			Context:         ctx,
+			SimAccount:      simAccount,
+			AccountKeeper:   ak,
+			Bankkeeper:      nil,
+			ModuleName:      types.ModuleName,
+		}
+		return types.GenAndDeliverTxWithFees(txCtx, Gas, Fees)
+	}
+}
+
+// SimulateMsgWithdrawInsuranceCommission generates a MsgWithdrawInsuranceCommission with random values.
+func SimulateMsgWithdrawInsuranceCommission(ak types.AccountKeeper, k keeper.Keeper) simtypes.Operation {
+	return func(
+		r *rand.Rand, app *baseapp.BaseApp, ctx sdk.Context, accs []simtypes.Account, chainID string,
+	) (simtypes.OperationMsg, []simtypes.FutureOperation, error) {
+		var simAccount simtypes.Account
+		var provider sdk.AccAddress
+
+		withdrawableInsurances := make([]types.Insurance, 0)
+		for i := 0; i < len(accs); i++ {
+			simAccount, _ = simtypes.RandomAcc(r, accs)
+			account := ak.GetAccount(ctx, simAccount.Address)
+			provider = account.GetAddress()
+			k.IterateAllInsurances(ctx, func(insurance types.Insurance) (bool, error) {
+				if insurance.GetProvider().Equals(provider) {
+					withdrawableInsurances = append(withdrawableInsurances, insurance)
+				}
+				return false, nil
+			})
+			if len(withdrawableInsurances) == 0 {
+				// Initiate a new insurances
+				withdrawableInsurances = withdrawableInsurances[:0]
+				continue
+			} else {
+				break
+			}
+		}
+		if len(withdrawableInsurances) == 0 {
+			return simtypes.NoOpMsg(types.ModuleName, types.TypeMsgWithdrawInsuranceCommission, "no withdrawable insurance"), nil, nil
+		}
+		// select randomly one insurance to withdraw
+		insurance := withdrawableInsurances[r.Intn(len(withdrawableInsurances))]
+		msg := types.NewMsgWithdrawInsuranceCommission(insurance.GetProvider().String(), insurance.Id)
+		txCtx := simulation.OperationInput{
+			R:               r,
+			App:             app,
+			TxGen:           simapp.MakeTestEncodingConfig().TxConfig,
+			Cdc:             nil,
+			Msg:             msg,
+			MsgType:         msg.Type(),
+			CoinsSpentInMsg: nil,
+			Context:         ctx,
+			SimAccount:      simAccount,
+			AccountKeeper:   ak,
+			Bankkeeper:      nil,
+			ModuleName:      types.ModuleName,
+		}
+		return types.GenAndDeliverTxWithFees(txCtx, Gas, Fees)
+	}
+}
+
+// SimulateMsgClaimDiscountedReward generates a MsgClaimDiscountedReward with random values.
+func SimulateMsgClaimDiscountedReward(ak types.AccountKeeper, bk types.BankKeeper, k keeper.Keeper) simtypes.Operation {
+	return func(
+		r *rand.Rand, app *baseapp.BaseApp, ctx sdk.Context, accs []simtypes.Account, chainID string,
+	) (simtypes.OperationMsg, []simtypes.FutureOperation, error) {
+		var simAccount simtypes.Account
+		var lsTokenHolder sdk.AccAddress
+		var spendable sdk.Coins
+
+		nas := k.GetNetAmountState(ctx)
+		if !nas.DiscountRate.IsPositive() {
+			return simtypes.NoOpMsg(types.ModuleName, types.TypeMsgClaimDiscountedReward, "discount rate is zero"), nil, nil
+		}
+		onePercent := sdk.NewDecWithPrec(1, 2)
+		// When the discount rate is less than 1%, arbitrager will not claim discounted reward
+		minimumDiscountRate := sdk.MinDec(nas.DiscountRate, onePercent)
+		if minimumDiscountRate.LT(onePercent) {
+			return simtypes.NoOpMsg(types.ModuleName, types.TypeMsgClaimDiscountedReward, "discount rate is less than 1%"), nil, nil
+		}
+
+		for i := 0; i < len(accs); i++ {
+			simAccount, _ = simtypes.RandomAcc(r, accs)
+			account := ak.GetAccount(ctx, simAccount.Address)
+			spendable = bk.SpendableCoins(ctx, simAccount.Address)
+
+			lsTokenHolder = account.GetAddress()
+			// delegator must have enough ls tokens to pay for one chunk
+			if spendable.AmountOf(types.DefaultLiquidBondDenom).IsPositive() {
+				break
+			}
+		}
+		maxLsTokensToGetAllRewards := nas.MintRate.Mul(minimumDiscountRate).Mul(nas.RewardModuleAccBalance.ToDec()).Ceil().TruncateInt()
+		amountToUse := types.RandomInt(r, spendable.AmountOf(types.DefaultLiquidBondDenom), maxLsTokensToGetAllRewards)
+
+		msg := types.NewMsgClaimDiscountedReward(lsTokenHolder.String(), sdk.NewCoin(sdk.DefaultBondDenom, amountToUse), minimumDiscountRate)
 		txCtx := simulation.OperationInput{
 			R:               r,
 			App:             app,
