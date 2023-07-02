@@ -37,7 +37,14 @@ var (
 )
 
 // WeightedOperations returns all the operations from the module with their respective weights
-func WeightedOperations(appParams simtypes.AppParams, cdc codec.JSONCodec, ak types.AccountKeeper, bk types.BankKeeper, sk types.StakingKeeper, k keeper.Keeper) simulation.WeightedOperations {
+func WeightedOperations(
+	appParams simtypes.AppParams,
+	cdc codec.JSONCodec,
+	ak types.AccountKeeper,
+	bk types.BankKeeper,
+	sk types.StakingKeeper,
+	k keeper.Keeper,
+) simulation.WeightedOperations {
 	var weightMsgLiquidStake int
 	appParams.GetOrGenerate(cdc, OpWeightMsgLiquidStake, &weightMsgLiquidStake, nil, func(_ *rand.Rand) {
 		weightMsgLiquidStake = app.DefaultWeightMsgLiquidStake
@@ -170,6 +177,9 @@ func SimulateMsgLiquidUnstake(ak types.AccountKeeper, bk types.BankKeeper, k kee
 		var spendable sdk.Coins
 
 		nas := k.GetNetAmountState(ctx)
+		if nas.MintRate.IsZero() {
+			return simtypes.NoOpMsg(types.ModuleName, types.TypeMsgLiquidUnstake, "cannot unstake because there are no chunks"), nil, nil
+		}
 		oneChunk, _ := k.GetMinimumRequirements(ctx)
 		lsTokensToPayForOneChunk := nas.MintRate.Mul(oneChunk.Amount.ToDec()).Ceil().TruncateInt()
 		for i := 0; i < len(accs); i++ {
