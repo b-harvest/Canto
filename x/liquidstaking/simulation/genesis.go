@@ -15,7 +15,7 @@ const (
 	dynamicFeeRate = "dynamic_fee_rate"
 )
 
-func GenDynamicFeeRate(r *rand.Rand) types.DynamicFeeRate {
+func genDynamicFeeRate(r *rand.Rand) types.DynamicFeeRate {
 	maxFeeRate := types.RandomDec(r, sdk.MustNewDecFromStr("0.4"), sdk.MustNewDecFromStr("0.5"))
 
 	r0 := types.RandomDec(r, sdk.ZeroDec(), sdk.MustNewDecFromStr("0.01"))
@@ -42,7 +42,7 @@ func RandomizedGenState(simState *module.SimulationState) {
 
 	simState.AppParams.GetOrGenerate(
 		simState.Cdc, dynamicFeeRate, &genesis.Params.DynamicFeeRate, simState.Rand,
-		func(r *rand.Rand) { genesis.Params.DynamicFeeRate = GenDynamicFeeRate(r) },
+		func(r *rand.Rand) { genesis.Params.DynamicFeeRate = genDynamicFeeRate(r) },
 	)
 
 	bz, _ := json.MarshalIndent(&genesis, "", " ")
