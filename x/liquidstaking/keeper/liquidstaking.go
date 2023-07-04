@@ -78,9 +78,12 @@ func (k Keeper) CoverRedelegationPenalty(ctx sdk.Context) error {
 				}
 				penaltyAmt := dstVal.TokensFromShares(diff).Ceil().TruncateInt()
 				if penaltyAmt.IsPositive() {
+					// var cannotCover bool
 					srcInsuranceBal := k.bankKeeper.GetBalance(ctx, srcInsurance.DerivedAddress(), bondDenom)
 					if srcInsuranceBal.Amount.LT(penaltyAmt) {
 						penaltyAmt = srcInsuranceBal.Amount
+						// TODO: We should make this chunk
+						// cannotCover = true
 					}
 					if err := k.bankKeeper.SendCoins(
 						ctx,
@@ -98,6 +101,9 @@ func (k Keeper) CoverRedelegationPenalty(ctx sdk.Context) error {
 						dstVal,
 						true,
 					)
+					//if cannotCover {
+					//	un-delegate (state-change)
+					//}
 					ctx.EventManager().EmitEvent(
 						sdk.NewEvent(
 							stakingtypes.EventTypeDelegate,
