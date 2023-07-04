@@ -419,6 +419,8 @@ func (k Keeper) GetAllRePairableChunksAndOutInsurances(ctx sdk.Context) (
 		case types.CHUNK_STATUS_PAIRING:
 			rePairableChunks = append(rePairableChunks, chunk)
 		case types.CHUNK_STATUS_PAIRED:
+			// We can't consider this insurance as out insurance at this time
+			// because we don't decide here whether it is rank in or rank out.
 			insurance, found := k.GetInsurance(ctx, chunk.PairedInsuranceId)
 			if !found {
 				return false, sdkerrors.Wrapf(types.ErrNotFoundInsurance, "insurance id: %d", chunk.UnpairingInsuranceId)
@@ -484,8 +486,10 @@ func (k Keeper) RankInsurances(ctx sdk.Context) (
 	var rankInInsurances []types.Insurance
 	var rankOutCandidates []types.Insurance
 	if len(rePairableChunks) > len(candidateInsurances) {
+		// All candidates can be ranked in because there are enough chunks
 		rankInInsurances = candidateInsurances
 	} else {
+		// There are more candidates than chunks so we need to decide which candidates are ranked in or out
 		rankInInsurances = candidateInsurances[:len(rePairableChunks)]
 		rankOutCandidates = candidateInsurances[len(rePairableChunks):]
 	}
@@ -498,6 +502,8 @@ func (k Keeper) RankInsurances(ctx sdk.Context) (
 	rankOutInsurances = append(rankOutInsurances, currentOutInsurances...)
 
 	for _, insurance := range rankInInsurances {
+		// If insurance is already paired, we just skip it
+		// because it is already ranked in and paired so there are no changes.
 		if _, ok := pairedInsuranceMap[insurance.Id]; !ok {
 			newlyRankedInInsurances = append(newlyRankedInInsurances, insurance)
 		}
@@ -520,11 +526,11 @@ func (k Keeper) RePairRankedInsurances(
 		rankOutInsuranceChunkMap[outInsurance.Id] = chunk
 	}
 
-	// newInsurancesWithDifferentValidators will be replaced by re-delegate
-	// because there are no rankout insurances which have same validator
+	// newInsurancesWithDifferentValidators will replace out insurance by re-delegation
+	// because there are no rank out insurances which have same validator
 	var newInsurancesWithDifferentValidators []types.Insurance
 
-	// Create handledOutInsurances map to create list of insurances which is not handled yet.
+	// Create handledOutInsurances map to track which out insurances are handled
 	handledOutInsurances := make(map[uint64]struct{})
 	// Short circuit
 	// Try to replace outInsurance with inInsurance which has same validator.
@@ -544,7 +550,7 @@ func (k Keeper) RePairRankedInsurances(
 				// TODO: outInsurance is removed at next epoch? and also it covers penalty if slashing happened after?
 				k.rePairChunkAndInsurance(ctx, chunk, newRankInInsurance, outInsurance)
 				hasSameValidator = true
-				// Remove because it already paired with a chunk
+				// mark outInsurance as handled, so we will not handle it again
 				handledOutInsurances[outInsurance.Id] = struct{}{}
 				break
 			}
@@ -561,9 +567,11 @@ func (k Keeper) RePairRankedInsurances(
 		return err
 	}
 	for len(pairingChunks) > 0 && len(newInsurancesWithDifferentValidators) > 0 {
+		// pop first chunk
 		chunk := pairingChunks[0]
 		pairingChunks = pairingChunks[1:]
 
+		// pop cheapest insurance
 		newInsurance := newInsurancesWithDifferentValidators[0]
 		newInsurancesWithDifferentValidators = newInsurancesWithDifferentValidators[1:]
 
@@ -572,7 +580,8 @@ func (k Keeper) RePairRankedInsurances(
 			return sdkerrors.Wrapf(types.ErrNotFoundValidator, "validator: %s", newInsurance.GetValidator())
 		}
 
-		_, _, newShares, err := k.pairChunkAndInsurance(ctx, chunk, newInsurance, validator)
+		// pairing chunk is immediately pairable so just delegate it
+		_, _, newShares, err := k.pairChunkAndDelegate(ctx, chunk, newInsurance, validator)
 		if err != nil {
 			return err
 		}
@@ -591,7 +600,7 @@ func (k Keeper) RePairRankedInsurances(
 		)
 	}
 
-	// What insurances are not handled yet?
+	// Which ranked-out insurances are not handled yet?
 	remainedOutInsurances := make([]types.Insurance, 0)
 	for _, outInsurance := range rankOutInsurances {
 		if _, ok := handledOutInsurances[outInsurance.Id]; !ok {
@@ -599,12 +608,13 @@ func (k Keeper) RePairRankedInsurances(
 		}
 	}
 
-	// reset handledOutInsurances to make latest map of insurances which is not handled yet.
+	// reset handledOutInsurances to track which out insurances are handled
 	handledOutInsurances = make(map[uint64]struct{})
-	// rest of rankOutInsurances are replaced with newInsurancesWithDifferentValidators
+	// rest of rankOutInsurances are replaced with newInsurancesWithDifferentValidators by re-delegation
+	// if there are remaining newInsurancesWithDifferentValidators
 	for _, outInsurance := range remainedOutInsurances {
 		if len(newInsurancesWithDifferentValidators) == 0 {
-			// We don't have any candidate to replace
+			// We don't have any new insurance to replace
 			break
 		}
 		srcVal := outInsurance.GetValidator()
@@ -656,7 +666,7 @@ func (k Keeper) RePairRankedInsurances(
 		handledOutInsurances[outInsurance.Id] = struct{}{}
 	}
 
-	// What insurances are not handled yet?
+	// What ranked-out insurances are not handled yet?
 	restOutInsurances := make([]types.Insurance, 0)
 	for _, outInsurance := range remainedOutInsurances {
 		if _, ok := handledOutInsurances[outInsurance.Id]; !ok {
@@ -764,7 +774,7 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (
 		// Delegator: DerivedAddress(chunk.Id)
 		// Validator: insurance.ValidatorAddress
 		// Amount: msg.Amount
-		chunk, cheapestInsurance, newShares, err = k.pairChunkAndInsurance(
+		chunk, cheapestInsurance, newShares, err = k.pairChunkAndDelegate(
 			ctx,
 			chunk,
 			cheapestInsurance,
@@ -1650,8 +1660,8 @@ func (k Keeper) withdrawInsurance(ctx sdk.Context, insurance types.Insurance) er
 	return nil
 }
 
-// pairChunkAndInsurance pairs chunk and insurance.
-func (k Keeper) pairChunkAndInsurance(
+// pairChunkAndDelegate pairs chunk and delegate it to validator pointed by insurance.
+func (k Keeper) pairChunkAndDelegate(
 	ctx sdk.Context,
 	chunk types.Chunk,
 	insurance types.Insurance,
