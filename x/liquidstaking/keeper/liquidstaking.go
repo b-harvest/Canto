@@ -375,7 +375,7 @@ func (k Keeper) HandleQueuedWithdrawInsuranceRequests(ctx sdk.Context) ([]types.
 			// If not paired, state change already happened in CoverSlashingAndHandleMatureUnbondings
 			chunk.SetStatus(types.CHUNK_STATUS_UNPAIRING)
 			chunk.UnpairingInsuranceId = chunk.PairedInsuranceId
-			chunk.PairedInsuranceId = 0
+			chunk.PairedInsuranceId = types.Empty
 			k.SetChunk(ctx, chunk)
 		}
 		insurance.SetStatus(types.INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAWAL)
@@ -395,8 +395,11 @@ func (k Keeper) HandleQueuedWithdrawInsuranceRequests(ctx sdk.Context) ([]types.
 	return withdrawnInsurances, nil
 }
 
-// GetAllRePairableChunksAndOutInsurances returns all active chunks and related insurances.
-// Active chunks are chunks which are paired or not unpairing.
+// GetAllRePairableChunksAndOutInsurances returns all re-pairable chunks and out insurances.
+// Re-pairable chunks include a chunk in
+// - Pairing
+// - Paired
+// - Unpairing but not un-bonding
 // Not unpairing chunk have no un-bonding info.
 func (k Keeper) GetAllRePairableChunksAndOutInsurances(ctx sdk.Context) (
 	rePairableChunks []types.Chunk,
@@ -1625,7 +1628,7 @@ func (k Keeper) startUnpairing(
 ) {
 	insurance.SetStatus(types.INSURANCE_STATUS_UNPAIRING)
 	chunk.UnpairingInsuranceId = chunk.PairedInsuranceId
-	chunk.PairedInsuranceId = 0
+	chunk.PairedInsuranceId = types.Empty
 	chunk.SetStatus(types.CHUNK_STATUS_UNPAIRING)
 	k.SetChunk(ctx, chunk)
 	k.SetInsurance(ctx, insurance)
