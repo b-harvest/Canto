@@ -133,7 +133,7 @@ func (suite *KeeperTestSuite) TestChunksInvariant() {
 	var origin, mutated types.Chunk = env.pairedChunks[0], env.pairedChunks[0]
 	// forcefully change status of chunk as invalid
 	{
-		mutated.PairedInsuranceId = types.Empty
+		mutated.EmptyPairedInsurance()
 		suite.app.LiquidStakingKeeper.SetChunk(suite.ctx, mutated)
 		_, broken = keeper.ChunksInvariant(suite.app.LiquidStakingKeeper)(suite.ctx)
 		suite.True(broken, "paired chunk must have valid paired insurance id")
@@ -315,7 +315,7 @@ func (suite *KeeperTestSuite) TestInsurancesInvariant() {
 	// forcefully change paired chunk id
 	{
 		mutated := origin
-		mutated.ChunkId = types.Empty
+		mutated.EmptyChunk()
 		suite.app.LiquidStakingKeeper.SetInsurance(suite.ctx, mutated)
 		_, broken := keeper.InsurancesInvariant(suite.app.LiquidStakingKeeper)(suite.ctx)
 		suite.True(broken, "paired insurance must have valid chunk id")
@@ -353,7 +353,7 @@ func (suite *KeeperTestSuite) TestInsurancesInvariant() {
 	// forcefully empty chunk id
 	{
 		mutated := origin
-		mutated.ChunkId = types.Empty
+		mutated.EmptyChunk()
 		suite.app.LiquidStakingKeeper.SetInsurance(suite.ctx, mutated)
 		_, broken := keeper.InsurancesInvariant(suite.app.LiquidStakingKeeper)(suite.ctx)
 		suite.True(broken, "unpairing insurance must have valid chunk id")
@@ -410,7 +410,7 @@ func (suite *KeeperTestSuite) TestInsurancesInvariant() {
 	// forcefully empty chunk id
 	{
 		mutated := origin
-		mutated.ChunkId = types.Empty
+		mutated.EmptyChunk()
 		suite.app.LiquidStakingKeeper.SetInsurance(suite.ctx, mutated)
 		_, broken := keeper.InsurancesInvariant(suite.app.LiquidStakingKeeper)(suite.ctx)
 		suite.True(broken, "unpairing for withdrawal insurance must have valid chunk id")
@@ -589,7 +589,7 @@ func (suite *KeeperTestSuite) checkUnpairingAndUnpairingForUnstakingChunks(
 	// forcefully change status of chunk as invalid
 	{
 		mutated := origin
-		mutated.UnpairingInsuranceId = types.Empty
+		mutated.EmptyUnpairingInsurance()
 		suite.app.LiquidStakingKeeper.SetChunk(suite.ctx, mutated)
 		_, broken := keeper.ChunksInvariant(suite.app.LiquidStakingKeeper)(suite.ctx)
 		suite.True(broken, "unpairing chunk must have valid unpairing insurance id")

@@ -96,3 +96,11 @@ func (i *Insurance) Validate(lastInsuranceId uint64) error {
 	}
 	return nil
 }
+
+func (i *Insurance) EmptyChunk() {
+	i.ChunkId = Empty
+}
+
+func (i *Insurance) HasChunk() bool {
+	return i.ChunkId != Empty
+}

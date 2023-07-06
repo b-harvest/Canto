@@ -34,7 +34,7 @@ func (k Keeper) CoverRedelegationPenalty(ctx sdk.Context) error {
 				chunk.Id, chunk.Status,
 			)
 		}
-		if chunk.UnpairingInsuranceId != types.Empty {
+		if chunk.HasUnpairingInsurance() {
 			srcInsurance, found := k.GetInsurance(ctx, chunk.UnpairingInsuranceId)
 			if !found {
 				return true, sdkerrors.Wrapf(
@@ -366,7 +366,7 @@ func (k Keeper) HandleQueuedWithdrawInsuranceRequests(ctx sdk.Context) ([]types.
 			// If not paired, state change already happened in CoverSlashingAndHandleMatureUnbondings
 			chunk.SetStatus(types.CHUNK_STATUS_UNPAIRING)
 			chunk.UnpairingInsuranceId = chunk.PairedInsuranceId
-			chunk.PairedInsuranceId = types.Empty
+			chunk.EmptyPairedInsurance()
 			k.SetChunk(ctx, chunk)
 		}
 		insurance.SetStatus(types.INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAWAL)
@@ -1273,7 +1273,7 @@ func (k Keeper) burnLsTokens(ctx sdk.Context, from sdk.AccAddress, lsTokensToBur
 // the status of chunk is not changed here. it should be changed in the caller side.
 func (k Keeper) completeInsuranceDuty(ctx sdk.Context, insurance types.Insurance) types.Insurance {
 	// insurance duty is over
-	insurance.ChunkId = types.Empty
+	insurance.EmptyChunk()
 	insurance.SetStatus(types.INSURANCE_STATUS_UNPAIRED)
 
 	k.SetInsurance(ctx, insurance)
@@ -1443,8 +1443,8 @@ func (k Keeper) handleUnpairingChunk(ctx sdk.Context, chunk types.Chunk) {
 		return
 	}
 	chunk.SetStatus(types.CHUNK_STATUS_PAIRING)
-	chunk.PairedInsuranceId = types.Empty
-	chunk.UnpairingInsuranceId = types.Empty
+	chunk.EmptyPairedInsurance()
+	chunk.EmptyUnpairingInsurance()
 	k.SetChunk(ctx, chunk)
 	return
 }
@@ -1583,7 +1583,7 @@ func (k Keeper) handlePairedChunk(ctx sdk.Context, chunk types.Chunk) {
 	}
 	unpairingInsurance, found = k.GetInsurance(ctx, chunk.UnpairingInsuranceId)
 	if found && unpairingInsurance.Status == types.INSURANCE_STATUS_UNPAIRED {
-		chunk.UnpairingInsuranceId = types.Empty
+		chunk.EmptyUnpairingInsurance()
 		k.SetChunk(ctx, chunk)
 	}
 	return
@@ -1613,7 +1613,7 @@ func (k Keeper) startUnpairing(
 ) {
 	insurance.SetStatus(types.INSURANCE_STATUS_UNPAIRING)
 	chunk.UnpairingInsuranceId = chunk.PairedInsuranceId
-	chunk.PairedInsuranceId = types.Empty
+	chunk.EmptyPairedInsurance()
 	chunk.SetStatus(types.CHUNK_STATUS_UNPAIRING)
 	k.SetChunk(ctx, chunk)
 	k.SetInsurance(ctx, insurance)
@@ -1628,7 +1628,7 @@ func (k Keeper) startUnpairingForLiquidUnstake(
 ) (types.Insurance, types.Chunk) {
 	chunk.SetStatus(types.CHUNK_STATUS_UNPAIRING_FOR_UNSTAKING)
 	chunk.UnpairingInsuranceId = chunk.PairedInsuranceId
-	chunk.PairedInsuranceId = types.Empty
+	chunk.EmptyPairedInsurance()
 	insurance.SetStatus(types.INSURANCE_STATUS_UNPAIRING)
 	k.SetChunk(ctx, chunk)
 	k.SetInsurance(ctx, insurance)
