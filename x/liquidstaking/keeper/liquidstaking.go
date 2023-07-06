@@ -233,14 +233,17 @@ func (k Keeper) DistributeReward(ctx sdk.Context) {
 	}
 }
 
-func (k Keeper) DeleteMaturedRedelegationInfos(ctx sdk.Context) error {
-	infos := k.GetAllRedelegationInfos(ctx)
-	for _, info := range infos {
+func (k Keeper) DeleteMaturedRedelegationInfos(ctx sdk.Context) {
+	err := k.IterateAllRedelegationInfos(ctx, func(info types.RedelegationInfo) (bool, error) {
 		if info.Matured(ctx.BlockTime()) {
 			k.DeleteRedelegationInfo(ctx, info.ChunkId)
 		}
+		return false, nil
+	})
+	if err != nil {
+		panic(err)
 	}
-	return nil
+	return
 }
 
 // CoverSlashingAndHandleMatureUnbondings covers slashing and handles mature unbondings.

@@ -6,7 +6,7 @@ import "github.com/Canto-Network/Canto/v6/x/liquidstaking/types"
 // match up with what is stored on stack vs keeper
 func (suite *KeeperTestSuite) TestChunkSetGet() {
 	numberChunks := 10
-	chunks := GenerateChunks(numberChunks)
+	chunks := generateChunks(numberChunks)
 	for _, chunk := range chunks {
 		suite.app.LiquidStakingKeeper.SetChunk(suite.ctx, chunk)
 	}
@@ -30,7 +30,7 @@ func (suite *KeeperTestSuite) TestChunkSetGet() {
 
 func (suite *KeeperTestSuite) TestDeleteChunk() {
 	numberChunks := 10
-	chunks := GenerateChunks(numberChunks)
+	chunks := generateChunks(numberChunks)
 	for _, chunk := range chunks {
 		suite.app.LiquidStakingKeeper.SetChunk(suite.ctx, chunk)
 	}
@@ -66,7 +66,7 @@ func (suite *KeeperTestSuite) TestLastChunkIdSetGet() {
 }
 
 // Creates a bunch of chunks
-func GenerateChunks(number int) []types.Chunk {
+func generateChunks(number int) []types.Chunk {
 	chunks := make([]types.Chunk, number)
 
 	for i := 0; i < number; i++ {
