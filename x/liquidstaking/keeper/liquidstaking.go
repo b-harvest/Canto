@@ -268,7 +268,7 @@ func (k Keeper) CoverSlashingAndHandleMatureUnbondings(ctx sdk.Context) {
 }
 
 // HandleQueuedLiquidUnstakes processes unstaking requests that were queued before the epoch.
-func (k Keeper) HandleQueuedLiquidUnstakes(ctx sdk.Context) ([]types.Chunk, error) {
+func (k Keeper) HandleQueuedLiquidUnstakes(ctx sdk.Context) []types.Chunk {
 	var unstakedChunks []types.Chunk
 	infos := k.GetAllUnpairingForUnstakingChunkInfos(ctx)
 	completionTime := ctx.BlockTime()
@@ -277,7 +277,7 @@ func (k Keeper) HandleQueuedLiquidUnstakes(ctx sdk.Context) ([]types.Chunk, erro
 		// Get chunk
 		chunk, found := k.GetChunk(ctx, info.ChunkId)
 		if !found {
-			return nil, sdkerrors.Wrapf(types.ErrNotFoundChunk, "id: %d", info.ChunkId)
+			panic(fmt.Sprintf("chunk %s not found", info.ChunkId))
 		}
 		if chunk.Status != types.CHUNK_STATUS_PAIRED {
 			// When it is queued with chunk, it must be paired but not now.
@@ -287,11 +287,11 @@ func (k Keeper) HandleQueuedLiquidUnstakes(ctx sdk.Context) ([]types.Chunk, erro
 		// get insurance
 		insurance, found := k.GetInsurance(ctx, chunk.PairedInsuranceId)
 		if !found {
-			return nil, sdkerrors.Wrapf(types.ErrNotFoundInsurance, "id: %d", chunk.PairedInsuranceId)
+			panic(fmt.Sprintf("insurance %d not found(chunkId: %d)", chunk.PairedInsuranceId, chunk.Id))
 		}
 		shares, err := k.stakingKeeper.ValidateUnbondAmount(ctx, chunk.DerivedAddress(), insurance.GetValidator(), types.ChunkSize)
 		if err != nil {
-			return nil, err
+			panic(err.Error())
 		}
 		completionTime, err = k.stakingKeeper.Undelegate(
 			ctx,
@@ -300,7 +300,7 @@ func (k Keeper) HandleQueuedLiquidUnstakes(ctx sdk.Context) ([]types.Chunk, erro
 			shares,
 		)
 		if err != nil {
-			return nil, err
+			panic(err)
 		}
 		_, chunk = k.startUnpairingForLiquidUnstake(ctx, insurance, chunk)
 		unstakedChunks = append(unstakedChunks, chunk)
@@ -315,7 +315,7 @@ func (k Keeper) HandleQueuedLiquidUnstakes(ctx sdk.Context) ([]types.Chunk, erro
 			),
 		})
 	}
-	return unstakedChunks, nil
+	return unstakedChunks
 }
 
 // HandleUnprocessedQueuedLiquidUnstakes checks if there are any unprocessed queued liquid unstakes.
