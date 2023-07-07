@@ -34,22 +34,22 @@ var fundingAccount = sdk.AccAddress(ed25519.GenPrivKey().PubKey().Address())
 
 func (suite *KeeperTestSuite) getPairedChunks() []types.Chunk {
 	var pairedChunks []types.Chunk
-	suite.app.LiquidStakingKeeper.IterateAllChunks(suite.ctx, func(chunk types.Chunk) (bool, error) {
+	suite.app.LiquidStakingKeeper.IterateAllChunks(suite.ctx, func(chunk types.Chunk) bool {
 		if chunk.Status == types.CHUNK_STATUS_PAIRED {
 			pairedChunks = append(pairedChunks, chunk)
 		}
-		return false, nil
+		return false
 	})
 	return pairedChunks
 }
 
 func (suite *KeeperTestSuite) getUnpairingForUnstakingChunks() []types.Chunk {
 	var UnpairingForUnstakingChunks []types.Chunk
-	suite.app.LiquidStakingKeeper.IterateAllChunks(suite.ctx, func(chunk types.Chunk) (bool, error) {
+	suite.app.LiquidStakingKeeper.IterateAllChunks(suite.ctx, func(chunk types.Chunk) bool {
 		if chunk.Status == types.CHUNK_STATUS_UNPAIRING_FOR_UNSTAKING {
 			UnpairingForUnstakingChunks = append(UnpairingForUnstakingChunks, chunk)
 		}
-		return false, nil
+		return false
 	})
 	return UnpairingForUnstakingChunks
 }
@@ -204,11 +204,11 @@ func (suite *KeeperTestSuite) TestLiquidStakeSuccess() {
 	// Check created chunks are stored in db correctly
 	idx := 0
 	{
-		suite.NoError(suite.app.LiquidStakingKeeper.IterateAllChunks(suite.ctx, func(chunk types.Chunk) (bool, error) {
+		suite.app.LiquidStakingKeeper.IterateAllChunks(suite.ctx, func(chunk types.Chunk) bool {
 			suite.True(chunk.Equal(createdChunks[idx]))
 			idx++
-			return false, nil
-		}))
+			return false
+		})
 		suite.Equal(len(createdChunks), idx, "number of created chunks should be equal to number of chunks in db")
 	}
 
@@ -1250,7 +1250,7 @@ func (suite *KeeperTestSuite) TestEndBlocker() {
 
 		pairedChunk, _ := suite.app.LiquidStakingKeeper.GetChunk(suite.ctx, pairingChunk.Id)
 		suite.Equal(types.CHUNK_STATUS_PAIRED, pairedChunk.Status)
-		suite.NoError(suite.app.LiquidStakingKeeper.IterateAllChunks(suite.ctx, func(chunk types.Chunk) (bool, error) {
+		suite.app.LiquidStakingKeeper.IterateAllChunks(suite.ctx, func(chunk types.Chunk) bool {
 			if chunk.Status == types.CHUNK_STATUS_PAIRED {
 				found := false
 				for _, newInsurance := range updatedNewInsurances {
@@ -1274,8 +1274,8 @@ func (suite *KeeperTestSuite) TestEndBlocker() {
 				}
 				suite.False(found, "chunk must not be paired with one of old insurances(ranked-out)")
 			}
-			return false, nil
-		}))
+			return false
+		})
 	}
 
 	suite.ctx = suite.advanceHeight(suite.ctx, 1, "")
@@ -1306,7 +1306,7 @@ func (suite *KeeperTestSuite) TestEndBlocker() {
 			updatedOldInsurances = append(updatedOldInsurances, insurance)
 		}
 
-		suite.NoError(suite.app.LiquidStakingKeeper.IterateAllChunks(suite.ctx, func(chunk types.Chunk) (bool, error) {
+		suite.app.LiquidStakingKeeper.IterateAllChunks(suite.ctx, func(chunk types.Chunk) bool {
 			if chunk.Status == types.CHUNK_STATUS_PAIRED {
 				found := false
 				for _, newInsurance := range updatedNewInsurances {
@@ -1328,8 +1328,8 @@ func (suite *KeeperTestSuite) TestEndBlocker() {
 				}
 				suite.False(found, "chunk must not be paired with one of old insurances(ranked-out)")
 			}
-			return false, nil
-		}))
+			return false
+		})
 	}
 
 }
@@ -3454,12 +3454,12 @@ func (suite *KeeperTestSuite) getUnitDistribution(
 
 func (suite *KeeperTestSuite) calcTotalInsuranceCommissions(status types.InsuranceStatus) (totalCommission sdk.Int) {
 	totalCommission = sdk.ZeroInt()
-	suite.app.LiquidStakingKeeper.IterateAllInsurances(suite.ctx, func(insurance types.Insurance) (bool, error) {
+	suite.app.LiquidStakingKeeper.IterateAllInsurances(suite.ctx, func(insurance types.Insurance) bool {
 		if insurance.Status == status {
 			commission := suite.app.BankKeeper.GetBalance(suite.ctx, insurance.FeePoolAddress(), suite.denom)
 			totalCommission = totalCommission.Add(commission.Amount)
 		}
-		return false, nil
+		return false
 	})
 	return
 }

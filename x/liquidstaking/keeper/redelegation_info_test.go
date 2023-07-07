@@ -54,9 +54,13 @@ func (suite *KeeperTestSuite) TestIterteAllRedelegationInfos() {
 	suite.app.LiquidStakingKeeper.SetRedelegationInfo(suite.ctx, info2)
 
 	var result []types.RedelegationInfo
-	suite.app.LiquidStakingKeeper.IterateAllRedelegationInfos(suite.ctx, func(info types.RedelegationInfo) (bool, error) {
+	suite.app.LiquidStakingKeeper.IterateAllRedelegationInfos(suite.ctx, func(info types.RedelegationInfo) bool {
 		result = append(result, info)
-		return false, nil
+		return false
 	})
 	suite.Equal([]types.RedelegationInfo{info1, info2}, result)
+}
+
+func (suite *KeeperTestSuite) TestDeleteNonExistingRedelegationInfo() {
+	suite.app.LiquidStakingKeeper.DeleteRedelegationInfo(suite.ctx, 1000)
 }

@@ -289,11 +289,11 @@ func SimulateMsgCancelProvideInsurance(ak types.AccountKeeper, k keeper.Keeper) 
 			simAccount, _ = simtypes.RandomAcc(r, accs)
 			account := ak.GetAccount(ctx, simAccount.Address)
 			provider = account.GetAddress()
-			k.IterateAllInsurances(ctx, func(insurance types.Insurance) (bool, error) {
+			k.IterateAllInsurances(ctx, func(insurance types.Insurance) bool {
 				if insurance.GetProvider().Equals(provider) {
 					cancelableInsurances = append(cancelableInsurances, insurance)
 				}
-				return false, nil
+				return false
 			})
 			if len(cancelableInsurances) == 0 {
 				// Initiate a new insurances
@@ -343,11 +343,11 @@ func SimulateMsgDepositInsurance(ak types.AccountKeeper, bk types.BankKeeper, k 
 			provider = account.GetAddress()
 			spendable = bk.SpendableCoins(ctx, provider)
 
-			k.IterateAllInsurances(ctx, func(insurance types.Insurance) (bool, error) {
+			k.IterateAllInsurances(ctx, func(insurance types.Insurance) bool {
 				if insurance.GetProvider().Equals(provider) {
 					depositableInsurances = append(depositableInsurances, insurance)
 				}
-				return false, nil
+				return false
 			})
 			if len(depositableInsurances) == 0 {
 				// Initiate a new insurances
@@ -420,11 +420,11 @@ func SimulateMsgWithdrawInsurance(ak types.AccountKeeper, k keeper.Keeper) simty
 			simAccount, _ = simtypes.RandomAcc(r, accs)
 			account := ak.GetAccount(ctx, simAccount.Address)
 			provider = account.GetAddress()
-			k.IterateAllInsurances(ctx, func(insurance types.Insurance) (bool, error) {
+			k.IterateAllInsurances(ctx, func(insurance types.Insurance) bool {
 				if insurance.GetProvider().Equals(provider) {
 					withdrawableInsurances = append(withdrawableInsurances, insurance)
 				}
-				return false, nil
+				return false
 			})
 			if len(withdrawableInsurances) == 0 {
 				// Initiate a new insurances
@@ -471,11 +471,11 @@ func SimulateMsgWithdrawInsuranceCommission(ak types.AccountKeeper, k keeper.Kee
 			simAccount, _ = simtypes.RandomAcc(r, accs)
 			account := ak.GetAccount(ctx, simAccount.Address)
 			provider = account.GetAddress()
-			k.IterateAllInsurances(ctx, func(insurance types.Insurance) (bool, error) {
+			k.IterateAllInsurances(ctx, func(insurance types.Insurance) bool {
 				if insurance.GetProvider().Equals(provider) {
 					withdrawableInsurances = append(withdrawableInsurances, insurance)
 				}
-				return false, nil
+				return false
 			})
 			if len(withdrawableInsurances) == 0 {
 				// Initiate a new insurances

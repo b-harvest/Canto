@@ -9,12 +9,12 @@ import (
 func (k Keeper) CalcUtilizationRatio(ctx sdk.Context) sdk.Dec {
 	totalSupply := k.bankKeeper.GetSupply(ctx, k.stakingKeeper.BondDenom(ctx))
 	var numPairedChunks int64 = 0
-	k.IterateAllChunks(ctx, func(chunk types.Chunk) (bool, error) {
+	k.IterateAllChunks(ctx, func(chunk types.Chunk) bool {
 		if chunk.Status != types.CHUNK_STATUS_PAIRED {
-			return false, nil
+			return false
 		}
 		numPairedChunks++
-		return false, nil
+		return false
 	})
 	if totalSupply.IsZero() || numPairedChunks == 0 {
 		return sdk.ZeroDec()

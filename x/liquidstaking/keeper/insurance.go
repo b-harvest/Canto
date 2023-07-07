@@ -34,28 +34,25 @@ func (k Keeper) getPairingInsurances(ctx sdk.Context) (
 	validatorMap map[string]stakingtypes.Validator,
 ) {
 	validatorMap = make(map[string]stakingtypes.Validator)
-	err := k.IterateAllInsurances(ctx, func(insurance types.Insurance) (bool, error) {
+	k.IterateAllInsurances(ctx, func(insurance types.Insurance) bool {
 		if insurance.Status != types.INSURANCE_STATUS_PAIRING {
-			return false, nil
+			return false
 		}
 		if _, ok := validatorMap[insurance.ValidatorAddress]; !ok {
 			validator, found := k.stakingKeeper.GetValidator(ctx, insurance.GetValidator())
 			err := k.IsValidValidator(ctx, validator, found)
 			if err != nil {
-				return false, nil
+				return false
 			}
 			validatorMap[insurance.ValidatorAddress] = validator
 		}
 		pairingInsurances = append(pairingInsurances, insurance)
-		return false, nil
+		return false
 	})
-	if err != nil {
-		return nil, nil
-	}
 	return
 }
 
-func (k Keeper) IterateAllInsurances(ctx sdk.Context, cb func(insurance types.Insurance) (stop bool, err error)) error {
+func (k Keeper) IterateAllInsurances(ctx sdk.Context, cb func(insurance types.Insurance) (stop bool)) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, types.KeyPrefixInsurance)
 	defer iterator.Close()
@@ -64,22 +61,18 @@ func (k Keeper) IterateAllInsurances(ctx sdk.Context, cb func(insurance types.In
 		var insurance types.Insurance
 		k.cdc.MustUnmarshal(iterator.Value(), &insurance)
 
-		stop, err := cb(insurance)
-		if err != nil {
-			return err
-		}
+		stop := cb(insurance)
 		if stop {
 			break
 		}
 	}
-	return nil
 }
 
 func (k Keeper) GetAllInsurances(ctx sdk.Context) (insurances []types.Insurance) {
 	insurances = []types.Insurance{}
-	k.IterateAllInsurances(ctx, func(insurance types.Insurance) (stop bool, err error) {
+	k.IterateAllInsurances(ctx, func(insurance types.Insurance) (stop bool) {
 		insurances = append(insurances, insurance)
-		return false, nil
+		return false
 	})
 	return
 }

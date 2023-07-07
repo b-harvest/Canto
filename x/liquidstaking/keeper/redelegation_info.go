@@ -26,7 +26,7 @@ func (k Keeper) DeleteRedelegationInfo(ctx sdk.Context, id uint64) {
 	store.Delete(types.GetRedelegationInfoKey(id))
 }
 
-func (k Keeper) IterateAllRedelegationInfos(ctx sdk.Context, cb func(info types.RedelegationInfo) (stop bool, err error)) error {
+func (k Keeper) IterateAllRedelegationInfos(ctx sdk.Context, cb func(info types.RedelegationInfo) (stop bool)) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, types.KeyPrefixRedelegationInfo)
 	defer iterator.Close()
@@ -35,16 +35,11 @@ func (k Keeper) IterateAllRedelegationInfos(ctx sdk.Context, cb func(info types.
 		var info types.RedelegationInfo
 		k.cdc.MustUnmarshal(iterator.Value(), &info)
 
-		stop, err := cb(info)
-		if err != nil {
-			return err
-		}
+		stop := cb(info)
 		if stop {
 			break
 		}
 	}
-
-	return nil
 }
 
 func (k Keeper) GetAllRedelegationInfos(ctx sdk.Context) (infos []types.RedelegationInfo) {

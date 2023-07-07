@@ -7,9 +7,7 @@ import (
 
 func BeginBlocker(ctx sdk.Context, k keeper.Keeper) {
 	if k.IsEpochReached(ctx) {
-		if err := k.CoverRedelegationPenalty(ctx); err != nil {
-			panic(err)
-		}
+		k.CoverRedelegationPenalty(ctx)
 	}
 }
 
@@ -20,9 +18,7 @@ func EndBlocker(ctx sdk.Context, k keeper.Keeper) {
 		k.CoverSlashingAndHandleMatureUnbondings(ctx)
 		k.HandleQueuedLiquidUnstakes(ctx)
 		k.HandleUnprocessedQueuedLiquidUnstakes(ctx)
-		if _, err := k.HandleQueuedWithdrawInsuranceRequests(ctx); err != nil {
-			panic(err)
-		}
+		k.HandleQueuedWithdrawInsuranceRequests(ctx)
 		newlyRankedInInsurances, rankOutInsurances, err := k.RankInsurances(ctx)
 		if err != nil {
 			panic(err)

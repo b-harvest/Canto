@@ -964,6 +964,8 @@ func (app *Canto) BeginBlocker(ctx sdk.Context, req abci.RequestBeginBlock) abci
 						{Denom: app.StakingKeeper.BondDenom(ctx), Amount: remaining}}...)
 					app.DistrKeeper.SetFeePool(ctx, feePool)
 				}
+
+				app.LiquidStakingKeeper.CoverRedelegationPenalty(ctx)
 			}
 		}
 	}()
@@ -985,16 +987,11 @@ func (app *Canto) EndBlocker(ctx sdk.Context, req abci.RequestEndBlock) abci.Res
 				// mimic liquidstaking endblocker except increasing epoch
 				{
 					app.LiquidStakingKeeper.DistributeReward(ctx)
+					app.LiquidStakingKeeper.DeleteMaturedRedelegationInfos(ctx)
 					app.LiquidStakingKeeper.CoverSlashingAndHandleMatureUnbondings(ctx)
-					if _, err := app.LiquidStakingKeeper.HandleQueuedLiquidUnstakes(ctx); err != nil {
-						panic(err)
-					}
-					if err := app.LiquidStakingKeeper.HandleUnprocessedQueuedLiquidUnstakes(ctx); err != nil {
-						panic(err)
-					}
-					if _, err := app.LiquidStakingKeeper.HandleQueuedWithdrawInsuranceRequests(ctx); err != nil {
-						panic(err)
-					}
+					app.LiquidStakingKeeper.HandleQueuedLiquidUnstakes(ctx)
+					app.LiquidStakingKeeper.HandleUnprocessedQueuedLiquidUnstakes(ctx)
+					app.LiquidStakingKeeper.HandleQueuedWithdrawInsuranceRequests(ctx)
 					newlyRankedInInsurances, rankOutInsurances, err := app.LiquidStakingKeeper.RankInsurances(ctx)
 					if err != nil {
 						panic(err)

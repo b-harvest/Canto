@@ -54,9 +54,16 @@ func (suite *KeeperTestSuite) TestIterateAllUnpairingForUnstakingChunkInfos() {
 	suite.app.LiquidStakingKeeper.SetUnpairingForUnstakingChunkInfo(suite.ctx, info2)
 
 	var result []types.UnpairingForUnstakingChunkInfo
-	suite.app.LiquidStakingKeeper.IterateAllUnpairingForUnstakingChunkInfos(suite.ctx, func(info types.UnpairingForUnstakingChunkInfo) (bool, error) {
+	suite.app.LiquidStakingKeeper.IterateAllUnpairingForUnstakingChunkInfos(suite.ctx, func(info types.UnpairingForUnstakingChunkInfo) bool {
 		result = append(result, info)
-		return false, nil
+		return false
 	})
 	suite.Equal([]types.UnpairingForUnstakingChunkInfo{info1, info2}, result)
+}
+
+func (suite *KeeperTestSuite) TestDeleteNonExistingUnpairingForUnstakingChunkInfo() {
+	suite.NotPanics(
+		func() { suite.app.LiquidStakingKeeper.DeleteUnpairingForUnstakingChunkInfo(suite.ctx, 1000) },
+		"should not panic",
+	)
 }
