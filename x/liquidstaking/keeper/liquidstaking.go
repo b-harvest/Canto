@@ -222,14 +222,14 @@ func (k Keeper) DistributeReward(ctx sdk.Context) {
 		}
 		_, err = k.distributionKeeper.WithdrawDelegationRewards(ctx, chunk.DerivedAddress(), validator.GetOperator())
 		if err != nil {
-			panic(err.Error())
+			panic(err)
 		}
 
 		k.CollectRewardAndFee(ctx, feeRate, chunk, insurance)
 		return false, nil
 	})
 	if err != nil {
-		panic(err.Error())
+		panic(err)
 	}
 }
 
@@ -263,7 +263,7 @@ func (k Keeper) CoverSlashingAndHandleMatureUnbondings(ctx sdk.Context) {
 		return false, nil
 	})
 	if err != nil {
-		panic(err.Error())
+		panic(err)
 	}
 }
 
@@ -291,7 +291,7 @@ func (k Keeper) HandleQueuedLiquidUnstakes(ctx sdk.Context) []types.Chunk {
 		}
 		shares, err := k.stakingKeeper.ValidateUnbondAmount(ctx, chunk.DerivedAddress(), insurance.GetValidator(), types.ChunkSize)
 		if err != nil {
-			panic(err.Error())
+			panic(err)
 		}
 		completionTime, err = k.stakingKeeper.Undelegate(
 			ctx,
@@ -320,17 +320,17 @@ func (k Keeper) HandleQueuedLiquidUnstakes(ctx sdk.Context) []types.Chunk {
 
 // HandleUnprocessedQueuedLiquidUnstakes checks if there are any unprocessed queued liquid unstakes.
 // And if there are any, refund the escrowed ls tokens to requester and delete the info.
-func (k Keeper) HandleUnprocessedQueuedLiquidUnstakes(ctx sdk.Context) error {
+func (k Keeper) HandleUnprocessedQueuedLiquidUnstakes(ctx sdk.Context) {
 	infos := k.GetAllUnpairingForUnstakingChunkInfos(ctx)
 	for _, info := range infos {
 		chunk, found := k.GetChunk(ctx, info.ChunkId)
 		if !found {
-			return sdkerrors.Wrapf(types.ErrNotFoundChunk, "id: %d", info.ChunkId)
+			panic(fmt.Sprintf("chunk %s not found", info.ChunkId))
 		}
 		if chunk.Status != types.CHUNK_STATUS_UNPAIRING_FOR_UNSTAKING {
 			// Unstaking is not processed. Let's refund the chunk and delete info.
 			if err := k.bankKeeper.SendCoins(ctx, types.LsTokenEscrowAcc, info.GetDelegator(), sdk.NewCoins(info.EscrowedLstokens)); err != nil {
-				return err
+				panic(err)
 			}
 			k.DeleteUnpairingForUnstakingChunkInfo(ctx, info.ChunkId)
 			ctx.EventManager().EmitEvents(sdk.Events{
@@ -341,7 +341,7 @@ func (k Keeper) HandleUnprocessedQueuedLiquidUnstakes(ctx sdk.Context) error {
 			})
 		}
 	}
-	return nil
+	return
 }
 
 // HandleQueuedWithdrawInsuranceRequests processes withdraw insurance requests that were queued before the epoch.
@@ -1434,7 +1434,7 @@ func (k Keeper) handleUnpairingChunk(ctx sdk.Context, chunk types.Chunk) {
 		outputs = append(outputs, banktypes.NewOutput(types.RewardPool, allBalances))
 
 		if err = k.bankKeeper.InputOutputCoins(ctx, inputs, outputs); err != nil {
-			panic(err.Error())
+			panic(err)
 		}
 		k.DeleteChunk(ctx, chunk.Id)
 		// Insurance already sent all of its balance to chunk, but we cannot delete it yet
@@ -1502,7 +1502,7 @@ func (k Keeper) handlePairedChunk(ctx sdk.Context, chunk types.Chunk) {
 				delegation.GetShares(),
 			)
 			if err != nil {
-				panic(err.Error())
+				panic(err)
 			}
 			ctx.EventManager().EmitEvent(
 				sdk.NewEvent(

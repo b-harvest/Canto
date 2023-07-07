@@ -19,9 +19,7 @@ func EndBlocker(ctx sdk.Context, k keeper.Keeper) {
 		k.DeleteMaturedRedelegationInfos(ctx)
 		k.CoverSlashingAndHandleMatureUnbondings(ctx)
 		k.HandleQueuedLiquidUnstakes(ctx)
-		if err := k.HandleUnprocessedQueuedLiquidUnstakes(ctx); err != nil {
-			panic(err)
-		}
+		k.HandleUnprocessedQueuedLiquidUnstakes(ctx)
 		if _, err := k.HandleQueuedWithdrawInsuranceRequests(ctx); err != nil {
 			panic(err)
 		}
