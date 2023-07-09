@@ -244,10 +244,9 @@ func (k Keeper) CoverSlashingAndHandleMatureUnbondings(ctx sdk.Context) {
 // HandleQueuedLiquidUnstakes processes unstaking requests that were queued before the epoch.
 func (k Keeper) HandleQueuedLiquidUnstakes(ctx sdk.Context) []types.Chunk {
 	var unstakedChunks []types.Chunk
-	infos := k.GetAllUnpairingForUnstakingChunkInfos(ctx)
-	completionTime := ctx.BlockTime()
-	chunkIds := make([]string, len(infos))
-	for _, info := range infos {
+	var completionTime time.Time
+	var chunkIds []string
+	k.IterateAllUnpairingForUnstakingChunkInfos(ctx, func(info types.UnpairingForUnstakingChunkInfo) bool {
 		// Get chunk
 		chunk, found := k.GetChunk(ctx, info.ChunkId)
 		if !found {
@@ -256,7 +255,7 @@ func (k Keeper) HandleQueuedLiquidUnstakes(ctx sdk.Context) []types.Chunk {
 		if chunk.Status != types.CHUNK_STATUS_PAIRED {
 			// When it is queued with chunk, it must be paired but not now.
 			// (e.g. validator got huge slash after unstake request is queued, so the chunk is not valid now)
-			continue
+			return false
 		}
 		// get insurance
 		insurance, found := k.GetInsurance(ctx, chunk.PairedInsuranceId)
@@ -279,8 +278,9 @@ func (k Keeper) HandleQueuedLiquidUnstakes(ctx sdk.Context) []types.Chunk {
 		_, chunk = k.startUnpairingForLiquidUnstake(ctx, insurance, chunk)
 		unstakedChunks = append(unstakedChunks, chunk)
 		chunkIds = append(chunkIds, strconv.FormatUint(chunk.Id, 10))
-	}
-	if len(infos) > 0 {
+		return false
+	})
+	if len(chunkIds) > 0 {
 		ctx.EventManager().EmitEvents(sdk.Events{
 			sdk.NewEvent(
 				types.EventTypeBeginLiquidUnstake,
