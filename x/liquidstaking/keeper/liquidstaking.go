@@ -818,7 +818,7 @@ func (k Keeper) QueueLiquidUnstake(ctx sdk.Context, msg *types.MsgLiquidUnstake)
 		}
 
 		pairedInsurance, found := k.GetInsurance(ctx, chunk.PairedInsuranceId)
-		if found == false {
+		if !found {
 			panic(fmt.Sprintf("paired insurance not found for chunk %d", chunk.Id))
 		}
 
@@ -1376,14 +1376,16 @@ func (k Keeper) handleUnpairingChunk(ctx sdk.Context, chunk types.Chunk) {
 	// If chunk got damaged, all of its coins will be sent to reward module account and chunk will be deleted
 	if chunkBalance.LT(types.ChunkSize) {
 		allBalances := k.bankKeeper.GetAllBalances(ctx, chunk.DerivedAddress())
-		var inputs []banktypes.Input
-		var outputs []banktypes.Output
-		// TODO: those inputs are all positive?
-		inputs = append(inputs, banktypes.NewInput(chunk.DerivedAddress(), allBalances))
-		outputs = append(outputs, banktypes.NewOutput(types.RewardPool, allBalances))
-
-		if err = k.bankKeeper.InputOutputCoins(ctx, inputs, outputs); err != nil {
-			panic(err)
+		var sendCoins sdk.Coins
+		if allBalances.IsValid() {
+			sendCoins = allBalances
+		} else if allBalances.AmountOf(bondDenom).IsPositive() {
+			sendCoins = sdk.NewCoins(sdk.NewCoin(bondDenom, allBalances.AmountOf(bondDenom)))
+		}
+		if sendCoins.IsValid() {
+			if err = k.bankKeeper.SendCoins(ctx, chunk.DerivedAddress(), types.RewardPool, sendCoins); err != nil {
+				panic(err)
+			}
 		}
 		k.DeleteChunk(ctx, chunk.Id)
 		// Insurance already sent all of its balance to chunk, but we cannot delete it yet
