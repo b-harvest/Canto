@@ -1263,29 +1263,13 @@ func (k Keeper) completeLiquidUnstake(ctx sdk.Context, chunk types.Chunk) {
 		return
 	}
 	var err error
+	if err = k.validateUnpairingChunk(ctx, chunk); err != nil {
+		panic(err)
+	}
 
 	bondDenom := k.stakingKeeper.BondDenom(ctx)
 	liquidBondDenom := k.GetLiquidBondDenom(ctx)
-
-	// get paired insurance from chunk
-	unpairingInsurance, found := k.GetInsurance(ctx, chunk.UnpairingInsuranceId)
-	if !found {
-		panic(fmt.Sprintf("unpairing insurance not found: %d(chunkId: %d)", chunk.UnpairingInsuranceId, chunk.Id))
-	}
-	if chunk.HasPairedInsurance() {
-		panic(fmt.Sprintf("paired insurance id must be zero: %d", chunk.PairedInsuranceId))
-	}
-
-	// unpairing for unstake chunk only have unpairing insurance
-	_, found = k.stakingKeeper.GetUnbondingDelegation(ctx, chunk.DerivedAddress(), unpairingInsurance.GetValidator())
-	if found {
-		// TODO: We should make sure that current unbonding period is depending on staking module's parameter.
-		// So we should add additional logic in antehandler to limit changes of unbonding period.
-		// If we add antehanlder logic, then it must be in SPEC & PR.
-		// UnbondingDelegation must be removed by staking keeper EndBlocker
-		// because Endblocker of liquidstaking module is called after staking module.
-		panic(fmt.Sprintf("unbonding delegation must be removed: %s(chunkId: %d)", chunk.DerivedAddress(), chunk.Id))
-	}
+	unpairingInsurance, _ := k.GetInsurance(ctx, chunk.UnpairingInsuranceId)
 	// handle mature unbondings
 	info, found := k.GetUnpairingForUnstakingChunkInfo(ctx, chunk.Id)
 	if !found {
@@ -1360,20 +1344,10 @@ func (k Keeper) handleUnpairingChunk(ctx sdk.Context, chunk types.Chunk) {
 	var err error
 	bondDenom := k.stakingKeeper.BondDenom(ctx)
 
-	// get paired insurance from chunk
-	unpairingInsurance, found := k.GetInsurance(ctx, chunk.UnpairingInsuranceId)
-	if !found {
-		panic(fmt.Sprintf("unpairing insurance not found: %d(chunkId: %d)", chunk.UnpairingInsuranceId, chunk.Id))
+	if err = k.validateUnpairingChunk(ctx, chunk); err != nil {
+		panic(err)
 	}
-	if chunk.HasPairedInsurance() {
-		panic(fmt.Sprintf("paired insurance id must be zero: %d", chunk.PairedInsuranceId))
-	}
-	if _, found = k.stakingKeeper.GetUnbondingDelegation(ctx, chunk.DerivedAddress(), unpairingInsurance.GetValidator()); found {
-		// UnbondingDelegation must be removed by staking keeper EndBlocker
-		// because Endblocker of liquidstaking module is called after staking module.
-		panic(fmt.Sprintf("unbonding delegation must be removed: %s(chunkId: %d)", chunk.DerivedAddress(), chunk.Id))
-	}
-
+	unpairingInsurance, _ := k.GetInsurance(ctx, chunk.UnpairingInsuranceId)
 	chunkBalance := k.bankKeeper.GetBalance(ctx, chunk.DerivedAddress(), bondDenom).Amount
 	penaltyAmt := types.ChunkSize.Sub(chunkBalance)
 	if penaltyAmt.IsPositive() {
@@ -1705,4 +1679,25 @@ func (k Keeper) getNumPairedChunks(ctx sdk.Context) (numPairedChunks int64) {
 		return false
 	})
 	return
+}
+
+// validateUnpairingChunk validates unpairing or unpairing for unstaking chunk.
+func (k Keeper) validateUnpairingChunk(ctx sdk.Context, chunk types.Chunk) error {
+	// get paired insurance from chunk
+	unpairingInsurance, found := k.GetInsurance(ctx, chunk.UnpairingInsuranceId)
+	if !found {
+		return sdkerrors.Wrapf(types.ErrNotFoundUnpairingInsurance, "insuranceId: %d(chunkId: %d)", chunk.UnpairingInsuranceId, chunk.Id)
+	}
+	if chunk.HasPairedInsurance() {
+		return sdkerrors.Wrapf(types.ErrMustHaveNoPairedInsurance, "chunkId: %d", chunk.Id)
+	}
+	if _, found = k.stakingKeeper.GetUnbondingDelegation(ctx, chunk.DerivedAddress(), unpairingInsurance.GetValidator()); found {
+		// TODO: We should make sure that current unbonding period is depending on staking module's parameter.
+		// So we should add additional logic in antehandler to limit changes of unbonding period.
+		// If we add antehanlder logic, then it must be in SPEC & PR.
+		// UnbondingDelegation must be removed by staking keeper EndBlocker
+		// because Endblocker of liquidstaking module is called after staking module.
+		return sdkerrors.Wrapf(types.ErrMustHaveNoUnbondingDelegation, "chunkId: %d", chunk.Id)
+	}
+	return nil
 }
