@@ -1,10 +1,10 @@
-<!-- order: 5 -->
+<!-- order: 6 -->
 
 # EndBlock
 
 The end block logic is executed at the end of each epoch.
 
-## Reward Distribution
+## Distribute Reward
 
 - For all paired chunks
   - withdraw delegation reward
@@ -14,6 +14,11 @@ The end block logic is executed at the end of each epoch.
       - insurance commission: `(balance of chunk) x insurance.FeeRate`
     - burn fee calculated by `fee rate x (balance of chunk - insurance commission)` (Please check the `CalcDynamicFeeRate` in `dynamic_fee_rate.go` for detail.)
     - send rest of chunk balance to reward pool
+
+## Delete Matured Redelegation Infos
+
+- For all re-delegation infos
+  - if is is matured, then delete it.
 
 ## Cover slashing and handle mature unbondings
 
@@ -84,6 +89,7 @@ The end block logic is executed at the end of each epoch.
   - out insurances are
     - paired with `Unpairing` chunk which have no unbonding obj
       - The most common case for this is withdrawing an insurance.
+    - paired with `Paired` chunk but have invalid validator. (sanity check)
 
 - create candidate insurances
   - candidate insurance must be in `Pairing or Paired`
