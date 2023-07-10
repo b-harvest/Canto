@@ -1375,15 +1375,17 @@ func (k Keeper) handleUnpairingChunk(ctx sdk.Context, chunk types.Chunk) {
 
 		// Send penaltyAmt to chunk
 		// unpairing chunk must be not damaged to become pairing chunk
-		if err = k.bankKeeper.SendCoins(
-			ctx,
-			unpairingInsurance.DerivedAddress(),
-			chunk.DerivedAddress(),
-			sdk.NewCoins(sendCoin),
-		); err != nil {
-			panic(err)
+		if sendCoin.IsValid() {
+			if err = k.bankKeeper.SendCoins(
+				ctx,
+				unpairingInsurance.DerivedAddress(),
+				chunk.DerivedAddress(),
+				sdk.NewCoins(sendCoin),
+			); err != nil {
+				panic(err)
+			}
+			chunkBalance = k.bankKeeper.GetBalance(ctx, chunk.DerivedAddress(), bondDenom).Amount
 		}
-		chunkBalance = k.bankKeeper.GetBalance(ctx, chunk.DerivedAddress(), bondDenom).Amount
 	}
 	unpairingInsurance = k.completeInsuranceDuty(ctx, unpairingInsurance)
 
