@@ -118,43 +118,48 @@ func (k Keeper) CollectRewardAndFee(
 	insurance types.Insurance,
 ) {
 	delegationRewards := k.bankKeeper.GetAllBalances(ctx, chunk.DerivedAddress())
-	insuranceCommissions := make(sdk.Coins, delegationRewards.Len())
-	dynamicFees := make(sdk.Coins, delegationRewards.Len())
-	remainingRewards := make(sdk.Coins, delegationRewards.Len())
+	var insuranceCommissions sdk.Coins
+	var dynamicFees sdk.Coins
+	var remainingRewards sdk.Coins
 
-	for i, delReward := range delegationRewards {
-		if delReward.IsZero() {
+	for _, delRewardCoin := range delegationRewards {
+		if delRewardCoin.IsZero() {
 			continue
 		}
-		// TODO: Need validation for those inputs.
-		// - must sends only possitive values
-		// - if not, just skip. Consider type level validation of Coins
-		insuranceCommission := delReward.Amount.ToDec().Mul(insurance.FeeRate).TruncateInt()
-		insuranceCommissions[i] = sdk.NewCoin(
-			delReward.Denom,
-			insuranceCommission,
-		)
-		pureReward := delReward.Amount.Sub(insuranceCommission)
-		dynamicFee := pureReward.ToDec().Mul(dynamicFeeRate).Ceil().TruncateInt()
-		remainingReward := pureReward.Sub(dynamicFee)
-		dynamicFees[i] = sdk.NewCoin(
-			delReward.Denom,
-			dynamicFee,
-		)
-		remainingRewards[i] = sdk.NewCoin(
-			delReward.Denom,
-			remainingReward,
-		)
+		insuranceCommissionAmt := delRewardCoin.Amount.ToDec().Mul(insurance.FeeRate).TruncateInt()
+		if insuranceCommissionAmt.IsPositive() {
+			insuranceCommissions = append(insuranceCommissions, sdk.NewCoin(
+				delRewardCoin.Denom,
+				insuranceCommissionAmt,
+			))
+		}
+
+		pureRewardAmt := delRewardCoin.Amount.Sub(insuranceCommissionAmt)
+		dynamicFeeAmt := pureRewardAmt.ToDec().Mul(dynamicFeeRate).Ceil().TruncateInt()
+		remainingRewardAmt := pureRewardAmt.Sub(dynamicFeeAmt)
+
+		if dynamicFeeAmt.IsPositive() {
+			dynamicFees = append(dynamicFees, sdk.NewCoin(
+				delRewardCoin.Denom,
+				dynamicFeeAmt,
+			))
+		}
+		if remainingRewardAmt.IsPositive() {
+			remainingRewards = append(remainingRewards, sdk.NewCoin(
+				delRewardCoin.Denom,
+				remainingRewardAmt,
+			))
+		}
 	}
 
 	var inputs []banktypes.Input
 	var outputs []banktypes.Output
-	switch remainingRewards.Len() {
+	switch delegationRewards.Len() {
 	case 0:
 		return
 	default:
 		// Dynamic Fee can be zero if the utilization rate is low.
-		if dynamicFees.IsAllPositive() {
+		if dynamicFees.IsValid() {
 			// Collect dynamic fee and burn it first.
 			if err := k.bankKeeper.SendCoinsFromAccountToModule(ctx, chunk.DerivedAddress(), types.ModuleName, dynamicFees); err != nil {
 				panic(err)
@@ -164,18 +169,19 @@ func (k Keeper) CollectRewardAndFee(
 			}
 		}
 
-		// TODO: Add validation - all inputs must be positive
-		inputs = []banktypes.Input{
-			banktypes.NewInput(chunk.DerivedAddress(), remainingRewards),
-		}
-		outputs = []banktypes.Output{
-			banktypes.NewOutput(types.RewardPool, remainingRewards),
-		}
 		// If insurance fee rate was zero, insurance commissions are not positive.
-		if insuranceCommissions.IsAllPositive() {
+		if insuranceCommissions.IsValid() {
 			inputs = append(inputs, banktypes.NewInput(chunk.DerivedAddress(), insuranceCommissions))
 			outputs = append(outputs, banktypes.NewOutput(insurance.FeePoolAddress(), insuranceCommissions))
 		}
+		if remainingRewards.IsValid() {
+			inputs = append(inputs, banktypes.NewInput(chunk.DerivedAddress(), remainingRewards))
+			outputs = append(outputs, banktypes.NewOutput(types.RewardPool, remainingRewards))
+		}
+	}
+	if err := banktypes.ValidateInputsOutputs(inputs, outputs); err != nil {
+		// Skip it
+		return
 	}
 	if err := k.bankKeeper.InputOutputCoins(ctx, inputs, outputs); err != nil {
 		panic(err)
