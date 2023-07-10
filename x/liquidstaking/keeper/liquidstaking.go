@@ -1284,48 +1284,62 @@ func (k Keeper) completeLiquidUnstake(ctx sdk.Context, chunk types.Chunk) {
 		if sendAmt.GT(insuranceBalance.Amount) {
 			sendAmt = insuranceBalance.Amount
 		}
-		// send penaltyAmt to reward pool
-		if err = k.bankKeeper.SendCoins(
-			ctx,
-			unpairingInsurance.DerivedAddress(),
-			types.RewardPool,
-			sdk.NewCoins(sdk.NewCoin(bondDenom, sendAmt)),
-		); err != nil {
-			panic(err)
+		if sendAmt.IsPositive() {
+			// send penaltyAmt to reward pool
+			if err = k.bankKeeper.SendCoins(
+				ctx,
+				unpairingInsurance.DerivedAddress(),
+				types.RewardPool,
+				sdk.NewCoins(sdk.NewCoin(bondDenom, sendAmt)),
+			); err != nil {
+				panic(err)
+			}
 		}
 		penaltyRatio := penaltyAmt.ToDec().Quo(types.ChunkSize.ToDec())
 		discountAmt := penaltyRatio.Mul(lsTokensToBurn.Amount.ToDec()).TruncateInt()
 		refundCoin := sdk.NewCoin(liquidBondDenom, discountAmt)
 
-		// send discount lstokens to info.Delegator
-		if err = k.bankKeeper.SendCoins(
-			ctx,
-			types.LsTokenEscrowAcc,
-			info.GetDelegator(),
-			sdk.NewCoins(refundCoin),
-		); err != nil {
-			panic(err)
+		if refundCoin.IsValid() {
+			// send discount lstokens to info.Delegator
+			if err = k.bankKeeper.SendCoins(
+				ctx,
+				types.LsTokenEscrowAcc,
+				info.GetDelegator(),
+				sdk.NewCoins(refundCoin),
+			); err != nil {
+				panic(err)
+			}
+			lsTokensToBurn = lsTokensToBurn.Sub(refundCoin)
+			unstakedCoin.Amount = unstakedCoin.Amount.Sub(penaltyAmt)
 		}
-		lsTokensToBurn = lsTokensToBurn.Sub(refundCoin)
-		unstakedCoin.Amount = unstakedCoin.Amount.Sub(penaltyAmt)
 	}
 	// insurance duty is over
 	k.completeInsuranceDuty(ctx, unpairingInsurance)
-	if err = k.burnEscrowedLsTokens(ctx, lsTokensToBurn); err != nil {
-		panic(err)
+	if lsTokensToBurn.IsValid() {
+		if err = k.burnEscrowedLsTokens(ctx, lsTokensToBurn); err != nil {
+			panic(err)
+		}
 	}
 	chunkBalances := k.bankKeeper.GetAllBalances(ctx, chunk.DerivedAddress())
 	// TODO: un-comment below lines while fuzzing tests to check when below condition is true
 	// if !types.ChunkSize.Sub(penaltyAmt).Equal(chunkBalances.AmountOf(bondDenom)) {
 	// 	panic("investigating it")
 	// }
-	if err = k.bankKeeper.SendCoins(
-		ctx,
-		chunk.DerivedAddress(),
-		info.GetDelegator(),
-		chunkBalances,
-	); err != nil {
-		panic(err)
+	var sendCoins sdk.Coins
+	if chunkBalances.IsValid() {
+		sendCoins = chunkBalances
+	} else if chunkBalances.AmountOf(bondDenom).IsPositive() {
+		sendCoins = sdk.NewCoins(sdk.NewCoin(bondDenom, chunkBalances.AmountOf(bondDenom)))
+	}
+	if sendCoins.IsValid() {
+		if err = k.bankKeeper.SendCoins(
+			ctx,
+			chunk.DerivedAddress(),
+			info.GetDelegator(),
+			sendCoins,
+		); err != nil {
+			panic(err)
+		}
 	}
 	k.DeleteUnpairingForUnstakingChunkInfo(ctx, chunk.Id)
 	k.DeleteChunk(ctx, chunk.Id)
