@@ -1364,19 +1364,26 @@ func (k Keeper) handleUnpairingChunk(ctx sdk.Context, chunk types.Chunk) {
 	if penaltyAmt.IsPositive() {
 		insuranceBalance := k.bankKeeper.GetBalance(ctx, unpairingInsurance.DerivedAddress(), bondDenom).Amount
 		var sendCoin sdk.Coin
+		var dstAddr sdk.AccAddress
 		if penaltyAmt.GT(insuranceBalance) {
+			// insurance balance is in-sufficient to pay penaltyAmt
+			// send whole insurance balance to reward pool
+			// send damaed chunk to reward pool
 			sendCoin = sdk.NewCoin(bondDenom, insuranceBalance)
+			dstAddr = types.RewardPool
 		} else {
+			// insurance balance is sufficient to pay penaltyAmt
+			// chunk receive penaltyAmt from insurance
 			sendCoin = sdk.NewCoin(bondDenom, penaltyAmt)
+			dstAddr = chunk.DerivedAddress()
 		}
 
-		// Send penaltyAmt to chunk
-		// unpairing chunk must be not damaged to become pairing chunk
+		// insurance pay penaltyAmt
 		if sendCoin.IsValid() {
 			if err = k.bankKeeper.SendCoins(
 				ctx,
 				unpairingInsurance.DerivedAddress(),
-				chunk.DerivedAddress(),
+				dstAddr,
 				sdk.NewCoins(sendCoin),
 			); err != nil {
 				panic(err)
