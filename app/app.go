@@ -992,13 +992,8 @@ func (app *Canto) EndBlocker(ctx sdk.Context, req abci.RequestEndBlock) abci.Res
 					app.LiquidStakingKeeper.HandleQueuedLiquidUnstakes(ctx)
 					app.LiquidStakingKeeper.HandleUnprocessedQueuedLiquidUnstakes(ctx)
 					app.LiquidStakingKeeper.HandleQueuedWithdrawInsuranceRequests(ctx)
-					newlyRankedInInsurances, rankOutInsurances, err := app.LiquidStakingKeeper.RankInsurances(ctx)
-					if err != nil {
-						panic(err)
-					}
-					if err = app.LiquidStakingKeeper.RePairRankedInsurances(ctx, newlyRankedInInsurances, rankOutInsurances); err != nil {
-						panic(err)
-					}
+					newlyRankedInInsurances, rankOutInsurances := app.LiquidStakingKeeper.RankInsurances(ctx)
+					app.LiquidStakingKeeper.RePairRankedInsurances(ctx, newlyRankedInInsurances, rankOutInsurances)
 					app.LiquidStakingKeeper.IncrementEpoch(ctx)
 				}
 			}

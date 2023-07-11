@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -380,24 +381,23 @@ func (k Keeper) GetAllRePairableChunksAndOutInsurances(ctx sdk.Context) (
 	rePairableChunks []types.Chunk,
 	outInsurances []types.Insurance,
 	validPairedInsuranceMap map[uint64]struct{},
-	err error,
 ) {
 	validPairedInsuranceMap = make(map[uint64]struct{})
 	k.IterateAllChunks(ctx, func(chunk types.Chunk) bool {
 		switch chunk.Status {
 		case types.CHUNK_STATUS_UNPAIRING:
-			insurance, found := k.GetInsurance(ctx, chunk.UnpairingInsuranceId)
-			if !found {
-				panic(fmt.Sprintf("insurance %d not found", chunk.UnpairingInsuranceId))
-			}
-			_, found = k.stakingKeeper.GetUnbondingDelegation(ctx, chunk.DerivedAddress(), insurance.GetValidator())
-			if found {
+			err := k.validateUnpairingChunk(ctx, chunk)
+			if errors.Is(err, types.ErrMustHaveNoUnbondingDelegation) {
 				// unbonding of chunk is triggered because insurance cannot cover the penalty of chunk.
 				// In next epoch, insurance send all of it's balance to chunk
 				// and all balances of chunk will go to reward pool.
 				// After that, insurance will be unpaired also.
 				return false
 			}
+			if err != nil {
+				panic(err)
+			}
+			insurance, _ := k.GetInsurance(ctx, chunk.UnpairingInsuranceId)
 			outInsurances = append(outInsurances, insurance)
 			rePairableChunks = append(rePairableChunks, chunk)
 		case types.CHUNK_STATUS_PAIRING:
@@ -412,7 +412,7 @@ func (k Keeper) GetAllRePairableChunksAndOutInsurances(ctx sdk.Context) (
 			// Sanity check: paired insurance should have valid validator at this moment
 			// but we check it again here to prevent unexpected error.
 			validator, found := k.stakingKeeper.GetValidator(ctx, insurance.GetValidator())
-			if err = k.IsValidValidator(ctx, validator, found); err != nil {
+			if err := k.IsValidValidator(ctx, validator, found); err != nil {
 				outInsurances = append(outInsurances, insurance)
 			} else {
 				validPairedInsuranceMap[insurance.Id] = struct{}{}
@@ -435,10 +435,9 @@ func (k Keeper) GetAllRePairableChunksAndOutInsurances(ctx sdk.Context) (
 func (k Keeper) RankInsurances(ctx sdk.Context) (
 	newlyRankedInInsurances []types.Insurance,
 	rankOutInsurances []types.Insurance,
-	err error,
 ) {
 	candidatesValidatorMap := make(map[string]stakingtypes.Validator)
-	rePairableChunks, currentOutInsurances, validPairedInsuranceMap, err := k.GetAllRePairableChunksAndOutInsurances(ctx)
+	rePairableChunks, currentOutInsurances, validPairedInsuranceMap := k.GetAllRePairableChunksAndOutInsurances(ctx)
 
 	// candidateInsurances will be ranked
 	var candidateInsurances []types.Insurance
@@ -501,7 +500,7 @@ func (k Keeper) RePairRankedInsurances(
 	for _, outInsurance := range rankOutInsurances {
 		chunk, found := k.GetChunk(ctx, outInsurance.ChunkId)
 		if !found {
-			return sdkerrors.Wrapf(types.ErrNotFoundChunk, "chunk id: %d", outInsurance.ChunkId)
+			panic(fmt.Sprintf("chunk %d not found", outInsurance.ChunkId))
 		}
 		rankOutInsuranceChunkMap[outInsurance.Id] = chunk
 	}

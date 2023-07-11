@@ -1110,8 +1110,7 @@ func (suite *KeeperTestSuite) TestRankInsurances() {
 	}
 
 	// INITIAL STATE: all paired chunks are working fine and there are no additional insurances yet
-	newlyRankedInInsurances, rankOutInsurances, err := suite.app.LiquidStakingKeeper.RankInsurances(suite.ctx)
-	suite.NoError(err)
+	newlyRankedInInsurances, rankOutInsurances := suite.app.LiquidStakingKeeper.RankInsurances(suite.ctx)
 	suite.Len(newlyRankedInInsurances, 0)
 	suite.Len(rankOutInsurances, 0)
 
@@ -1133,8 +1132,7 @@ func (suite *KeeperTestSuite) TestRankInsurances() {
 		idsOfNewInsurances = append(idsOfNewInsurances, insurance.Id)
 	}
 
-	newlyRankedInInsurances, rankOutInsurances, err = suite.app.LiquidStakingKeeper.RankInsurances(suite.ctx)
-	suite.NoError(err)
+	newlyRankedInInsurances, rankOutInsurances = suite.app.LiquidStakingKeeper.RankInsurances(suite.ctx)
 	suite.Len(newlyRankedInInsurances, 3)
 	suite.Len(rankOutInsurances, 3)
 	// make sure idsOfNewInsurances are all in newlyRankedInInsurances
