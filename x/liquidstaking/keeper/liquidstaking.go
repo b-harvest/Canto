@@ -180,10 +180,6 @@ func (k Keeper) CollectRewardAndFee(
 			outputs = append(outputs, banktypes.NewOutput(types.RewardPool, remainingRewards))
 		}
 	}
-	if err := banktypes.ValidateInputsOutputs(inputs, outputs); err != nil {
-		// Skip it
-		return
-	}
 	if err := k.bankKeeper.InputOutputCoins(ctx, inputs, outputs); err != nil {
 		panic(err)
 	}
