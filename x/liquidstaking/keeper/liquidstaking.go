@@ -494,7 +494,7 @@ func (k Keeper) RePairRankedInsurances(
 	ctx sdk.Context,
 	newlyRankedInInsurances,
 	rankOutInsurances []types.Insurance,
-) error {
+) {
 	// create rankOutInsuranceChunkMap to fast access chunk by rank out insurance id
 	var rankOutInsuranceChunkMap = make(map[uint64]types.Chunk)
 	for _, outInsurance := range rankOutInsurances {
@@ -559,7 +559,7 @@ func (k Keeper) RePairRankedInsurances(
 		// pairing chunk is immediately pairable so just delegate it
 		_, _, newShares, err := k.pairChunkAndDelegate(ctx, chunk, newInsurance, validator)
 		if err != nil {
-			return err
+			panic(err)
 		}
 		ctx.EventManager().EmitEvent(
 			sdk.NewEvent(
@@ -610,7 +610,7 @@ func (k Keeper) RePairRankedInsurances(
 		// get delegation shares of srcValidator
 		delegation, found := k.stakingKeeper.GetDelegation(ctx, chunk.DerivedAddress(), outInsurance.GetValidator())
 		if !found {
-			return sdkerrors.Wrapf(types.ErrNotFoundDelegation, "delegator: %s, validator: %s", chunk.DerivedAddress(), outInsurance.GetValidator())
+			panic(fmt.Sprintf("delegation not found(delegator: %s, validator: %s)", chunk.DerivedAddress(), outInsurance.GetValidator()))
 		}
 		completionTime, err := k.stakingKeeper.BeginRedelegation(
 			ctx,
@@ -620,7 +620,7 @@ func (k Keeper) RePairRankedInsurances(
 			delegation.GetShares(),
 		)
 		if err != nil {
-			return err
+			panic(err)
 		}
 
 		if !k.stakingKeeper.Validator(ctx, srcVal).IsUnbonded() {
@@ -654,19 +654,21 @@ func (k Keeper) RePairRankedInsurances(
 	for _, outInsurance := range restOutInsurances {
 		chunk, found := k.GetChunk(ctx, outInsurance.ChunkId)
 		if !found {
-			return sdkerrors.Wrapf(types.ErrNotFoundChunk, "chunkId: %d", outInsurance.ChunkId)
+			panic(fmt.Sprintf("chunk not found: %d", outInsurance.ChunkId))
 		}
 		if chunk.Status != types.CHUNK_STATUS_UNPAIRING {
 			// CRITICAL: Must be unpairing status
-			return sdkerrors.Wrapf(types.ErrInvalidChunkStatus, "chunkId: %d", outInsurance.ChunkId)
+			ctx.Logger().Error("chunk status must be unpairing", "chunk", chunk)
+			chunk.Status = types.CHUNK_STATUS_UNPAIRING
 		}
-		del, found := k.stakingKeeper.GetDelegation(ctx, chunk.DerivedAddress(), outInsurance.GetValidator())
-		if !found {
-			return sdkerrors.Wrapf(types.ErrNotFoundDelegation, "delegator: %s, validator: %s", chunk.DerivedAddress(), outInsurance.GetValidator())
-		}
-		completionTime, err := k.stakingKeeper.Undelegate(ctx, chunk.DerivedAddress(), outInsurance.GetValidator(), del.GetShares())
+		shares, err := k.stakingKeeper.ValidateUnbondAmount(ctx, chunk.DerivedAddress(), outInsurance.GetValidator(), types.ChunkSize)
 		if err != nil {
-			return err
+			panic(err)
+		}
+		// validate unbond amount
+		completionTime, err := k.stakingKeeper.Undelegate(ctx, chunk.DerivedAddress(), outInsurance.GetValidator(), shares)
+		if err != nil {
+			panic(err)
 		}
 		ctx.EventManager().EmitEvent(
 			sdk.NewEvent(
@@ -679,8 +681,6 @@ func (k Keeper) RePairRankedInsurances(
 		)
 		continue
 	}
-
-	return nil
 }
 
 // TODO: Test with very large number of chunks
