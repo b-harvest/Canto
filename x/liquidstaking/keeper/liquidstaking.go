@@ -1493,9 +1493,10 @@ func (k Keeper) handlePairedChunk(ctx sdk.Context, chunk types.Chunk) {
 					sdk.NewAttribute(types.AttributeKeyReason, types.AttributeValueReasonNotEnoughInsuranceCoverage),
 				),
 			)
-			// Insurance do not cover penalty at this time.
-			// It will cover penalty at next epoch when chunk unpairing is finished.
-			// Check the handleUnpairingChunk method.
+			// At this time, insurance does not cover the penalty because it has already been determined that the chunk was damaged.
+			// Just un-delegate(=unpair) the chunk, so it can be naturally handled by the unpairing logic in the next epoch.
+			// Insurance will send penalty to the reward pool at next epoch and chunk's token will go to reward pool.
+			// Check the logic of handleUnpairingChunk for detail.
 		} else {
 			// Insurance can cover penalty
 			// 1. Send penalty to chunk
