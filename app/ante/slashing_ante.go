@@ -16,7 +16,7 @@ import (
 )
 
 // SlashingParamChangeLimitDecorator checks that the slashing params change proposals.
-// The liquidstaking module works closely with the slashing params. (e.g. MinimumCollateral constant is calculated based on the slashing params)
+// The liquidstaking module works closely with the slashing params(e.g. MinimumCollateral constant is calculated based on the slashing params).
 // To reduce unexpected risks, it is important to reduce the maximum slashing penalty that can theoretically occur.
 type SlashingParamChangeLimitDecorator struct {
 	slashingKeeper *slashingkeeper.Keeper
