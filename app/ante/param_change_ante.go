@@ -116,10 +116,7 @@ func (s ParamChangeLimitDecorator) ValidateMsgs(ctx sdk.Context, msgs []sdk.Msg)
 						case string(stakingtypes.KeyBondDenom):
 							return types.ErrChangingBondDenomForbidden
 						}
-					default:
-						return nil
 					}
-
 				}
 			default:
 				return nil
