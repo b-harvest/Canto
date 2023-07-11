@@ -1277,37 +1277,47 @@ func (k Keeper) completeLiquidUnstake(ctx sdk.Context, chunk types.Chunk) {
 	penaltyAmt := types.ChunkSize.Sub(k.bankKeeper.GetBalance(ctx, chunk.DerivedAddress(), bondDenom).Amount)
 	if penaltyAmt.IsPositive() {
 		sendAmt := penaltyAmt
+		var dstAddr sdk.AccAddress
+		var exceedInsuranceBalance bool
 		insuranceBalance := k.bankKeeper.GetBalance(ctx, unpairingInsurance.DerivedAddress(), bondDenom)
-		if sendAmt.GT(insuranceBalance.Amount) {
+		if sendAmt.LTE(insuranceBalance.Amount) {
+			// insurance can cover the penalty
+			dstAddr = chunk.DerivedAddress()
+		} else {
+			// insurance balance is not enough to pay penalty
+			// then send to reward pool
 			sendAmt = insuranceBalance.Amount
+			dstAddr = types.RewardPool
+			exceedInsuranceBalance = true
 		}
-		if sendAmt.IsPositive() {
-			// send penaltyAmt to reward pool
-			if err = k.bankKeeper.SendCoins(
-				ctx,
-				unpairingInsurance.DerivedAddress(),
-				types.RewardPool,
-				sdk.NewCoins(sdk.NewCoin(bondDenom, sendAmt)),
-			); err != nil {
-				panic(err)
-			}
+		if err = k.bankKeeper.SendCoins(
+			ctx,
+			unpairingInsurance.DerivedAddress(),
+			dstAddr,
+			sdk.NewCoins(sdk.NewCoin(bondDenom, sendAmt)),
+		); err != nil {
+			panic(err)
 		}
-		penaltyRatio := penaltyAmt.ToDec().Quo(types.ChunkSize.ToDec())
-		discountAmt := penaltyRatio.Mul(lsTokensToBurn.Amount.ToDec()).TruncateInt()
-		refundCoin := sdk.NewCoin(liquidBondDenom, discountAmt)
+		if exceedInsuranceBalance {
+			// refund lstokens to unstaker
+			penaltyRatio := penaltyAmt.ToDec().Quo(types.ChunkSize.ToDec())
+			discountAmt := penaltyRatio.Mul(lsTokensToBurn.Amount.ToDec()).TruncateInt()
+			refundCoin := sdk.NewCoin(liquidBondDenom, discountAmt)
 
-		if refundCoin.IsValid() {
-			// send discount lstokens to info.Delegator
-			if err = k.bankKeeper.SendCoins(
-				ctx,
-				types.LsTokenEscrowAcc,
-				info.GetDelegator(),
-				sdk.NewCoins(refundCoin),
-			); err != nil {
-				panic(err)
+			// refund
+			if refundCoin.IsValid() {
+				// send discount lstokens to info.Delegator
+				if err = k.bankKeeper.SendCoins(
+					ctx,
+					types.LsTokenEscrowAcc,
+					info.GetDelegator(),
+					sdk.NewCoins(refundCoin),
+				); err != nil {
+					panic(err)
+				}
+				lsTokensToBurn = lsTokensToBurn.Sub(refundCoin)
+				unstakedCoin.Amount = unstakedCoin.Amount.Sub(penaltyAmt)
 			}
-			lsTokensToBurn = lsTokensToBurn.Sub(refundCoin)
-			unstakedCoin.Amount = unstakedCoin.Amount.Sub(penaltyAmt)
 		}
 	}
 	// insurance duty is over

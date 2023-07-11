@@ -2467,27 +2467,20 @@ func (suite *KeeperTestSuite) TestUnpairingForUnstakingChunkTombstoned() {
 	msg := types.NewMsgLiquidUnstake(undelegator.String(), oneChunk)
 	_, _, err := suite.app.LiquidStakingKeeper.QueueLiquidUnstake(suite.ctx, msg)
 	suite.NoError(err)
-	afterEscrowLsTokens := suite.app.BankKeeper.GetBalance(suite.ctx, undelegator, env.liquidBondDenom)
 
 	suite.ctx = suite.advanceEpoch(suite.ctx)
 	suite.ctx = suite.advanceHeight(suite.ctx, 1, "unstaking started")
 	numPassedRewardEpochsBeforeUnstaked++
 	fmt.Println(suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx))
 
-	// 29999994 + 14999997(1 / num paired chunks)
-	unitDelegationRewardPerRewardEpoch, _ := sdk.NewIntFromString("44999991000000000000")
-	_, pureUnitRewardPerRewardEpoch := suite.getUnitDistribution(unitDelegationRewardPerRewardEpoch, TenPercentFeeRate)
-
 	var pairedInsuranceBalanceAfterUnstakingStarted sdk.Coin
 	var pairedInsuranceCommissionAfterUnstakingStarted sdk.Coin
-	var escrowedLsTokens sdk.Coin
 	{
 		// check whether liquid unstaking started or not
 		chunk, _ := suite.app.LiquidStakingKeeper.GetChunk(suite.ctx, toBeUnstakedChunk.Id)
 		suite.Equal(types.CHUNK_STATUS_UNPAIRING_FOR_UNSTAKING, chunk.Status)
 		info, _ := suite.app.LiquidStakingKeeper.GetUnpairingForUnstakingChunkInfo(suite.ctx, chunk.Id)
 		suite.Equal(chunk.Id, info.ChunkId)
-		escrowedLsTokens = info.EscrowedLstokens
 		insurance, _ := suite.app.LiquidStakingKeeper.GetInsurance(suite.ctx, toBeUnstakedChunk.PairedInsuranceId)
 		suite.Equal(types.INSURANCE_STATUS_UNPAIRING, insurance.Status)
 		pairedInsuranceBalanceAfterUnstakingStarted = suite.app.BankKeeper.GetBalance(
@@ -2547,31 +2540,18 @@ func (suite *KeeperTestSuite) TestUnpairingForUnstakingChunkTombstoned() {
 		)
 	}
 
-	rewardPoolBalanceBefore := suite.app.BankKeeper.GetBalance(suite.ctx, types.RewardPool, env.bondDenom)
 	suite.ctx = suite.advanceEpoch(suite.ctx)
 	suite.ctx = suite.advanceHeight(suite.ctx, 1, "epoch reached after validator is tombstoned because of double signing")
 	fmt.Println(suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx))
-	rewardPoolBalanceAfter := suite.app.BankKeeper.GetBalance(suite.ctx, types.RewardPool, env.bondDenom)
 
 	{
 		_, found := suite.app.LiquidStakingKeeper.GetChunk(suite.ctx, toBeUnstakedChunk.Id)
 		suite.False(found, "liquid unstaking of chunk is finished")
 		undelegatorBalance := suite.app.BankKeeper.GetBalance(suite.ctx, undelegator, env.bondDenom)
 		suite.Equal(
-			types.ChunkSize.Sub(penalty).String(),
+			types.ChunkSize.String(),
 			undelegatorBalance.Sub(undelegatorInitialBalance).Amount.String(),
-			"undelegator got (chunk size - penalty) tokens after unstaking",
-		)
-		rewardAfter := rewardPoolBalanceAfter.Sub(rewardPoolBalanceBefore).Amount
-		expectedRewardAfter := penalty.Add(
-			pureUnitRewardPerRewardEpoch.MulRaw(2).MulRaw(suite.rewardEpochCount - numPassedRewardEpochsBeforeUnstaked),
-		)
-		// TODO: remove this margin error
-		suite.Equal(
-			"1085394492450000",
-			expectedRewardAfter.Sub(rewardAfter).String(),
-			"penalty is sent to reward pool also, by the way there are very small margin error because "+
-				"during the test, there were a moment when validator power is 1 because of unbonding",
+			"because insuracne covered penalty, undelegator get all unstaked amount",
 		)
 		insurance, _ := suite.app.LiquidStakingKeeper.GetInsurance(suite.ctx, toBeUnstakedChunk.PairedInsuranceId)
 		suite.Equal(types.INSURANCE_STATUS_UNPAIRED, insurance.Status)
@@ -2580,14 +2560,6 @@ func (suite *KeeperTestSuite) TestUnpairingForUnstakingChunkTombstoned() {
 			penalty.String(),
 			pairedInsuranceBalanceAfterUnstakingStarted.Sub(balance).Amount.String(),
 			"insurance covered penalty after epoch reached",
-		)
-		penaltyRatio := penalty.ToDec().Quo(types.ChunkSize.ToDec())
-		discounted := penaltyRatio.Mul(escrowedLsTokens.Amount.ToDec())
-		afterFinishUnbonding := suite.app.BankKeeper.GetBalance(suite.ctx, undelegator, env.liquidBondDenom)
-		suite.Equal(
-			discounted.TruncateInt().String(),
-			afterFinishUnbonding.Sub(afterEscrowLsTokens).Amount.String(),
-			"discounted liquid staking tokens are sent to undelegator",
 		)
 
 		commission := suite.app.BankKeeper.GetBalance(suite.ctx, insurance.FeePoolAddress(), env.bondDenom)
