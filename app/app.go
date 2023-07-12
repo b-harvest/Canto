@@ -486,7 +486,6 @@ func NewCanto(
 		stakingtypes.NewMultiStakingHooks(
 			app.DistrKeeper.Hooks(),
 			app.SlashingKeeper.Hooks(),
-			app.LiquidStakingKeeper.Hooks(),
 		),
 	)
 

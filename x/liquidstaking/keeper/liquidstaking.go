@@ -20,6 +20,7 @@ func (k Keeper) CoverRedelegationPenalty(ctx sdk.Context) {
 	// For all paired chunks, if chunk have an unpairing insurance, then
 	// this chunk is re-delegation on-goning.
 	k.IterateAllRedelegationInfos(ctx, func(reDelegationInfo types.RedelegationInfo) bool {
+		// TODO: Refactor validation and actual logics
 		chunk, found := k.GetChunk(ctx, reDelegationInfo.ChunkId)
 		if !found {
 			panic(fmt.Sprintf("chunk id: %d not found", reDelegationInfo.ChunkId))
@@ -265,6 +266,7 @@ func (k Keeper) HandleQueuedLiquidUnstakes(ctx sdk.Context) []types.Chunk {
 		if !found {
 			panic(fmt.Sprintf("insurance %d not found(chunkId: %d)", chunk.PairedInsuranceId, chunk.Id))
 		}
+		// TODO: use Delshares
 		shares, err := k.stakingKeeper.ValidateUnbondAmount(ctx, chunk.DerivedAddress(), insurance.GetValidator(), types.ChunkSize)
 		if err != nil {
 			panic(err)
@@ -1273,6 +1275,7 @@ func (k Keeper) completeLiquidUnstake(ctx sdk.Context, chunk types.Chunk) {
 		panic(fmt.Sprintf("unpairing for unstaking chunk info not found: %d", chunk.Id))
 	}
 	lsTokensToBurn := info.EscrowedLstokens
+	// TODO: Remove
 	unstakedCoin := sdk.NewCoin(bondDenom, types.ChunkSize)
 	penaltyAmt := types.ChunkSize.Sub(k.bankKeeper.GetBalance(ctx, chunk.DerivedAddress(), bondDenom).Amount)
 	if penaltyAmt.IsPositive() {
@@ -1477,6 +1480,7 @@ func (k Keeper) handlePairedChunk(ctx sdk.Context, chunk types.Chunk) {
 			insuranceOutOfBalance = true
 			k.startUnpairing(ctx, pairedInsurance, chunk)
 
+			// TODO: Use delegation shares
 			shares, err := k.stakingKeeper.ValidateUnbondAmount(
 				ctx, chunk.DerivedAddress(),
 				validator.GetOperator(),
