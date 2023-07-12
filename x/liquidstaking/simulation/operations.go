@@ -3,15 +3,16 @@ package simulation
 import (
 	"math/rand"
 
-	"github.com/Canto-Network/Canto/v6/app"
-	"github.com/Canto-Network/Canto/v6/x/liquidstaking/keeper"
-	"github.com/Canto-Network/Canto/v6/x/liquidstaking/types"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/simapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
 	"github.com/cosmos/cosmos-sdk/x/simulation"
+
+	"github.com/Canto-Network/Canto/v6/app"
+	"github.com/Canto-Network/Canto/v6/x/liquidstaking/keeper"
+	"github.com/Canto-Network/Canto/v6/x/liquidstaking/types"
 )
 
 // Simulation operation weights constants.
@@ -120,6 +121,8 @@ func WeightedOperations(
 		),
 	}
 }
+
+// TODO: add msgs for staking module
 
 // SimulateMsgLiquidStake generates a MsgLiquidStake with random values.
 func SimulateMsgLiquidStake(ak types.AccountKeeper, bk types.BankKeeper) simtypes.Operation {
