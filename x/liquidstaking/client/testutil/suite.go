@@ -2,6 +2,8 @@ package testutil
 
 import (
 	"fmt"
+	bankcli "github.com/cosmos/cosmos-sdk/x/bank/client/cli"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"os"
 	"strings"
 
@@ -85,7 +87,15 @@ func (suite *IntegrationTestSuite) TestCmdParams() {
 	}
 }
 
-// TestLiquidStaking includes testing for
+// TestLiquidStaking tests liquidstaking module's actions by executing cmds.
+// This test includes testing for
+// * CmdProvideInsurance
+// * CmdCancelProvideInsurance
+// * CmdWithdrawInsurance
+// * CmdWithdrawInsuranceCommission
+// * CmdDepositInsurance
+// * CmdLiquidStake
+// * CmdLiquidUnstake
 // * CmdQueryStates
 func (suite *IntegrationTestSuite) TestLiquidStaking() {
 	vals := suite.network.Validators
@@ -173,6 +183,38 @@ func (suite *IntegrationTestSuite) TestLiquidStaking() {
 	suite.Equal(sdk.NewCoin(types.DefaultLiquidBondDenom, types.ChunkSize), infos[0].EscrowedLstokens)
 
 	// TODO: how to implement advance blocks with time?
+
+	// withdraw insurance commission
+	// withdraw insurance
+	insurances := suite.getAllInsurances(clientCtx)
+	// TODO: Epoch based tests
+	//beforeFeeBals := suite.getBalances(clientCtx, insurances[1].FeePoolAddress())
+	//_, err = ExecMsgWithdrawInsuranceCommission(clientCtx, vals[0].Address.String(), 2)
+	//suite.NoError(err)
+	//
+	//afterFeeBals := suite.getBalances(clientCtx, insurances[1].FeePoolAddress())
+	//suite.True(
+	//	afterFeeBals.AmountOf(suite.cfg.BondDenom).LT(beforeFeeBals.AmountOf(suite.cfg.BondDenom)),
+	//	"insurance commission should be withdrawn",
+	//)
+
+	// Deposit insurance
+	beforeBals := suite.getBalances(clientCtx, insurances[1].DerivedAddress())
+	deposit := sdk.NewCoin(suite.cfg.BondDenom, sdk.NewInt(100))
+	_, err = ExecMsgDepositInsurance(clientCtx, vals[0].Address.String(), 2, deposit)
+	suite.NoError(err)
+	afterBals := suite.getBalances(clientCtx, insurances[1].DerivedAddress())
+	suite.Equal(
+		afterBals.AmountOf(suite.cfg.BondDenom).Sub(beforeBals.AmountOf(suite.cfg.BondDenom)),
+		deposit.Amount,
+		"insurance should be deposited",
+	)
+
+	_, err = ExecMsgWithdrawInsurance(clientCtx, vals[0].Address.String(), 2)
+	suite.NoError(err)
+
+	reqs := suite.getWithdrawInsuranceRequests(clientCtx)
+	suite.Require().Len(reqs, 1)
 }
 
 func (suite *IntegrationTestSuite) getMinimumCollateral(ctx client.Context) sdk.DecCoin {
@@ -216,6 +258,43 @@ func (suite *IntegrationTestSuite) getStates(ctx client.Context) types.NetAmount
 	suite.NoError(err)
 	suite.NoError(suite.cfg.Codec.UnmarshalJSON(out.Bytes(), &res), out.String())
 	return res.NetAmountState
+}
+
+func (suite *IntegrationTestSuite) getWithdrawInsuranceRequests(ctx client.Context) []types.WithdrawInsuranceRequest {
+	var res types.QueryWithdrawInsuranceRequestsResponse
+	out, err := clitestutil.ExecTestCLICmd(
+		ctx,
+		cli.CmdQueryWithdrawInsuranceRequests(),
+		[]string{fmt.Sprintf("--%s=json", tmcli.OutputFlag)},
+	)
+	suite.NoError(err)
+	suite.NoError(suite.cfg.Codec.UnmarshalJSON(out.Bytes(), &res), out.String())
+	return res.WithdrawInsuranceRequests
+}
+
+func (suite *IntegrationTestSuite) getBalances(ctx client.Context, addr sdk.AccAddress) sdk.Coins {
+	var res banktypes.QueryAllBalancesResponse
+	args := []string{addr.String(), fmt.Sprintf("--%s=json", tmcli.OutputFlag)}
+	out, err := clitestutil.ExecTestCLICmd(ctx, bankcli.GetBalancesCmd(), args)
+	suite.NoError(err)
+	suite.NoError(suite.cfg.Codec.UnmarshalJSON(out.Bytes(), &res), out.String())
+	return res.Balances
+}
+
+func (suite *IntegrationTestSuite) getAllInsurances(ctx client.Context) []types.Insurance {
+	var res types.QueryInsurancesResponse
+	out, err := clitestutil.ExecTestCLICmd(
+		ctx,
+		cli.CmdQueryInsurances(),
+		[]string{fmt.Sprintf("--%s=json", tmcli.OutputFlag)},
+	)
+	suite.NoError(err)
+	suite.NoError(suite.cfg.Codec.UnmarshalJSON(out.Bytes(), &res), out.String())
+	var insurances []types.Insurance
+	for _, ins := range res.Insurances {
+		insurances = append(insurances, ins.Insurance)
+	}
+	return insurances
 }
 
 // add test addresses with funds
