@@ -33,7 +33,6 @@ func (suite *IntegrationTestSuite) SetupSuite() {
 	cfg.NumValidators = 1
 	// Used "stake" as denom because bonded denom was set in DefaultConfig() by using
 	// app.ModuleBasics.DefaultGenesis(encCfg.Marshaler).
-	// TODO: We need to update that DefaultConfig() to use "acanto" as bonded denom.
 	cfg.BondDenom = sdk.DefaultBondDenom
 	cfg.MinGasPrices = fmt.Sprintf("0.0001%s", cfg.BondDenom)
 	cfg.AccountTokens = types.ChunkSize.MulRaw(10000)
@@ -182,21 +181,10 @@ func (suite *IntegrationTestSuite) TestLiquidStaking() {
 	suite.Equal(vals[0].Address.String(), infos[0].DelegatorAddress)
 	suite.Equal(sdk.NewCoin(types.DefaultLiquidBondDenom, types.ChunkSize), infos[0].EscrowedLstokens)
 
-	// TODO: how to implement advance blocks with time?
-
 	// withdraw insurance commission
-	// withdraw insurance
 	insurances := suite.getAllInsurances(clientCtx)
-	// TODO: Epoch based tests
-	//beforeFeeBals := suite.getBalances(clientCtx, insurances[1].FeePoolAddress())
-	//_, err = ExecMsgWithdrawInsuranceCommission(clientCtx, vals[0].Address.String(), 2)
-	//suite.NoError(err)
-	//
-	//afterFeeBals := suite.getBalances(clientCtx, insurances[1].FeePoolAddress())
-	//suite.True(
-	//	afterFeeBals.AmountOf(suite.cfg.BondDenom).LT(beforeFeeBals.AmountOf(suite.cfg.BondDenom)),
-	//	"insurance commission should be withdrawn",
-	//)
+	_, err = ExecMsgWithdrawInsuranceCommission(clientCtx, vals[0].Address.String(), 2)
+	suite.NoError(err)
 
 	// Deposit insurance
 	beforeBals := suite.getBalances(clientCtx, insurances[1].DerivedAddress())
@@ -210,6 +198,7 @@ func (suite *IntegrationTestSuite) TestLiquidStaking() {
 		"insurance should be deposited",
 	)
 
+	// withdraw insurance
 	_, err = ExecMsgWithdrawInsurance(clientCtx, vals[0].Address.String(), 2)
 	suite.NoError(err)
 
