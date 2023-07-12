@@ -121,7 +121,7 @@ func (suite *AnteTestSuite) TestParamChangeProposal() {
 		},
 	}
 
-	spcld := ante.NewParamChangeLimitDecorator(&suite.app.SlashingKeeper, suite.app.StakingKeeper, suite.app.AppCodec())
+	spcld := ante.NewParamChangeLimitDecorator(&suite.app.SlashingKeeper, suite.app.AppCodec())
 	anteHandler := sdk.ChainAnteDecorators(spcld)
 	for _, tc := range tests {
 		suite.Run(tc.desc, func() {

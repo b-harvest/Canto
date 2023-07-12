@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/Canto-Network/Canto/v6/types"
-	vestingtypes "github.com/Canto-Network/Canto/v6/x/vesting/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -22,19 +21,16 @@ import (
 // To reduce unexpected risks, it is important to limit the params change proposals for slashing and staking modules.
 type ParamChangeLimitDecorator struct {
 	slashingKeeper *slashingkeeper.Keeper
-	stakingKeeper  vestingtypes.StakingKeeper
 	cdc            codec.BinaryCodec
 }
 
 // NewParamChangeLimitDecorator creates a new slashing param change limit decorator.
 func NewParamChangeLimitDecorator(
 	slashingKeeper *slashingkeeper.Keeper,
-	stakingKeeper vestingtypes.StakingKeeper,
 	cdc codec.BinaryCodec,
 ) ParamChangeLimitDecorator {
 	return ParamChangeLimitDecorator{
 		slashingKeeper: slashingKeeper,
-		stakingKeeper:  stakingKeeper,
 		cdc:            cdc,
 	}
 }
