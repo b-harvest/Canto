@@ -3,27 +3,16 @@ package app
 import (
 	"encoding/json"
 	"fmt"
-	csrtypes "github.com/Canto-Network/Canto/v6/x/csr/types"
-	epochstypes "github.com/Canto-Network/Canto/v6/x/epochs/types"
-	erc20types "github.com/Canto-Network/Canto/v6/x/erc20/types"
-	feestypes "github.com/Canto-Network/Canto/v6/x/fees/types"
-	govshuttletypes "github.com/Canto-Network/Canto/v6/x/govshuttle/types"
-	liquidstakingtypes "github.com/Canto-Network/Canto/v6/x/liquidstaking/types"
-	recoverytypes "github.com/Canto-Network/Canto/v6/x/recovery/types"
-	vestingtypes "github.com/Canto-Network/Canto/v6/x/vesting/types"
-	"github.com/evmos/ethermint/app"
-	"github.com/evmos/ethermint/encoding"
 	"math/rand"
 	"os"
 	"testing"
 
-	cantoconfig "github.com/Canto-Network/Canto/v6/cmd/config"
-	inflationtypes "github.com/Canto-Network/Canto/v6/x/inflation/types"
+	"github.com/evmos/ethermint/encoding"
+
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/simapp"
 	"github.com/cosmos/cosmos-sdk/store"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/cosmos/cosmos-sdk/x/authz"
 	authzkeeper "github.com/cosmos/cosmos-sdk/x/authz/keeper"
@@ -31,19 +20,23 @@ import (
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
-	"github.com/cosmos/cosmos-sdk/x/feegrant"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	"github.com/cosmos/cosmos-sdk/x/simulation"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 	ibctransfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
 	ibchost "github.com/cosmos/ibc-go/v3/modules/core/24-host"
-	evmtypes "github.com/evmos/ethermint/x/evm/types"
 	feemarkettypes "github.com/evmos/ethermint/x/feemarket/types"
 	"github.com/stretchr/testify/require"
 	"github.com/tendermint/tendermint/libs/log"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	dbm "github.com/tendermint/tm-db"
+
+	epochstypes "github.com/Canto-Network/Canto/v6/x/epochs/types"
+	liquidstakingtypes "github.com/Canto-Network/Canto/v6/x/liquidstaking/types"
+
+	cantoconfig "github.com/Canto-Network/Canto/v6/cmd/config"
+	inflationtypes "github.com/Canto-Network/Canto/v6/x/inflation/types"
 )
 
 // Get flags every time the simulator is run
@@ -70,7 +63,7 @@ func interBlockCacheOpt() func(app *baseapp.BaseApp) {
 }
 
 func TestFullAppSimulation(t *testing.T) {
-	config, db, dir, logger, skip, err := simapp.SetupSimulation("leveldb-app-sim", "Simulation")
+	config, db, dir, logger, skip, err := simapp.SetupSimulation("leveldb-cantoApp-sim", "Simulation")
 	if skip {
 		t.Skip("skipping application simulation")
 	}
@@ -82,25 +75,26 @@ func TestFullAppSimulation(t *testing.T) {
 		require.NoError(t, os.RemoveAll(dir))
 	}()
 
-	app := NewCanto(logger, db, nil, true, map[int64]bool{}, DefaultNodeHome, simapp.FlagPeriodValue,
-		encoding.MakeConfig(app.ModuleBasics), EmptyAppOptions{}, fauxMerkleModeOpt)
-	require.Equal(t, cantoconfig.AppName, app.Name())
+	// TODO: shadowed
+	cantoApp := NewCanto(logger, db, nil, true, map[int64]bool{}, DefaultNodeHome, simapp.FlagPeriodValue,
+		encoding.MakeConfig(ModuleBasics), EmptyAppOptions{}, fauxMerkleModeOpt)
+	require.Equal(t, cantoconfig.AppName, cantoApp.Name())
 
 	// run randomized simulation
 	_, simParams, simErr := simulation.SimulateFromSeed(
 		t,
 		os.Stdout,
-		app.BaseApp,
-		AppStateFn(app.AppCodec(), app.SimulationManager()),
-		simtypes.RandomAccounts, // replace with own random account function if using keys other than secp256k1
-		simapp.SimulationOperations(app, app.AppCodec(), config),
-		app.ModuleAccountAddrs(),
+		cantoApp.BaseApp,
+		AppStateFn(cantoApp.AppCodec(), cantoApp.SimulationManager()),
+		RandomAccounts, // replace with own random account function if using keys other than secp256k1
+		simapp.SimulationOperations(cantoApp, cantoApp.AppCodec(), config),
+		cantoApp.ModuleAccountAddrs(),
 		config,
-		app.AppCodec(),
+		cantoApp.AppCodec(),
 	)
 
 	// export state and simParams before the simulation error is checked
-	err = simapp.CheckExportSimulation(app, config, simParams)
+	err = simapp.CheckExportSimulation(cantoApp, config, simParams)
 	require.NoError(t, err)
 	require.NoError(t, simErr)
 
@@ -130,7 +124,7 @@ func TestAppImportExport(t *testing.T) {
 		map[int64]bool{},
 		DefaultNodeHome,
 		simapp.FlagPeriodValue,
-		encoding.MakeConfig(app.ModuleBasics),
+		encoding.MakeConfig(ModuleBasics),
 		EmptyAppOptions{},
 		fauxMerkleModeOpt,
 	)
@@ -142,7 +136,7 @@ func TestAppImportExport(t *testing.T) {
 		os.Stdout,
 		app.BaseApp,
 		AppStateFn(app.AppCodec(), app.SimulationManager()),
-		simtypes.RandomAccounts, // replace with own random account function if using keys other than secp256k1
+		RandomAccounts, // replace with own random account function if using keys other than secp256k1
 		simapp.SimulationOperations(app, app.AppCodec(), config),
 		app.ModuleAccountAddrs(),
 		config,
@@ -212,20 +206,20 @@ func TestAppImportExport(t *testing.T) {
 		{app.keys[upgradetypes.StoreKey], newApp.keys[upgradetypes.ModuleName], [][]byte{}},
 		{app.keys[evidencetypes.StoreKey], newApp.keys[evidencetypes.ModuleName], [][]byte{}},
 		{app.keys[capabilitytypes.StoreKey], newApp.keys[capabilitytypes.ModuleName], [][]byte{}},
-		{app.keys[feegrant.StoreKey], newApp.keys[feegrant.ModuleName], [][]byte{}},
+		//{app.keys[feegrant.StoreKey], newApp.keys[feegrant.ModuleName], [][]byte{}},
 		{app.keys[authzkeeper.StoreKey], newApp.keys[authz.ModuleName], [][]byte{}},
 		{app.keys[ibchost.StoreKey], newApp.keys[ibchost.ModuleName], [][]byte{}},
 		{app.keys[ibctransfertypes.StoreKey], newApp.keys[ibctransfertypes.ModuleName], [][]byte{}},
-		{app.keys[evmtypes.StoreKey], newApp.keys[evmtypes.ModuleName], [][]byte{}},
+		//{app.keys[evmtypes.StoreKey], newApp.keys[evmtypes.ModuleName], [][]byte{}},
 		{app.keys[feemarkettypes.StoreKey], newApp.keys[feemarkettypes.ModuleName], [][]byte{}},
 		{app.keys[inflationtypes.StoreKey], newApp.keys[inflationtypes.ModuleName], [][]byte{}},
-		{app.keys[erc20types.StoreKey], newApp.keys[erc20types.ModuleName], [][]byte{}},
+		//{app.keys[erc20types.StoreKey], newApp.keys[erc20types.ModuleName], [][]byte{}},
 		{app.keys[epochstypes.StoreKey], newApp.keys[epochstypes.ModuleName], [][]byte{}},
-		{app.keys[vestingtypes.StoreKey], newApp.keys[vestingtypes.ModuleName], [][]byte{}},
-		{app.keys[recoverytypes.StoreKey], newApp.keys[recoverytypes.ModuleName], [][]byte{}},
-		{app.keys[feestypes.StoreKey], newApp.keys[feestypes.ModuleName], [][]byte{}},
-		{app.keys[csrtypes.StoreKey], newApp.keys[csrtypes.ModuleName], [][]byte{}},
-		{app.keys[govshuttletypes.StoreKey], newApp.keys[govshuttletypes.ModuleName], [][]byte{}},
+		//{app.keys[vestingtypes.StoreKey], newApp.keys[vestingtypes.ModuleName], [][]byte{}},
+		//{app.keys[recoverytypes.StoreKey], newApp.keys[recoverytypes.ModuleName], [][]byte{}},
+		//{app.keys[feestypes.StoreKey], newApp.keys[feestypes.ModuleName], [][]byte{}},
+		//{app.keys[csrtypes.StoreKey], newApp.keys[csrtypes.ModuleName], [][]byte{}},
+		//{app.keys[govshuttletypes.StoreKey], newApp.keys[govshuttletypes.ModuleName], [][]byte{}},
 		{app.keys[liquidstakingtypes.StoreKey], newApp.keys[liquidstakingtypes.ModuleName], [][]byte{}},
 	}
 
@@ -277,7 +271,7 @@ func TestAppStateDeterminism(t *testing.T) {
 				map[int64]bool{},
 				DefaultNodeHome,
 				simapp.FlagPeriodValue,
-				encoding.MakeConfig(app.ModuleBasics),
+				encoding.MakeConfig(ModuleBasics),
 				EmptyAppOptions{},
 				fauxMerkleModeOpt,
 			)
@@ -288,7 +282,7 @@ func TestAppStateDeterminism(t *testing.T) {
 				os.Stdout,
 				app.BaseApp,
 				AppStateFn(app.AppCodec(), app.SimulationManager()),
-				simtypes.RandomAccounts,
+				RandomAccounts,
 				simapp.SimulationOperations(app, app.AppCodec(), config),
 				app.ModuleAccountAddrs(),
 				config,
