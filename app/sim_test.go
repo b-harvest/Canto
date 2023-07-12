@@ -3,23 +3,24 @@ package app
 import (
 	"encoding/json"
 	"fmt"
-	"math/rand"
-	"os"
-	"testing"
-
-	cantoconfig "github.com/Canto-Network/Canto/v6/cmd/config"
 	csrtypes "github.com/Canto-Network/Canto/v6/x/csr/types"
 	epochstypes "github.com/Canto-Network/Canto/v6/x/epochs/types"
 	erc20types "github.com/Canto-Network/Canto/v6/x/erc20/types"
 	feestypes "github.com/Canto-Network/Canto/v6/x/fees/types"
 	govshuttletypes "github.com/Canto-Network/Canto/v6/x/govshuttle/types"
-	inflationtypes "github.com/Canto-Network/Canto/v6/x/inflation/types"
 	liquidstakingtypes "github.com/Canto-Network/Canto/v6/x/liquidstaking/types"
 	recoverytypes "github.com/Canto-Network/Canto/v6/x/recovery/types"
 	vestingtypes "github.com/Canto-Network/Canto/v6/x/vesting/types"
+	"github.com/evmos/ethermint/app"
+	"github.com/evmos/ethermint/encoding"
+	"math/rand"
+	"os"
+	"testing"
+
+	cantoconfig "github.com/Canto-Network/Canto/v6/cmd/config"
+	inflationtypes "github.com/Canto-Network/Canto/v6/x/inflation/types"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/simapp"
-	"github.com/cosmos/cosmos-sdk/simapp/helpers"
 	"github.com/cosmos/cosmos-sdk/store"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
@@ -73,6 +74,7 @@ func TestFullAppSimulation(t *testing.T) {
 	if skip {
 		t.Skip("skipping application simulation")
 	}
+	config.ChainID = "canto_9000-1"
 	require.NoError(t, err, "simulation setup failed")
 
 	defer func() {
@@ -81,7 +83,7 @@ func TestFullAppSimulation(t *testing.T) {
 	}()
 
 	app := NewCanto(logger, db, nil, true, map[int64]bool{}, DefaultNodeHome, simapp.FlagPeriodValue,
-		MakeTestEncodingConfig(), EmptyAppOptions{}, fauxMerkleModeOpt)
+		encoding.MakeConfig(app.ModuleBasics), EmptyAppOptions{}, fauxMerkleModeOpt)
 	require.Equal(t, cantoconfig.AppName, app.Name())
 
 	// run randomized simulation
@@ -112,6 +114,7 @@ func TestAppImportExport(t *testing.T) {
 	if skip {
 		t.Skip("skipping application import/export simulation")
 	}
+	config.ChainID = "canto_9000-1"
 	require.NoError(t, err, "simulation setup failed")
 
 	defer func() {
@@ -127,7 +130,7 @@ func TestAppImportExport(t *testing.T) {
 		map[int64]bool{},
 		DefaultNodeHome,
 		simapp.FlagPeriodValue,
-		MakeTestEncodingConfig(),
+		encoding.MakeConfig(app.ModuleBasics),
 		EmptyAppOptions{},
 		fauxMerkleModeOpt,
 	)
@@ -178,7 +181,7 @@ func TestAppImportExport(t *testing.T) {
 		map[int64]bool{},
 		DefaultNodeHome,
 		simapp.FlagPeriodValue,
-		MakeTestEncodingConfig(),
+		encoding.MakeConfig(ModuleBasics),
 		EmptyAppOptions{},
 		fauxMerkleModeOpt,
 	)
@@ -248,7 +251,7 @@ func TestAppStateDeterminism(t *testing.T) {
 	config.ExportParamsPath = ""
 	config.OnOperation = false
 	config.AllInvariants = false
-	config.ChainID = helpers.SimAppChainID
+	config.ChainID = "canto_9000-1"
 
 	numSeeds := 3
 	numTimesToRunPerSeed := 5
@@ -274,7 +277,7 @@ func TestAppStateDeterminism(t *testing.T) {
 				map[int64]bool{},
 				DefaultNodeHome,
 				simapp.FlagPeriodValue,
-				MakeTestEncodingConfig(),
+				encoding.MakeConfig(app.ModuleBasics),
 				EmptyAppOptions{},
 				fauxMerkleModeOpt,
 			)
