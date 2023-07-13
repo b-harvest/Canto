@@ -14,8 +14,8 @@ func BeginBlocker(ctx sdk.Context, k keeper.Keeper) {
 func EndBlocker(ctx sdk.Context, k keeper.Keeper) {
 	if k.IsEpochReached(ctx) {
 		k.DistributeReward(ctx)
-		k.DeleteMaturedRedelegationInfos(ctx)
 		k.CoverSlashingAndHandleMatureUnbondings(ctx)
+		k.RemoveDeletableRedelegationInfos(ctx)
 		k.HandleQueuedLiquidUnstakes(ctx)
 		k.HandleUnprocessedQueuedLiquidUnstakes(ctx)
 		k.HandleQueuedWithdrawInsuranceRequests(ctx)
