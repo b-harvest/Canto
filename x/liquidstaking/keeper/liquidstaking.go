@@ -130,10 +130,7 @@ func (k Keeper) CollectRewardAndFee(
 		}
 		insuranceCommissionAmt := delRewardCoin.Amount.ToDec().Mul(insurance.FeeRate).TruncateInt()
 		if insuranceCommissionAmt.IsPositive() {
-			insuranceCommissions = append(insuranceCommissions, sdk.NewCoin(
-				delRewardCoin.Denom,
-				insuranceCommissionAmt,
-			))
+			insuranceCommissions.Add(sdk.NewCoin(delRewardCoin.Denom, insuranceCommissionAmt))
 		}
 
 		pureRewardAmt := delRewardCoin.Amount.Sub(insuranceCommissionAmt)
@@ -141,16 +138,10 @@ func (k Keeper) CollectRewardAndFee(
 		remainingRewardAmt := pureRewardAmt.Sub(dynamicFeeAmt)
 
 		if dynamicFeeAmt.IsPositive() {
-			dynamicFees = append(dynamicFees, sdk.NewCoin(
-				delRewardCoin.Denom,
-				dynamicFeeAmt,
-			))
+			dynamicFees.Add(sdk.NewCoin(delRewardCoin.Denom, dynamicFeeAmt))
 		}
 		if remainingRewardAmt.IsPositive() {
-			remainingRewards = append(remainingRewards, sdk.NewCoin(
-				delRewardCoin.Denom,
-				remainingRewardAmt,
-			))
+			remainingRewards.Add(sdk.NewCoin(delRewardCoin.Denom, remainingRewardAmt))
 		}
 	}
 
@@ -161,7 +152,7 @@ func (k Keeper) CollectRewardAndFee(
 		return
 	default:
 		// Dynamic Fee can be zero if the utilization rate is low.
-		if dynamicFees.IsValid() {
+		if dynamicFees.IsValid() && dynamicFees.IsAllPositive() {
 			// Collect dynamic fee and burn it first.
 			if err := k.bankKeeper.SendCoinsFromAccountToModule(ctx, chunk.DerivedAddress(), types.ModuleName, dynamicFees); err != nil {
 				panic(err)
@@ -172,11 +163,11 @@ func (k Keeper) CollectRewardAndFee(
 		}
 
 		// If insurance fee rate was zero, insurance commissions are not positive.
-		if insuranceCommissions.IsValid() {
+		if insuranceCommissions.IsValid() && insuranceCommissions.IsAllPositive() {
 			inputs = append(inputs, banktypes.NewInput(chunk.DerivedAddress(), insuranceCommissions))
 			outputs = append(outputs, banktypes.NewOutput(insurance.FeePoolAddress(), insuranceCommissions))
 		}
-		if remainingRewards.IsValid() {
+		if remainingRewards.IsValid() && remainingRewards.IsAllPositive() {
 			inputs = append(inputs, banktypes.NewInput(chunk.DerivedAddress(), remainingRewards))
 			outputs = append(outputs, banktypes.NewOutput(types.RewardPool, remainingRewards))
 		}
