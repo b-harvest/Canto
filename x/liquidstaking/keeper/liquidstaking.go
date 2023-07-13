@@ -241,6 +241,7 @@ func (k Keeper) HandleQueuedLiquidUnstakes(ctx sdk.Context) []types.Chunk {
 	var unstakedChunks []types.Chunk
 	var completionTime time.Time
 	var chunkIds []string
+	var err error
 	k.IterateAllUnpairingForUnstakingChunkInfos(ctx, func(info types.UnpairingForUnstakingChunkInfo) bool {
 		// Get chunk
 		chunk, found := k.GetChunk(ctx, info.ChunkId)
@@ -257,16 +258,15 @@ func (k Keeper) HandleQueuedLiquidUnstakes(ctx sdk.Context) []types.Chunk {
 		if !found {
 			panic(fmt.Sprintf("insurance %d not found(chunkId: %d)", chunk.PairedInsuranceId, chunk.Id))
 		}
-		// TODO: use Delshares
-		shares, err := k.stakingKeeper.ValidateUnbondAmount(ctx, chunk.DerivedAddress(), insurance.GetValidator(), types.ChunkSize)
-		if err != nil {
-			panic(err)
+		delegation, found := k.stakingKeeper.GetDelegation(ctx, chunk.DerivedAddress(), insurance.GetValidator())
+		if !found {
+			panic(fmt.Sprintf("delegation %s not found", insurance.GetValidator()))
 		}
 		completionTime, err = k.stakingKeeper.Undelegate(
 			ctx,
 			chunk.DerivedAddress(),
 			insurance.GetValidator(),
-			shares,
+			delegation.GetShares(),
 		)
 		if err != nil {
 			panic(err)
@@ -650,12 +650,13 @@ func (k Keeper) RePairRankedInsurances(
 			ctx.Logger().Error("chunk status must be unpairing", "chunk", chunk)
 			chunk.Status = types.CHUNK_STATUS_UNPAIRING
 		}
-		shares, err := k.stakingKeeper.ValidateUnbondAmount(ctx, chunk.DerivedAddress(), outInsurance.GetValidator(), types.ChunkSize)
-		if err != nil {
-			panic(err)
+		// get delegation shares of out insurance
+		delegation, found := k.stakingKeeper.GetDelegation(ctx, chunk.DerivedAddress(), outInsurance.GetValidator())
+		if !found {
+			panic(fmt.Sprintf("delegation not found(chunkId: %d, validator: %s)", chunk.Id, outInsurance.GetValidator()))
 		}
 		// validate unbond amount
-		completionTime, err := k.stakingKeeper.Undelegate(ctx, chunk.DerivedAddress(), outInsurance.GetValidator(), shares)
+		completionTime, err := k.stakingKeeper.Undelegate(ctx, chunk.DerivedAddress(), outInsurance.GetValidator(), delegation.GetShares())
 		if err != nil {
 			panic(err)
 		}
@@ -1456,8 +1457,14 @@ func (k Keeper) handlePairedChunk(ctx sdk.Context, chunk types.Chunk) {
 	// Check whether delegation value is decreased by slashing
 	// The check process should use TokensFromShares to get the current delegation value
 	tokens := validator.TokensFromShares(delegation.GetShares())
-	penalty := types.ChunkSize.ToDec().Sub(tokens)
-	penaltyAmt := penalty.Ceil().TruncateInt()
+	var penaltyAmt sdk.Int
+	if tokens.GTE(types.ChunkSize.ToDec()) {
+		// There is no penalty
+		penaltyAmt = sdk.ZeroInt()
+	} else {
+		penalty := types.ChunkSize.ToDec().Sub(tokens)
+		penaltyAmt = penalty.Ceil().TruncateInt()
+	}
 	if penaltyAmt.IsPositive() {
 		// TODO: Check when slashing happened and decide which insurances (unpairing or paired) should cover penalty.
 		// check penalty is bigger than insurance balance
@@ -1470,21 +1477,11 @@ func (k Keeper) handlePairedChunk(ctx sdk.Context, chunk types.Chunk) {
 		if penaltyAmt.GT(insuranceBalance.Amount) {
 			insuranceOutOfBalance = true
 			k.startUnpairing(ctx, pairedInsurance, chunk)
-
-			// TODO: Use delegation shares
-			shares, err := k.stakingKeeper.ValidateUnbondAmount(
-				ctx, chunk.DerivedAddress(),
-				validator.GetOperator(),
-				tokens.TruncateInt(),
-			)
-			if err != nil {
-				panic(err)
-			}
 			// start unbonding of chunk because it is damaged
 			completionTime, err := k.stakingKeeper.Undelegate(
 				ctx, chunk.DerivedAddress(),
 				validator.GetOperator(),
-				shares,
+				delegation.GetShares(),
 			)
 			if err != nil {
 				panic(err)

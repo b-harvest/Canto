@@ -70,9 +70,6 @@ type StakingKeeper interface {
 	) stakingtypes.UnbondingDelegation
 	InsertUBDQueue(ctx sdk.Context, ubd stakingtypes.UnbondingDelegation,
 		completionTime time.Time)
-	ValidateUnbondAmount(
-		ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress, amt sdk.Int,
-	) (shares sdk.Dec, err error)
 	GetAllUnbondingDelegations(ctx sdk.Context, delegator sdk.AccAddress) []stakingtypes.UnbondingDelegation
 	GetUnbondingDelegation(
 		ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress,
