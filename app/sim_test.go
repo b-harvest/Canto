@@ -32,10 +32,8 @@ import (
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	dbm "github.com/tendermint/tm-db"
 
-	epochstypes "github.com/Canto-Network/Canto/v6/x/epochs/types"
-	liquidstakingtypes "github.com/Canto-Network/Canto/v6/x/liquidstaking/types"
-
 	cantoconfig "github.com/Canto-Network/Canto/v6/cmd/config"
+	epochstypes "github.com/Canto-Network/Canto/v6/x/epochs/types"
 	inflationtypes "github.com/Canto-Network/Canto/v6/x/inflation/types"
 )
 
@@ -206,21 +204,21 @@ func TestAppImportExport(t *testing.T) {
 		{app.keys[upgradetypes.StoreKey], newApp.keys[upgradetypes.ModuleName], [][]byte{}},
 		{app.keys[evidencetypes.StoreKey], newApp.keys[evidencetypes.ModuleName], [][]byte{}},
 		{app.keys[capabilitytypes.StoreKey], newApp.keys[capabilitytypes.ModuleName], [][]byte{}},
-		//{app.keys[feegrant.StoreKey], newApp.keys[feegrant.ModuleName], [][]byte{}},
+		// {app.keys[feegrant.StoreKey], newApp.keys[feegrant.ModuleName], [][]byte{}},
 		{app.keys[authzkeeper.StoreKey], newApp.keys[authz.ModuleName], [][]byte{}},
 		{app.keys[ibchost.StoreKey], newApp.keys[ibchost.ModuleName], [][]byte{}},
 		{app.keys[ibctransfertypes.StoreKey], newApp.keys[ibctransfertypes.ModuleName], [][]byte{}},
-		//{app.keys[evmtypes.StoreKey], newApp.keys[evmtypes.ModuleName], [][]byte{}},
+		// {app.keys[evmtypes.StoreKey], newApp.keys[evmtypes.ModuleName], [][]byte{}},
 		{app.keys[feemarkettypes.StoreKey], newApp.keys[feemarkettypes.ModuleName], [][]byte{}},
 		{app.keys[inflationtypes.StoreKey], newApp.keys[inflationtypes.ModuleName], [][]byte{}},
-		//{app.keys[erc20types.StoreKey], newApp.keys[erc20types.ModuleName], [][]byte{}},
+		// {app.keys[erc20types.StoreKey], newApp.keys[erc20types.ModuleName], [][]byte{}},
 		{app.keys[epochstypes.StoreKey], newApp.keys[epochstypes.ModuleName], [][]byte{}},
-		//{app.keys[vestingtypes.StoreKey], newApp.keys[vestingtypes.ModuleName], [][]byte{}},
-		//{app.keys[recoverytypes.StoreKey], newApp.keys[recoverytypes.ModuleName], [][]byte{}},
-		//{app.keys[feestypes.StoreKey], newApp.keys[feestypes.ModuleName], [][]byte{}},
-		//{app.keys[csrtypes.StoreKey], newApp.keys[csrtypes.ModuleName], [][]byte{}},
-		//{app.keys[govshuttletypes.StoreKey], newApp.keys[govshuttletypes.ModuleName], [][]byte{}},
-		{app.keys[liquidstakingtypes.StoreKey], newApp.keys[liquidstakingtypes.ModuleName], [][]byte{}},
+		// {app.keys[vestingtypes.StoreKey], newApp.keys[vestingtypes.ModuleName], [][]byte{}},
+		// {app.keys[recoverytypes.StoreKey], newApp.keys[recoverytypes.ModuleName], [][]byte{}},
+		// {app.keys[feestypes.StoreKey], newApp.keys[feestypes.ModuleName], [][]byte{}},
+		// {app.keys[csrtypes.StoreKey], newApp.keys[csrtypes.ModuleName], [][]byte{}},
+		// {app.keys[govshuttletypes.StoreKey], newApp.keys[govshuttletypes.ModuleName], [][]byte{}},
+		// {app.keys[liquidstakingtypes.StoreKey], newApp.keys[liquidstakingtypes.ModuleName], [][]byte{}},
 	}
 
 	for _, skp := range storeKeysPrefixes {
@@ -247,7 +245,7 @@ func TestAppStateDeterminism(t *testing.T) {
 	config.AllInvariants = false
 	config.ChainID = "canto_9000-1"
 
-	numSeeds := 3
+	numSeeds := 20
 	numTimesToRunPerSeed := 5
 	appHashList := make([]json.RawMessage, numTimesToRunPerSeed)
 
