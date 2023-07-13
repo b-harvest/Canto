@@ -1267,8 +1267,6 @@ func (k Keeper) completeLiquidUnstake(ctx sdk.Context, chunk types.Chunk) {
 		panic(fmt.Sprintf("unpairing for unstaking chunk info not found: %d", chunk.Id))
 	}
 	lsTokensToBurn := info.EscrowedLstokens
-	// TODO: Remove
-	unstakedCoin := sdk.NewCoin(bondDenom, types.ChunkSize)
 	penaltyAmt := types.ChunkSize.Sub(k.bankKeeper.GetBalance(ctx, chunk.DerivedAddress(), bondDenom).Amount)
 	if penaltyAmt.IsPositive() {
 		sendAmt := penaltyAmt
@@ -1300,7 +1298,7 @@ func (k Keeper) completeLiquidUnstake(ctx sdk.Context, chunk types.Chunk) {
 			refundCoin := sdk.NewCoin(liquidBondDenom, discountAmt)
 
 			// refund
-			if refundCoin.IsValid() {
+			if refundCoin.IsValid() && refundCoin.IsPositive() {
 				// send discount lstokens to info.Delegator
 				if err = k.bankKeeper.SendCoins(
 					ctx,
@@ -1311,13 +1309,12 @@ func (k Keeper) completeLiquidUnstake(ctx sdk.Context, chunk types.Chunk) {
 					panic(err)
 				}
 				lsTokensToBurn = lsTokensToBurn.Sub(refundCoin)
-				unstakedCoin.Amount = unstakedCoin.Amount.Sub(penaltyAmt)
 			}
 		}
 	}
 	// insurance duty is over
 	k.completeInsuranceDuty(ctx, unpairingInsurance)
-	if lsTokensToBurn.IsValid() {
+	if lsTokensToBurn.IsValid() && lsTokensToBurn.IsPositive() {
 		if err = k.burnEscrowedLsTokens(ctx, lsTokensToBurn); err != nil {
 			panic(err)
 		}
@@ -1328,12 +1325,12 @@ func (k Keeper) completeLiquidUnstake(ctx sdk.Context, chunk types.Chunk) {
 	// 	panic("investigating it")
 	// }
 	var sendCoins sdk.Coins
-	if chunkBalances.IsValid() {
+	if chunkBalances.IsValid() && chunkBalances.IsAllPositive() {
 		sendCoins = chunkBalances
 	} else if chunkBalances.AmountOf(bondDenom).IsPositive() {
 		sendCoins = sdk.NewCoins(sdk.NewCoin(bondDenom, chunkBalances.AmountOf(bondDenom)))
 	}
-	if sendCoins.IsValid() {
+	if sendCoins.IsValid() && sendCoins.IsAllPositive() {
 		if err = k.bankKeeper.SendCoins(
 			ctx,
 			chunk.DerivedAddress(),
@@ -1384,7 +1381,7 @@ func (k Keeper) handleUnpairingChunk(ctx sdk.Context, chunk types.Chunk) {
 		}
 
 		// insurance pay penaltyAmt
-		if sendCoin.IsValid() {
+		if sendCoin.IsValid() && sendCoin.IsPositive() {
 			if err = k.bankKeeper.SendCoins(
 				ctx,
 				unpairingInsurance.DerivedAddress(),
@@ -1402,12 +1399,12 @@ func (k Keeper) handleUnpairingChunk(ctx sdk.Context, chunk types.Chunk) {
 	if chunkBalance.LT(types.ChunkSize) {
 		allBalances := k.bankKeeper.GetAllBalances(ctx, chunk.DerivedAddress())
 		var sendCoins sdk.Coins
-		if allBalances.IsValid() {
+		if allBalances.IsValid() && allBalances.IsAllPositive() {
 			sendCoins = allBalances
 		} else if allBalances.AmountOf(bondDenom).IsPositive() {
 			sendCoins = sdk.NewCoins(sdk.NewCoin(bondDenom, allBalances.AmountOf(bondDenom)))
 		}
-		if sendCoins.IsValid() {
+		if sendCoins.IsValid() && sendCoins.IsAllPositive() {
 			if err = k.bankKeeper.SendCoins(ctx, chunk.DerivedAddress(), types.RewardPool, sendCoins); err != nil {
 				panic(err)
 			}
