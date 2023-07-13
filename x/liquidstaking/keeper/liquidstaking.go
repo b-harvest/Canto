@@ -130,7 +130,7 @@ func (k Keeper) CollectRewardAndFee(
 		}
 		insuranceCommissionAmt := delRewardCoin.Amount.ToDec().Mul(insurance.FeeRate).TruncateInt()
 		if insuranceCommissionAmt.IsPositive() {
-			insuranceCommissions.Add(sdk.NewCoin(delRewardCoin.Denom, insuranceCommissionAmt))
+			insuranceCommissions = insuranceCommissions.Add(sdk.NewCoin(delRewardCoin.Denom, insuranceCommissionAmt))
 		}
 
 		pureRewardAmt := delRewardCoin.Amount.Sub(insuranceCommissionAmt)
@@ -138,10 +138,10 @@ func (k Keeper) CollectRewardAndFee(
 		remainingRewardAmt := pureRewardAmt.Sub(dynamicFeeAmt)
 
 		if dynamicFeeAmt.IsPositive() {
-			dynamicFees.Add(sdk.NewCoin(delRewardCoin.Denom, dynamicFeeAmt))
+			dynamicFees = dynamicFees.Add(sdk.NewCoin(delRewardCoin.Denom, dynamicFeeAmt))
 		}
 		if remainingRewardAmt.IsPositive() {
-			remainingRewards.Add(sdk.NewCoin(delRewardCoin.Denom, remainingRewardAmt))
+			remainingRewards = remainingRewards.Add(sdk.NewCoin(delRewardCoin.Denom, remainingRewardAmt))
 		}
 	}
 
