@@ -43,7 +43,7 @@ func (k Keeper) getPairingInsurances(ctx sdk.Context) (
 			if !found {
 				return false
 			}
-			if err := k.IsValidValidator(ctx, validator); err != nil {
+			if err := k.ValidateValidator(ctx, validator); err != nil {
 				return false
 			}
 			validatorMap[insurance.ValidatorAddress] = validator

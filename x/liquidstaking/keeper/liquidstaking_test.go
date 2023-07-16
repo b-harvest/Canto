@@ -1500,7 +1500,7 @@ func (suite *KeeperTestSuite) TestPairedChunkTombstonedAndRedelegated() {
 		unpairedInsuranceVal, _ := suite.app.StakingKeeper.GetValidator(suite.ctx, unpairedInsurance.GetValidator())
 		suite.Equal(types.INSURANCE_STATUS_UNPAIRED, unpairedInsurance.Status)
 		suite.Error(
-			suite.app.LiquidStakingKeeper.IsValidValidator(suite.ctx, unpairedInsuranceVal),
+			suite.app.LiquidStakingKeeper.ValidateValidator(suite.ctx, unpairedInsuranceVal),
 			"validator of unpaired insurance is tombstoned",
 		)
 	}

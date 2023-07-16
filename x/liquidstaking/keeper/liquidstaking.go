@@ -362,7 +362,7 @@ func (k Keeper) GetAllRePairableChunksAndOutInsurances(ctx sdk.Context) (
 			rePairableChunks = append(rePairableChunks, chunk)
 		case types.CHUNK_STATUS_PAIRED:
 			pairedIns, validator, _ := k.mustValidatePairedChunk(ctx, chunk)
-			if err := k.IsValidValidator(ctx, validator); err != nil {
+			if err := k.ValidateValidator(ctx, validator); err != nil {
 				outInsurances = append(outInsurances, pairedIns)
 			} else {
 				validPairedInsuranceMap[pairedIns.Id] = struct{}{}
@@ -402,7 +402,7 @@ func (k Keeper) RankInsurances(ctx sdk.Context) (
 			if !found {
 				return false
 			}
-			if err := k.IsValidValidator(ctx, validator); err != nil {
+			if err := k.ValidateValidator(ctx, validator); err != nil {
 				return false
 			}
 			candidatesValidatorMap[ins.ValidatorAddress] = validator
@@ -848,7 +848,7 @@ func (k Keeper) DoProvideInsurance(ctx sdk.Context, msg *types.MsgProvideInsuran
 		err = sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "validator does not exist: %s", valAddr.String())
 		return
 	}
-	if err = k.IsValidValidator(ctx, validator); err != nil {
+	if err = k.ValidateValidator(ctx, validator); err != nil {
 		return
 	}
 
@@ -1027,7 +1027,7 @@ func (k Keeper) GetLiquidBondDenom(ctx sdk.Context) string {
 	return string(store.Get(types.KeyPrefixLiquidBondDenom))
 }
 
-func (k Keeper) IsValidValidator(ctx sdk.Context, validator stakingtypes.Validator) error {
+func (k Keeper) ValidateValidator(ctx sdk.Context, validator stakingtypes.Validator) error {
 	pubKey, err := validator.ConsPubKey()
 	if err != nil {
 		return err
@@ -1431,7 +1431,7 @@ func (k Keeper) handlePairedChunk(ctx sdk.Context, chunk types.Chunk) {
 	}
 
 	// If validator of paired insurance is not valid, start unpairing.
-	if err := k.IsValidValidator(ctx, validator); err != nil {
+	if err := k.ValidateValidator(ctx, validator); err != nil {
 		k.startUnpairing(ctx, pairedIns, chunk)
 	}
 
