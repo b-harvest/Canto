@@ -26,7 +26,6 @@ func (k Keeper) CoverRedelegationPenalty(ctx sdk.Context) {
 			return false
 		}
 		chunk, srcInsurance, dstInsurance, entry := k.mustValidaRedelegationInfo(ctx, info)
-		// TODO: Refactor validation and actual logics
 		dstDel := k.stakingKeeper.Delegation(ctx, chunk.DerivedAddress(), dstInsurance.GetValidator())
 		diff := entry.SharesDst.Sub(dstDel.GetShares())
 		if diff.IsPositive() {
@@ -165,28 +164,16 @@ func (k Keeper) CollectRewardAndFee(
 func (k Keeper) DistributeReward(ctx sdk.Context) {
 	feeRate, _ := k.CalcDynamicFeeRate(ctx)
 	k.IterateAllChunks(ctx, func(chunk types.Chunk) bool {
-		var insurance types.Insurance
-		var found bool
-		switch chunk.Status {
-		case types.CHUNK_STATUS_PAIRED:
-			insurance, found = k.GetInsurance(ctx, chunk.PairedInsuranceId)
-			if !found {
-				panic(fmt.Sprintf("insurance %d not found", chunk.PairedInsuranceId))
-			}
-		default:
+		if chunk.Status != types.CHUNK_STATUS_PAIRED {
 			return false
 		}
-		validator, found := k.stakingKeeper.GetValidator(ctx, insurance.GetValidator())
-		err := k.IsValidValidator(ctx, validator, found)
-		if err == types.ErrNotFoundValidator {
-			panic(fmt.Sprintf("validator %s not found", insurance.GetValidator()))
-		}
-		_, err = k.distributionKeeper.WithdrawDelegationRewards(ctx, chunk.DerivedAddress(), validator.GetOperator())
+		pairedInsurance, validator := k.mustValidatePairedChunk(ctx, chunk)
+		_, err := k.distributionKeeper.WithdrawDelegationRewards(ctx, chunk.DerivedAddress(), validator.GetOperator())
 		if err != nil {
 			panic(err)
 		}
 
-		k.CollectRewardAndFee(ctx, feeRate, chunk, insurance)
+		k.CollectRewardAndFee(ctx, feeRate, chunk, pairedInsurance)
 		return false
 	})
 }
@@ -697,6 +684,7 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (
 	types.SortInsurances(validatorMap, pairingInsurances, false)
 	totalNewShares := sdk.ZeroDec()
 	totalLsTokenMintAmount := sdk.ZeroInt()
+	liquidBondDenom := k.GetLiquidBondDenom(ctx)
 	for {
 		if chunksToCreate.IsZero() {
 			break
@@ -735,7 +723,6 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (
 		}
 		totalNewShares = totalNewShares.Add(newShares)
 
-		liquidBondDenom := k.GetLiquidBondDenom(ctx)
 		// Mint the liquid staking token
 		lsTokenMintAmount = types.ChunkSize
 		if nas.LsTokensTotalSupply.IsPositive() {
@@ -1077,7 +1064,7 @@ func (k Keeper) DoClaimDiscountedReward(ctx sdk.Context, msg *types.MsgClaimDisc
 	burnAmt = msg.Amount
 
 	// claim amount = (ls token amount / discounted mint rate)
-	claimAmt := burnAmt.Amount.ToDec().Quo(discountedMintRate).TruncateInt()
+	claimAmt := burnAmt.Amount.ToDec().QuoTruncate(discountedMintRate).TruncateInt()
 	// Requester can claim only up to claimable amount
 	if claimAmt.GT(claimableAmt.Amount) {
 		// requester cannot claim more than claimable amount
@@ -1349,7 +1336,7 @@ func (k Keeper) handleUnpairingChunk(ctx sdk.Context, chunk types.Chunk) {
 	penaltyAmt := types.ChunkSize.Sub(chunkBalance)
 
 	info, found := k.GetRedelegationInfo(ctx, chunk.Id)
-	if found && info.PenaltyAmt.IsPositive() {
+	if found && info.PenaltyAmt.IsPositive() && !info.Deletable {
 		// At previous epoch, this chunk got damaged because unpairing insurance at that time
 		// couldn't cover penalty during re-delegation period.
 		// current unpairing insurance(=paired at previous epoch) doesn't have to pay that penalty.
@@ -1661,6 +1648,7 @@ func (k Keeper) withdrawInsurance(ctx sdk.Context, insurance types.Insurance) er
 	return nil
 }
 
+// TODO: sanity check for delegation amount
 // pairChunkAndDelegate pairs chunk and delegate it to validator pointed by insurance.
 func (k Keeper) pairChunkAndDelegate(
 	ctx sdk.Context,
@@ -1742,6 +1730,8 @@ func (k Keeper) validateUnpairingChunk(ctx sdk.Context, chunk types.Chunk) error
 	return nil
 }
 
+// mustValidaRedelegationInfo validates re-delegation info and returns chunk, srcInsurance, dstInsurance, entry.
+// If it is invalid, it panics.
 func (k Keeper) mustValidaRedelegationInfo(ctx sdk.Context, info types.RedelegationInfo) (
 	chunk types.Chunk,
 	srcInsurance types.Insurance,
@@ -1783,4 +1773,19 @@ func (k Keeper) mustValidaRedelegationInfo(ctx sdk.Context, info types.Redelegat
 	}
 	entry = red.Entries[0]
 	return
+}
+
+// mustValidatePairedChunk validates paired chunk and return paired insurance and its validator.
+// If it is invalid, then it panics.
+func (k Keeper) mustValidatePairedChunk(ctx sdk.Context, chunk types.Chunk) (types.Insurance, stakingtypes.Validator) {
+	insurance, found := k.GetInsurance(ctx, chunk.PairedInsuranceId)
+	if !found {
+		panic(fmt.Sprintf("paired insurance %d not found(chunkId: %d)", chunk.PairedInsuranceId, chunk.Id))
+	}
+	validator, found := k.stakingKeeper.GetValidator(ctx, insurance.GetValidator())
+	err := k.IsValidValidator(ctx, validator, found)
+	if err == types.ErrNotFoundValidator {
+		panic(fmt.Sprintf("validator of paired insurance %s not found(insuranceId: %d)", insurance.GetValidator(), insurance.Id))
+	}
+	return insurance, validator
 }
