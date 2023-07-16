@@ -319,6 +319,15 @@ func (k Keeper) HandleQueuedWithdrawInsuranceRequests(ctx sdk.Context) []types.I
 	return withdrawnInsurances
 }
 
+// HandleUnprocessedQueuedWithdrawInsuranceRequests removes remaining queued withdraw insurance requests.
+// All requests should be handled and deleted in HandleQueuedWithdrawInsuranceRequests, but just in case.
+func (k Keeper) RemoveUnprocessedQueuedWithdrawInsuranceRequests(ctx sdk.Context) {
+	k.IterateWithdrawInsuranceRequests(ctx, func(req types.WithdrawInsuranceRequest) bool {
+		k.DeleteWithdrawInsuranceRequest(ctx, req.InsuranceId)
+		return false
+	})
+}
+
 // GetAllRePairableChunksAndOutInsurances returns all re-pairable chunks and out insurances.
 // Re-pairable chunks contains chunks with the following statuses
 // - Pairing
@@ -882,7 +891,7 @@ func (k Keeper) DoWithdrawInsurance(ctx sdk.Context, msg *types.MsgWithdrawInsur
 		return
 	}
 
-	// If insurnace is paired then queue request
+	// If insurnace is paired or unpairing, then queue request
 	// If insurnace is unpaired then immediately withdraw ins
 	switch ins.Status {
 	case types.INSURANCE_STATUS_PAIRED, types.INSURANCE_STATUS_UNPAIRING:

@@ -986,11 +986,12 @@ func (app *Canto) EndBlocker(ctx sdk.Context, req abci.RequestEndBlock) abci.Res
 				// mimic liquidstaking endblocker except increasing epoch
 				{
 					app.LiquidStakingKeeper.DistributeReward(ctx)
-					app.LiquidStakingKeeper.DeleteMaturedRedelegationInfos(ctx)
 					app.LiquidStakingKeeper.CoverSlashingAndHandleMatureUnbondings(ctx)
+					app.LiquidStakingKeeper.RemoveDeletableRedelegationInfos(ctx)
 					app.LiquidStakingKeeper.HandleQueuedLiquidUnstakes(ctx)
 					app.LiquidStakingKeeper.HandleUnprocessedQueuedLiquidUnstakes(ctx)
 					app.LiquidStakingKeeper.HandleQueuedWithdrawInsuranceRequests(ctx)
+					app.LiquidStakingKeeper.RemoveUnprocessedQueuedWithdrawInsuranceRequests(ctx)
 					newlyRankedInInsurances, rankOutInsurances := app.LiquidStakingKeeper.RankInsurances(ctx)
 					app.LiquidStakingKeeper.RePairRankedInsurances(ctx, newlyRankedInInsurances, rankOutInsurances)
 					app.LiquidStakingKeeper.IncrementEpoch(ctx)
