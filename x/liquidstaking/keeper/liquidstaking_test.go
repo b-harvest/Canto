@@ -161,7 +161,7 @@ func (suite *KeeperTestSuite) TestProvideInsurance() {
 				FeeRate:          TenPercentFeeRate,
 			},
 			nil,
-			"amount must be greater than minimum coverage",
+			"amount must be greater than minimum collateral",
 		},
 	} {
 		suite.Run(tc.name, func() {
@@ -1497,10 +1497,10 @@ func (suite *KeeperTestSuite) TestPairedChunkTombstonedAndRedelegated() {
 
 	{
 		unpairedInsurance, _ := suite.app.LiquidStakingKeeper.GetInsurance(suite.ctx, tombstonedChunk.UnpairingInsuranceId)
-		unpairedInsuranceVal, found := suite.app.StakingKeeper.GetValidator(suite.ctx, unpairedInsurance.GetValidator())
+		unpairedInsuranceVal, _ := suite.app.StakingKeeper.GetValidator(suite.ctx, unpairedInsurance.GetValidator())
 		suite.Equal(types.INSURANCE_STATUS_UNPAIRED, unpairedInsurance.Status)
 		suite.Error(
-			suite.app.LiquidStakingKeeper.IsValidValidator(suite.ctx, unpairedInsuranceVal, found),
+			suite.app.LiquidStakingKeeper.IsValidValidator(suite.ctx, unpairedInsuranceVal),
 			"validator of unpaired insurance is tombstoned",
 		)
 	}
