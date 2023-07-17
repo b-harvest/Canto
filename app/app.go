@@ -891,6 +891,7 @@ func (app *Canto) BeginBlocker(ctx sdk.Context, req abci.RequestBeginBlock) abci
 					inflationParams := app.InflationKeeper.GetParams(ctx)
 					mintedCoin := sdk.NewCoin(inflationParams.MintDenom, epochMintProvision.TruncateInt())
 					staking, communityPool, err := app.InflationKeeper.MintAndAllocateInflation(ctx, mintedCoin)
+					app.Logger().Debug("minted and allocated inflation", "minted", mintedCoin, "staking", staking, "community_pool", communityPool)
 					if err != nil {
 						panic(err)
 					}
@@ -933,6 +934,7 @@ func (app *Canto) BeginBlocker(ctx sdk.Context, req abci.RequestBeginBlock) abci
 				{
 					feeCollectorBalance := app.BankKeeper.GetAllBalances(ctx, feeCollector)
 					rewardsToBeDistributed := feeCollectorBalance.AmountOf(sdk.DefaultBondDenom)
+					app.Logger().Debug("rewards to be distributed", "amount", rewardsToBeDistributed)
 
 					// mimic distribution.BeginBlock (AllocateTokens, get rewards from feeCollector, AllocateTokensToValidator, add remaining to feePool)
 					err := app.BankKeeper.SendCoinsFromModuleToModule(ctx, authtypes.FeeCollectorName, distrtypes.ModuleName, feeCollectorBalance)
@@ -962,9 +964,8 @@ func (app *Canto) BeginBlocker(ctx sdk.Context, req abci.RequestBeginBlock) abci
 						{Denom: app.StakingKeeper.BondDenom(ctx), Amount: remaining}}...)
 					app.DistrKeeper.SetFeePool(ctx, feePool)
 				}
-
-				app.LiquidStakingKeeper.CoverRedelegationPenalty(ctx)
 			}
+			app.LiquidStakingKeeper.CoverRedelegationPenalty(ctx)
 		}
 	}()
 
@@ -982,6 +983,7 @@ func (app *Canto) EndBlocker(ctx sdk.Context, req abci.RequestEndBlock) abci.Res
 				ctx = ctx.WithBlockTime(lsmEpoch.StartTime.Add(lsmEpoch.Duration))
 
 				staking.EndBlocker(ctx, app.StakingKeeper)
+				app.Logger().Debug("staking endblocker executed")
 				// mimic liquidstaking endblocker except increasing epoch
 				{
 					app.LiquidStakingKeeper.DistributeReward(ctx)
@@ -994,6 +996,7 @@ func (app *Canto) EndBlocker(ctx sdk.Context, req abci.RequestEndBlock) abci.Res
 					app.LiquidStakingKeeper.RePairRankedInsurances(ctx, newlyRankedInInsurances, rankOutInsurances)
 					app.LiquidStakingKeeper.IncrementEpoch(ctx)
 				}
+				app.Logger().Debug("liquidstaking endblocker executed")
 			}
 		}
 	}()
