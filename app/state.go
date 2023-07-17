@@ -3,6 +3,11 @@ package app
 import (
 	"encoding/json"
 	"fmt"
+	"io"
+	"math/rand"
+	"os"
+	"time"
+
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	simappparams "github.com/cosmos/cosmos-sdk/simapp/params"
@@ -14,10 +19,6 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	tmjson "github.com/tendermint/tendermint/libs/json"
 	tmtypes "github.com/tendermint/tendermint/types"
-	"io"
-	"math/rand"
-	"os"
-	"time"
 )
 
 var FlagGenesisTimeValue = int64(1640995200)
@@ -28,6 +29,9 @@ var FlagGenesisTimeValue = int64(1640995200)
 func AppStateFn(cdc codec.JSONCodec, simManager *module.SimulationManager) simtypes.AppStateFn {
 	return func(r *rand.Rand, accs []simtypes.Account, config simtypes.Config,
 	) (appState json.RawMessage, simAccs []simtypes.Account, chainID string, genesisTimestamp time.Time) {
+
+		sdk.DefaultPowerReduction = sdk.NewIntFromUint64(1000000)
+
 		if FlagGenesisTimeValue == 0 {
 			genesisTimestamp = simtypes.RandTimestamp(r)
 		} else {

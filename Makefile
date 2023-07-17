@@ -10,7 +10,7 @@ COMMIT := $(shell git log -1 --format='%H')
 LEDGER_ENABLED ?= true
 BINDIR ?= $(GOPATH)/bin
 canto_BINARY = cantod
-canto_DIR = canto
+canto_DIR = cantod
 BUILDDIR ?= $(CURDIR)/build
 SIMAPP = ./app
 HTTPS_GIT := https://github.com/canto/canto.git
