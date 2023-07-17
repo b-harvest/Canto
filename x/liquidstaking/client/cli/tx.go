@@ -27,92 +27,15 @@ func GetTxCmd() *cobra.Command {
 	}
 
 	cmd.AddCommand(
-		NewLiquidStakeCmd(),
-		NewLiquidUnstakeCmd(),
 		NewProvideInsuranceCmd(),
 		NewCancelProvideInsuranceCmd(),
+		NewLiquidStakeCmd(),
+		NewLiquidUnstakeCmd(),
 		NewDepositInsuranceCmd(),
 		NewWithdrawInsuranceCmd(),
 		NewWithdrawInsuranceCommissionCmd(),
 		NewClaimDiscountedRewardCmd(),
 	)
-
-	return cmd
-}
-
-func NewLiquidStakeCmd() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "liquid-stake [amount]",
-		Args:  cobra.ExactArgs(1),
-		Short: "liquid stake",
-		Long: strings.TrimSpace(
-			fmt.Sprintf(`Liquid-stake coin.
-Example:
-$ %s tx %s liquid-stake 5000000acanto --from mykey
-`,
-				version.AppName, types.ModuleName,
-			),
-		),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			clientCtx, err := client.GetClientTxContext(cmd)
-			if err != nil {
-				return err
-			}
-
-			coin, err := sdk.ParseCoinNormalized(args[0])
-			if err != nil {
-				return err
-			}
-
-			msg := types.NewMsgLiquidStake(clientCtx.GetFromAddress().String(), coin)
-			if err := msg.ValidateBasic(); err != nil {
-				return err
-			}
-
-			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
-		},
-	}
-
-	flags.AddTxFlagsToCmd(cmd)
-
-	return cmd
-}
-
-func NewLiquidUnstakeCmd() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "liquid-unstake [amount]",
-		Args:  cobra.ExactArgs(1),
-		Short: "liquid unstake",
-		Long: strings.TrimSpace(
-			fmt.Sprintf(`Liquid-unstake coin.
-
-Example:
-$ %s tx %s liquid-unstake 5000000acanto --from mykey
-`,
-				version.AppName, types.ModuleName,
-			),
-		),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			clientCtx, err := client.GetClientTxContext(cmd)
-			if err != nil {
-				return err
-			}
-
-			coin, err := sdk.ParseCoinNormalized(args[0])
-			if err != nil {
-				return err
-			}
-
-			msg := types.NewMsgLiquidUnstake(clientCtx.GetFromAddress().String(), coin)
-			if err := msg.ValidateBasic(); err != nil {
-				return err
-			}
-
-			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
-		},
-	}
-
-	flags.AddTxFlagsToCmd(cmd)
 
 	return cmd
 }
@@ -193,6 +116,83 @@ $ %s tx %s cancel-provide-insurance 1 --from mykey
 			}
 
 			msg := types.NewMsgCancelProvideInsurance(clientCtx.GetFromAddress().String(), insuranceId)
+			if err := msg.ValidateBasic(); err != nil {
+				return err
+			}
+
+			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
+		},
+	}
+
+	flags.AddTxFlagsToCmd(cmd)
+
+	return cmd
+}
+
+func NewLiquidStakeCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "liquid-stake [amount]",
+		Args:  cobra.ExactArgs(1),
+		Short: "liquid stake",
+		Long: strings.TrimSpace(
+			fmt.Sprintf(`Liquid-stake coin.
+Example:
+$ %s tx %s liquid-stake 5000000acanto --from mykey
+`,
+				version.AppName, types.ModuleName,
+			),
+		),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			coin, err := sdk.ParseCoinNormalized(args[0])
+			if err != nil {
+				return err
+			}
+
+			msg := types.NewMsgLiquidStake(clientCtx.GetFromAddress().String(), coin)
+			if err := msg.ValidateBasic(); err != nil {
+				return err
+			}
+
+			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
+		},
+	}
+
+	flags.AddTxFlagsToCmd(cmd)
+
+	return cmd
+}
+
+func NewLiquidUnstakeCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "liquid-unstake [amount]",
+		Args:  cobra.ExactArgs(1),
+		Short: "liquid unstake",
+		Long: strings.TrimSpace(
+			fmt.Sprintf(`Liquid-unstake coin.
+
+Example:
+$ %s tx %s liquid-unstake 5000000acanto --from mykey
+`,
+				version.AppName, types.ModuleName,
+			),
+		),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			coin, err := sdk.ParseCoinNormalized(args[0])
+			if err != nil {
+				return err
+			}
+
+			msg := types.NewMsgLiquidUnstake(clientCtx.GetFromAddress().String(), coin)
 			if err := msg.ValidateBasic(); err != nil {
 				return err
 			}

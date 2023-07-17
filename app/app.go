@@ -4,17 +4,16 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
-	"os"
-	"path/filepath"
-	"strconv"
-
 	"github.com/armon/go-metrics"
 	"github.com/cosmos/cosmos-sdk/telemetry"
 	"github.com/gorilla/mux"
 	"github.com/rakyll/statik/fs"
 	"github.com/spf13/cast"
+	"io"
+	"net/http"
+	"os"
+	"path/filepath"
+	"strconv"
 
 	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/log"
@@ -991,7 +990,6 @@ func (app *Canto) EndBlocker(ctx sdk.Context, req abci.RequestEndBlock) abci.Res
 					app.LiquidStakingKeeper.HandleQueuedLiquidUnstakes(ctx)
 					app.LiquidStakingKeeper.HandleUnprocessedQueuedLiquidUnstakes(ctx)
 					app.LiquidStakingKeeper.HandleQueuedWithdrawInsuranceRequests(ctx)
-					app.LiquidStakingKeeper.RemoveUnprocessedQueuedWithdrawInsuranceRequests(ctx)
 					newlyRankedInInsurances, rankOutInsurances := app.LiquidStakingKeeper.RankInsurances(ctx)
 					app.LiquidStakingKeeper.RePairRankedInsurances(ctx, newlyRankedInInsurances, rankOutInsurances)
 					app.LiquidStakingKeeper.IncrementEpoch(ctx)

@@ -19,7 +19,6 @@ func EndBlocker(ctx sdk.Context, k keeper.Keeper) {
 		k.HandleQueuedLiquidUnstakes(ctx)
 		k.HandleUnprocessedQueuedLiquidUnstakes(ctx)
 		k.HandleQueuedWithdrawInsuranceRequests(ctx)
-		k.RemoveUnprocessedQueuedWithdrawInsuranceRequests(ctx)
 		newlyRankedInInsurances, rankOutInsurances := k.RankInsurances(ctx)
 		k.RePairRankedInsurances(ctx, newlyRankedInInsurances, rankOutInsurances)
 		k.IncrementEpoch(ctx)
