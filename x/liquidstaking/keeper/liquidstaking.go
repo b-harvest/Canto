@@ -1710,6 +1710,7 @@ func (k Keeper) mustCoverDoubleSignPenaltyFromUnpairingInsurance(ctx sdk.Context
 	dstAddr := chunk.DerivedAddress()
 	unpairingInsBal := k.bankKeeper.GetBalance(ctx, unpairingIns.DerivedAddress(), bondDenom)
 	if coverAmt.GT(unpairingInsBal.Amount) {
+		panic("TODO: Implement this case")
 		unCoveredAmt = coverAmt.Sub(unpairingInsBal.Amount)
 		coverAmt = unpairingInsBal.Amount
 		dstAddr = types.RewardPool
