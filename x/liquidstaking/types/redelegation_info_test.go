@@ -36,3 +36,15 @@ func (suite *redelegationInfoTestSuite) TestValidate() {
 	delete(chunkMap, c.Id)
 	suite.Error(info.Validate(chunkMap))
 }
+
+func (suite *redelegationInfoTestSuite) TestMatured() {
+	c := types.NewChunk(1)
+	blockTime := time.Now()
+	// sub one hour from blockTime
+	oneHourBeforeBlockTime := blockTime.Add(-time.Hour)
+	info := types.NewRedelegationInfo(c.Id, oneHourBeforeBlockTime)
+	suite.False(info.Matured(blockTime))
+
+	info.CompletionTime = blockTime
+	suite.True(info.Matured(blockTime))
+}
