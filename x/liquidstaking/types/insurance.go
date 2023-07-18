@@ -104,3 +104,7 @@ func (i *Insurance) EmptyChunk() {
 func (i *Insurance) HasChunk() bool {
 	return i.ChunkId != Empty
 }
+
+func (i *Insurance) IsUnpaired() bool {
+	return i.Status == INSURANCE_STATUS_PAIRING || i.Status == INSURANCE_STATUS_UNPAIRED
+}

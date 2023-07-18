@@ -1520,6 +1520,7 @@ func (suite *KeeperTestSuite) TestPairedChunkTombstonedAndRedelegated() {
 // RE-DELEGATE v1 -> v2
 // 6. v1 - x - (x, x) and v2 - c1 - (i3, i2)
 // 7. Found evidence of double signing of v1 before re-delegation start height, so v1 is tombstoned.
+// E1-------(v1-double-signed)-------E2(re-delegate v1->v2)-------(found evidence for double-sign)-------E3(i2 must cover v1's double-sign slashing)
 // 8. i2 should cover v1's slashing penalty for re-delegation.
 // 9. After all, c1 should not get damaged.
 func (suite *KeeperTestSuite) TestRedelegateToSlashedValidator() {
@@ -1636,7 +1637,7 @@ func (suite *KeeperTestSuite) TestRedelegateToSlashedValidator() {
 		_, found = suite.app.LiquidStakingKeeper.GetUnpairingForUnstakingChunkInfo(suite.ctx, c2.Id)
 		suite.False(found, "unstaking is finished, so unpairing info is deleted")
 		i1, _ = suite.app.LiquidStakingKeeper.GetInsurance(suite.ctx, i1.Id)
-		suite.Equal(types.INSURANCE_STATUS_UNPAIRED, i1.Status, "i1 is unpaired")
+		suite.Equal(types.INSURANCE_STATUS_PAIRING, i1.Status, "i1 is unpaired, but it is still valid")
 	}
 
 	chunks = suite.app.LiquidStakingKeeper.GetAllChunks(suite.ctx)
@@ -1728,7 +1729,7 @@ func (suite *KeeperTestSuite) TestRedelegateToSlashedValidator() {
 // And during re-delegation period, evidence before re-delegation start height was discovered, so src validator is tombstoned.
 // 1. v1 - c1 - (i2, x) and v2 - c2 - (i1, x)
 // 1-1. i1 is more expensive than i2 (remember, chunk /w most expensive insurance is unpaired first when unstake)
-// 1-2. i1, i2 are above minimum requirement, so it will not be unpaired when epoch because of lack of balance.
+// 1-2. i1, i2 are above minimum requirement, so it will not be unpaired at epoch because of in-sufficient collateral.
 // 2. v1 slashed, so i2 will cover v1's slashing penalty
 // 2. v2 slashed, so i1 will cover v2's slashing penalty
 // 3. unstake c2
@@ -1764,6 +1765,7 @@ func (suite *KeeperTestSuite) TestRedelegateFromSlashedToSlashed() {
 
 	// Let's create 2 chunk and 2 insurance
 	oneChunk, oneInsurance := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
+	// 14% of chunk size are provided as collateral
 	providers, providerBalances := suite.AddTestAddrsWithFunding(fundingAccount, 2, oneInsurance.Amount.MulRaw(2))
 	suite.provideInsurances(
 		suite.ctx,
@@ -1855,7 +1857,7 @@ func (suite *KeeperTestSuite) TestRedelegateFromSlashedToSlashed() {
 		_, found = suite.app.LiquidStakingKeeper.GetUnpairingForUnstakingChunkInfo(suite.ctx, c2.Id)
 		suite.False(found, "unstaking is finished, so unpairing info is deleted")
 		i1, _ = suite.app.LiquidStakingKeeper.GetInsurance(suite.ctx, i1.Id)
-		suite.Equal(types.INSURANCE_STATUS_UNPAIRED, i1.Status, "i1 is unpaired")
+		suite.Equal(types.INSURANCE_STATUS_PAIRING, i1.Status, "i1 is unpaired, but it is still valid insurance.")
 	}
 
 	chunks = suite.app.LiquidStakingKeeper.GetAllChunks(suite.ctx)

@@ -1110,8 +1110,16 @@ func (k Keeper) burnLsTokens(ctx sdk.Context, from sdk.AccAddress, lsTokensToBur
 func (k Keeper) completeInsuranceDuty(ctx sdk.Context, ins types.Insurance) types.Insurance {
 	// insurance duty is over
 	ins.EmptyChunk()
-	ins.SetStatus(types.INSURANCE_STATUS_UNPAIRED)
-
+	validator, found := k.stakingKeeper.GetValidator(ctx, ins.GetValidator())
+	if found &&
+		k.ValidateValidator(ctx, validator) == nil &&
+		k.IsSufficientInsurance(ctx, ins) &&
+		ins.Status != types.INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAWAL {
+		// This insurance is still valid, so set status to pairing.
+		ins.SetStatus(types.INSURANCE_STATUS_PAIRING)
+	} else {
+		ins.SetStatus(types.INSURANCE_STATUS_UNPAIRED)
+	}
 	k.SetInsurance(ctx, ins)
 	return ins
 }
@@ -1424,23 +1432,10 @@ func (k Keeper) handlePairedChunk(ctx sdk.Context, chunk types.Chunk) {
 		k.completeInsuranceDuty(ctx, unpairingIns)
 	}
 
-	// If unpairing insurance of updated chunk is Unpaired
+	// If unpairing insurance of updated chunk is Unpaired or Pairing
 	// which means it already completed its duty during unpairing period,
 	// we can safely remove unpairing insurance id from the chunk.
-	chunk, found := k.GetChunk(ctx, chunk.Id)
-	if !found {
-		panic(fmt.Sprintf("chunk not found: %d", chunk.Id))
-	}
-	if chunk.HasUnpairingInsurance() {
-		unpairingIns, found := k.GetInsurance(ctx, chunk.UnpairingInsuranceId)
-		if !found {
-			panic(fmt.Sprintf("unpairing insurance not found: %d", chunk.UnpairingInsuranceId))
-		}
-		if unpairingIns.Status == types.INSURANCE_STATUS_UNPAIRED {
-			chunk.EmptyUnpairingInsurance()
-			k.SetChunk(ctx, chunk)
-		}
-	}
+	k.mustClearUnpairedInsurance(ctx, chunk)
 	return
 }
 
@@ -1448,10 +1443,7 @@ func (k Keeper) handlePairedChunk(ctx sdk.Context, chunk types.Chunk) {
 func (k Keeper) IsSufficientInsurance(ctx sdk.Context, insurance types.Insurance) bool {
 	insBal := k.bankKeeper.GetBalance(ctx, insurance.DerivedAddress(), k.stakingKeeper.BondDenom(ctx))
 	_, minimumCollateral := k.GetMinimumRequirements(ctx)
-	if insBal.Amount.LT(minimumCollateral.Amount) {
-		return false
-	}
-	return true
+	return insBal.Amount.GTE(minimumCollateral.Amount)
 }
 
 // GetAvailableChunkSlots returns a number of chunk which can be paired.
@@ -1669,4 +1661,23 @@ func (k Keeper) mustValidatePairedChunk(ctx sdk.Context, chunk types.Chunk) (
 		panic(fmt.Sprintf("delegation not found: %s(chunkId: %d)", chunk.DerivedAddress(), chunk.Id))
 	}
 	return ins, validator, delegation
+}
+
+// mustClearUnpairedInsurance clears unpaired insurance of chunk.
+func (k Keeper) mustClearUnpairedInsurance(ctx sdk.Context, chunk types.Chunk) {
+	chunk, found := k.GetChunk(ctx, chunk.Id)
+	if !found {
+		panic(fmt.Sprintf("chunk not found: %d", chunk.Id))
+	}
+	if chunk.HasUnpairingInsurance() {
+		unpairingIns, found := k.GetInsurance(ctx, chunk.UnpairingInsuranceId)
+		if !found {
+			panic(fmt.Sprintf("unpairing insurance not found: %d", chunk.UnpairingInsuranceId))
+		}
+		if unpairingIns.IsUnpaired() {
+			chunk.EmptyUnpairingInsurance()
+			k.SetChunk(ctx, chunk)
+		}
+	}
+	return
 }

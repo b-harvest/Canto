@@ -342,7 +342,8 @@ func (suite *KeeperTestSuite) TestInsurancesInvariant() {
 		suite.ctx, types.NewMsgLiquidUnstake(
 			env.delegators[0].String(),
 			sdk.NewCoin(suite.denom, types.ChunkSize),
-		))
+		),
+	)
 	suite.NoError(err)
 	suite.ctx = suite.advanceEpoch(suite.ctx)
 	suite.ctx = suite.advanceHeight(suite.ctx, 1, "unstaking chunk started")
@@ -372,12 +373,15 @@ func (suite *KeeperTestSuite) TestInsurancesInvariant() {
 		suite.mustPassInvariants()
 	}
 
-	// 4: UNPAIRED INSURANCE
+	// 4: PAIRING INSURANCE
 	suite.ctx = suite.advanceEpoch(suite.ctx)
 	suite.ctx = suite.advanceHeight(suite.ctx, 1, "unstaking chunk finished")
 
 	origin, _ = suite.app.LiquidStakingKeeper.GetInsurance(suite.ctx, originChunk.UnpairingInsuranceId)
-	suite.Equal(types.INSURANCE_STATUS_UNPAIRED, origin.Status)
+	suite.Equal(
+		types.INSURANCE_STATUS_PAIRING, origin.Status,
+		"insurance is still healthy and not for withdrawal, so it should be pairing status",
+	)
 
 	// forcefully change chunk id of unpaired insurance
 	{
