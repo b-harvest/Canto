@@ -7,6 +7,7 @@ import (
 	"os"
 	"testing"
 
+	liquidstakingtypes "github.com/Canto-Network/Canto/v6/x/liquidstaking/types"
 	"github.com/evmos/ethermint/encoding"
 	abci "github.com/tendermint/tendermint/abci/types"
 
@@ -201,21 +202,21 @@ func TestAppImportExport(t *testing.T) {
 		//{app.keys[upgradetypes.StoreKey], newApp.keys[upgradetypes.StoreKey], [][]byte{}},
 		{app.keys[evidencetypes.StoreKey], newApp.keys[evidencetypes.StoreKey], [][]byte{}},
 		{app.keys[capabilitytypes.StoreKey], newApp.keys[capabilitytypes.StoreKey], [][]byte{}},
-		// {app.keys[feegrant.StoreKey], newApp.keys[feegrant.ModuleName], [][]byte{}},
+		// {app.keys[feegrant.StoreKey], newApp.keys[feegrant.StoreKey], [][]byte{}},
 		{app.keys[authzkeeper.StoreKey], newApp.keys[authzkeeper.StoreKey], [][]byte{}},
 		{app.keys[ibchost.StoreKey], newApp.keys[ibchost.StoreKey], [][]byte{}},
 		{app.keys[ibctransfertypes.StoreKey], newApp.keys[ibctransfertypes.StoreKey], [][]byte{}},
-		// {app.keys[evmtypes.StoreKey], newApp.keys[evmtypes.ModuleName], [][]byte{}},
+		// {app.keys[evmtypes.StoreKey], newApp.keys[evmtypes.StoreKey], [][]byte{}},
 		{app.keys[feemarkettypes.StoreKey], newApp.keys[feemarkettypes.StoreKey], [][]byte{}},
-		//{app.keys[inflationtypes.StoreKey], newApp.keys[inflationtypes.ModuleName], [][]byte{}},
-		// {app.keys[erc20types.StoreKey], newApp.keys[erc20types.ModuleName], [][]byte{}},
-		//{app.keys[epochstypes.StoreKey], newApp.keys[epochstypes.ModuleName], [][]byte{}},
-		// {app.keys[vestingtypes.StoreKey], newApp.keys[vestingtypes.ModuleName], [][]byte{}},
-		// {app.keys[recoverytypes.StoreKey], newApp.keys[recoverytypes.ModuleName], [][]byte{}},
-		// {app.keys[feestypes.StoreKey], newApp.keys[feestypes.ModuleName], [][]byte{}},
-		// {app.keys[csrtypes.StoreKey], newApp.keys[csrtypes.ModuleName], [][]byte{}},
-		// {app.keys[govshuttletypes.StoreKey], newApp.keys[govshuttletypes.ModuleName], [][]byte{}},
-		// {app.keys[liquidstakingtypes.StoreKey], newApp.keys[liquidstakingtypes.ModuleName], [][]byte{}},
+		//{app.keys[inflationtypes.StoreKey], newApp.keys[inflationtypes.StoreKey], [][]byte{}},
+		// {app.keys[erc20types.StoreKey], newApp.keys[erc20types.StoreKey], [][]byte{}},
+		//{app.keys[epochstypes.StoreKey], newApp.keys[epochstypes.StoreKey], [][]byte{}},
+		// {app.keys[vestingtypes.StoreKey], newApp.keys[vestingtypes.StoreKey], [][]byte{}},
+		// {app.keys[recoverytypes.StoreKey], newApp.keys[recoverytypes.StoreKey], [][]byte{}},
+		// {app.keys[feestypes.StoreKey], newApp.keys[feestypes.StoreKey], [][]byte{}},
+		// {app.keys[csrtypes.StoreKey], newApp.keys[csrtypes.StoreKey], [][]byte{}},
+		// {app.keys[govshuttletypes.StoreKey], newApp.keys[govshuttletypes.StoreKey], [][]byte{}},
+		{app.keys[liquidstakingtypes.StoreKey], newApp.keys[liquidstakingtypes.StoreKey], [][]byte{}},
 	}
 
 	for _, skp := range storeKeysPrefixes {

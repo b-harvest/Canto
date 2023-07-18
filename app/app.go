@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strconv"
 
+	"github.com/Canto-Network/Canto/v6/x/liquidstaking"
 	"github.com/armon/go-metrics"
 	"github.com/cosmos/cosmos-sdk/telemetry"
 	"github.com/evmos/ethermint/x/feemarket"
@@ -229,7 +230,7 @@ var (
 		//epochs.AppModuleBasic{},
 		//recovery.AppModuleBasic{},
 		//fees.AppModuleBasic{},
-		//liquidstaking.AppModuleBasic{},
+		liquidstaking.AppModuleBasic{},
 	)
 
 	// module account permissions
@@ -373,7 +374,7 @@ func NewCanto(
 		//feestypes.StoreKey,
 		//csrtypes.StoreKey,
 		//govshuttletypes.StoreKey,
-		//liquidstakingtypes.StoreKey,
+		liquidstakingtypes.StoreKey,
 	)
 
 	// Add the EVM transient store key
@@ -655,7 +656,7 @@ func NewCanto(
 		//fees.NewAppModule(app.FeesKeeper, app.AccountKeeper),
 		//govshuttle.NewAppModule(app.GovshuttleKeeper, app.AccountKeeper),
 		//csr.NewAppModule(app.CSRKeeper, app.AccountKeeper),
-		//liquidstaking.NewAppModule(app.LiquidStakingKeeper, app.AccountKeeper),
+		liquidstaking.NewAppModule(app.LiquidStakingKeeper, app.AccountKeeper),
 	)
 
 	// During begin block slashing happens after distr.BeginBlocker so that
@@ -674,7 +675,7 @@ func NewCanto(
 		distrtypes.ModuleName,
 		slashingtypes.ModuleName,
 		evidencetypes.ModuleName,
-		//liquidstakingtypes.ModuleName,
+		liquidstakingtypes.ModuleName,
 		stakingtypes.ModuleName,
 		ibchost.ModuleName,
 		// no-op modules
@@ -716,7 +717,7 @@ func NewCanto(
 		slashingtypes.ModuleName,
 		genutiltypes.ModuleName,
 		evidencetypes.ModuleName,
-		//liquidstakingtypes.ModuleName,
+		liquidstakingtypes.ModuleName,
 		authz.ModuleName,
 		//feegrant.ModuleName,
 		paramstypes.ModuleName,
@@ -745,7 +746,7 @@ func NewCanto(
 		// NOTE: staking requires the claiming hook
 		stakingtypes.ModuleName,
 		slashingtypes.ModuleName,
-		//liquidstakingtypes.ModuleName,
+		liquidstakingtypes.ModuleName,
 		govtypes.ModuleName,
 		ibchost.ModuleName,
 		// Ethermint modules
@@ -804,7 +805,7 @@ func NewCanto(
 		epochs.NewAppModule(appCodec, app.EpochsKeeper),
 		inflation.NewAppModule(app.InflationKeeper, app.AccountKeeper, app.StakingKeeper),
 		feemarket.NewAppModule(app.FeeMarketKeeper),
-		// liquidstaking.NewAppModule(app.LiquidStakingKeeper, app.AccountKeeper),
+		liquidstaking.NewAppModule(app.LiquidStakingKeeper, app.AccountKeeper),
 	)
 
 	app.sm.RegisterStoreDecoders()
