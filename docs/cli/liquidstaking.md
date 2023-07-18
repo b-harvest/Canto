@@ -77,7 +77,7 @@ cantod q staking validators
 #
 # Query chunks
 # You can see newly created insurances (initial status of insurance is "Pairing")
-cantod q liquidstaking insurances
+cantod q liquidstaking insurances -o json | jq
 ```
 
 ## CancelProvideInsurance
@@ -108,7 +108,7 @@ cantod tx liquidstaking cancel-provide-insurance 3
 #
 # Query insurances
 # If it is succeeded, then you cannot see the insurance with the id in result.
-cantod q liquidstaking insurances
+cantod q liquidstaking insurances -o json | jq
 ```
 
 ## LiquidStake
@@ -145,7 +145,7 @@ cantod q bank balances <address> -o json | jq
 
 # Query chunks
 # And you can see newly created chunk with new id
-cantod q liquidstaking chunks
+cantod q liquidstaking chunks -o json | jq
 ```
 
 ## LiquidUnstake
@@ -184,7 +184,153 @@ cantod q bank balances <address> -o json | jq
 
 # Query your unstaking request
 # If your unstake request is accepted, then you can query your unstaking request.
-cantod q liquidstaking unpairing-for-unstaking-chunk-infos --queued="true"
+cantod q liquidstaking unpairing-for-unstaking-chunk-infos --queued="true" -o json | jq
+```
+
+## DepositInsuranceCmd
+
+Deposit more coins to insurance
+
+Usage
+
+```bash
+deposit-insurance [insurance-id] [amount]
+```
+
+| **Argument** | **Description**                                |
+|:-------------|:-----------------------------------------------|
+| insurance-id | the id of insurance you want to deposit        |
+| amount       | amount of coin to deposit; it must be acanto   |
+
+Example
+
+```bash
+# Deposit
+cantod tx liquidstaking deposit-insurance 1 22500000000000000000000acanto \
+--from key1 \
+--keyring-backend test \
+--fees 3000000acanto
+--gas 3000000 \
+--output json | jq
+
+#
+# Tips
+#
+# Query balance of insurance's derived address
+# Notice the added token
+cantod q bank balances <derived_address> -o json | jq
+```
+
+## WithdrawInsuranceCmd
+
+Withdraw insurance
+
+Usage
+
+```bash
+withdraw-insurance [insurance-id]
+```
+
+| **Argument** | **Description**                          |
+|:-------------|:-----------------------------------------|
+| insurance-id | the id of insurance you want to withdraw |
+
+Example
+
+```bash
+# Withdraw insurance 
+cantod tx liquidstaking withdraw-insurance 1 \
+--from key1 \
+--keyring-backend test \
+--fees 3000000acanto
+--gas 3000000 \
+--output json | jq
+
+#
+# Tips
+#
+# Query balance of insurance's derived address
+# Notice the added token
+cantod q bank balances <derived_address> -o json | jq
+
+# Query your unstaking request
+# If your unstake request is accepted, then you can query your unstaking request.
+cantod q liquidstaking withdraw-insurance-requests -o json | jq
+
+# If send request to already Unpaired insurance, then insurance is removed from state
+# and you got insurance's deposit and its commissions back.
+cantod q liquidstaking insurances
+cantod q bank balances <provider_address> -o json | jq
+```
+
+## WithdrawInsuranceCommissionCmd
+
+Withdraw insurance commission
+
+Usage
+
+```bash
+withdraw-insurance-commission [insurance-id]
+```
+
+| **Argument** | **Description**                                     |
+|:-------------|:----------------------------------------------------|
+| insurance-id | the id of insurance you want to withdraw commission |
+
+Example
+
+```bash
+# Withdraw insurance commission
+cantod tx liquidstaking withdraw-insurance-commission 1 \
+--from key1 \
+--keyring-backend test \
+--fees 3000000acanto
+--gas 3000000 \
+--output json | jq
+
+#
+# Tips
+#
+# Query balance of insurance's feepool address before withdraw
+# Notice this balance is decreased after withdraw commission.
+cantod q bank balances <fee_pool_address> -o json | jq
+cantod q bank balances <provider_address> -o json | jq
+```
+
+## ClaimDiscountedRewardCmd
+
+Claim discounted reward
+
+Usage
+
+```bash
+claim-discounted-reward [amount] [minimum-discount-rate]
+```
+
+| **Argument**          | **Description**                                                             |
+|:----------------------|:----------------------------------------------------------------------------|
+| amount                | amount of coin willing to burn to get discounted reward; it must be lscanto |
+| minimum-discount-rate | if current discount rate is lower than this, then msg will be rejected.     |
+
+Example
+
+```bash
+# Claim discounted reward
+cantod tx liquidstaking claim-discounted-reward 1000lscanto 0.009 \
+--from key1 \
+--keyring-backend test \
+--fees 3000000acanto
+--gas 3000000 \
+--output json | jq
+
+#
+# Tips
+#
+# Query states
+# If it is successful, then you can see decreased reward_module_acc_balance and ls_tokens_total_supply.
+# And your acanto balance will be increased.
+cantod q liquidstaking states
+cantod q bank balances <address> -o json | jq
 ```
 
 
@@ -206,6 +352,22 @@ Example
 ```bash
 cantod query liquidstaking params -o json | jq
 ```
+
+## Epoch
+
+Query the epoch information.
+
+Usage
+
+```bash
+epoch
+```
+
+Example
+
+```bash
+cantod query liquidstaking epoch -o json | jq
+
 
 ## LiquidValidators
 

@@ -208,7 +208,7 @@ $ %s tx %s liquid-unstake 5000000acanto --from mykey
 
 func NewDepositInsuranceCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "deposit-insurance",
+		Use:   "deposit-insurance [insurance-id] [amount]",
 		Args:  cobra.ExactArgs(2),
 		Short: "deposit more coins to insurance",
 		Long: strings.TrimSpace(
@@ -253,7 +253,7 @@ $ %s tx %s deposit-insurance 2 --from mykey
 
 func NewWithdrawInsuranceCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "withdraw-insurance",
+		Use:   "withdraw-insurance [insurance-id]",
 		Args:  cobra.ExactArgs(1),
 		Short: "withdraw insurance",
 		Long: strings.TrimSpace(
@@ -333,7 +333,7 @@ $ %s tx %s withdraw-insurance-commission 1 --from mykey
 
 func NewClaimDiscountedRewardCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "claim-discounted-reward",
+		Use:   "claim-discounted-reward [amount] [minimum-discount-rate]",
 		Args:  cobra.ExactArgs(2),
 		Short: "claim discounted reward accumulated in reward pool",
 		Long: strings.TrimSpace(

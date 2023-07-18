@@ -4,16 +4,17 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/armon/go-metrics"
-	"github.com/cosmos/cosmos-sdk/telemetry"
-	"github.com/gorilla/mux"
-	"github.com/rakyll/statik/fs"
-	"github.com/spf13/cast"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
+
+	"github.com/armon/go-metrics"
+	"github.com/cosmos/cosmos-sdk/telemetry"
+	"github.com/gorilla/mux"
+	"github.com/rakyll/statik/fs"
+	"github.com/spf13/cast"
 
 	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/log"
@@ -793,19 +794,19 @@ func NewCanto(
 		bank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper),
 		capability.NewAppModule(appCodec, *app.CapabilityKeeper),
 		gov.NewAppModule(appCodec, app.GovKeeper, app.AccountKeeper, app.BankKeeper),
-		//staking.NewAppModule(appCodec, app.StakingKeeper, app.AccountKeeper, app.BankKeeper),
+		// staking.NewAppModule(appCodec, app.StakingKeeper, app.AccountKeeper, app.BankKeeper),
 		distr.NewAppModule(appCodec, app.DistrKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper),
 		slashing.NewAppModule(appCodec, app.SlashingKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper),
 		params.NewAppModule(app.ParamsKeeper),
 		evidence.NewAppModule(app.EvidenceKeeper),
-		//feegrantmodule.NewAppModule(appCodec, app.AccountKeeper, app.BankKeeper, app.FeeGrantKeeper, app.interfaceRegistry),
-		//authzmodule.NewAppModule(appCodec, app.AuthzKeeper, app.AccountKeeper, app.BankKeeper, app.interfaceRegistry),
-		//ibc.NewAppModule(app.IBCKeeper),
-		//transferModule,
-		//evm.NewAppModule(app.EvmKeeper, app.AccountKeeper),
+		// feegrantmodule.NewAppModule(appCodec, app.AccountKeeper, app.BankKeeper, app.FeeGrantKeeper, app.interfaceRegistry),
+		// authzmodule.NewAppModule(appCodec, app.AuthzKeeper, app.AccountKeeper, app.BankKeeper, app.interfaceRegistry),
+		// ibc.NewAppModule(app.IBCKeeper),
+		// transferModule,
+		// evm.NewAppModule(app.EvmKeeper, app.AccountKeeper),
 		epochs.NewAppModule(appCodec, app.EpochsKeeper),
 		inflation.NewAppModule(app.InflationKeeper, app.AccountKeeper, app.StakingKeeper),
-		//feemarket.NewAppModule(app.FeeMarketKeeper),
+		// feemarket.NewAppModule(app.FeeMarketKeeper),
 		liquidstaking.NewAppModule(app.LiquidStakingKeeper, app.AccountKeeper),
 	)
 
@@ -876,6 +877,7 @@ func (app *Canto) BeginBlocker(ctx sdk.Context, req abci.RequestBeginBlock) abci
 		// https://kodeit.dev/go-injecting-variable-values-during-building-binary-creating-build-script/
 		if EnableAdvanceEpoch {
 			if int(ctx.BlockHeight())%EpochPerBlock == 0 {
+				bondDenom := app.StakingKeeper.BondDenom(ctx)
 				lsmEpoch := app.LiquidStakingKeeper.GetEpoch(ctx)
 				ctx = ctx.WithBlockTime(lsmEpoch.StartTime.Add(lsmEpoch.Duration))
 				staking.BeginBlocker(ctx, app.StakingKeeper)
@@ -889,7 +891,8 @@ func (app *Canto) BeginBlocker(ctx sdk.Context, req abci.RequestBeginBlock) abci
 						panic("epoch mint provision not found")
 					}
 					inflationParams := app.InflationKeeper.GetParams(ctx)
-					mintedCoin := sdk.NewCoin(inflationParams.MintDenom, epochMintProvision.TruncateInt())
+					// mintedCoin := sdk.NewCoin(inflationParams.MintDenom, epochMintProvision.TruncateInt())
+					mintedCoin := sdk.NewCoin(inflationParams.MintDenom, sdk.TokensFromConsensusPower(100, ethermint.PowerReduction))
 					staking, communityPool, err := app.InflationKeeper.MintAndAllocateInflation(ctx, mintedCoin)
 					app.Logger().Debug("minted and allocated inflation", "minted", mintedCoin, "staking", staking, "community_pool", communityPool)
 					if err != nil {
@@ -929,11 +932,11 @@ func (app *Canto) BeginBlocker(ctx sdk.Context, req abci.RequestBeginBlock) abci
 					)
 				}
 
-				feeCollector := app.AccountKeeper.GetModuleAddress(authtypes.FeeCollectorName)
+				feeCollector := app.AccountKeeper.GetModuleAccount(ctx, authtypes.FeeCollectorName)
 				// mimic the begin block logic of distribution module
 				{
-					feeCollectorBalance := app.BankKeeper.GetAllBalances(ctx, feeCollector)
-					rewardsToBeDistributed := feeCollectorBalance.AmountOf(sdk.DefaultBondDenom)
+					feeCollectorBalance := app.BankKeeper.GetAllBalances(ctx, feeCollector.GetAddress())
+					rewardsToBeDistributed := feeCollectorBalance.AmountOf(bondDenom)
 					app.Logger().Debug("rewards to be distributed", "amount", rewardsToBeDistributed)
 
 					// mimic distribution.BeginBlock (AllocateTokens, get rewards from feeCollector, AllocateTokensToValidator, add remaining to feePool)
@@ -953,7 +956,7 @@ func (app *Canto) BeginBlocker(ctx sdk.Context, req abci.RequestBeginBlock) abci
 							consPower := validator.GetConsensusPower(app.StakingKeeper.PowerReduction(ctx))
 							powerFraction := sdk.NewDec(consPower).QuoTruncate(sdk.NewDec(totalPower))
 							reward := rewardsToBeDistributed.ToDec().MulTruncate(powerFraction)
-							app.DistrKeeper.AllocateTokensToValidator(ctx, validator, sdk.DecCoins{{Denom: sdk.DefaultBondDenom, Amount: reward}})
+							app.DistrKeeper.AllocateTokensToValidator(ctx, validator, sdk.DecCoins{{Denom: bondDenom, Amount: reward}})
 							totalRewards = totalRewards.Add(reward)
 							return false
 						})
@@ -961,7 +964,7 @@ func (app *Canto) BeginBlocker(ctx sdk.Context, req abci.RequestBeginBlock) abci
 					remaining := rewardsToBeDistributed.ToDec().Sub(totalRewards)
 					feePool := app.DistrKeeper.GetFeePool(ctx)
 					feePool.CommunityPool = feePool.CommunityPool.Add(sdk.DecCoins{
-						{Denom: app.StakingKeeper.BondDenom(ctx), Amount: remaining}}...)
+						{Denom: bondDenom, Amount: remaining}}...)
 					app.DistrKeeper.SetFeePool(ctx, feePool)
 				}
 			}
