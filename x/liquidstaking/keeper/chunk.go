@@ -22,6 +22,14 @@ func (k Keeper) GetChunk(ctx sdk.Context, id uint64) (chunk types.Chunk, found b
 	return chunk, true
 }
 
+func (k Keeper) mustGetChunk(ctx sdk.Context, id uint64) types.Chunk {
+	chunk, found := k.GetChunk(ctx, id)
+	if !found {
+		panic("chunk not found")
+	}
+	return chunk
+}
+
 func (k Keeper) DeleteChunk(ctx sdk.Context, id uint64) {
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.GetChunkKey(id))

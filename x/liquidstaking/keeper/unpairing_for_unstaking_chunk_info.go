@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"fmt"
 	"github.com/Canto-Network/Canto/v6/x/liquidstaking/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
@@ -19,6 +20,14 @@ func (k Keeper) GetUnpairingForUnstakingChunkInfo(ctx sdk.Context, id uint64) (i
 	}
 	k.cdc.MustUnmarshal(bz, &info)
 	return info, true
+}
+
+func (k Keeper) mustGetUnpairingForUnstakingChunkInfo(ctx sdk.Context, id uint64) types.UnpairingForUnstakingChunkInfo {
+	info, found := k.GetUnpairingForUnstakingChunkInfo(ctx, id)
+	if !found {
+		panic(fmt.Sprintf("unpairing for unstaking chunk info not found: %d", id))
+	}
+	return info
 }
 
 func (k Keeper) DeleteUnpairingForUnstakingChunkInfo(ctx sdk.Context, id uint64) {
