@@ -3,11 +3,12 @@ package keeper
 import (
 	"errors"
 	"fmt"
-	"github.com/cosmos/cosmos-sdk/x/evidence/exported"
-	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/cosmos/cosmos-sdk/x/evidence/exported"
+	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 
 	"github.com/Canto-Network/Canto/v6/x/liquidstaking/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -972,7 +973,7 @@ func (k Keeper) CalcDiscountRate(ctx sdk.Context) sdk.Dec {
 	if accumulatedReward.IsZero() || numPairedChunks == 0 {
 		return sdk.ZeroDec()
 	}
-	discountRate := accumulatedReward.Amount.ToDec().Quo(
+	discountRate := accumulatedReward.Amount.ToDec().QuoTruncate(
 		sdk.NewInt(numPairedChunks).Mul(types.ChunkSize).ToDec(),
 	)
 	return sdk.MinDec(discountRate, types.MaximumDiscountRate)
@@ -1140,7 +1141,7 @@ func (k Keeper) completeLiquidUnstake(ctx sdk.Context, chunk types.Chunk) {
 		if exceedInsBal {
 			// The chunk has already been damaged because unpairing insurance was unable to cover the penalty.
 			// Let's refund some lsTokens to unstaker since escrowed lsTokens were for the entire chunk (250K tokens), not the damaged chunk.
-			penaltyRatio := penaltyAmt.ToDec().Quo(types.ChunkSize.ToDec())
+			penaltyRatio := penaltyAmt.ToDec().QuoTruncate(types.ChunkSize.ToDec())
 			discountAmt := penaltyRatio.Mul(lsTokensToBurn.Amount.ToDec()).TruncateInt()
 			refundCoin := sdk.NewCoin(liquidBondDenom, discountAmt)
 

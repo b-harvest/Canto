@@ -77,5 +77,5 @@ func (k Keeper) MaxPairedChunks(ctx sdk.Context) sdk.Int {
 	// 1. u = (chunkSize * numPairedChunks) / totalSupply
 	// 2. numPairedChunks = u * (totalSupply / chunkSize)
 	// 3. maxPairedChunks = hardCap * (totalSupply / chunkSize)
-	return hardCap.Mul(totalSupply.Amount.ToDec().Quo(types.ChunkSize.ToDec())).TruncateInt()
+	return hardCap.Mul(totalSupply.Amount.ToDec().QuoTruncate(types.ChunkSize.ToDec())).TruncateInt()
 }

@@ -2840,7 +2840,7 @@ func (suite *KeeperTestSuite) TestCalcDiscountRate() {
 		{
 			"small reward",
 			10,
-			sdk.MustNewDecFromStr("0.003239961120466554"),
+			sdk.MustNewDecFromStr("0.003239961120466553"),
 		},
 	}
 
@@ -2900,18 +2900,18 @@ func (suite *KeeperTestSuite) TestDoClaimDiscountedReward() {
 			"discounted little and claim all",
 			100,
 			expected{
-				"0.003239996112004665",
-				"8047671917274489906849",
-				"251625263904734654486785",
+				"0.003239996112004664",
+				"8047671917274489914949",
+				"251625263904734654233524",
 				true,
 				"0.996770467560542769",
 				"0",
 				"250000000000000000000000",
 				"0.996780931233090204",
 				"8099990280011661750000",
-				"241952328082725510093151",
+				"241952328082725510085051",
 				"0.000010463672547435",
-				"8047671917274489906849",
+				"8047671917274489914949",
 			},
 			types.NewMsgClaimDiscountedReward(
 				env.delegators[0].String(),
@@ -2923,8 +2923,8 @@ func (suite *KeeperTestSuite) TestDoClaimDiscountedReward() {
 			"discounted little and claim little",
 			100,
 			expected{
-				"0.003239996112004665",
-				"8047671917274489906849",
+				"0.003239996112004664",
+				"8047671917274489914949",
 				"1006",
 				false,
 				"0.996770467560542769",
