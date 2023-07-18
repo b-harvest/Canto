@@ -3,6 +3,8 @@ package keeper
 import (
 	"errors"
 	"fmt"
+	"github.com/cosmos/cosmos-sdk/x/evidence/exported"
+	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	"strconv"
 	"strings"
 	"time"
@@ -334,6 +336,8 @@ func (k Keeper) GetAllRePairableChunksAndOutInsurances(ctx sdk.Context) (
 			pairedIns, validator, _ := k.mustValidatePairedChunk(ctx, chunk)
 			if err := k.ValidateValidator(ctx, validator); err != nil {
 				outInsurances = append(outInsurances, pairedIns)
+				chunk.SetStatus(types.CHUNK_STATUS_UNPAIRING)
+				k.SetChunk(ctx, chunk)
 			} else {
 				validPairedInsuranceMap[pairedIns.Id] = struct{}{}
 			}
@@ -452,7 +456,7 @@ func (k Keeper) RePairRankedInsurances(
 		}
 	}
 
-	// pairing chunks are immediately pairable
+	// pairing chunks are immediately pairable, so just delegate it.
 	var pairingChunks []types.Chunk
 	pairingChunks = k.GetAllPairingChunks(ctx)
 	bondDenom := k.stakingKeeper.BondDenom(ctx)
@@ -568,9 +572,7 @@ func (k Keeper) RePairRankedInsurances(
 	for _, outIns := range restOutInsurances {
 		chunk := k.mustGetChunk(ctx, outIns.ChunkId)
 		if chunk.Status != types.CHUNK_STATUS_UNPAIRING {
-			// CRITICAL: Must be unpairing status
-			ctx.Logger().Error("chunk status must be unpairing", "chunk", chunk)
-			chunk.Status = types.CHUNK_STATUS_UNPAIRING
+			panic(fmt.Sprintf("chunk status is not unpairing(chunkId: %d, status: %s)", chunk.Id, chunk.Status))
 		}
 		// get delegation shares of out insurance
 		delegation, found := k.stakingKeeper.GetDelegation(ctx, chunk.DerivedAddress(), outIns.GetValidator())
@@ -1283,7 +1285,40 @@ func (k Keeper) handlePairedChunk(ctx sdk.Context, chunk types.Chunk) {
 	var undelegatedByRedelPenalty bool
 	if penaltyAmt.IsPositive() {
 		info, found := k.GetRedelegationInfo(ctx, chunk.Id)
-		if found && info.PenaltyAmt.IsPositive() {
+		if k.isRepairingChunk(ctx, chunk) {
+			// If chunk is repairing and validator is tombstoned then check evidence and
+			// decide which insurance should pay penalty.
+			err = k.ValidateValidator(ctx, validator)
+			switch err {
+			case nil:
+				// validator is not tombstoned
+				// no need to handle this case
+			case types.ErrTombstonedValidator:
+				latestEvidence, err := k.findLatestEvidence(ctx, validator)
+				if err != nil {
+					panic(err)
+				}
+
+				if latestEvidence == nil {
+					panic("tombstoned validator but have no evidence, impossible")
+				}
+				epoch := k.GetEpoch(ctx)
+				if epoch.GetStartHeight() < latestEvidence.GetHeight() {
+					// there was double sign slashing after re-pairing, so in this case
+					// unpairing insurance doesn't have to pay for penalty
+				} else {
+					// TODO: Impelment rest of logics
+					coveredAmt, _, damagedChunk := k.mustCoverDoubleSignPenaltyFromUnpairingInsurance(ctx, chunk)
+					penaltyAmt = penaltyAmt.Sub(coveredAmt)
+					if damagedChunk {
+						//
+					} else {
+						// update variables after cover double sign penalty
+						_, validator, del = k.mustValidatePairedChunk(ctx, chunk)
+					}
+				}
+			}
+		} else if found && info.PenaltyAmt.IsPositive() {
 			// EDGE CASE: un-pairing chunk couldn't cover penalty at CoverRedelegationPenalty.
 			// In this case, chunk's never can be normal because it is decided to be damaged.
 			// (paired insurance does not cover penalty from un-pairing insurance's validator)
@@ -1314,7 +1349,6 @@ func (k Keeper) handlePairedChunk(ctx sdk.Context, chunk types.Chunk) {
 				),
 			)
 		}
-
 		pairedInsBal := k.bankKeeper.GetBalance(ctx, pairedIns.DerivedAddress(), bondDenom)
 		// EDGE CASE: paired insurance cannot cover penalty
 		if penaltyAmt.GT(pairedInsBal.Amount) {
@@ -1620,6 +1654,97 @@ func (k Keeper) mustClearUnpairedInsurance(ctx sdk.Context, id uint64) {
 		if unpairingIns.IsUnpaired() {
 			chunk.EmptyUnpairingInsurance()
 			k.SetChunk(ctx, chunk)
+		}
+	}
+	return
+}
+
+// isRepairingChunk returns true if the chunk is repairing without re-delegation obj.
+func (k Keeper) isRepairingChunk(ctx sdk.Context, chunk types.Chunk) bool {
+	if chunk.HasPairedInsurance() && chunk.HasUnpairingInsurance() {
+		pairedIns := k.mustGetInsurance(ctx, chunk.PairedInsuranceId)
+		unpairingIns := k.mustGetInsurance(ctx, chunk.UnpairingInsuranceId)
+		if pairedIns.GetValidator().Equals(unpairingIns.GetValidator()) {
+			return true
+		}
+	}
+	return false
+}
+
+func (k Keeper) findLatestEvidence(ctx sdk.Context, validator stakingtypes.Validator) (latest *evidencetypes.Equivocation, err error) {
+	k.evidenceKeeper.IterateEvidence(ctx, func(evidence exported.Evidence) (stop bool) {
+		if v, ok := evidence.(*evidencetypes.Equivocation); ok {
+			consAddr, err := validator.GetConsAddr()
+			if err != nil {
+				return true
+			}
+			if v.GetConsensusAddress().Equals(consAddr) {
+				if latest == nil {
+					latest = v
+					return false
+				}
+				if v.GetHeight() > latest.GetHeight() {
+					latest = v
+				}
+			}
+		}
+		return false
+	})
+	return
+}
+
+// mustCoverDoubleSignPenaltyFromUnpairingInsurance covers dobule sign slashing penalty from unpairing insurance.
+func (k Keeper) mustCoverDoubleSignPenaltyFromUnpairingInsurance(ctx sdk.Context, chunk types.Chunk) (
+	coverAmt, unCoveredAmt sdk.Int, damagedChunk bool,
+) {
+	// initialize both sdk.Int variables
+	coverAmt = sdk.ZeroInt()
+	unCoveredAmt = sdk.ZeroInt()
+
+	unpairingIns := k.mustGetInsurance(ctx, chunk.UnpairingInsuranceId)
+	bondDenom := k.stakingKeeper.BondDenom(ctx)
+
+	params := k.slashingKeeper.GetParams(ctx)
+	coverAmt = types.ChunkSize.ToDec().Mul(params.SlashFractionDoubleSign).Ceil().TruncateInt()
+	dstAddr := chunk.DerivedAddress()
+	unpairingInsBal := k.bankKeeper.GetBalance(ctx, unpairingIns.DerivedAddress(), bondDenom)
+	if coverAmt.GT(unpairingInsBal.Amount) {
+		unCoveredAmt = coverAmt.Sub(unpairingInsBal.Amount)
+		coverAmt = unpairingInsBal.Amount
+		dstAddr = types.RewardPool
+		// In this moment, chunk is decieded to be damaged and start to unpair.
+		// Becausae there's no other insurances to fill the gap instead of unpairing insurance.
+		damagedChunk = true
+	}
+	coveredCoins := sdk.NewCoins(sdk.NewCoin(bondDenom, coverAmt))
+	if coveredCoins.IsValid() && coveredCoins.IsAllPositive() {
+		if err := k.bankKeeper.SendCoins(ctx, unpairingIns.DerivedAddress(), dstAddr, coveredCoins); err != nil {
+			panic(err)
+		}
+		if !damagedChunk {
+			validator, found := k.stakingKeeper.GetValidator(ctx, unpairingIns.GetValidator())
+			if !found {
+				panic(fmt.Sprintf("validator not found: %s", unpairingIns.GetValidator()))
+			}
+			newShares, err := k.stakingKeeper.Delegate(
+				ctx, chunk.DerivedAddress(), coverAmt, stakingtypes.Unbonded, validator, true,
+			)
+			if err != nil {
+				panic(err)
+			}
+			ctx.EventManager().EmitEvent(
+				sdk.NewEvent(
+					stakingtypes.EventTypeDelegate,
+					sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
+					sdk.NewAttribute(types.AttributeKeyChunkId, fmt.Sprintf("%d", chunk.Id)),
+					sdk.NewAttribute(types.AttributeKeyInsuranceId, fmt.Sprintf("%d", unpairingIns.Id)),
+					sdk.NewAttribute(stakingtypes.AttributeKeyDelegator, chunk.DerivedAddress().String()),
+					sdk.NewAttribute(stakingtypes.AttributeKeyValidator, validator.GetOperator().String()),
+					sdk.NewAttribute(sdk.AttributeKeyAmount, coverAmt.String()),
+					sdk.NewAttribute(stakingtypes.AttributeKeyNewShares, newShares.String()),
+					sdk.NewAttribute(types.AttributeKeyReason, types.AttributeValueReasonUnpairingInsuranceCoverPenalty),
+				),
+			)
 		}
 	}
 	return

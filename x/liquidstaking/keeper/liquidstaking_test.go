@@ -27,6 +27,7 @@ import (
 var onePower int64 = 1
 var TenPercentFeeRate = sdk.NewDecWithPrec(10, 2)
 var FivePercentFeeRate = sdk.NewDecWithPrec(5, 2)
+var OnePercentFeeRate = sdk.NewDecWithPrec(1, 2)
 
 // fundingAccount is a rich account.
 // Any accounts created during tests except validators must get funding from this account.
@@ -3324,6 +3325,53 @@ func (suite *KeeperTestSuite) TestOnlyOnePairedChunkGotDamagedSoNoChunksAvailabl
 	)
 }
 
+// TestPenaltyCoverageInSameValidatorRePairing tests whether unpairing insurance which have same validator with
+// paired insurance and ranked-out from previous epoch cover penalty before the epoch or not.
+func (suite *KeeperTestSuite) TestPenaltyCoverageInSameValidatorRePairing() {
+	env := suite.setupLiquidStakeTestingEnv(
+		testingEnvOptions{
+			"TestTargetChunkGotBothUnstakeAndWithdrawInsuranceReqs",
+			2,
+			TenPercentFeeRate,
+			nil,
+			onePower,
+			nil,
+			2,
+			sdk.ZeroDec(),
+			[]sdk.Dec{TenPercentFeeRate, FivePercentFeeRate},
+			2,
+			types.ChunkSize.MulRaw(500),
+		},
+	)
+	_, oneInsurance := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
+	providers, bals := suite.AddTestAddrsWithFunding(fundingAccount, 1, oneInsurance.Amount)
+	// provide insurance which have same validator and have cheaper fee rate
+	insurances := suite.provideInsurances(suite.ctx, providers, []sdk.ValAddress{env.valAddrs[0]}, bals, OnePercentFeeRate, nil)
+	newIns := insurances[0]
+
+	chunk := env.pairedChunks[1]
+	outIns := env.insurances[0]
+	suite.Equal(outIns.Id, chunk.PairedInsuranceId)
+
+	suite.ctx = suite.advanceHeight(suite.ctx, 5, "5 block passed")
+	// before re-delegation
+	evidenceHeight := suite.ctx.BlockHeight()
+	suite.ctx = suite.advanceHeight(suite.ctx, 5, "5 block passed")
+
+	suite.ctx = suite.advanceEpoch(suite.ctx)
+	suite.ctx = suite.advanceHeight(suite.ctx, 1, "re-pairing")
+	chunk, _ = suite.app.LiquidStakingKeeper.GetChunk(suite.ctx, chunk.Id)
+	suite.Equal(newIns.Id, chunk.PairedInsuranceId)
+
+	suite.ctx = suite.advanceHeight(suite.ctx, 10, "10 blocks passed")
+	// tombstoned after re-delegation
+	suite.tombstone(suite.ctx, env.valAddrs[0], env.pubKeys[0], evidenceHeight)
+
+	// penalty must be covered by outIns
+	suite.ctx = suite.advanceEpoch(suite.ctx)
+	suite.ctx = suite.advanceHeight(suite.ctx, 1, "unpairing insurance will cover double sign slashing penalty")
+}
+
 func (suite *KeeperTestSuite) downTimeSlashing(
 	ctx sdk.Context, downValPubKey cryptotypes.PubKey, power int64, called int, blockTime time.Duration,
 ) (penalty sdk.Int) {
@@ -3393,12 +3441,12 @@ func (suite *KeeperTestSuite) tombstone(
 }
 
 func (suite *KeeperTestSuite) unjail(ctx sdk.Context, valAddr sdk.ValAddress, pubKey cryptotypes.PubKey, blockTime time.Duration) {
-	jailDuration := suite.app.SlashingKeeper.GetParams(suite.ctx).DowntimeJailDuration
+	jailDuration := suite.app.SlashingKeeper.GetParams(ctx).DowntimeJailDuration
 	blockNum := int64(jailDuration / blockTime)
-	suite.ctx = suite.ctx.WithBlockHeight(
-		suite.ctx.BlockHeight() + blockNum,
+	suite.ctx = ctx.WithBlockHeight(
+		ctx.BlockHeight() + blockNum,
 	).WithBlockTime(
-		suite.ctx.BlockTime().Add(jailDuration),
+		ctx.BlockTime().Add(jailDuration),
 	)
 	suite.NoError(suite.app.SlashingKeeper.Unjail(suite.ctx, valAddr))
 	updates := staking.EndBlocker(suite.ctx, suite.app.StakingKeeper)

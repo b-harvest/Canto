@@ -473,11 +473,6 @@ func NewCanto(
 		authtypes.FeeCollectorName,
 	)
 
-	app.LiquidStakingKeeper = liquidstakingkeeper.NewKeeper(
-		keys[liquidstakingtypes.StoreKey], appCodec, app.GetSubspace(liquidstakingtypes.ModuleName),
-		app.AccountKeeper, app.BankKeeper, app.DistrKeeper, &stakingKeeper, app.SlashingKeeper,
-	)
-
 	// register the staking hooks
 	// NOTE: stakingKeeper above is passed by reference, so that it will contain these hooks
 	// NOTE: Distr, Slashing and Claim must be created before calling the Hooks method to avoid returning a Keeper without its table generated
@@ -613,6 +608,11 @@ func NewCanto(
 	)
 	// If evidence needs to be handled for the app, set routes in router here and seal
 	app.EvidenceKeeper = *evidenceKeeper
+
+	app.LiquidStakingKeeper = liquidstakingkeeper.NewKeeper(
+		keys[liquidstakingtypes.StoreKey], appCodec, app.GetSubspace(liquidstakingtypes.ModuleName),
+		app.AccountKeeper, app.BankKeeper, app.DistrKeeper, &stakingKeeper, app.SlashingKeeper, app.EvidenceKeeper,
+	)
 
 	/****  Module Options ****/
 

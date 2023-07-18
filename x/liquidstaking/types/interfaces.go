@@ -1,6 +1,8 @@
 package types
 
 import (
+	"github.com/cosmos/cosmos-sdk/x/evidence/exported"
+	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -96,6 +98,12 @@ type DistributionKeeper interface {
 // SlashingKeeper expected slashing keeper (noalias)
 type SlashingKeeper interface {
 	IsTombstoned(ctx sdk.Context, consAddr sdk.ConsAddress) bool
+	GetParams(ctx sdk.Context) slashingtypes.Params
+}
+
+// EvidenceKeeper expected evidence keeper (noalias)
+type EvidenceKeeper interface {
+	IterateEvidence(ctx sdk.Context, cb func(exported.Evidence) bool)
 }
 
 // StakingHooks event hooks for staking validator object (noalias)
