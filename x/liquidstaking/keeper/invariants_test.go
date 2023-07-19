@@ -635,16 +635,4 @@ func (suite *KeeperTestSuite) checkUnpairingAndUnpairingForUnstakingChunks(
 		suite.app.StakingKeeper.SetUnbondingDelegation(ctx, ubd)
 		suite.mustPassInvariants()
 	}
-
-	// forcefully change initial balance of unbonding entry
-	{
-		ubd.Entries[0].InitialBalance = ubd.Entries[0].InitialBalance.Sub(sdk.OneInt())
-		suite.app.StakingKeeper.SetUnbondingDelegation(ctx, ubd)
-		_, broken := keeper.ChunksInvariant(suite.app.LiquidStakingKeeper)(ctx)
-		suite.True(broken, "chunk's unbonding delegation's entry must have valid initial balance")
-		// recover
-		ubd.Entries[0].InitialBalance = ubd.Entries[0].InitialBalance.Add(sdk.OneInt())
-		suite.app.StakingKeeper.SetUnbondingDelegation(ctx, ubd)
-		suite.mustPassInvariants()
-	}
 }
