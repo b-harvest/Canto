@@ -142,11 +142,6 @@ func ChunksInvariant(k Keeper) sdk.Invariant {
 					brokenCount++
 					return false
 				}
-				if ubd.Entries[0].InitialBalance.LT(types.ChunkSize) {
-					msg += fmt.Sprintf("unbonding delegation tokens of unpairing chunk(id: %d) is less than chunk size tokens: %s\n", chunk.Id, ubd.Entries[0].InitialBalance.String())
-					brokenCount++
-					return false
-				}
 			default:
 				msg += fmt.Sprintf("chunk(id: %d) have invalid status: %s\n", chunk.Id, chunk.Status)
 				brokenCount++

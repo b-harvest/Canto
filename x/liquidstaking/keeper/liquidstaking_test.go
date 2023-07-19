@@ -3372,6 +3372,93 @@ func (suite *KeeperTestSuite) TestPenaltyCoverageInSameValidatorRePairing() {
 	suite.ctx = suite.advanceHeight(suite.ctx, 1, "unpairing insurance will cover double sign slashing penalty")
 }
 
+func (suite *KeeperTestSuite) TestGetAllRePairableChunksAndOutInsurances() {
+	// create 3 paired chunks
+	// create 2 unpairing for unstaking chunks
+	// create 2 unpairing chunk wihtout unbonding delegation obj
+	// create 1 unpairing chunk with unbonding delegation obj
+	env := suite.setupLiquidStakeTestingEnv(
+		testingEnvOptions{
+			"TestGetAllRePairableChunksAndOutInsurances",
+			8,
+			TenPercentFeeRate,
+			nil,
+			onePower,
+			nil,
+			8,
+			TenPercentFeeRate,
+			nil,
+			8,
+			types.ChunkSize.MulRaw(500),
+		},
+	)
+	// 1, 2, 3: paired chunks - Pairable
+	paraibles := []uint64{1, 2, 3}
+	bondDenom := suite.app.StakingKeeper.BondDenom(suite.ctx)
+	// 7, 8: unpairing for unstaking chunks - Not pairable
+	notPairables := []uint64{7, 8}
+	for i := 6; i <= 7; i++ {
+		suite.app.LiquidStakingKeeper.QueueLiquidUnstake(
+			suite.ctx, types.NewMsgLiquidUnstake(env.delegators[i].String(), sdk.NewCoin(bondDenom, types.ChunkSize)),
+		)
+	}
+	infos := suite.app.LiquidStakingKeeper.GetAllUnpairingForUnstakingChunkInfos(suite.ctx)
+	suite.Require().Equal(2, len(infos))
+	suite.Equal(uint64(7), infos[0].ChunkId)
+	suite.Equal(uint64(8), infos[1].ChunkId)
+
+	// 5, 6: Unpairing chunk without unbonding delegation obj - Pairable
+	paraibles = append(paraibles, 5, 6)
+	for i := 5; i <= 6; i++ {
+		suite.app.LiquidStakingKeeper.DoWithdrawInsurance(
+			suite.ctx, types.NewMsgWithdrawInsurance(env.insurances[i-1].ProviderAddress, env.insurances[i-1].Id),
+		)
+	}
+	reqs := suite.app.LiquidStakingKeeper.GetAllWithdrawInsuranceRequests(suite.ctx)
+	suite.Equal(uint64(5), reqs[0].InsuranceId)
+	suite.Equal(uint64(6), reqs[1].InsuranceId)
+
+	// 4: Unpairing chunk with unbonding delegation obj -> Not Pairable
+	// Damaged chunk situation
+	notPairables = append(notPairables, 4)
+	tombstoneValAddr := env.valAddrs[3]
+	tombstonePubKey := env.pubKeys[3]
+	notEnoughIns := env.insurances[3]
+
+	_, oneIns := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
+
+	suite.ctx = suite.advanceHeight(suite.ctx, 5, "5 block passed")
+	suite.tombstone(suite.ctx, tombstoneValAddr, tombstonePubKey, suite.ctx.BlockHeight())
+	// Let's make notEnoughIns to cover tombstone
+	suite.app.BankKeeper.SendCoins(suite.ctx, notEnoughIns.DerivedAddress(), types.RewardPool, sdk.NewCoins(oneIns))
+	suite.ctx = suite.advanceEpoch(suite.ctx)
+	suite.ctx = suite.advanceHeight(suite.ctx, 1, "testing env is set finally")
+
+	expectedRepairableChunkIds := make(map[uint64]bool)
+	notRepairableChunkIds := make(map[uint64]bool)
+	{
+		for _, id := range paraibles {
+			expectedRepairableChunkIds[id] = true
+		}
+		for _, id := range notPairables {
+			notRepairableChunkIds[id] = true
+		}
+	}
+	expectedOutInsurances := make(map[uint64]bool)
+	{
+		expectedOutInsurances[5] = true
+		expectedOutInsurances[6] = true
+	}
+	rePairableChunks, outInsurances, _ := suite.app.LiquidStakingKeeper.GetAllRePairableChunksAndOutInsurances(suite.ctx)
+	for _, chunk := range rePairableChunks {
+		suite.True(expectedRepairableChunkIds[chunk.Id])
+		suite.False(notRepairableChunkIds[chunk.Id])
+	}
+	for _, ins := range outInsurances {
+		suite.True(expectedOutInsurances[ins.Id])
+	}
+}
+
 func (suite *KeeperTestSuite) downTimeSlashing(
 	ctx sdk.Context, downValPubKey cryptotypes.PubKey, power int64, called int, blockTime time.Duration,
 ) (penalty sdk.Int) {

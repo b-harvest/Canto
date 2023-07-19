@@ -307,7 +307,7 @@ func (k Keeper) HandleQueuedWithdrawInsuranceRequests(ctx sdk.Context) []types.I
 // - Paired
 // - Unpairing but not in un-bonding
 // Out insurances contains insurances with the following statuses
-// - Serving unpairing chunk which have no unbonding delegation
+// - Serving unpairing chunk(not damaged) which have no unbonding delegation
 // - Paired but the validator is not valid anymore
 func (k Keeper) GetAllRePairableChunksAndOutInsurances(ctx sdk.Context) (
 	rePairableChunks []types.Chunk, outInsurances []types.Insurance,
@@ -328,8 +328,8 @@ func (k Keeper) GetAllRePairableChunksAndOutInsurances(ctx sdk.Context) (
 			if err != nil {
 				panic(err)
 			}
-			insurance, _ := k.GetInsurance(ctx, chunk.UnpairingInsuranceId)
-			outInsurances = append(outInsurances, insurance)
+			unpairingIns := k.mustGetInsurance(ctx, chunk.UnpairingInsuranceId)
+			outInsurances = append(outInsurances, unpairingIns)
 			rePairableChunks = append(rePairableChunks, chunk)
 		case types.CHUNK_STATUS_PAIRING:
 			rePairableChunks = append(rePairableChunks, chunk)
