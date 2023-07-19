@@ -10,8 +10,10 @@ import (
 	"path/filepath"
 	"strconv"
 
+	"github.com/Canto-Network/Canto/v6/x/liquidstaking"
 	"github.com/armon/go-metrics"
 	"github.com/cosmos/cosmos-sdk/telemetry"
+	"github.com/evmos/ethermint/x/feemarket"
 	"github.com/gorilla/mux"
 	"github.com/rakyll/statik/fs"
 	"github.com/spf13/cast"
@@ -100,11 +102,9 @@ import (
 	"github.com/evmos/ethermint/encoding"
 	srvflags "github.com/evmos/ethermint/server/flags"
 	ethermint "github.com/evmos/ethermint/types"
-	"github.com/evmos/ethermint/x/evm"
 	evmrest "github.com/evmos/ethermint/x/evm/client/rest"
 	evmkeeper "github.com/evmos/ethermint/x/evm/keeper"
 	evmtypes "github.com/evmos/ethermint/x/evm/types"
-	"github.com/evmos/ethermint/x/feemarket"
 	feemarketkeeper "github.com/evmos/ethermint/x/feemarket/keeper"
 	feemarkettypes "github.com/evmos/ethermint/x/feemarket/types"
 
@@ -119,7 +119,6 @@ import (
 	erc20client "github.com/Canto-Network/Canto/v6/x/erc20/client"
 	erc20keeper "github.com/Canto-Network/Canto/v6/x/erc20/keeper"
 	erc20types "github.com/Canto-Network/Canto/v6/x/erc20/types"
-	"github.com/Canto-Network/Canto/v6/x/fees"
 	feeskeeper "github.com/Canto-Network/Canto/v6/x/fees/keeper"
 	feestypes "github.com/Canto-Network/Canto/v6/x/fees/types"
 
@@ -139,11 +138,9 @@ import (
 	govshuttlekeeper "github.com/Canto-Network/Canto/v6/x/govshuttle/keeper"
 	govshuttletypes "github.com/Canto-Network/Canto/v6/x/govshuttle/types"
 
-	"github.com/Canto-Network/Canto/v6/x/csr"
 	csrkeeper "github.com/Canto-Network/Canto/v6/x/csr/keeper"
 	csrtypes "github.com/Canto-Network/Canto/v6/x/csr/types"
 
-	"github.com/Canto-Network/Canto/v6/x/liquidstaking"
 	liquidstakingkeeper "github.com/Canto-Network/Canto/v6/x/liquidstaking/keeper"
 	liquidstakingtypes "github.com/Canto-Network/Canto/v6/x/liquidstaking/types"
 
@@ -224,15 +221,15 @@ var (
 		evidence.AppModuleBasic{},
 		transfer.AppModuleBasic{},
 		vesting.AppModuleBasic{},
-		evm.AppModuleBasic{},
+		//evm.AppModuleBasic{},
 		feemarket.AppModuleBasic{},
-		inflation.AppModuleBasic{},
-		erc20.AppModuleBasic{},
-		govshuttle.AppModuleBasic{},
-		csr.AppModuleBasic{},
-		epochs.AppModuleBasic{},
-		recovery.AppModuleBasic{},
-		fees.AppModuleBasic{},
+		//inflation.AppModuleBasic{},
+		//erc20.AppModuleBasic{},
+		//govshuttle.AppModuleBasic{},
+		//csr.AppModuleBasic{},
+		//epochs.AppModuleBasic{},
+		//recovery.AppModuleBasic{},
+		//fees.AppModuleBasic{},
 		liquidstaking.AppModuleBasic{},
 	)
 
@@ -369,13 +366,14 @@ func NewCanto(
 		// ibc keys
 		ibchost.StoreKey, ibctransfertypes.StoreKey,
 		// ethermint keys
-		evmtypes.StoreKey, feemarkettypes.StoreKey,
+		// evmtypes.StoreKey,
+		feemarkettypes.StoreKey,
 		// Canto keys
-		inflationtypes.StoreKey, erc20types.StoreKey,
-		epochstypes.StoreKey, vestingtypes.StoreKey, recoverytypes.StoreKey, // recoverytypes.StoreKe
-		feestypes.StoreKey,
-		csrtypes.StoreKey,
-		govshuttletypes.StoreKey,
+		//inflationtypes.StoreKey, erc20types.StoreKey,
+		//epochstypes.StoreKey, vestingtypes.StoreKey, recoverytypes.StoreKey, // recoverytypes.StoreKe
+		//feestypes.StoreKey,
+		//csrtypes.StoreKey,
+		//govshuttletypes.StoreKey,
 		liquidstakingtypes.StoreKey,
 	)
 
@@ -640,24 +638,24 @@ func NewCanto(
 		upgrade.NewAppModule(app.UpgradeKeeper),
 		evidence.NewAppModule(app.EvidenceKeeper),
 		params.NewAppModule(app.ParamsKeeper),
-		feegrantmodule.NewAppModule(appCodec, app.AccountKeeper, app.BankKeeper, app.FeeGrantKeeper, app.interfaceRegistry),
+		//feegrantmodule.NewAppModule(appCodec, app.AccountKeeper, app.BankKeeper, app.FeeGrantKeeper, app.interfaceRegistry),
 		authzmodule.NewAppModule(appCodec, app.AuthzKeeper, app.AccountKeeper, app.BankKeeper, app.interfaceRegistry),
 
 		// ibc modules
 		ibc.NewAppModule(app.IBCKeeper),
 		transferModule,
 		// Ethermint app modules
-		evm.NewAppModule(app.EvmKeeper, app.AccountKeeper),
+		//evm.NewAppModule(app.EvmKeeper, app.AccountKeeper),
 		feemarket.NewAppModule(app.FeeMarketKeeper),
 		// Canto app modules
-		inflation.NewAppModule(app.InflationKeeper, app.AccountKeeper, app.StakingKeeper),
-		erc20.NewAppModule(app.Erc20Keeper, app.AccountKeeper),
-		epochs.NewAppModule(appCodec, app.EpochsKeeper),
-		vesting.NewAppModule(app.VestingKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper),
-		recovery.NewAppModule(*app.RecoveryKeeper),
-		fees.NewAppModule(app.FeesKeeper, app.AccountKeeper),
-		govshuttle.NewAppModule(app.GovshuttleKeeper, app.AccountKeeper),
-		csr.NewAppModule(app.CSRKeeper, app.AccountKeeper),
+		//inflation.NewAppModule(app.InflationKeeper, app.AccountKeeper, app.StakingKeeper),
+		//erc20.NewAppModule(app.Erc20Keeper, app.AccountKeeper),
+		//epochs.NewAppModule(appCodec, app.EpochsKeeper),
+		//vesting.NewAppModule(app.VestingKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper),
+		//recovery.NewAppModule(*app.RecoveryKeeper),
+		//fees.NewAppModule(app.FeesKeeper, app.AccountKeeper),
+		//govshuttle.NewAppModule(app.GovshuttleKeeper, app.AccountKeeper),
+		//csr.NewAppModule(app.CSRKeeper, app.AccountKeeper),
 		liquidstaking.NewAppModule(app.LiquidStakingKeeper, app.AccountKeeper),
 	)
 
@@ -671,9 +669,9 @@ func NewCanto(
 		upgradetypes.ModuleName,
 		capabilitytypes.ModuleName,
 		// Note: epochs' begin should be "real" start of epochs, we keep epochs beginblock at the beginning
-		epochstypes.ModuleName,
+		//epochstypes.ModuleName,
 		feemarkettypes.ModuleName,
-		evmtypes.ModuleName,
+		//evmtypes.ModuleName,
 		distrtypes.ModuleName,
 		slashingtypes.ModuleName,
 		evidencetypes.ModuleName,
@@ -688,15 +686,15 @@ func NewCanto(
 		crisistypes.ModuleName,
 		genutiltypes.ModuleName,
 		authz.ModuleName,
-		feegrant.ModuleName,
+		//feegrant.ModuleName,
 		paramstypes.ModuleName,
-		vestingtypes.ModuleName,
-		inflationtypes.ModuleName,
-		erc20types.ModuleName,
-		recoverytypes.ModuleName,
-		feestypes.ModuleName,
-		govshuttletypes.ModuleName,
-		csrtypes.ModuleName,
+		//vestingtypes.ModuleName,
+		//inflationtypes.ModuleName,
+		//erc20types.ModuleName,
+		//recoverytypes.ModuleName,
+		//feestypes.ModuleName,
+		//govshuttletypes.ModuleName,
+		//csrtypes.ModuleName,
 	)
 
 	// NOTE: fee market module must go last in order to retrieve the block gas used.
@@ -704,11 +702,11 @@ func NewCanto(
 		crisistypes.ModuleName,
 		govtypes.ModuleName,
 		stakingtypes.ModuleName,
-		evmtypes.ModuleName,
+		//evmtypes.ModuleName,
 		feemarkettypes.ModuleName,
 		// Note: epochs' endblock should be "real" end of epochs, we keep epochs endblock at the end
-		epochstypes.ModuleName,
-		recoverytypes.ModuleName,
+		//epochstypes.ModuleName,
+		//recoverytypes.ModuleName,
 		// no-op modules
 		ibchost.ModuleName,
 		ibctransfertypes.ModuleName,
@@ -721,17 +719,17 @@ func NewCanto(
 		evidencetypes.ModuleName,
 		liquidstakingtypes.ModuleName,
 		authz.ModuleName,
-		feegrant.ModuleName,
+		//feegrant.ModuleName,
 		paramstypes.ModuleName,
 		upgradetypes.ModuleName,
 		// Canto modules
-		vestingtypes.ModuleName,
-		inflationtypes.ModuleName,
-		erc20types.ModuleName,
-		govshuttletypes.ModuleName,
-		csrtypes.ModuleName,
+		//vestingtypes.ModuleName,
+		//inflationtypes.ModuleName,
+		//erc20types.ModuleName,
+		//govshuttletypes.ModuleName,
+		//csrtypes.ModuleName,
 		// recoverytypes.ModuleName,
-		feestypes.ModuleName,
+		//feestypes.ModuleName,
 	)
 
 	// NOTE: The genutils module must occur after staking so that pools are
@@ -753,7 +751,7 @@ func NewCanto(
 		ibchost.ModuleName,
 		// Ethermint modules
 		// evm module denomination is used by the fees module, in AnteHandle
-		evmtypes.ModuleName,
+		//evmtypes.ModuleName,
 		// NOTE: feemarket module needs to be initialized before genutil module:
 		// gentx transactions use MinGasPriceDecorator.AnteHandle
 		feemarkettypes.ModuleName,
@@ -761,18 +759,18 @@ func NewCanto(
 		evidencetypes.ModuleName,
 		ibctransfertypes.ModuleName,
 		authz.ModuleName,
-		feegrant.ModuleName,
+		//feegrant.ModuleName,
 		paramstypes.ModuleName,
 		upgradetypes.ModuleName,
 		// Canto modules
-		vestingtypes.ModuleName,
-		inflationtypes.ModuleName,
-		erc20types.ModuleName,
-		epochstypes.ModuleName,
-		recoverytypes.ModuleName,
-		feestypes.ModuleName,
-		govshuttletypes.ModuleName,
-		csrtypes.ModuleName,
+		//vestingtypes.ModuleName,
+		//inflationtypes.ModuleName,
+		//erc20types.ModuleName,
+		//epochstypes.ModuleName,
+		//recoverytypes.ModuleName,
+		//feestypes.ModuleName,
+		//govshuttletypes.ModuleName,
+		//csrtypes.ModuleName,
 		// NOTE: crisis module must go at the end to check for invariants on each module
 		crisistypes.ModuleName,
 	)
@@ -794,7 +792,7 @@ func NewCanto(
 		bank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper),
 		capability.NewAppModule(appCodec, *app.CapabilityKeeper),
 		gov.NewAppModule(appCodec, app.GovKeeper, app.AccountKeeper, app.BankKeeper),
-		// staking.NewAppModule(appCodec, app.StakingKeeper, app.AccountKeeper, app.BankKeeper),
+		staking.NewAppModule(appCodec, app.StakingKeeper, app.AccountKeeper, app.BankKeeper),
 		distr.NewAppModule(appCodec, app.DistrKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper),
 		slashing.NewAppModule(appCodec, app.SlashingKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper),
 		params.NewAppModule(app.ParamsKeeper),
@@ -806,7 +804,7 @@ func NewCanto(
 		// evm.NewAppModule(app.EvmKeeper, app.AccountKeeper),
 		epochs.NewAppModule(appCodec, app.EpochsKeeper),
 		inflation.NewAppModule(app.InflationKeeper, app.AccountKeeper, app.StakingKeeper),
-		// feemarket.NewAppModule(app.FeeMarketKeeper),
+		feemarket.NewAppModule(app.FeeMarketKeeper),
 		liquidstaking.NewAppModule(app.LiquidStakingKeeper, app.AccountKeeper),
 	)
 
