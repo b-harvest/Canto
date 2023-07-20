@@ -371,6 +371,11 @@ test-rpc-pending:
 test-sim-nondeterminism:
 	@echo "Running non-determinism test..."
 	@go test -mod=readonly $(SIMAPP) -run TestAppStateDeterminism -Enabled=true \
+		-NumBlocks=10 -BlockSize=100 -Commit=true -Period=1 -v -timeout 1h
+
+test-sim-nondeterminism-long:
+	@echo "Running non-determinism test..."
+	@go test -mod=readonly $(SIMAPP) -run TestAppStateDeterminism -Enabled=true \
 		-NumBlocks=100 -BlockSize=200 -Commit=true -Period=1 -v -timeout 1h
 
 test-sim-custom-genesis-fast:
@@ -381,9 +386,19 @@ test-sim-custom-genesis-fast:
 
 test-sim-import-export: runsim
 	@echo "Running application import/export simulation. This may take several minutes..."
+	$(eval SEED := $(shell awk 'BEGIN{srand(); for (i=1; i<=5; i++) {n=int(10000*rand())+1; printf "%d%s", n, (i==5 ? "" : ",")}}'))
+	@$(BINDIR)/runsim -Jobs=1 -SimAppPkg=$(SIMAPP) -Seeds="$(SEED)" -ExitOnFail 10 1 TestAppImportExport
+
+test-sim-import-export-long: runsim
+	@echo "Running application import/export simulation. This may take several minutes..."
 	@$(BINDIR)/runsim -Jobs=4 -SimAppPkg=$(SIMAPP) -ExitOnFail 50 5 TestAppImportExport
 
 test-sim-after-import: runsim
+	@echo "Running application simulation-after-import. This may take several minutes..."
+	$(eval SEED := $(shell awk 'BEGIN{srand(); for (i=1; i<=5; i++) {n=int(10000*rand())+1; printf "%d%s", n, (i==5 ? "" : ",")}}'))
+	@$(BINDIR)/runsim -Jobs=1 -SimAppPkg=$(SIMAPP) -Seeds="$(SEED)" -ExitOnFail 10 1 TestAppSimulationAfterImport
+
+test-sim-after-import-long: runsim
 	@echo "Running application simulation-after-import. This may take several minutes..."
 	@$(BINDIR)/runsim -Jobs=4 -SimAppPkg=$(SIMAPP) -ExitOnFail 50 5 TestAppSimulationAfterImport
 
