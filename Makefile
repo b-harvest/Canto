@@ -1,5 +1,22 @@
 #!/usr/bin/make -f
 
+###
+# Find OS and Go environment
+# GO contains the Go binary
+# FS contains the OS file separator
+###
+ifeq ($(OS),Windows_NT)
+  GO := $(shell where go.exe 2> NUL)
+  FS := \\
+else
+  GO := $(shell command -v go 2> /dev/null)
+  FS := /
+endif
+
+ifeq ($(GO),)
+  $(error could not find go. Is it in PATH? $(GO))
+endif
+
 PACKAGES_NOSIMULATION=$(shell go list ./... | grep -v '/simulation')
 PACKAGES_SIMTEST=$(shell go list ./... | grep '/simulation')
 DIFF_TAG=$(shell git rev-list --tags="v*" --max-count=1 --not $(shell git rev-list --tags="v*" "HEAD..origin"))
@@ -8,6 +25,7 @@ VERSION ?= $(shell echo $(shell git describe --tags $(or $(DIFF_TAG), $(DEFAULT_
 TMVERSION := $(shell go list -m github.com/tendermint/tendermint | sed 's:.* ::')
 COMMIT := $(shell git log -1 --format='%H')
 LEDGER_ENABLED ?= true
+GOPATH ?= $(shell $(GO) env GOPATH)
 BINDIR ?= $(GOPATH)/bin
 canto_BINARY = cantod
 canto_DIR = cantod
