@@ -2211,8 +2211,6 @@ func (suite *KeeperTestSuite) TestMultiplePairedChunksTombstonedAndRedelegated()
 			types.ChunkSize.MulRaw(500),
 		},
 	)
-	_, oneInsurnace := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
-
 	suite.ctx = suite.advanceHeight(suite.ctx, 1, "liquid staking started")
 	fmt.Println(suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx))
 
@@ -2223,15 +2221,20 @@ func (suite *KeeperTestSuite) TestMultiplePairedChunksTombstonedAndRedelegated()
 	toBeNewlyRankedInsurances := []types.Insurance{env.insurances[10], env.insurances[11], env.insurances[13]}
 	{
 		// 0, 3, 6 are paired currently but will be unpaired because it points to toBeTombstonedValidator
+		// 0, 3, 6 must have 5.75% chunkSize as balance after tombstoned to be re-delegated, please check IsEnoughToCoverSlash.
 		for i := 0; i < len(pairedInsurances); i++ {
 			suite.Equal(pairedInsurances[i].Id, toBeTombstonedChunks[i].PairedInsuranceId)
 			suite.Equal(toBeTombstonedValidator, pairedInsurances[i].GetValidator())
+			// 7% + 3.75% = 10.75%
+			// After 5% slashing => 5.75%
+			suite.fundAccount(suite.ctx, pairedInsurances[i].DerivedAddress(), types.ChunkSize.ToDec().Mul(sdk.NewDecWithPrec(375, 2)).Ceil().TruncateInt())
 		}
 		// 10, 11, 13 are not paired currently but will be paired because it points to valid validator
 		for i := 0; i < len(toBeNewlyRankedInsurances); i++ {
 			suite.NotEqual(toBeTombstonedValidator, toBeNewlyRankedInsurances[i].GetValidator())
 		}
 	}
+	targetInsurancesBalance := suite.app.BankKeeper.GetBalance(suite.ctx, pairedInsurances[0].DerivedAddress(), env.bondDenom).Amount
 
 	// Tombstone validator
 	{
@@ -2303,7 +2306,7 @@ func (suite *KeeperTestSuite) TestMultiplePairedChunksTombstonedAndRedelegated()
 					suite.ctx,
 					unpairedInsurance.DerivedAddress(),
 					env.bondDenom,
-				).IsLT(oneInsurnace),
+				).Amount.LT(targetInsurancesBalance),
 				"it covered penalty at epoch",
 			)
 			chunk, _ := suite.app.LiquidStakingKeeper.GetChunk(suite.ctx, unpairedInsurance.ChunkId)
