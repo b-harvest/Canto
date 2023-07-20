@@ -38,6 +38,7 @@ func (k Keeper) CoverRedelegationPenalty(ctx sdk.Context) {
 			}
 			penaltyAmt := dstVal.TokensFromShares(diff).Ceil().TruncateInt()
 			if penaltyAmt.IsPositive() {
+				penaltyAmt = k.calcCeiledPenalty(dstVal, penaltyAmt)
 				srcInsBal := k.bankKeeper.GetBalance(ctx, srcIns.DerivedAddress(), bondDenom)
 				if srcInsBal.Amount.LT(penaltyAmt) {
 					panic(fmt.Sprintf(
@@ -1237,14 +1238,13 @@ func (k Keeper) handlePairedChunk(ctx sdk.Context, chunk types.Chunk) {
 
 	// Check whether delegation value is decreased by slashing
 	// The check process should use TokensFromShares to get the current delegation value
-	tokens := validator.TokensFromShares(del.GetShares())
+	tokens := validator.TokensFromShares(del.GetShares()).Ceil().TruncateInt()
 	var penaltyAmt sdk.Int
-	if tokens.GTE(types.ChunkSize.ToDec()) {
+	if tokens.GTE(types.ChunkSize) {
 		// There is no penalty
 		penaltyAmt = sdk.ZeroInt()
 	} else {
-		penalty := types.ChunkSize.ToDec().Sub(tokens)
-		penaltyAmt = penalty.Ceil().TruncateInt()
+		penaltyAmt = k.calcCeiledPenalty(validator, types.ChunkSize.Sub(tokens))
 	}
 	var undelegated bool
 	if penaltyAmt.IsPositive() {
@@ -1303,6 +1303,8 @@ func (k Keeper) handlePairedChunk(ctx sdk.Context, chunk types.Chunk) {
 			}
 			// delegate additional tokens to validator as chunk.DerivedAddress()
 			k.mustDelegate(ctx, chunk, penaltyCoin.Amount, validator, pairedIns.Id, types.AttributeValueReasonPairedInsCoverPenalty)
+			// update variables after delegate
+			_, validator, del = k.mustValidatePairedChunk(ctx, chunk)
 		}
 	}
 
@@ -1651,8 +1653,14 @@ func (k Keeper) mustCoverDoubleSignPenaltyFromUnpairingInsurance(ctx sdk.Context
 	unpairingIns := k.mustGetInsurance(ctx, chunk.UnpairingInsuranceId)
 	bondDenom := k.stakingKeeper.BondDenom(ctx)
 
+	validator, found := k.stakingKeeper.GetValidator(ctx, unpairingIns.GetValidator())
+	if !found {
+		panic(fmt.Sprintf("validator not found: %s", unpairingIns.GetValidator()))
+	}
+
 	params := k.slashingKeeper.GetParams(ctx)
 	coverAmt := types.ChunkSize.ToDec().Mul(params.SlashFractionDoubleSign).Ceil().TruncateInt()
+	coverAmt = k.calcCeiledPenalty(validator, coverAmt)
 	dstAddr := chunk.DerivedAddress()
 	unpairingInsBal := k.bankKeeper.GetBalance(ctx, unpairingIns.DerivedAddress(), bondDenom)
 	if coverAmt.GT(unpairingInsBal.Amount) {
@@ -1663,11 +1671,21 @@ func (k Keeper) mustCoverDoubleSignPenaltyFromUnpairingInsurance(ctx sdk.Context
 		if err := k.bankKeeper.SendCoins(ctx, unpairingIns.DerivedAddress(), dstAddr, coveredCoins); err != nil {
 			panic(err)
 		}
-		validator, found := k.stakingKeeper.GetValidator(ctx, unpairingIns.GetValidator())
-		if !found {
-			panic(fmt.Sprintf("validator not found: %s", unpairingIns.GetValidator()))
-		}
 		k.mustDelegate(ctx, chunk, coverAmt, validator, unpairingIns.Id, types.AttributeValueReasonUnpairingInsCoverPenalty)
 	}
 	return coverAmt
+}
+
+func (k Keeper) calcCeiledPenalty(validator stakingtypes.Validator, penaltyAmt sdk.Int) sdk.Int {
+	penaltyShares, err := validator.SharesFromTokens(penaltyAmt)
+	if err != nil {
+		panic(err)
+	}
+	// If penaltyShares is not integer, we need to ceil it.
+	// If not, then after we cover penalty and check tokens value, it will be less than chunkSize.
+	if !penaltyShares.IsInteger() {
+		penaltyShares = penaltyShares.Ceil()
+		return validator.TokensFromShares(penaltyShares).Ceil().TruncateInt()
+	}
+	return penaltyAmt
 }
