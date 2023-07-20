@@ -165,7 +165,7 @@ func (suite *KeeperTestSuite) TestProvideInsurance() {
 			"amount must be greater than minimum collateral",
 		},
 		{
-			"fee rate >= minimum fee rate",
+			"fee rate >= maximum fee rate",
 			&types.MsgProvideInsurance{
 				ProviderAddress:  providers[0].String(),
 				ValidatorAddress: valAddrs[0].String(),
