@@ -113,7 +113,7 @@ func CmdQueryEpoch() *cobra.Command {
 // CmdQueryChunk implements a command that will return a Chunk given a chunk id
 func CmdQueryChunks() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "chunks [optional flags]",
+		Use:   "chunks",
 		Args:  cobra.ExactArgs(0),
 		Short: "Query all chunks",
 		Long: strings.TrimSpace(
@@ -208,7 +208,7 @@ func CmdQueryChunk() *cobra.Command {
 // CmdQueryInsurances implements a command that will return insurances in liquidstaking module
 func CmdQueryInsurances() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "insurances [optional flags]",
+		Use:   "insurances",
 		Args:  cobra.ExactArgs(0),
 		Short: "Query all insurances",
 		Long: strings.TrimSpace(
@@ -302,7 +302,7 @@ func CmdQueryInsurance() *cobra.Command {
 // CmdQueryWithdrawInsuranceRequests CmdQueryWithdrawRequests implements a command that will return withdraw requests in liquidstaking module.
 func CmdQueryWithdrawInsuranceRequests() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "withdraw-insurance-requests [optional flags]",
+		Use:   "withdraw-insurance-requests",
 		Args:  cobra.ExactArgs(0),
 		Short: "Query all withdraw requests",
 		Long: strings.TrimSpace(
@@ -398,7 +398,7 @@ $ %s query %s withdraw-insurance-request 1
 // CmdQueryUnpairingForUnstakingChunkInfos implements a command that will return unpairing for unstaking chunk infos requests in liquidstaking module.
 func CmdQueryUnpairingForUnstakingChunkInfos() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "unpairing-for-unstaking-chunk-infos [optional flags]",
+		Use:   "unpairing-for-unstaking-chunk-infos",
 		Args:  cobra.ExactArgs(0),
 		Short: "Query all unpairing for unstaking chunk infos",
 		Long: strings.TrimSpace(
