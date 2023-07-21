@@ -59,7 +59,7 @@ or when the paired chunk is started to be undelegated by `MsgLiquidUnstake`. At 
 
 ## UnpairingForUnstakingChunkInfo
 
-It is created when msgServer receives `MsgLiquidUnstake` for paired chunk. The actual unbonding is started at **[Handle Queued Liquid Unstakes](https://github.com/Canto-Network/Canto/blob/main/x/liquidstaking/spec/06_end_block.md#handle-queued-liquid-unstakes).**
+It is created when msgServer receives `MsgLiquidUnstake` for paired chunk. The actual unbonding is started at **[Handle Queued Liquid Unstakes](06_end_block.md#handle-queued-liquid-unstakes).**
 
 It is removed **[Cover slashing and handle mature unbondings](https://github.com/Canto-Network/Canto/blob/main/x/liquidstaking/spec/06_end_block.md#cover-slashing-and-handle-mature-unbondings)* when chunk unbonding is finished.
 
