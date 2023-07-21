@@ -38,7 +38,7 @@ func (k Keeper) CoverRedelegationPenalty(ctx sdk.Context) {
 			}
 			penaltyAmt := dstVal.TokensFromShares(diff).Ceil().TruncateInt()
 			if penaltyAmt.IsPositive() {
-				penaltyAmt = k.calcCeiledPenalty(dstVal, penaltyAmt)
+				penaltyAmt = k.CalcCeiledPenalty(dstVal, penaltyAmt)
 				srcInsBal := k.bankKeeper.GetBalance(ctx, srcIns.DerivedAddress(), bondDenom)
 				if srcInsBal.Amount.LT(penaltyAmt) {
 					panic(fmt.Sprintf(
@@ -1244,7 +1244,7 @@ func (k Keeper) handlePairedChunk(ctx sdk.Context, chunk types.Chunk) {
 		// There is no penalty
 		penaltyAmt = sdk.ZeroInt()
 	} else {
-		penaltyAmt = k.calcCeiledPenalty(validator, types.ChunkSize.Sub(tokens))
+		penaltyAmt = k.CalcCeiledPenalty(validator, types.ChunkSize.Sub(tokens))
 	}
 	var undelegated bool
 	if penaltyAmt.IsPositive() {
@@ -1663,7 +1663,7 @@ func (k Keeper) mustCoverDoubleSignPenaltyFromUnpairingInsurance(ctx sdk.Context
 
 	params := k.slashingKeeper.GetParams(ctx)
 	coverAmt := types.ChunkSize.ToDec().Mul(params.SlashFractionDoubleSign).Ceil().TruncateInt()
-	coverAmt = k.calcCeiledPenalty(validator, coverAmt)
+	coverAmt = k.CalcCeiledPenalty(validator, coverAmt)
 	dstAddr := chunk.DerivedAddress()
 	unpairingInsBal := k.bankKeeper.GetBalance(ctx, unpairingIns.DerivedAddress(), bondDenom)
 	if coverAmt.GT(unpairingInsBal.Amount) {
@@ -1679,7 +1679,7 @@ func (k Keeper) mustCoverDoubleSignPenaltyFromUnpairingInsurance(ctx sdk.Context
 	return coverAmt
 }
 
-func (k Keeper) calcCeiledPenalty(validator stakingtypes.Validator, penaltyAmt sdk.Int) sdk.Int {
+func (k Keeper) CalcCeiledPenalty(validator stakingtypes.Validator, penaltyAmt sdk.Int) sdk.Int {
 	penaltyShares, err := validator.SharesFromTokens(penaltyAmt)
 	if err != nil {
 		panic(err)

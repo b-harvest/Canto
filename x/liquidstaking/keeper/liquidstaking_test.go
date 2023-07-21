@@ -3466,6 +3466,72 @@ func (suite *KeeperTestSuite) TestGetAllRePairableChunksAndOutInsurances() {
 	}
 }
 
+func (suite *KeeperTestSuite) TestCalcCeiledPenalty() {
+	env := suite.setupLiquidStakeTestingEnv(
+		testingEnvOptions{
+			"TestTargetChunkGotBothUnstakeAndWithdrawInsuranceReqs",
+			1,
+			TenPercentFeeRate,
+			nil,
+			onePower,
+			nil,
+			2,
+			sdk.ZeroDec(),
+			[]sdk.Dec{TenPercentFeeRate, FivePercentFeeRate},
+			2,
+			types.ChunkSize.MulRaw(500),
+		},
+	)
+	toBeTombstonedValidator := env.valAddrs[0]
+	toBeTombstonedValidatorPubKey := env.pubKeys[0]
+
+	// Make tombstoned validator
+	{
+		selfDelegationToken := suite.app.StakingKeeper.TokensFromConsensusPower(suite.ctx, onePower)
+		// handle a signature to set signing info
+		suite.app.SlashingKeeper.HandleValidatorSignature(
+			suite.ctx,
+			toBeTombstonedValidatorPubKey.Address(),
+			selfDelegationToken.Int64(),
+			true,
+		)
+		suite.tombstone(suite.ctx, toBeTombstonedValidator, toBeTombstonedValidatorPubKey, suite.ctx.BlockHeight()-1)
+	}
+
+	validator, _ := suite.app.StakingKeeper.GetValidator(suite.ctx, toBeTombstonedValidator)
+	del, _ := suite.app.StakingKeeper.GetDelegation(suite.ctx, env.pairedChunks[0].DerivedAddress(), validator.GetOperator())
+
+	tokens := validator.TokensFromShares(del.GetShares()).Ceil().TruncateInt()
+	penaltyAmt := types.ChunkSize.Sub(tokens)
+	suite.Equal("12500000000000000000000", penaltyAmt.String())
+	// penalty value was exactly 5% of chunk size tokens, but what if we delegate additionally with this token?
+
+	// Mimic CalcCeiledPenalty to see what happens if we delegate with penaltyAmt
+	penaltyShares, _ := validator.SharesFromTokens(penaltyAmt)
+	suite.Equal("13157894736842105263157.894736842105263157", penaltyShares.String())
+	sharesToToken := validator.TokensFromShares(penaltyShares)
+	suite.Equal(
+		"12499999999999999999999.999999999999999999", sharesToToken.String(),
+		"if we delegate with penaltyAmt additionally, then the actual token value of added can be less than penaltyAmt",
+	)
+
+	// Now let's use CalcCeiledPenalty
+	result := suite.app.LiquidStakingKeeper.CalcCeiledPenalty(validator, penaltyAmt)
+	suite.Equal("12500000000000000000001", result.String())
+	suite.True(
+		result.GT(penaltyAmt),
+		"to cover penalty fully by delegate more to chunk, must be greater than penaltyAmt",
+	)
+}
+
+func (suite *KeeperTestSuite) TestQuoInt() {
+	fmt.Println(sdk.NewDec(7).QuoInt(sdk.NewInt(9)).String())
+	fmt.Println(sdk.NewDec(7).Quo(sdk.NewDec(9)).String())
+	fmt.Println(sdk.NewDec(7).QuoTruncate(sdk.NewDec(9)).String())
+	fmt.Println(sdk.NewDec(7).QuoRoundUp(sdk.NewDec(9)).String())
+	fmt.Println(sdk.NewDec(7).Quo(sdk.NewDec(9)).String())
+}
+
 func (suite *KeeperTestSuite) downTimeSlashing(
 	ctx sdk.Context, downValPubKey cryptotypes.PubKey, power int64, called int, blockTime time.Duration,
 ) (penalty sdk.Int) {
