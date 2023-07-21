@@ -47,7 +47,7 @@ func (k Keeper) CoverRedelegationPenalty(ctx sdk.Context) {
 				); err != nil {
 					panic(err)
 				}
-				k.mustDelegate(ctx, chunk, penaltyAmt, dstVal, srcIns.Id, types.AttributeValueReasonUnpairingInsCoverPenalty)
+				k.mustDelegatePenaltyAmt(ctx, chunk, penaltyAmt, dstVal, srcIns.Id, types.AttributeValueReasonUnpairingInsCoverPenalty)
 			}
 		}
 		return false
@@ -1286,11 +1286,6 @@ func (k Keeper) handlePairedChunk(ctx sdk.Context, chunk types.Chunk) {
 			k.mustUndelegate(ctx, chunk, validator, del, types.AttributeValueReasonNotEnoughPairedInsCoverage)
 			undelegated = true
 		} else {
-			// if undelegatedByRedelPenalty is true, then even if
-			// paired insurance cover its penalty, but unpairing insurance couldn't cover some penalty.
-			// In this case, just let it follows unpairing logic.
-			// At the next epoch, unpairing insurance(=current paired insurance) will cover its penalty.
-			// But not cover current unpairing insurance's penalty, so chunk will goes to reward pool finally because it is damaged.
 			// happy case: paired insurance can cover penalty and there is no un-covered penalty from unpairing insurance.
 			// 1. Send penalty to chunk
 			// 2. chunk delegate additional tokens to validator
@@ -1300,7 +1295,7 @@ func (k Keeper) handlePairedChunk(ctx sdk.Context, chunk types.Chunk) {
 				panic(err)
 			}
 			// delegate additional tokens to validator as chunk.DerivedAddress()
-			k.mustDelegate(ctx, chunk, penaltyCoin.Amount, validator, pairedIns.Id, types.AttributeValueReasonPairedInsCoverPenalty)
+			k.mustDelegatePenaltyAmt(ctx, chunk, penaltyCoin.Amount, validator, pairedIns.Id, types.AttributeValueReasonPairedInsCoverPenalty)
 			// update variables after delegate
 			_, validator, del = k.mustValidatePairedChunk(ctx, chunk)
 		}
@@ -1398,8 +1393,8 @@ func (k Keeper) mustUndelegate(
 	)
 }
 
-// mustDelegate delegates amt to validator as chunk.
-func (k Keeper) mustDelegate(
+// mustDelegatePenaltyAmt delegates amt to validator as chunk.
+func (k Keeper) mustDelegatePenaltyAmt(
 	ctx sdk.Context, chunk types.Chunk, amt sdk.Int, validator stakingtypes.Validator,
 	insId uint64, reason string,
 ) {
@@ -1669,7 +1664,7 @@ func (k Keeper) mustCoverDoubleSignPenaltyFromUnpairingInsurance(ctx sdk.Context
 		if err := k.bankKeeper.SendCoins(ctx, unpairingIns.DerivedAddress(), dstAddr, coveredCoins); err != nil {
 			panic(err)
 		}
-		k.mustDelegate(ctx, chunk, coverAmt, validator, unpairingIns.Id, types.AttributeValueReasonUnpairingInsCoverPenalty)
+		k.mustDelegatePenaltyAmt(ctx, chunk, coverAmt, validator, unpairingIns.Id, types.AttributeValueReasonUnpairingInsCoverPenalty)
 	}
 	return coverAmt
 }

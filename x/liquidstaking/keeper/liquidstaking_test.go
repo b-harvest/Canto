@@ -3524,14 +3524,6 @@ func (suite *KeeperTestSuite) TestCalcCeiledPenalty() {
 	)
 }
 
-func (suite *KeeperTestSuite) TestQuoInt() {
-	fmt.Println(sdk.NewDec(7).QuoInt(sdk.NewInt(9)).String())
-	fmt.Println(sdk.NewDec(7).Quo(sdk.NewDec(9)).String())
-	fmt.Println(sdk.NewDec(7).QuoTruncate(sdk.NewDec(9)).String())
-	fmt.Println(sdk.NewDec(7).QuoRoundUp(sdk.NewDec(9)).String())
-	fmt.Println(sdk.NewDec(7).Quo(sdk.NewDec(9)).String())
-}
-
 func (suite *KeeperTestSuite) downTimeSlashing(
 	ctx sdk.Context, downValPubKey cryptotypes.PubKey, power int64, called int, blockTime time.Duration,
 ) (penalty sdk.Int) {
