@@ -18,16 +18,11 @@ import (
 )
 
 // CoverRedelegationPenalty covers the penalty of re-delegation from unpairing insurance.
-// If penaltyAmt > balance of unpairing insurance, then it will be covered in handlePairedChunk.
 func (k Keeper) CoverRedelegationPenalty(ctx sdk.Context) {
 	bondDenom := k.stakingKeeper.BondDenom(ctx)
 	// For all paired chunks, if chunk have an unpairing insurance, then
 	// this chunk is re-delegation on-goning.
 	k.IterateAllRedelegationInfos(ctx, func(info types.RedelegationInfo) bool {
-		if info.Matured(ctx.BlockTime()) {
-			// info can alive at most 2 epochs in EDGE case (unpairing insurance cannot cover penalty)
-			return false
-		}
 		chunk, srcIns, dstIns, entry := k.mustValidateRedelegationInfo(ctx, info)
 		dstDel := k.stakingKeeper.Delegation(ctx, chunk.DerivedAddress(), dstIns.GetValidator())
 		diff := entry.SharesDst.Sub(dstDel.GetShares())
