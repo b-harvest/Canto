@@ -1266,15 +1266,18 @@ func (k Keeper) handlePairedChunk(ctx sdk.Context, chunk types.Chunk) {
 					panic("tombstoned validator but have no evidence, impossible")
 				}
 				epoch := k.GetEpoch(ctx)
-				if epoch.GetStartHeight() < latestEvidence.GetHeight() {
-					// there was double sign slashing after re-pairing, so in this case
-					// unpairing insurance doesn't have to pay for penalty
-				} else {
+				if epoch.GetStartHeight() >= latestEvidence.GetHeight() {
 					coveredAmt := k.mustCoverDoubleSignPenaltyFromUnpairingInsurance(ctx, chunk)
 					penaltyAmt = penaltyAmt.Sub(coveredAmt)
 					// update variables after cover double sign penalty
 					_, validator, del = k.mustValidatePairedChunk(ctx, chunk)
 				}
+				// If epoch.StartHeight < lastEvidence.Height, then it means
+				// there was double sign slashing after re-pairing, so in this case
+				// unpairing insurance doesn't have to pay for penalty
+			case types.ErrInvalidValidatorStatus:
+				// Ths case must not happen.
+				panic(err)
 			}
 		}
 		pairedInsBal := k.bankKeeper.GetBalance(ctx, pairedIns.DerivedAddress(), bondDenom)
@@ -1347,7 +1350,7 @@ func (k Keeper) IsSufficientInsurance(ctx sdk.Context, insurance types.Insurance
 // IsEnoughToCoverSlash checks whether insurance has sufficient balance to cover slashing or not.
 func (k Keeper) IsEnoughToCoverSlash(ctx sdk.Context, insurance types.Insurance) bool {
 	params := k.slashingKeeper.GetParams(ctx)
-	downTimePenaltyAmt := params.SlashFractionDowntime.MulInt(sdk.NewInt(10)).Ceil().TruncateInt()
+	downTimePenaltyAmt := types.ChunkSize.ToDec().Mul(params.SlashFractionDowntime).Ceil().TruncateInt()
 	insBal := k.bankKeeper.GetBalance(ctx, insurance.DerivedAddress(), k.stakingKeeper.BondDenom(ctx))
 	doubleSignPenaltyAmt := types.ChunkSize.ToDec().Mul(params.SlashFractionDoubleSign).Ceil().TruncateInt()
 	return insBal.Amount.GTE(downTimePenaltyAmt.Add(doubleSignPenaltyAmt))

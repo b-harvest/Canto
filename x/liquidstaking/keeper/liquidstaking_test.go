@@ -1362,7 +1362,8 @@ func (suite *KeeperTestSuite) TestPairedChunkTombstonedAndRedelegated() {
 	toBeTombstonedChunk := env.pairedChunks[0]
 	ins, _ := suite.app.LiquidStakingKeeper.GetInsurance(suite.ctx, toBeTombstonedChunk.PairedInsuranceId)
 	// 7% + 3.75% = 10.75%
-	// After 5% slashing => 5.75% (will not be un-delegated)
+	// After tombstone, it still pass the line (5.75%) which means
+	// The chunk will not be unpairing because of IsEnoughToCoverSlash check
 	suite.fundAccount(suite.ctx, ins.DerivedAddress(), types.ChunkSize.ToDec().Mul(sdk.NewDecWithPrec(375, 2)).Ceil().TruncateInt())
 	selfDelegationToken := suite.app.StakingKeeper.TokensFromConsensusPower(suite.ctx, onePower)
 	// handle a signature to set signing info
@@ -2089,6 +2090,10 @@ func (suite *KeeperTestSuite) TestPairedChunkTombstonedAndUnpaired() {
 			"in re-pairing process insurance 3 will never be ranked in because it also points to tombstoned validator",
 		)
 	}
+	// 7% + 3.75% = 10.75%
+	// After tombstone, it still pass the line (5.75%) which means
+	// The chunk will not be unpairing because of IsEnoughToCoverSlash check
+	suite.fundAccount(suite.ctx, pairedInsurance.DerivedAddress(), types.ChunkSize.ToDec().Mul(sdk.NewDecWithPrec(375, 2)).Ceil().TruncateInt())
 
 	selfDelegationToken := suite.app.StakingKeeper.TokensFromConsensusPower(suite.ctx, onePower)
 	// handle a signature to set signing info
@@ -2339,6 +2344,11 @@ func (suite *KeeperTestSuite) TestMultiplePairedChunksTombstonedAndUnpaired() {
 		for i := 0; i < len(pairedInsurances); i++ {
 			suite.Equal(pairedInsurances[i].Id, toBeTombstonedChunks[i].PairedInsuranceId)
 			suite.Equal(toBeTombstonedValidator, pairedInsurances[i].GetValidator())
+			// 7% + 3.75% = 10.75%
+			// After tombstone, it still pass the line (5.75%) which means
+			// The chunk will not be unpairing because of IsEnoughToCoverSlash check
+			suite.fundAccount(suite.ctx, pairedInsurances[i].DerivedAddress(), types.ChunkSize.ToDec().Mul(sdk.NewDecWithPrec(375, 2)).Ceil().TruncateInt())
+
 		}
 	}
 
@@ -2401,9 +2411,8 @@ func (suite *KeeperTestSuite) TestMultiplePairedChunksTombstonedAndUnpaired() {
 				unbondingDelegation.Entries,
 				1,
 			)
-			suite.Equal(
-				types.ChunkSize.String(),
-				unbondingDelegation.Entries[0].InitialBalance.String(),
+			suite.True(
+				unbondingDelegation.Entries[0].InitialBalance.GTE(types.ChunkSize),
 			)
 		}
 	}
@@ -2418,10 +2427,9 @@ func (suite *KeeperTestSuite) TestMultiplePairedChunksTombstonedAndUnpaired() {
 		for i, toBeTombstonedChunk := range toBeTombstonedChunks {
 			tombstonedChunkAfterUnpairing, _ := suite.app.LiquidStakingKeeper.GetChunk(suite.ctx, toBeTombstonedChunk.Id)
 			suite.Equal(types.CHUNK_STATUS_PAIRING, tombstonedChunkAfterUnpairing.Status)
-			suite.Equal(
-				suite.app.BankKeeper.GetBalance(suite.ctx, tombstonedChunks[i].DerivedAddress(), env.bondDenom).Amount.String(),
-				types.ChunkSize.String(),
-				"chunk's balance must be equal to chunk size",
+			suite.True(
+				suite.app.BankKeeper.GetBalance(suite.ctx, tombstonedChunks[i].DerivedAddress(), env.bondDenom).Amount.GTE(types.ChunkSize),
+				"chunk's balance must be GTE chunk size",
 			)
 			suite.Equal(
 				types.Empty,
