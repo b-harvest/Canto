@@ -13,7 +13,6 @@ func (nas NetAmountState) CalcNetAmount(rewardPoolBalance sdk.Int) sdk.Dec {
 		Add(nas.TotalRemainingRewards)
 }
 
-// TODO: Need to be reviewed
 func (nas NetAmountState) CalcConservativeNetAmount(rewardPoolBalance sdk.Int) sdk.Dec {
 	return rewardPoolBalance.Add(nas.TotalChunksBalance).
 		Add(nas.NumPairedChunks.Mul(ChunkSize)). // Use this value instead of total liquid tokens

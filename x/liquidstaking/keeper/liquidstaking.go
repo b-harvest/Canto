@@ -640,7 +640,7 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (
 		lsTokenMintAmount = types.ChunkSize
 		if nas.LsTokensTotalSupply.IsPositive() {
 			conservativeNetAmount := nas.CalcConservativeNetAmount(nas.RewardModuleAccBalance)
-			lsTokenMintAmount = types.NativeTokenToLiquidStakeToken(lsTokenMintAmount, nas.LsTokensTotalSupply, conservativeNetAmount)
+			lsTokenMintAmount = types.NativeTokenToLiquidStakeToken(types.ChunkSize, nas.LsTokensTotalSupply, conservativeNetAmount)
 		}
 		if !lsTokenMintAmount.IsPositive() {
 			err = sdkerrors.Wrapf(types.ErrInvalidAmount, "amount must be greater than or equal to %s", amount.String())
@@ -725,7 +725,8 @@ func (k Keeper) QueueLiquidUnstake(ctx sdk.Context, msg *types.MsgLiquidUnstake)
 		// Escrow ls tokens from the delegator
 		lsTokenBurnAmount := types.ChunkSize
 		if nas.LsTokensTotalSupply.IsPositive() {
-			lsTokenBurnAmount = lsTokenBurnAmount.ToDec().Mul(nas.MintRate).TruncateInt()
+			conservativeNetAmount := nas.CalcConservativeNetAmount(nas.RewardModuleAccBalance)
+			lsTokenBurnAmount = types.NativeTokenToLiquidStakeToken(types.ChunkSize, nas.LsTokensTotalSupply, conservativeNetAmount)
 		}
 		lsTokensToBurn := sdk.NewCoin(liquidBondDenom, lsTokenBurnAmount)
 		if err = k.bankKeeper.SendCoins(
@@ -910,6 +911,8 @@ func (k Keeper) DoClaimDiscountedReward(ctx sdk.Context, msg *types.MsgClaimDisc
 		return
 	}
 	nas := k.GetNetAmountState(ctx)
+	// TODO: This is the only place where MintRate field is used.
+	// If we will apply conservative netmaount calculation here also, then just change CalcMintRate function.
 	discountedMintRate = nas.MintRate.Mul(sdk.OneDec().Sub(discountRate))
 
 	var claimableCoin sdk.Coin
