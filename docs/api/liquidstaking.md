@@ -13,7 +13,7 @@ To set up a local testing environment, you should run [init_testnet.sh](https://
 ## gRPC-gateway REST Routes
 
 
-++https://github.com/crescent-network/crescent/blob/main/proto/crescent/farming/v1beta1/query.proto
+++https://github.com/Canto-Network/Canto/blob/main/proto/canto/liquidstaking/v1/query.proto
 - [Params](#Params)
 - [Epoch](#Epoch)
 - [Chunks](#Chunks)
@@ -411,7 +411,7 @@ Query RedelegationInfo by chunk id.
 Example Request
 
 ```bash
-http://localhost:1317/canto/liquidstaking/v1/chunks/1redelegation_infos
+http://localhost:1317/canto/liquidstaking/v1/chunks/redelegation_infos
 ```
 
 Example Response
