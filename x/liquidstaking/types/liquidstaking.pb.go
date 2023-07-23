@@ -44,14 +44,13 @@ const (
 	// designated by the insurance provider.
 	CHUNK_STATUS_PAIRED ChunkStatus = 2
 	// A paired chunk enters this status when paired insurance is started to be
-	// withdrawn or is insufficient (meaning the insurance balance is below the
-	// minimum requirement to be considered valid insurance) or the validator of
-	// the insurance becomes tombstoned.
+	// withdrawn or it's balance <= 5.75%(double_sign_fraction + down_time_fraction) of chunk size tokens
+	// or the validator becomes tombstoned.
 	CHUNK_STATUS_UNPAIRING ChunkStatus = 3
 	// When a delegator (also known as a liquid staker) sends a MsgLiquidUnstake,
-	// it is queued as a PendingLiquidUnstake. At the end of the epoch,
+	// it is queued as a UnpairingForUnstakingChunkInfo. At the end of the epoch,
 	// the actual undelegation is triggered and the chunk enters this state.
-	// Once the unbonding period is over in next epoch, the staked tokens are
+	// Once the unbonding period is over in next epoch, the tokens corresponding chunk size are
 	// returned to the delegator's account and the associated chunk object is
 	// removed.
 	CHUNK_STATUS_UNPAIRING_FOR_UNSTAKING ChunkStatus = 4
@@ -99,16 +98,16 @@ const (
 	// unexpected loss that may occur due to validator slashing. This ensures that
 	// the chunk remains same size and maximize its staking rewards.
 	INSURANCE_STATUS_PAIRED InsuranceStatus = 2
-	// A paired insurance enters this status when it no longer has enough balance
+	// A paired insurance enters this status when it no longer has enough balance (=5.75% of chunk size tokens)
 	// to cover slashing penalties, when the validator is tombstoned, or
-	// when the paired chunk is started to be undelegated.
-	// At the next epoch, unpairing will be unpaired.
+	// when the paired chunk is started to be undelegated by MsgLiquidUnstake.
+	// At the next epoch, unpairing will be unpaired or pairing if it still valid.
 	INSURANCE_STATUS_UNPAIRING InsuranceStatus = 3
-	// A paired insurance enters this status when there are
-	// queued withdrawal insurance requests created by MsgWithdrawInsurance at the
+	// A paired insurance enters this status when there was a
+	// queued WithdrawalInsuranceRequest created by MsgWithdrawInsurance at the
 	// epoch.
 	INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAWAL InsuranceStatus = 4
-	// Unpairing insurances from previous epoch enters this status.
+	// Unpairing insurances from previous epoch can enter this status.
 	// Unpaired insurance can be withdrawn immediately by MsgWithdrawInsurance.
 	INSURANCE_STATUS_UNPAIRED InsuranceStatus = 5
 )
@@ -303,13 +302,13 @@ var xxx_messageInfo_Params proto.InternalMessageInfo
 
 // Chunk defines the chunk of the module.
 type Chunk struct {
-	// Id of the chunk
+	// Unique id increased by 1
 	Id uint64 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
 	// Id of Paired insurance, 0 means no insurance
-	PairedInsuranceId    uint64 `protobuf:"varint,2,opt,name=paired_insurance_id,json=pairedInsuranceId,proto3" json:"paired_insurance_id,omitempty"`
-	UnpairingInsuranceId uint64 `protobuf:"varint,3,opt,name=unpairing_insurance_id,json=unpairingInsuranceId,proto3" json:"unpairing_insurance_id,omitempty"`
-	// Status of the chunk
-	Status ChunkStatus `protobuf:"varint,4,opt,name=status,proto3,enum=canto.liquidstaking.v1.ChunkStatus" json:"status,omitempty"`
+	PairedInsuranceId uint64 `protobuf:"varint,2,opt,name=paired_insurance_id,json=pairedInsuranceId,proto3" json:"paired_insurance_id,omitempty"`
+	// Id of Unpairing insurance, 0 means no insurance
+	UnpairingInsuranceId uint64      `protobuf:"varint,3,opt,name=unpairing_insurance_id,json=unpairingInsuranceId,proto3" json:"unpairing_insurance_id,omitempty"`
+	Status               ChunkStatus `protobuf:"varint,4,opt,name=status,proto3,enum=canto.liquidstaking.v1.ChunkStatus" json:"status,omitempty"`
 }
 
 func (m *Chunk) Reset()         { *m = Chunk{} }
@@ -347,14 +346,13 @@ var xxx_messageInfo_Chunk proto.InternalMessageInfo
 
 // Insurance defines the insurance of the module.
 type Insurance struct {
-	// Id of the insurance
+	// Unique id increased by 1
 	Id uint64 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
 	// Address of the validator
 	ValidatorAddress string `protobuf:"bytes,2,opt,name=validator_address,json=validatorAddress,proto3" json:"validator_address,omitempty"`
 	// Address of the insurance provider
-	ProviderAddress string `protobuf:"bytes,3,opt,name=provider_address,json=providerAddress,proto3" json:"provider_address,omitempty"`
-	// Fee rate of the insurance
-	FeeRate github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,4,opt,name=fee_rate,json=feeRate,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"fee_rate"`
+	ProviderAddress string                                 `protobuf:"bytes,3,opt,name=provider_address,json=providerAddress,proto3" json:"provider_address,omitempty"`
+	FeeRate         github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,4,opt,name=fee_rate,json=feeRate,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"fee_rate"`
 	// Id of the chunk for which the insurance has a duty
 	ChunkId uint64 `protobuf:"varint,5,opt,name=chunk_id,json=chunkId,proto3" json:"chunk_id,omitempty"`
 	// Status of the insurance
@@ -406,7 +404,8 @@ type NetAmountState struct {
 	LsTokensTotalSupply github_com_cosmos_cosmos_sdk_types.Int `protobuf:"bytes,2,opt,name=ls_tokens_total_supply,json=lsTokensTotalSupply,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Int" json:"ls_tokens_total_supply"`
 	// Calculated by reward module account's native token balance + all paired
 	// chunk's native token balance + all delegation tokens of paired chunks
-	// last Epoch + all unbonding delegation tokens of unpairing chunks
+	// since last Epoch + all unbonding delegation tokens of unpairing chunks +
+	// reward module account's balance
 	NetAmount github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,3,opt,name=net_amount,json=netAmount,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"net_amount"`
 	// The token amount worth of all delegation shares of all paired chunks
 	// (slashing applied amount)
@@ -426,7 +425,7 @@ type NetAmountState struct {
 	NumPairedChunks github_com_cosmos_cosmos_sdk_types.Int `protobuf:"bytes,10,opt,name=num_paired_chunks,json=numPairedChunks,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Int" json:"num_paired_chunks"`
 	// Current chunk size tokens
 	ChunkSize github_com_cosmos_cosmos_sdk_types.Int `protobuf:"bytes,11,opt,name=chunk_size,json=chunkSize,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Int" json:"chunk_size"`
-	// Total shares of all paired chunks
+	// Total delegation shares of all paired chunks
 	TotalDelShares github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,12,opt,name=total_del_shares,json=totalDelShares,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"total_del_shares"`
 	// The cumulative reward of all chunks delegations from the last distribution
 	TotalRemainingRewards github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,13,opt,name=total_remaining_rewards,json=totalRemainingRewards,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"total_remaining_rewards"`
@@ -435,7 +434,7 @@ type NetAmountState struct {
 	// of insurance). In such cases, the delegated native tokens returns to the
 	// balance of DerivedAddress(Chunk.Id) after un-bonding period is finished.
 	TotalChunksBalance github_com_cosmos_cosmos_sdk_types.Int `protobuf:"bytes,14,opt,name=total_chunks_balance,json=totalChunksBalance,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Int" json:"total_chunks_balance"`
-	// The sum of unbonding balance of all chunks in Unpairing and
+	// The sum of unbonding balance of all chunks in Unpairing or
 	// UnpairingForUnstaking
 	TotalUnbondingChunksBalance github_com_cosmos_cosmos_sdk_types.Int `protobuf:"bytes,15,opt,name=total_unbonding_chunks_balance,json=totalUnbondingChunksBalance,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Int" json:"total_unbonding_chunks_balance"`
 	// --- Insurance related fields
@@ -484,11 +483,11 @@ func (m *NetAmountState) XXX_DiscardUnknown() {
 var xxx_messageInfo_NetAmountState proto.InternalMessageInfo
 
 type UnpairingForUnstakingChunkInfo struct {
-	// The id of chunk
+	// Which chunk is unpairing for unstaking
 	ChunkId uint64 `protobuf:"varint,1,opt,name=chunk_id,json=chunkId,proto3" json:"chunk_id,omitempty"`
 	// Address of delegator (=liquid unstaker)
 	DelegatorAddress string `protobuf:"bytes,2,opt,name=delegator_address,json=delegatorAddress,proto3" json:"delegator_address,omitempty"`
-	// Amount of ls tokens to burn
+	// How much lstokens will be burned when unbonding finished
 	EscrowedLstokens github_com_cosmos_cosmos_sdk_types.Coin `protobuf:"bytes,3,opt,name=escrowed_lstokens,json=escrowedLstokens,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Coin" json:"escrowed_lstokens"`
 }
 
@@ -540,7 +539,7 @@ func (m *UnpairingForUnstakingChunkInfo) GetDelegatorAddress() string {
 }
 
 type WithdrawInsuranceRequest struct {
-	// The id of insurance
+	// Which insurance is requested for withdrawal
 	InsuranceId uint64 `protobuf:"varint,1,opt,name=insurance_id,json=insuranceId,proto3" json:"insurance_id,omitempty"`
 }
 
@@ -585,7 +584,6 @@ func (m *WithdrawInsuranceRequest) GetInsuranceId() uint64 {
 }
 
 type RedelegationInfo struct {
-	// The id of chunk
 	ChunkId        uint64    `protobuf:"varint,1,opt,name=chunk_id,json=chunkId,proto3" json:"chunk_id,omitempty"`
 	CompletionTime time.Time `protobuf:"bytes,2,opt,name=completion_time,json=completionTime,proto3,stdtime" json:"completion_time"`
 }
