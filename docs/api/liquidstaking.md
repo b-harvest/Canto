@@ -389,26 +389,40 @@ http://localhost:1317/canto/liquidstaking/v1/redelegation_infos
 
 Example Response
 
-```bash
-# Query redelegation-infos by chunk id
-cantod query liquidstaking redelegation-infos -o json | jq
+```json
+{
+  "redelegation_infos": [
+    {
+      "chunk_id": "1",
+      "completion_time": "2030-09-08T06:25:48.694135Z"
+    }
+  ],
+  "pagination": {
+    "next_key": null,
+    "total": "1"
+  }
+}
 ```
 
 ## RedelegationInfo
 
-Query RedelegationInfo.
+Query RedelegationInfo by chunk id.
 
-Usage
+Example Request
 
 ```bash
-redelegation-info [chunk-id]
+http://localhost:1317/canto/liquidstaking/v1/chunks/1redelegation_infos
 ```
 
-Example
+Example Response
 
-```bash
-# Query redelegation-info by chunk id
-cantod query liquidstaking redelegation-info 1 -o json | jq
+```json
+{
+  "redelegation_info": {
+    "chunk_id": "1",
+    "completion_time": "2030-09-08T06:25:48.694135Z"
+  }
+}
 ```
 
 ## ChunkSize
