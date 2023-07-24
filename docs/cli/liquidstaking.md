@@ -187,7 +187,7 @@ cantod q bank balances <address> -o json | jq
 cantod q liquidstaking unpairing-for-unstaking-chunk-infos --queued="true" -o json | jq
 ```
 
-## DepositInsuranceCmd
+## DepositInsurance
 
 Deposit more coins to insurance
 
@@ -221,7 +221,7 @@ cantod tx liquidstaking deposit-insurance 1 22500000000000000000000acanto \
 cantod q bank balances <derived_address> -o json | jq
 ```
 
-## WithdrawInsuranceCmd
+## WithdrawInsurance
 
 Withdraw insurance
 
@@ -263,7 +263,7 @@ cantod q liquidstaking insurances
 cantod q bank balances <provider_address> -o json | jq
 ```
 
-## WithdrawInsuranceCommissionCmd
+## WithdrawInsuranceCommission
 
 Withdraw insurance commission
 
@@ -297,7 +297,7 @@ cantod q bank balances <fee_pool_address> -o json | jq
 cantod q bank balances <provider_address> -o json | jq
 ```
 
-## ClaimDiscountedRewardCmd
+## ClaimDiscountedReward
 
 Claim discounted reward
 
