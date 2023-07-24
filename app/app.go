@@ -147,7 +147,6 @@ import (
 	v5 "github.com/Canto-Network/Canto/v7/app/upgrades/v5"
 	v6 "github.com/Canto-Network/Canto/v7/app/upgrades/v6"
 	v7 "github.com/Canto-Network/Canto/v7/app/upgrades/v7"
-
 )
 
 func init() {
@@ -1087,7 +1086,7 @@ func (app *Canto) setupUpgradeHandlers() {
 		v4.CreateUpgradeHandler(app.mm, app.configurator, app.GovshuttleKeeper),
 	)
 
-	// v4 upgrade handler
+	// v5 upgrade handler
 	app.UpgradeKeeper.SetUpgradeHandler(
 		v5.UpgradeName,
 		v5.CreateUpgradeHandler(app.mm, app.configurator),
@@ -1134,7 +1133,7 @@ func (app *Canto) setupUpgradeHandlers() {
 			Added: []string{csrtypes.StoreKey},
 		}
 	case v6.UpgradeName:
-		// no store upgrades in v6
+		// no store upgrades in v7
 	case v7.UpgradeName:
 		storeUpgrades = &storetypes.StoreUpgrades{
 			Added: []string{onboardingtypes.StoreKey, coinswaptypes.StoreKey},

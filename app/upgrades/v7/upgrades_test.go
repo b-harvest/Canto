@@ -1,4 +1,4 @@
-package v6_test
+package v7_test
 
 import (
 	"testing"
@@ -17,10 +17,10 @@ import (
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
-	chain "github.com/Canto-Network/Canto/v6/app"
-	v6 "github.com/Canto-Network/Canto/v6/app/upgrades/v6"
-	coinswaptypes "github.com/Canto-Network/Canto/v6/x/coinswap/types"
-	onboardingtypes "github.com/Canto-Network/Canto/v6/x/onboarding/types"
+	chain "github.com/Canto-Network/Canto/v7/app"
+	v6 "github.com/Canto-Network/Canto/v7/app/upgrades/v7"
+	coinswaptypes "github.com/Canto-Network/Canto/v7/x/coinswap/types"
+	onboardingtypes "github.com/Canto-Network/Canto/v7/x/onboarding/types"
 )
 
 type UpgradeTestSuite struct {
@@ -71,7 +71,7 @@ func (s *UpgradeTestSuite) TestUpgradeV6() {
 		expPass bool
 	}{
 		{
-			"v6 upgrade onboarding & coinswap",
+			"v7 upgrade onboarding & coinswap",
 			func() {},
 			func() {
 				coinswapParams := s.app.CoinswapKeeper.GetParams(s.ctx)
