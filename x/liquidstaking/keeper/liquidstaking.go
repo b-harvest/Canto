@@ -642,7 +642,7 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (
 		lsTokenMintAmount = types.ChunkSize
 		if nas.LsTokensTotalSupply.IsPositive() {
 			conservativeNetAmount := nas.CalcConservativeNetAmount(nas.RewardModuleAccBalance)
-			lsTokenMintAmount = types.NativeTokenToLiquidStakeToken(lsTokenMintAmount, nas.LsTokensTotalSupply, conservativeNetAmount)
+			lsTokenMintAmount = types.NativeTokenToLiquidStakeToken(types.ChunkSize, nas.LsTokensTotalSupply, conservativeNetAmount)
 		}
 		if !lsTokenMintAmount.IsPositive() {
 			err = sdkerrors.Wrapf(types.ErrInvalidAmount, "amount must be greater than or equal to %s", amount.String())

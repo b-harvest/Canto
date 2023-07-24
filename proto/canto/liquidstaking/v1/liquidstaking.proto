@@ -175,7 +175,10 @@ message NetAmountState {
   option (gogoproto.goproto_getters) = true;
   option (gogoproto.goproto_stringer) = false;
 
-  // Calculated by (total supply of ls tokens) / NetAmount
+  // Calculated by (total supply of ls tokens) / (ConservativeNetAmount or
+  // NetAmount) ConservativeNetAmount is used when mint ls tokens to liquid
+  // staker NetAmount is used when get ls tokens from liquid unstaker and from
+  // arbitrager who withdraws accumulated rewards
   string mint_rate = 1 [
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
     (gogoproto.nullable) = false
