@@ -184,71 +184,11 @@ Example Response
       },
       "derived_address": "canto1hk5wgk3js5uqymxppawk87tv0j0fnc3pefcex4",
       "fee_pool_address": "canto1a3f65vrngauvsj066067qsjh068hgxezpdr6rg"
-    },
-    {
-      "insurance": {
-        "id": "3",
-        "validator_address": "cantovaloper1xjlslz2vl7v6gu807fmfw8ae7726q9pf84kzqs",
-        "provider_address": "canto1xjlslz2vl7v6gu807fmfw8ae7726q9pf9t3x34",
-        "fee_rate": "0.100000000000000000",
-        "chunk_id": "0",
-        "status": "INSURANCE_STATUS_UNPAIRED"
-      },
-      "derived_address": "canto1yqg5xesskfhmzwdn3gaas6faz6d0yjwd34rrct",
-      "fee_pool_address": "canto10m6pl6am95swkaa480789y2wqlmpyqang9uxeh"
-    },
-    {
-      "insurance": {
-        "id": "4",
-        "validator_address": "cantovaloper1xjlslz2vl7v6gu807fmfw8ae7726q9pf84kzqs",
-        "provider_address": "canto1xjlslz2vl7v6gu807fmfw8ae7726q9pf9t3x34",
-        "fee_rate": "0.100000000000000000",
-        "chunk_id": "1",
-        "status": "INSURANCE_STATUS_PAIRED"
-      },
-      "derived_address": "canto1my633g6sqx9fr4szzxuj70zutmsd78zymhv5kf",
-      "fee_pool_address": "canto1sdl4z9y8x59979qjx8ut9zyndsux9sld0s6kcv"
-    },
-    {
-      "insurance": {
-        "id": "5",
-        "validator_address": "cantovaloper1xjlslz2vl7v6gu807fmfw8ae7726q9pf84kzqs",
-        "provider_address": "canto1xjlslz2vl7v6gu807fmfw8ae7726q9pf9t3x34",
-        "fee_rate": "0.100000000000000000",
-        "chunk_id": "0",
-        "status": "INSURANCE_STATUS_PAIRING"
-      },
-      "derived_address": "canto10fhsthfzmwcfjhqulyy8w0r2fqa9q5s6a88sz4",
-      "fee_pool_address": "canto1mfkktq2nj4dcc9ypkfengcpjufntk9eak0atc3"
-    },
-    {
-      "insurance": {
-        "id": "6",
-        "validator_address": "cantovaloper1xjlslz2vl7v6gu807fmfw8ae7726q9pf84kzqs",
-        "provider_address": "canto1xjlslz2vl7v6gu807fmfw8ae7726q9pf9t3x34",
-        "fee_rate": "0.100000000000000000",
-        "chunk_id": "0",
-        "status": "INSURANCE_STATUS_PAIRING"
-      },
-      "derived_address": "canto1nwhkqs073xj7sx3tq7yp7sxkqa6n4fawcy5fxf",
-      "fee_pool_address": "canto1tjqa0tc9dxv7f23szzj3m9rn88uzegf5d0ks9n"
-    },
-    {
-      "insurance": {
-        "id": "7",
-        "validator_address": "cantovaloper1xjlslz2vl7v6gu807fmfw8ae7726q9pf84kzqs",
-        "provider_address": "canto1xjlslz2vl7v6gu807fmfw8ae7726q9pf9t3x34",
-        "fee_rate": "0.010000000000000000",
-        "chunk_id": "2",
-        "status": "INSURANCE_STATUS_PAIRED"
-      },
-      "derived_address": "canto1dcd7gu8s5xez9hadt8sum0lnvfz93ntfgtq04q",
-      "fee_pool_address": "canto1v9cv3cxst0sxrz92mptx6fj8utfsg8c0qr6v74"
     }
   ],
   "pagination": {
     "next_key": null,
-    "total": "7"
+    "total": "2"
   }
 }
 ```
@@ -429,48 +369,80 @@ Example Response
 
 Query ChunkSize.
 
-Usage
+Example Request
 
 ```bash
-chunk-size
+curl http://localhost:1317/canto/liquidstaking/v1/chunk_size
 ```
 
-Example
+Example Response
 
-```bash
-# Query chunk size
-cantod query liquidstaking chunk-size -o json | jq
+```json
+{
+  "chunk_size": {
+    "denom": "acanto",
+    "amount": "250000000000000000000000"
+  }
+}
 ```
 
 ## MinimumCollateral
 
 Query MinimumCollateral.
 
-Usage
+Example Request
 
 ```bash
-minimum-collateral
+curl http://localhost:1317/canto/liquidstaking/v1/minimum_collateral
 ```
 
-Example
+Example Response
 
-```bash
-# Query minimum collateral  
-cantod query liquidstaking minimum-collateral -o json | jq
+```jso
+
+```json
+{
+  "minimum_collateral": {
+    "denom": "acanto",
+    "amount": "17500000000000000000000.000000000000000000"
+  }
+}
 ```
 
 ## States
 
 Query net amount state.
 
-Usage
+Example Request
 
 ```bash
-states
+curl http://localhost:1317/canto/liquidstaking/v1/states
 ```
 
-Example
+Example Response
 
-```bash
-cantod query liquidstaking states -o json | jq
+```json
+{
+  "net_amount_state": {
+    "mint_rate": "0.000000000000000000",
+    "ls_tokens_total_supply": "0",
+    "net_amount": "0.000000000000000000",
+    "total_liquid_tokens": "0",
+    "reward_module_acc_balance": "0",
+    "fee_rate": "0.000000000000000000",
+    "utilization_ratio": "0.000000000000000000",
+    "remaining_chunk_slots": "1220",
+    "discount_rate": "0.000000000000000000",
+    "num_paired_chunks": "0",
+    "chunk_size": "250000000000000000000000",
+    "total_del_shares": "0.000000000000000000",
+    "total_remaining_rewards": "0.000000000000000000",
+    "total_chunks_balance": "0",
+    "total_unbonding_chunks_balance": "0",
+    "total_insurance_tokens": "0",
+    "total_paired_insurance_tokens": "0",
+    "total_unpairing_insurance_tokens": "0",
+    "total_remaining_insurance_commissions": "0.000000000000000000"
+  }
+}
 ```
