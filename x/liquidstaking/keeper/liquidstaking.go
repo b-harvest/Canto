@@ -812,9 +812,21 @@ func (k Keeper) DoCancelProvideInsurance(ctx sdk.Context, msg *types.MsgCancelPr
 	}
 
 	// Unescrow provider's balance
-	escrowed := k.bankKeeper.GetBalance(ctx, ins.DerivedAddress(), k.stakingKeeper.BondDenom(ctx))
-	if err = k.bankKeeper.SendCoins(ctx, ins.DerivedAddress(), providerAddr, sdk.NewCoins(escrowed)); err != nil {
-		return
+	escrowed := k.bankKeeper.SpendableCoins(ctx, ins.DerivedAddress())
+	fees := k.bankKeeper.SpendableCoins(ctx, ins.FeePoolAddress())
+
+	var inputs []banktypes.Input
+	var outputs []banktypes.Output
+	if escrowed.IsValid() && escrowed.IsAllPositive() {
+		inputs = append(inputs, banktypes.NewInput(ins.DerivedAddress(), escrowed))
+		outputs = append(outputs, banktypes.NewOutput(providerAddr, escrowed))
+	}
+	if fees.IsValid() && fees.IsAllPositive() {
+		inputs = append(inputs, banktypes.NewInput(ins.FeePoolAddress(), fees))
+		outputs = append(outputs, banktypes.NewOutput(providerAddr, fees))
+	}
+	if err := k.bankKeeper.InputOutputCoins(ctx, inputs, outputs); err != nil {
+		return ins, err
 	}
 	k.DeleteInsurance(ctx, insId)
 	return
@@ -832,7 +844,7 @@ func (k Keeper) DoWithdrawInsurance(ctx sdk.Context, msg *types.MsgWithdrawInsur
 	// If insurnace is paired or unpairing, then queue request
 	// If insurnace is unpaired then immediately withdraw ins
 	switch ins.Status {
-	case types.INSURANCE_STATUS_PAIRED, types.INSURANCE_STATUS_UNPAIRING:
+	case types.INSURANCE_STATUS_PAIRED:
 		req = types.NewWithdrawInsuranceRequest(msg.Id)
 		k.SetWithdrawInsuranceRequest(ctx, req)
 	case types.INSURANCE_STATUS_UNPAIRED:

@@ -718,6 +718,8 @@ func (suite *KeeperTestSuite) TestCancelProvideInsuranceSuccess() {
 
 	provider := providers[0]
 	insurance := insurances[0]
+	remainingCommissions := sdk.NewInt(100)
+	suite.fundAccount(suite.ctx, insurance.FeePoolAddress(), remainingCommissions)
 	escrowed := suite.app.BankKeeper.GetBalance(suite.ctx, insurance.DerivedAddress(), suite.denom)
 	beforeProviderBalance := suite.app.BankKeeper.GetBalance(suite.ctx, provider, suite.denom)
 	msg := types.NewMsgCancelProvideInsurance(provider.String(), insurance.Id)
@@ -725,7 +727,7 @@ func (suite *KeeperTestSuite) TestCancelProvideInsuranceSuccess() {
 	suite.NoError(err)
 	suite.True(insurance.Equal(canceledInsurance))
 	afterProviderBalance := suite.app.BankKeeper.GetBalance(suite.ctx, provider, suite.denom)
-	suite.True(afterProviderBalance.Amount.Equal(beforeProviderBalance.Amount.Add(escrowed.Amount)), "provider should get back escrowed amount")
+	suite.True(afterProviderBalance.Amount.Equal(beforeProviderBalance.Amount.Add(escrowed.Amount).Add(remainingCommissions)), "provider should get back escrowed amount and remaining commissions")
 	suite.mustPassInvariants()
 }
 
