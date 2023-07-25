@@ -5,7 +5,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-func (suite *KeeperTestSuite) TestGetNetAmountState() {
+func (suite *KeeperTestSuite) TestGetNetAmountState_TotalRemainingRewards() {
 	env := suite.setupLiquidStakeTestingEnv(testingEnvOptions{
 		desc:                  "",
 		numVals:               3,
