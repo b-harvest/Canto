@@ -55,11 +55,20 @@ func (k Keeper) GetNetAmountState(ctx sdk.Context) (nas types.NetAmountState) {
 			cachedCtx, _ := ctx.CacheContext()
 			endingPeriod := k.distributionKeeper.IncrementValidatorPeriod(cachedCtx, validator)
 			delRewards := k.distributionKeeper.CalculateDelegationRewards(cachedCtx, validator, delegation, endingPeriod)
+			// chunk's remaining reward is calculated by
+			// 1. rest = del_reward - insurance_commission
+			// 2. remaining = rest x (1 - module_fee_rate)
+			// 3. result = remaining x (1 - discount_rate)
 			delReward := delRewards.AmountOf(bondDenom)
 			insuranceCommission := delReward.Mul(pairedIns.FeeRate)
-			// insuranceCommission is not reward of module
-			pureReward := delReward.Sub(insuranceCommission)
-			totalRemainingRewards = totalRemainingRewards.Add(pureReward)
+			restReward := delReward.Sub(insuranceCommission)
+			moduleFeeRate, _ := k.CalcDynamicFeeRate(ctx)
+			remainingReward := restReward.Mul(sdk.OneDec().Sub(moduleFeeRate))
+			totalRemainingRewards = totalRemainingRewards.Add(
+				remainingReward.Mul(
+					sdk.OneDec().Sub(k.CalcDiscountRate(ctx)),
+				),
+			)
 		default:
 			k.stakingKeeper.IterateDelegatorUnbondingDelegations(ctx, chunk.DerivedAddress(), func(ubd stakingtypes.UnbondingDelegation) (stop bool) {
 				for _, entry := range ubd.Entries {
