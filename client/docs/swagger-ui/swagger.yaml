@@ -2211,17 +2211,7 @@ paths:
                 properties:
                   mint_rate:
                     type: string
-                    title: >-
-                      Calculated by (total supply of ls tokens) /
-                      (ConservativeNetAmount or
-
-                      NetAmount) ConservativeNetAmount is used when mint ls
-                      tokens to liquid
-
-                      staker NetAmount is used when get ls tokens from liquid
-                      unstaker and from
-
-                      arbitrager who withdraws accumulated rewards
+                    title: Calculated by (total supply of ls tokens) / NetAmount
                   ls_tokens_total_supply:
                     type: string
                     title: >-
@@ -35761,15 +35751,7 @@ definitions:
     properties:
       mint_rate:
         type: string
-        title: >-
-          Calculated by (total supply of ls tokens) / (ConservativeNetAmount or
-
-          NetAmount) ConservativeNetAmount is used when mint ls tokens to liquid
-
-          staker NetAmount is used when get ls tokens from liquid unstaker and
-          from
-
-          arbitrager who withdraws accumulated rewards
+        title: Calculated by (total supply of ls tokens) / NetAmount
       ls_tokens_total_supply:
         type: string
         title: >-
@@ -36433,17 +36415,7 @@ definitions:
         properties:
           mint_rate:
             type: string
-            title: >-
-              Calculated by (total supply of ls tokens) / (ConservativeNetAmount
-              or
-
-              NetAmount) ConservativeNetAmount is used when mint ls tokens to
-              liquid
-
-              staker NetAmount is used when get ls tokens from liquid unstaker
-              and from
-
-              arbitrager who withdraws accumulated rewards
+            title: Calculated by (total supply of ls tokens) / NetAmount
           ls_tokens_total_supply:
             type: string
             title: >-

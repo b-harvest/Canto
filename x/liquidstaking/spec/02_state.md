@@ -102,7 +102,7 @@ This will be consumed at **Handle Queued Withdraw Insurance Requests** when Epoc
 
 ## NetAmountState (in-memory only)
 
-**NetAmount** is used when mint ls tokens to liquid staker. This value is the sum of the following items
+**NetAmount** is the sum of the following items
 
 - **reward module account’s native token(e.g. `acanto`) balance**
 - **sum of all chunk balance**
@@ -117,17 +117,13 @@ This will be consumed at **Handle Queued Withdraw Insurance Requests** when Epoc
     - not yet claimed native tokens
         - `cumulated delegation rewards x (1 - paired insurance commission rates - module's fee rate)`
 
-**ConservativeNetAmount** is almost identical to NetAmount, except for one field. This value is not included in state, but can calculate it when we need it.
-- it uses **`num paired chunks ` x `chunk size tokens`** instead of using **sum of all tokens corresponding delegation shares of paired chunks**
-- we use this value when escrow ls tokens from liquid unstaker and ls tokens from arbitrager who withdraws accumulated rewards.
+**MintRate** is the rate that is calculated from total supply of ls tokens divided by NetAmount.
 
-**MintRate** is the rate that is calculated from total supply of bTokens divided by NetAmount.
-
-- LsTokenTotalSupply / ConservativeNetAmount
+- LsTokenTotalSupply / NetAmount
 
 Depending on the equation, the value transformation between native tokens and ls tokens can be calculated as follows:
 
-- NativeTokenToLsToken: `nativeTokenAmount * lsTokenTotalSupply / ConservativeNetAmount` with truncations
+- NativeTokenToLsToken: `nativeTokenAmount * lsTokenTotalSupply / NetAmount` with truncations
 - LsTokenToNativeToken: `lsTokenAmount * NetAmount / LsTokenTotalSupply` with truncations
 
 ```go
@@ -135,10 +131,7 @@ Depending on the equation, the value transformation between native tokens and ls
 // that depends on the several module state every time, so it is used only for
 // calculation and query and is not stored in kv.
 type NetAmountState struct {
-// Calculated by (total supply of ls tokens) / (ConservativeNetAmount or
-// NetAmount) ConservativeNetAmount is used when mint ls tokens to liquid
-// staker NetAmount is used when get ls tokens from liquid unstaker and from
-// arbitrager who withdraws accumulated rewards
+// Calculated by (total supply of ls tokens) / NetAmount
 MintRate github_com_cosmos_cosmos_sdk_types.Dec 
 // Total supply of ls tokens
 // e.g. 100 ls tokens minted -> 10 ls tokens burned, then total supply is 90

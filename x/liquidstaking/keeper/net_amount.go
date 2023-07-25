@@ -28,8 +28,8 @@ func (k Keeper) GetNetAmountState(ctx sdk.Context) (nas types.NetAmountState) {
 		case types.CHUNK_STATUS_PAIRED:
 			numPairedChunks = numPairedChunks.Add(sdk.OneInt())
 			// chunk is paired which means have delegation
-			pairedInsurance, _ := k.GetInsurance(ctx, chunk.PairedInsuranceId)
-			valAddr, err := sdk.ValAddressFromBech32(pairedInsurance.ValidatorAddress)
+			pairedIns, _ := k.GetInsurance(ctx, chunk.PairedInsuranceId)
+			valAddr, err := sdk.ValAddressFromBech32(pairedIns.ValidatorAddress)
 			if err != nil {
 				panic(err)
 			}
@@ -39,13 +39,24 @@ func (k Keeper) GetNetAmountState(ctx sdk.Context) (nas types.NetAmountState) {
 				return false
 			}
 			totalDelShares = totalDelShares.Add(delegation.GetShares())
-			tokens := validator.TokensFromSharesTruncated(delegation.GetShares()).TruncateInt()
-			totalLiquidTokens = totalLiquidTokens.Add(tokens)
+			tokenValue := validator.TokensFromSharesTruncated(delegation.GetShares()).TruncateInt()
+			penaltyAmt := types.ChunkSize.Sub(tokenValue)
+			// If penaltyAmt > 0 and paired insurance can cover it, then token value is same with ChunkSize
+			if penaltyAmt.IsPositive() {
+				pairedInsBal := k.bankKeeper.GetBalance(ctx, pairedIns.DerivedAddress(), liquidBondDenom)
+				if pairedInsBal.Amount.LT(penaltyAmt) {
+					penaltyAmt = penaltyAmt.Sub(pairedInsBal.Amount)
+				} else {
+					penaltyAmt = sdk.ZeroInt()
+				}
+				tokenValue = types.ChunkSize.Sub(penaltyAmt)
+			}
+			totalLiquidTokens = totalLiquidTokens.Add(tokenValue)
 			cachedCtx, _ := ctx.CacheContext()
 			endingPeriod := k.distributionKeeper.IncrementValidatorPeriod(cachedCtx, validator)
 			delRewards := k.distributionKeeper.CalculateDelegationRewards(cachedCtx, validator, delegation, endingPeriod)
 			delReward := delRewards.AmountOf(bondDenom)
-			insuranceCommission := delReward.Mul(pairedInsurance.FeeRate)
+			insuranceCommission := delReward.Mul(pairedIns.FeeRate)
 			// insuranceCommission is not reward of module
 			pureReward := delReward.Sub(insuranceCommission)
 			totalRemainingRewards = totalRemainingRewards.Add(pureReward)

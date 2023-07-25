@@ -257,29 +257,6 @@ func (suite *netAmountTestSuite) TestIsZeroState() {
 	)
 }
 
-func (suite *netAmountTestSuite) TestConservativeNetAmount() {
-	nas := types.NetAmountState{
-		LsTokensTotalSupply:         sdk.MustNewDecFromStr("490000000000000000000000").TruncateInt(),
-		NumPairedChunks:             sdk.OneInt(),
-		TotalChunksBalance:          sdk.NewInt(2222222),
-		TotalLiquidTokens:           sdk.MustNewDecFromStr("240000000000000000000000").TruncateInt(),
-		TotalUnbondingChunksBalance: sdk.MustNewDecFromStr("250000000000000000000000").TruncateInt(),
-		TotalRemainingRewards:       sdk.MustNewDecFromStr("160000000000000000000"),
-	}
-	rewardModuleAccBalance := sdk.NewInt(1000000)
-	original := nas.CalcNetAmount(rewardModuleAccBalance)
-	conservative := nas.CalcConservativeNetAmount(rewardModuleAccBalance)
-	suite.Equal("490160000000000003222222.000000000000000000", original.String())
-	suite.Equal("500160000000000003222222.000000000000000000", conservative.String())
-	suite.True(original.LT(conservative))
-
-	originalMintRate := nas.LsTokensTotalSupply.ToDec().QuoTruncate(original)
-	conservativeMintRate := nas.LsTokensTotalSupply.ToDec().QuoTruncate(conservative)
-	suite.Equal("0.999673575975191767", originalMintRate.String())
-	suite.Equal("0.979686500319897626", conservativeMintRate.String())
-	suite.True(conservativeMintRate.LT(originalMintRate))
-}
-
 func (suite *netAmountTestSuite) TestString() {
 	nas := types.NetAmountState{
 		MintRate:                           sdk.NewDec(1),

@@ -603,6 +603,7 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (
 	}
 
 	nas := k.GetNetAmountState(ctx)
+	mintRate := nas.CalcMintRate()
 	types.SortInsurances(validatorMap, pairingInsurances, false)
 	totalNewShares := sdk.ZeroDec()
 	totalLsTokenMintAmount := sdk.ZeroInt()
@@ -641,8 +642,7 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (
 		// Mint the liquid staking token
 		lsTokenMintAmount = types.ChunkSize
 		if nas.LsTokensTotalSupply.IsPositive() {
-			conservativeNetAmount := nas.CalcConservativeNetAmount(nas.RewardModuleAccBalance)
-			lsTokenMintAmount = types.NativeTokenToLiquidStakeToken(types.ChunkSize, nas.LsTokensTotalSupply, conservativeNetAmount)
+			lsTokenMintAmount = mintRate.MulTruncate(types.ChunkSize.ToDec()).TruncateInt()
 		}
 		if !lsTokenMintAmount.IsPositive() {
 			err = sdkerrors.Wrapf(types.ErrInvalidAmount, "amount must be greater than or equal to %s", amount.String())

@@ -398,10 +398,7 @@ var xxx_messageInfo_Insurance proto.InternalMessageInfo
 // that depends on the several module state every time, so it is used only for
 // calculation and query and is not stored in kv.
 type NetAmountState struct {
-	// Calculated by (total supply of ls tokens) / (ConservativeNetAmount or
-	// NetAmount) ConservativeNetAmount is used when mint ls tokens to liquid
-	// staker NetAmount is used when get ls tokens from liquid unstaker and from
-	// arbitrager who withdraws accumulated rewards
+	// Calculated by (total supply of ls tokens) / NetAmount
 	MintRate github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,1,opt,name=mint_rate,json=mintRate,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"mint_rate"`
 	// Total supply of ls tokens
 	// e.g. 100 ls tokens minted -> 10 ls tokens burned, then total supply is 90
