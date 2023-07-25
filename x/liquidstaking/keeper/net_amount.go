@@ -20,6 +20,8 @@ func (k Keeper) GetNetAmountState(ctx sdk.Context) (nas types.NetAmountState) {
 	totalUnbondingChunksBalance := sdk.ZeroDec()
 	numPairedChunks := sdk.ZeroInt()
 
+	moduleFeeRate, _ := k.CalcDynamicFeeRate(ctx)
+	discountRate := k.CalcDiscountRate(ctx)
 	k.IterateAllChunks(ctx, func(chunk types.Chunk) (stop bool) {
 		balance := k.bankKeeper.GetBalance(ctx, chunk.DerivedAddress(), k.stakingKeeper.BondDenom(ctx))
 		totalChunksBalance = totalChunksBalance.Add(balance.Amount.ToDec())
@@ -62,11 +64,10 @@ func (k Keeper) GetNetAmountState(ctx sdk.Context) (nas types.NetAmountState) {
 			delReward := delRewards.AmountOf(bondDenom)
 			insuranceCommission := delReward.Mul(pairedIns.FeeRate)
 			restReward := delReward.Sub(insuranceCommission)
-			moduleFeeRate, _ := k.CalcDynamicFeeRate(ctx)
 			remainingReward := restReward.Mul(sdk.OneDec().Sub(moduleFeeRate))
 			totalRemainingRewards = totalRemainingRewards.Add(
 				remainingReward.Mul(
-					sdk.OneDec().Sub(k.CalcDiscountRate(ctx)),
+					sdk.OneDec().Sub(discountRate),
 				),
 			)
 		default:
