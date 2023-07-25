@@ -20,7 +20,7 @@ func (k Keeper) GetNetAmountState(ctx sdk.Context) (nas types.NetAmountState) {
 	totalUnbondingChunksBalance := sdk.ZeroDec()
 	numPairedChunks := sdk.ZeroInt()
 
-	moduleFeeRate, _ := k.CalcDynamicFeeRate(ctx)
+	moduleFeeRate, utilizationRatio := k.CalcDynamicFeeRate(ctx)
 	discountRate := k.CalcDiscountRate(ctx)
 	k.IterateAllChunks(ctx, func(chunk types.Chunk) (stop bool) {
 		balance := k.bankKeeper.GetBalance(ctx, chunk.DerivedAddress(), k.stakingKeeper.BondDenom(ctx))
@@ -114,8 +114,8 @@ func (k Keeper) GetNetAmountState(ctx sdk.Context) (nas types.NetAmountState) {
 	nas.NetAmount = nas.CalcNetAmount(k.bankKeeper.GetBalance(ctx, types.RewardPool, bondDenom).Amount)
 	nas.MintRate = nas.CalcMintRate()
 	nas.RewardModuleAccBalance = k.bankKeeper.GetBalance(ctx, types.RewardPool, bondDenom).Amount
-	nas.FeeRate, nas.UtilizationRatio = k.CalcDynamicFeeRate(ctx)
+	nas.FeeRate, nas.UtilizationRatio = moduleFeeRate, utilizationRatio
 	nas.RemainingChunkSlots = k.GetAvailableChunkSlots(ctx)
-	nas.DiscountRate = k.CalcDiscountRate(ctx)
+	nas.DiscountRate = discountRate
 	return
 }
