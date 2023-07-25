@@ -404,10 +404,10 @@ type NetAmountState struct {
 	// e.g. 100 ls tokens minted -> 10 ls tokens burned, then total supply is 90
 	// ls tokens
 	LsTokensTotalSupply github_com_cosmos_cosmos_sdk_types.Int `protobuf:"bytes,2,opt,name=ls_tokens_total_supply,json=lsTokensTotalSupply,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Int" json:"ls_tokens_total_supply"`
-	// Calculated by reward module account's native token balance + all paired
-	// chunk's native token balance + all delegation tokens of paired chunks
-	// since last Epoch + all unbonding delegation tokens of unpairing chunks +
-	// reward module account's balance
+	// Calculated by reward module account's native token balance + all
+	// chunk's native token balance + sum of all remaining rewards of paired
+	// chunks since last Epoch + all unbonding delegation tokens of unpairing
+	// chunks + reward module account's balance
 	NetAmount github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,3,opt,name=net_amount,json=netAmount,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"net_amount"`
 	// The token amount worth of all delegation shares of all paired chunks
 	// (slashing applied amount)

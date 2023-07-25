@@ -111,11 +111,14 @@ This will be consumed at **Handle Queued Withdraw Insurance Requests** when Epoc
     - When insurance is withdrawn and there are no candidate insurances, the chunk balance can be the same as the chunk size in tokens.
 - **sum of all tokens corresponding delegation shares of paired chunks**
     - total amount of native tokens currently delegated
-    - may be less than the sum of the delegation shares due to slashing in the calculation
-        - This will be an edge case because insurance will cover any penalty.
+    - may be less than original values due to slashing in the calculation when there was a slashing which will not be covered by insurance.
 - **sum of all remaining rewards of all chunks delegations**
-    - not yet claimed native tokens
-        - `cumulated delegation rewards x (1 - paired insurance commission rates - module's fee rate)`
+    - the remaining reward for each chunk is calculated as follows:
+      ```
+      rest = del_reward - insurance_commission
+      remaining = rest x (1 - dynamic_fee_rate)
+      result = remaining x (1 - discount_rate)
+      ``` 
 
 **MintRate** is the rate that is calculated from total supply of ls tokens divided by NetAmount.
 

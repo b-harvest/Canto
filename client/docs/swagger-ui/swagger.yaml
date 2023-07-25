@@ -2225,15 +2225,15 @@ paths:
                     type: string
                     title: >-
                       Calculated by reward module account's native token balance
-                      + all paired
+                      + all
 
-                      chunk's native token balance + all delegation tokens of
-                      paired chunks
+                      chunk's native token balance + sum of all remaining
+                      rewards of paired
 
-                      since last Epoch + all unbonding delegation tokens of
-                      unpairing chunks +
+                      chunks since last Epoch + all unbonding delegation tokens
+                      of unpairing
 
-                      reward module account's balance
+                      chunks + reward module account's balance
                   total_liquid_tokens:
                     type: string
                     title: >-
@@ -35763,16 +35763,11 @@ definitions:
           ls tokens
       net_amount:
         type: string
-        title: >-
+        title: |-
           Calculated by reward module account's native token balance + all
-          paired
-
-          chunk's native token balance + all delegation tokens of paired chunks
-
-          since last Epoch + all unbonding delegation tokens of unpairing chunks
-          +
-
-          reward module account's balance
+          chunk's native token balance + sum of all remaining rewards of paired
+          chunks since last Epoch + all unbonding delegation tokens of unpairing
+          chunks + reward module account's balance
       total_liquid_tokens:
         type: string
         title: |-
@@ -36429,15 +36424,14 @@ definitions:
             type: string
             title: >-
               Calculated by reward module account's native token balance + all
+
+              chunk's native token balance + sum of all remaining rewards of
               paired
 
-              chunk's native token balance + all delegation tokens of paired
-              chunks
+              chunks since last Epoch + all unbonding delegation tokens of
+              unpairing
 
-              since last Epoch + all unbonding delegation tokens of unpairing
-              chunks +
-
-              reward module account's balance
+              chunks + reward module account's balance
           total_liquid_tokens:
             type: string
             title: >-
