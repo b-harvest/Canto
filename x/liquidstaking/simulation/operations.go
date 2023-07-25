@@ -1,6 +1,7 @@
 package simulation
 
 import (
+	"github.com/Canto-Network/Canto/v6/app/params"
 	"math/rand"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
@@ -10,7 +11,6 @@ import (
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
 	"github.com/cosmos/cosmos-sdk/x/simulation"
 
-	"github.com/Canto-Network/Canto/v6/app"
 	"github.com/Canto-Network/Canto/v6/x/liquidstaking/keeper"
 	"github.com/Canto-Network/Canto/v6/x/liquidstaking/types"
 )
@@ -48,42 +48,42 @@ func WeightedOperations(
 ) simulation.WeightedOperations {
 	var weightMsgLiquidStake int
 	appParams.GetOrGenerate(cdc, OpWeightMsgLiquidStake, &weightMsgLiquidStake, nil, func(_ *rand.Rand) {
-		weightMsgLiquidStake = app.DefaultWeightMsgLiquidStake
+		weightMsgLiquidStake = params.DefaultWeightMsgLiquidStake
 	})
 
 	var weightMsgLiquidUnstake int
 	appParams.GetOrGenerate(cdc, OpWeightMsgLiquidUnstake, &weightMsgLiquidUnstake, nil, func(_ *rand.Rand) {
-		weightMsgLiquidUnstake = app.DefaultWeightMsgLiquidUnstake
+		weightMsgLiquidUnstake = params.DefaultWeightMsgLiquidUnstake
 	})
 
 	var weightMsgProvideInsurance int
 	appParams.GetOrGenerate(cdc, OpWeightMsgProvideInsurance, &weightMsgProvideInsurance, nil, func(_ *rand.Rand) {
-		weightMsgProvideInsurance = app.DefaultWeightMsgProvideInsurance
+		weightMsgProvideInsurance = params.DefaultWeightMsgProvideInsurance
 	})
 
 	var weightMsgCancelProvideInsurance int
 	appParams.GetOrGenerate(cdc, OpWeightMsgCancelProvideInsurance, &weightMsgCancelProvideInsurance, nil, func(_ *rand.Rand) {
-		weightMsgCancelProvideInsurance = app.DefaultWeightMsgCancelProvideInsurance
+		weightMsgCancelProvideInsurance = params.DefaultWeightMsgCancelProvideInsurance
 	})
 
 	var weightMsgDepositInsurance int
 	appParams.GetOrGenerate(cdc, OpWeightMsgDepositInsurance, &weightMsgDepositInsurance, nil, func(_ *rand.Rand) {
-		weightMsgDepositInsurance = app.DefaultWeightMsgDepositInsurance
+		weightMsgDepositInsurance = params.DefaultWeightMsgDepositInsurance
 	})
 
 	var weightMsgWithdrawInsurance int
 	appParams.GetOrGenerate(cdc, OpWeightMsgWithdrawInsurance, &weightMsgWithdrawInsurance, nil, func(_ *rand.Rand) {
-		weightMsgWithdrawInsurance = app.DefaultWeightMsgWithdrawInsurance
+		weightMsgWithdrawInsurance = params.DefaultWeightMsgWithdrawInsurance
 	})
 
 	var weightMsgWithdrawInsuranceCommission int
 	appParams.GetOrGenerate(cdc, OpWeightMsgWithdrawInsuranceCommission, &weightMsgWithdrawInsuranceCommission, nil, func(_ *rand.Rand) {
-		weightMsgWithdrawInsuranceCommission = app.DefaultWeightMsgWithdrawInsuranceCommission
+		weightMsgWithdrawInsuranceCommission = params.DefaultWeightMsgWithdrawInsuranceCommission
 	})
 
 	var weightMsgClaimDiscountedReward int
 	appParams.GetOrGenerate(cdc, OpWeightMsgClaimDiscountedReward, &weightMsgClaimDiscountedReward, nil, func(_ *rand.Rand) {
-		weightMsgClaimDiscountedReward = app.DefaultWeightMsgClaimDiscountedReward
+		weightMsgClaimDiscountedReward = params.DefaultWeightMsgClaimDiscountedReward
 	})
 
 	return simulation.WeightedOperations{

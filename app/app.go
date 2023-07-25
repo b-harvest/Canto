@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/Canto-Network/Canto/v6/x/liquidstaking"
 	"io"
 	"net/http"
 	"os"
@@ -141,7 +142,6 @@ import (
 	csrkeeper "github.com/Canto-Network/Canto/v6/x/csr/keeper"
 	csrtypes "github.com/Canto-Network/Canto/v6/x/csr/types"
 
-	"github.com/Canto-Network/Canto/v6/x/liquidstaking"
 	liquidstakingkeeper "github.com/Canto-Network/Canto/v6/x/liquidstaking/keeper"
 	liquidstakingtypes "github.com/Canto-Network/Canto/v6/x/liquidstaking/types"
 
@@ -658,7 +658,7 @@ func NewCanto(
 		fees.NewAppModule(app.FeesKeeper, app.AccountKeeper),
 		govshuttle.NewAppModule(app.GovshuttleKeeper, app.AccountKeeper),
 		csr.NewAppModule(app.CSRKeeper, app.AccountKeeper),
-		liquidstaking.NewAppModule(app.LiquidStakingKeeper, app.AccountKeeper, baseKeeper, app.StakingKeeper, app.DistrKeeper, app.InflationKeeper),
+		liquidstaking.NewAppModule(appCodec, app.LiquidStakingKeeper, app.AccountKeeper, baseKeeper, app.StakingKeeper, app.DistrKeeper, app.InflationKeeper),
 	)
 
 	// During begin block slashing happens after distr.BeginBlocker so that
@@ -806,7 +806,7 @@ func NewCanto(
 		epochs.NewAppModule(appCodec, app.EpochsKeeper),
 		inflation.NewAppModule(app.InflationKeeper, app.AccountKeeper, app.StakingKeeper),
 		// feemarket.NewAppModule(app.FeeMarketKeeper),
-		liquidstaking.NewAppModule(app.LiquidStakingKeeper, app.AccountKeeper, baseKeeper, app.StakingKeeper, app.DistrKeeper, app.InflationKeeper),
+		liquidstaking.NewAppModule(appCodec, app.LiquidStakingKeeper, app.AccountKeeper, baseKeeper, app.StakingKeeper, app.DistrKeeper, app.InflationKeeper),
 	)
 
 	app.sm.RegisterStoreDecoders()

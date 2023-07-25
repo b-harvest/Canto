@@ -6,6 +6,7 @@ import (
 	"fmt"
 	inflationkeeper "github.com/Canto-Network/Canto/v6/x/inflation/keeper"
 	inflationtypes "github.com/Canto-Network/Canto/v6/x/inflation/types"
+	"github.com/Canto-Network/Canto/v6/x/liquidstaking/simulation"
 	"github.com/armon/go-metrics"
 	"github.com/cosmos/cosmos-sdk/telemetry"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -43,7 +44,9 @@ var (
 )
 
 // AppModuleBasic type for the liquidstaking module
-type AppModuleBasic struct{}
+type AppModuleBasic struct {
+	cdc codec.Codec
+}
 
 // Name returns the liquidstaking module's name.
 func (AppModuleBasic) Name() string {
@@ -118,6 +121,7 @@ type AppModule struct {
 
 // NewAppModule creates a new AppModule Object
 func NewAppModule(
+	cdc codec.Codec,
 	k keeper.Keeper,
 	ak authkeeper.AccountKeeper,
 	bk bankkeeper.BaseKeeper,
@@ -126,7 +130,7 @@ func NewAppModule(
 	ik inflationkeeper.Keeper,
 ) AppModule {
 	return AppModule{
-		AppModuleBasic: AppModuleBasic{},
+		AppModuleBasic: AppModuleBasic{cdc: cdc},
 		keeper:         k,
 		ak:             ak,
 		bk:             bk,
@@ -206,26 +210,30 @@ func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.Raw
 // AppModuleSimulation functions
 
 // GenerateGenesisState creates a randomized GenState of the liquidstaking module.
-func (am AppModule) GenerateGenesisState(input *module.SimulationState) {
+func (am AppModule) GenerateGenesisState(simState *module.SimulationState) {
+	simulation.RandomizedGenState(simState)
 }
 
 // ProposalContents returns content functions for governance proposals.
 func (am AppModule) ProposalContents(simState module.SimulationState) []simtypes.WeightedProposalContent {
-	return []simtypes.WeightedProposalContent{}
+	return simulation.ProposalContents(am.keeper, am)
 }
 
 // RandomizedParams creates randomized liquidstaking param changes for the simulator.
 func (am AppModule) RandomizedParams(r *rand.Rand) []simtypes.ParamChange {
-	return []simtypes.ParamChange{}
+	return simulation.ParamChanges(r)
 }
 
 // RegisterStoreDecoder registers a decoder for liquidstaking module's types.
-func (am AppModule) RegisterStoreDecoder(decoderRegistry sdk.StoreDecoderRegistry) {
+func (am AppModule) RegisterStoreDecoder(sdr sdk.StoreDecoderRegistry) {
+	sdr[types.StoreKey] = simulation.NewDecodeStore(am.cdc)
 }
 
 // WeightedOperations returns liquidstaking module weighted operations
 func (am AppModule) WeightedOperations(simState module.SimulationState) []simtypes.WeightedOperation {
-	return []simtypes.WeightedOperation{}
+	return simulation.WeightedOperations(
+		simState.AppParams, simState.Cdc, am.ak, am.bk, am.sk, am.keeper,
+	)
 }
 
 func (am AppModule) AdvanceEpochBeginBlock(ctx sdk.Context) {

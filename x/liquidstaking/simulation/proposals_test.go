@@ -1,7 +1,7 @@
 package simulation_test
 
 import (
-	cantoapp "github.com/Canto-Network/Canto/v6/app"
+	cantoapp "github.com/Canto-Network/Canto/v6/app/params"
 	"github.com/Canto-Network/Canto/v6/x/liquidstaking/simulation"
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"

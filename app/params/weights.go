@@ -1,4 +1,4 @@
-package app
+package params
 
 // Default simulation operation weights for messages and gov proposals.
 const (
@@ -12,4 +12,5 @@ const (
 	DefaultWeightMsgClaimDiscountedReward       int = 10
 
 	DefaultWeightUpdateDynamicFeeRateProposal int = 2
+	DefaultWeightAdvanceEpoch                 int = 30
 )
