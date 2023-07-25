@@ -120,11 +120,19 @@ type AppModule struct {
 func NewAppModule(
 	k keeper.Keeper,
 	ak authkeeper.AccountKeeper,
+	bk bankkeeper.BaseKeeper,
+	sk stakingkeeper.Keeper,
+	dk distrkeeper.Keeper,
+	ik inflationkeeper.Keeper,
 ) AppModule {
 	return AppModule{
 		AppModuleBasic: AppModuleBasic{},
 		keeper:         k,
 		ak:             ak,
+		bk:             bk,
+		sk:             sk,
+		dk:             dk,
+		ik:             ik,
 	}
 }
 

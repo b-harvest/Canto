@@ -412,9 +412,10 @@ func NewCanto(
 	app.AccountKeeper = authkeeper.NewAccountKeeper(
 		appCodec, keys[authtypes.StoreKey], app.GetSubspace(authtypes.ModuleName), ethermint.ProtoAccount, maccPerms,
 	)
-	app.BankKeeper = bankkeeper.NewBaseKeeper(
+	baseKeeper := bankkeeper.NewBaseKeeper(
 		appCodec, keys[banktypes.StoreKey], app.AccountKeeper, app.GetSubspace(banktypes.ModuleName), app.BlockedAddrs(),
 	)
+	app.BankKeeper = baseKeeper
 	stakingKeeper := stakingkeeper.NewKeeper(
 		appCodec, keys[stakingtypes.StoreKey], app.AccountKeeper, app.BankKeeper, app.GetSubspace(stakingtypes.ModuleName),
 	)
@@ -657,7 +658,7 @@ func NewCanto(
 		fees.NewAppModule(app.FeesKeeper, app.AccountKeeper),
 		govshuttle.NewAppModule(app.GovshuttleKeeper, app.AccountKeeper),
 		csr.NewAppModule(app.CSRKeeper, app.AccountKeeper),
-		liquidstaking.NewAppModule(app.LiquidStakingKeeper, app.AccountKeeper),
+		liquidstaking.NewAppModule(app.LiquidStakingKeeper, app.AccountKeeper, baseKeeper, app.StakingKeeper, app.DistrKeeper, app.InflationKeeper),
 	)
 
 	// During begin block slashing happens after distr.BeginBlocker so that
@@ -805,7 +806,7 @@ func NewCanto(
 		epochs.NewAppModule(appCodec, app.EpochsKeeper),
 		inflation.NewAppModule(app.InflationKeeper, app.AccountKeeper, app.StakingKeeper),
 		// feemarket.NewAppModule(app.FeeMarketKeeper),
-		liquidstaking.NewAppModule(app.LiquidStakingKeeper, app.AccountKeeper),
+		liquidstaking.NewAppModule(app.LiquidStakingKeeper, app.AccountKeeper, baseKeeper, app.StakingKeeper, app.DistrKeeper, app.InflationKeeper),
 	)
 
 	app.sm.RegisterStoreDecoders()
