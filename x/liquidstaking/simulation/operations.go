@@ -1,8 +1,9 @@
 package simulation
 
 import (
-	"github.com/Canto-Network/Canto/v6/app/params"
 	"math/rand"
+
+	"github.com/Canto-Network/Canto/v6/app/params"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -159,7 +160,7 @@ func SimulateMsgLiquidStake(ak types.AccountKeeper, bk types.BankKeeper) simtype
 			Cdc:             nil,
 			Msg:             msg,
 			MsgType:         msg.Type(),
-			CoinsSpentInMsg: spendable,
+			CoinsSpentInMsg: stakingCoins,
 			Context:         ctx,
 			SimAccount:      simAccount,
 			AccountKeeper:   ak,
@@ -214,7 +215,7 @@ func SimulateMsgLiquidUnstake(ak types.AccountKeeper, bk types.BankKeeper, k kee
 			Cdc:             nil,
 			Msg:             msg,
 			MsgType:         msg.Type(),
-			CoinsSpentInMsg: spendable,
+			CoinsSpentInMsg: sdk.NewCoins(unstakingCoin),
 			Context:         ctx,
 			SimAccount:      simAccount,
 			AccountKeeper:   ak,
@@ -241,7 +242,7 @@ func SimulateMsgProvideInsurance(ak types.AccountKeeper, bk types.BankKeeper, sk
 		collaterals := sdk.NewCoins(
 			sdk.NewCoin(
 				sdk.DefaultBondDenom,
-				minCollateral.Ceil().TruncateInt(),
+				minCollateral.Mul(types.ChunkSize.ToDec()).Ceil().TruncateInt(),
 			),
 		)
 		feeRate := simtypes.RandomDecAmount(r, sdk.MustNewDecFromStr("0.15"))
@@ -268,7 +269,7 @@ func SimulateMsgProvideInsurance(ak types.AccountKeeper, bk types.BankKeeper, sk
 			Cdc:             nil,
 			Msg:             msg,
 			MsgType:         msg.Type(),
-			CoinsSpentInMsg: spendable,
+			CoinsSpentInMsg: collaterals,
 			Context:         ctx,
 			SimAccount:      simAccount,
 			AccountKeeper:   ak,
@@ -369,7 +370,7 @@ func SimulateMsgDepositInsurance(ak types.AccountKeeper, bk types.BankKeeper, k 
 		minCollateral := sdk.MustNewDecFromStr(types.MinimumCollateral)
 		collateral := sdk.NewCoin(
 			sdk.DefaultBondDenom,
-			minCollateral.Ceil().TruncateInt(),
+			minCollateral.Mul(types.ChunkSize.ToDec()).Ceil().TruncateInt(),
 		)
 
 		// deposit 1 % ~ 10 % of the collateral
@@ -399,7 +400,7 @@ func SimulateMsgDepositInsurance(ak types.AccountKeeper, bk types.BankKeeper, k 
 			Cdc:             nil,
 			Msg:             msg,
 			MsgType:         msg.Type(),
-			CoinsSpentInMsg: spendable,
+			CoinsSpentInMsg: deposits,
 			Context:         ctx,
 			SimAccount:      simAccount,
 			AccountKeeper:   ak,
@@ -545,6 +546,7 @@ func SimulateMsgClaimDiscountedReward(ak types.AccountKeeper, bk types.BankKeepe
 		}
 		maxLsTokensToGetAllRewards := nas.MintRate.Mul(minimumDiscountRate).Mul(nas.RewardModuleAccBalance.ToDec()).Ceil().TruncateInt()
 		amountToUse := types.RandomInt(r, spendable.AmountOf(types.DefaultLiquidBondDenom), maxLsTokensToGetAllRewards)
+		lsTokensToUse := sdk.NewCoins(sdk.NewCoin(types.DefaultLiquidBondDenom, amountToUse))
 
 		msg := types.NewMsgClaimDiscountedReward(lsTokenHolder.String(), sdk.NewCoin(sdk.DefaultBondDenom, amountToUse), minimumDiscountRate)
 		txCtx := simulation.OperationInput{
@@ -554,7 +556,7 @@ func SimulateMsgClaimDiscountedReward(ak types.AccountKeeper, bk types.BankKeepe
 			Cdc:             nil,
 			Msg:             msg,
 			MsgType:         msg.Type(),
-			CoinsSpentInMsg: spendable,
+			CoinsSpentInMsg: lsTokensToUse,
 			Context:         ctx,
 			SimAccount:      simAccount,
 			AccountKeeper:   ak,

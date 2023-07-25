@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math/rand"
+
 	inflationkeeper "github.com/Canto-Network/Canto/v6/x/inflation/keeper"
 	inflationtypes "github.com/Canto-Network/Canto/v6/x/inflation/types"
 	"github.com/Canto-Network/Canto/v6/x/liquidstaking/simulation"
@@ -17,7 +19,6 @@ import (
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	ethermint "github.com/evmos/ethermint/types"
-	"math/rand"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -216,7 +217,7 @@ func (am AppModule) GenerateGenesisState(simState *module.SimulationState) {
 
 // ProposalContents returns content functions for governance proposals.
 func (am AppModule) ProposalContents(simState module.SimulationState) []simtypes.WeightedProposalContent {
-	return simulation.ProposalContents(am.keeper, am)
+	return simulation.ProposalContents(am.keeper, am.ak, am.bk, am.sk, am.dk, am.ik)
 }
 
 // RandomizedParams creates randomized liquidstaking param changes for the simulator.

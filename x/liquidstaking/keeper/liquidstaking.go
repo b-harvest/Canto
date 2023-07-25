@@ -588,7 +588,7 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (
 	if availableChunkSlots.LT(chunksToCreate) {
 		err = sdkerrors.Wrapf(
 			types.ErrExceedAvailableChunks,
-			"requested chunks to create: %d, available chunks: %d",
+			"requested chunks to create: %s, available chunks: %s",
 			chunksToCreate,
 			availableChunkSlots,
 		)
@@ -773,7 +773,7 @@ func (k Keeper) DoProvideInsurance(ctx sdk.Context, msg *types.MsgProvideInsuran
 	// Check if the amount is greater than minimum coverage
 	_, minimumCollateral := k.GetMinimumRequirements(ctx)
 	if amount.IsLT(minimumCollateral) {
-		err = sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "amount must be greater than minimum collateral: %s", minimumCollateral)
+		err = sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "amount(%s) must be greater than minimum collateral: %s", msg.Amount, minimumCollateral)
 		return
 	}
 
