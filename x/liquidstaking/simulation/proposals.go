@@ -84,9 +84,8 @@ func SimulateAdvanceEpoch(
 			if !found {
 				panic("epoch mint provision not found")
 			}
-			inflationParams := ik.GetParams(ctx)
 			// mintedCoin := sdk.NewCoin(inflationParams.MintDenom, epochMintProvision.TruncateInt())
-			mintedCoin := sdk.NewCoin(inflationParams.MintDenom, sdk.TokensFromConsensusPower(100, ethermint.PowerReduction))
+			mintedCoin := sdk.NewCoin(sdk.DefaultBondDenom, sdk.TokensFromConsensusPower(100, ethermint.PowerReduction))
 			staking, communityPool, err := ik.MintAndAllocateInflation(ctx, mintedCoin)
 			if err != nil {
 				panic(err)

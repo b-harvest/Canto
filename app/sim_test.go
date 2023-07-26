@@ -36,6 +36,7 @@ import (
 // Get flags every time the simulator is run
 func init() {
 	simapp.GetSimulatorFlags()
+	liquidstakingtypes.ChunkSize = sdk.TokensFromConsensusPower(250_000, sdk.DefaultPowerReduction)
 }
 
 type StoreKeysPrefixes struct {

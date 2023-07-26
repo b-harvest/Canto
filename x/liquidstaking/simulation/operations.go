@@ -1,6 +1,7 @@
 package simulation
 
 import (
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"math/rand"
 
 	"github.com/Canto-Network/Canto/v6/app/params"
@@ -90,7 +91,7 @@ func WeightedOperations(
 	return simulation.WeightedOperations{
 		simulation.NewWeightedOperation(
 			weightMsgLiquidStake,
-			SimulateMsgLiquidStake(ak, bk),
+			SimulateMsgLiquidStake(ak, bk, k),
 		),
 		simulation.NewWeightedOperation(
 			weightMsgLiquidUnstake,
@@ -102,7 +103,7 @@ func WeightedOperations(
 		),
 		simulation.NewWeightedOperation(
 			weightMsgCancelProvideInsurance,
-			SimulateMsgCancelProvideInsurance(ak, k),
+			SimulateMsgCancelProvideInsurance(ak, bk, k),
 		),
 		simulation.NewWeightedOperation(
 			weightMsgDepositInsurance,
@@ -110,11 +111,11 @@ func WeightedOperations(
 		),
 		simulation.NewWeightedOperation(
 			weightMsgWithdrawInsurance,
-			SimulateMsgWithdrawInsurance(ak, k),
+			SimulateMsgWithdrawInsurance(ak, bk, k),
 		),
 		simulation.NewWeightedOperation(
 			weightMsgWithdrawInsuranceCommission,
-			SimulateMsgWithdrawInsuranceCommission(ak, k),
+			SimulateMsgWithdrawInsuranceCommission(ak, bk, k),
 		),
 		simulation.NewWeightedOperation(
 			weightMsgClaimDiscountedReward,
@@ -126,7 +127,7 @@ func WeightedOperations(
 // TODO: add msgs for staking module
 
 // SimulateMsgLiquidStake generates a MsgLiquidStake with random values.
-func SimulateMsgLiquidStake(ak types.AccountKeeper, bk types.BankKeeper) simtypes.Operation {
+func SimulateMsgLiquidStake(ak types.AccountKeeper, bk types.BankKeeper, k keeper.Keeper) simtypes.Operation {
 	return func(
 		r *rand.Rand, app *baseapp.BaseApp, ctx sdk.Context, accs []simtypes.Account, chainID string,
 	) (simtypes.OperationMsg, []simtypes.FutureOperation, error) {
@@ -136,6 +137,22 @@ func SimulateMsgLiquidStake(ak types.AccountKeeper, bk types.BankKeeper) simtype
 		spendable := bk.SpendableCoins(ctx, delegator)
 
 		chunksToLiquidStake := int64(simtypes.RandIntBetween(r, 1, 3))
+		availableChunkSlots := k.GetAvailableChunkSlots(ctx).Int64()
+		if availableChunkSlots == 0 {
+			return simtypes.NoOpMsg(types.ModuleName, types.TypeMsgLiquidStake, "no available chunk slots"), nil, nil
+		}
+
+		pairingInsurances, _ := k.GetPairingInsurances(ctx)
+		if len(pairingInsurances) == 0 {
+			return simtypes.NoOpMsg(types.ModuleName, types.TypeMsgLiquidStake, "no pairing insurances"), nil, nil
+		}
+		if chunksToLiquidStake > availableChunkSlots {
+			chunksToLiquidStake = availableChunkSlots
+		}
+		if len(pairingInsurances) < int(chunksToLiquidStake) {
+			chunksToLiquidStake = int64(len(pairingInsurances))
+		}
+
 		stakingCoins := sdk.NewCoins(
 			sdk.NewCoin(
 				sdk.DefaultBondDenom,
@@ -201,10 +218,28 @@ func SimulateMsgLiquidUnstake(ak types.AccountKeeper, bk types.BankKeeper, k kee
 			return simtypes.NoOpMsg(types.ModuleName, types.TypeMsgLiquidUnstake, "not enough ls tokens to liquid unstake an one chunk"), nil, nil
 		}
 
-		maxAvailableNumChunksToLiquidUnstake := spendable.AmountOf(types.DefaultLiquidBondDenom).Quo(lsTokensToPayForOneChunk)
+		maxAvailableNumChunksToLiquidUnstake := spendable.AmountOf(types.DefaultLiquidBondDenom).Quo(lsTokensToPayForOneChunk).Int64()
 
+		var chunksToLiquidStake int64
+		if maxAvailableNumChunksToLiquidUnstake > 1 {
+			chunksToLiquidStake = int64(simtypes.RandIntBetween(r, 1, int(maxAvailableNumChunksToLiquidUnstake)))
+		} else {
+			chunksToLiquidStake = maxAvailableNumChunksToLiquidUnstake
+		}
 		// delegator can liquid unstake one or more chunks
-		chunksToLiquidStake := int64(simtypes.RandIntBetween(r, 1, int(maxAvailableNumChunksToLiquidUnstake.Int64())))
+		var pairedChunks []types.Chunk
+		k.IterateAllChunks(ctx, func(chunk types.Chunk) bool {
+			if chunk.Status == types.CHUNK_STATUS_PAIRED {
+				pairedChunks = append(pairedChunks, chunk)
+			}
+			return false
+		})
+
+		numPairedChunks := int64(len(pairedChunks))
+		if numPairedChunks < maxAvailableNumChunksToLiquidUnstake {
+			chunksToLiquidStake = numPairedChunks
+		}
+
 		unstakingCoin := sdk.NewCoin(sdk.DefaultBondDenom, oneChunk.Amount.MulRaw(chunksToLiquidStake))
 
 		msg := types.NewMsgLiquidUnstake(delegator.String(), unstakingCoin)
@@ -245,7 +280,29 @@ func SimulateMsgProvideInsurance(ak types.AccountKeeper, bk types.BankKeeper, sk
 				minCollateral.Mul(types.ChunkSize.ToDec()).Ceil().TruncateInt(),
 			),
 		)
+		var validators []stakingtypes.Validator
+		sk.IterateBondedValidatorsByPower(ctx, func(index int64, validator stakingtypes.ValidatorI) (stop bool) {
+			// Only select validators with commission rate less than 50%
+			if validator.GetCommission().LT(sdk.MustNewDecFromStr("0.5")) {
+				v, ok := validator.(stakingtypes.Validator)
+				if !ok {
+					return false
+				}
+				validators = append(validators, v)
+			}
+			return false
+		})
+		if len(validators) == 0 {
+			return simtypes.NoOpMsg(types.ModuleName, types.TypeMsgProvideInsurance, "no validators to provide insurance"), nil, nil
+		}
+
+		// select one validator randomly
+		validator := validators[r.Intn(len(validators))]
+
 		feeRate := simtypes.RandomDecAmount(r, sdk.MustNewDecFromStr("0.15"))
+		if validator.GetCommission().Add(feeRate).GTE(sdk.MustNewDecFromStr("0.5")) {
+			feeRate = sdk.MustNewDecFromStr("0.5").Sub(sdk.OneDec()).Sub(validator.GetCommission())
+		}
 
 		if !spendable.AmountOf(sdk.DefaultBondDenom).GTE(collaterals[0].Amount) {
 			if err := bk.MintCoins(ctx, types.ModuleName, collaterals); err != nil {
@@ -256,10 +313,6 @@ func SimulateMsgProvideInsurance(ak types.AccountKeeper, bk types.BankKeeper, sk
 			}
 			spendable = bk.SpendableCoins(ctx, provider)
 		}
-
-		validators := sk.GetAllValidators(ctx)
-		// select one validator randomly
-		validator := validators[r.Intn(len(validators))]
 
 		msg := types.NewMsgProvideInsurance(provider.String(), validator.GetOperator().String(), collaterals[0], feeRate)
 		txCtx := simulation.OperationInput{
@@ -281,7 +334,7 @@ func SimulateMsgProvideInsurance(ak types.AccountKeeper, bk types.BankKeeper, sk
 }
 
 // SimulateMsgCancelProvideInsurance generates a MsgCancelProvideInsurance with random values.
-func SimulateMsgCancelProvideInsurance(ak types.AccountKeeper, k keeper.Keeper) simtypes.Operation {
+func SimulateMsgCancelProvideInsurance(ak types.AccountKeeper, bk types.BankKeeper, k keeper.Keeper) simtypes.Operation {
 	return func(
 		r *rand.Rand, app *baseapp.BaseApp, ctx sdk.Context, accs []simtypes.Account, chainID string,
 	) (simtypes.OperationMsg, []simtypes.FutureOperation, error) {
@@ -324,7 +377,7 @@ func SimulateMsgCancelProvideInsurance(ak types.AccountKeeper, k keeper.Keeper) 
 			Context:         ctx,
 			SimAccount:      simAccount,
 			AccountKeeper:   ak,
-			Bankkeeper:      nil,
+			Bankkeeper:      bk,
 			ModuleName:      types.ModuleName,
 		}
 		return types.GenAndDeliverTxWithFees(txCtx, Gas, Fees)
@@ -412,7 +465,7 @@ func SimulateMsgDepositInsurance(ak types.AccountKeeper, bk types.BankKeeper, k 
 }
 
 // SimulateMsgWithdrawInsurance generates a MsgWithdrawInsurance with random values.
-func SimulateMsgWithdrawInsurance(ak types.AccountKeeper, k keeper.Keeper) simtypes.Operation {
+func SimulateMsgWithdrawInsurance(ak types.AccountKeeper, bk types.BankKeeper, k keeper.Keeper) simtypes.Operation {
 	return func(
 		r *rand.Rand, app *baseapp.BaseApp, ctx sdk.Context, accs []simtypes.Account, chainID string,
 	) (simtypes.OperationMsg, []simtypes.FutureOperation, error) {
@@ -426,7 +479,9 @@ func SimulateMsgWithdrawInsurance(ak types.AccountKeeper, k keeper.Keeper) simty
 			provider = account.GetAddress()
 			k.IterateAllInsurances(ctx, func(insurance types.Insurance) bool {
 				if insurance.GetProvider().Equals(provider) {
-					withdrawableInsurances = append(withdrawableInsurances, insurance)
+					if insurance.Status == types.INSURANCE_STATUS_PAIRED || insurance.Status == types.INSURANCE_STATUS_UNPAIRED {
+						withdrawableInsurances = append(withdrawableInsurances, insurance)
+					}
 				}
 				return false
 			})
@@ -439,11 +494,15 @@ func SimulateMsgWithdrawInsurance(ak types.AccountKeeper, k keeper.Keeper) simty
 			}
 		}
 		if len(withdrawableInsurances) == 0 {
-			return simtypes.NoOpMsg(types.ModuleName, types.TypeMsgWithdrawInsurance, "no withdrawable insurance"), nil, nil
+			return simtypes.NoOpMsg(types.ModuleName, types.TypeMsgWithdrawInsurance, "no withdrawable ins"), nil, nil
 		}
-		// select randomly one insurance to withdraw
-		insurance := withdrawableInsurances[r.Intn(len(withdrawableInsurances))]
-		msg := types.NewMsgWithdrawInsurance(insurance.GetProvider().String(), insurance.Id)
+		// select randomly one ins to withdraw
+		ins := withdrawableInsurances[r.Intn(len(withdrawableInsurances))]
+		insBals := bk.SpendableCoins(ctx, ins.DerivedAddress())
+		if !insBals.IsValid() || !insBals.IsAllPositive() {
+			return simtypes.NoOpMsg(types.ModuleName, types.TypeMsgWithdrawInsurance, "no withdrawable insurance coins"), nil, nil
+		}
+		msg := types.NewMsgWithdrawInsurance(ins.GetProvider().String(), ins.Id)
 		txCtx := simulation.OperationInput{
 			R:               r,
 			App:             app,
@@ -455,7 +514,7 @@ func SimulateMsgWithdrawInsurance(ak types.AccountKeeper, k keeper.Keeper) simty
 			Context:         ctx,
 			SimAccount:      simAccount,
 			AccountKeeper:   ak,
-			Bankkeeper:      nil,
+			Bankkeeper:      bk,
 			ModuleName:      types.ModuleName,
 		}
 		return types.GenAndDeliverTxWithFees(txCtx, Gas, Fees)
@@ -463,7 +522,7 @@ func SimulateMsgWithdrawInsurance(ak types.AccountKeeper, k keeper.Keeper) simty
 }
 
 // SimulateMsgWithdrawInsuranceCommission generates a MsgWithdrawInsuranceCommission with random values.
-func SimulateMsgWithdrawInsuranceCommission(ak types.AccountKeeper, k keeper.Keeper) simtypes.Operation {
+func SimulateMsgWithdrawInsuranceCommission(ak types.AccountKeeper, bk types.BankKeeper, k keeper.Keeper) simtypes.Operation {
 	return func(
 		r *rand.Rand, app *baseapp.BaseApp, ctx sdk.Context, accs []simtypes.Account, chainID string,
 	) (simtypes.OperationMsg, []simtypes.FutureOperation, error) {
@@ -490,11 +549,15 @@ func SimulateMsgWithdrawInsuranceCommission(ak types.AccountKeeper, k keeper.Kee
 			}
 		}
 		if len(withdrawableInsurances) == 0 {
-			return simtypes.NoOpMsg(types.ModuleName, types.TypeMsgWithdrawInsuranceCommission, "no withdrawable insurance"), nil, nil
+			return simtypes.NoOpMsg(types.ModuleName, types.TypeMsgWithdrawInsuranceCommission, "no withdrawable ins"), nil, nil
 		}
-		// select randomly one insurance to withdraw
-		insurance := withdrawableInsurances[r.Intn(len(withdrawableInsurances))]
-		msg := types.NewMsgWithdrawInsuranceCommission(insurance.GetProvider().String(), insurance.Id)
+		// select randomly one ins to withdraw
+		ins := withdrawableInsurances[r.Intn(len(withdrawableInsurances))]
+		feePoolBals := bk.SpendableCoins(ctx, ins.FeePoolAddress())
+		if !feePoolBals.IsValid() || !feePoolBals.IsAllPositive() {
+			return simtypes.NoOpMsg(types.ModuleName, types.TypeMsgWithdrawInsuranceCommission, "no withdrawable fee pool coins"), nil, nil
+		}
+		msg := types.NewMsgWithdrawInsuranceCommission(ins.GetProvider().String(), ins.Id)
 		txCtx := simulation.OperationInput{
 			R:               r,
 			App:             app,
@@ -506,7 +569,7 @@ func SimulateMsgWithdrawInsuranceCommission(ak types.AccountKeeper, k keeper.Kee
 			Context:         ctx,
 			SimAccount:      simAccount,
 			AccountKeeper:   ak,
-			Bankkeeper:      nil,
+			Bankkeeper:      bk,
 			ModuleName:      types.ModuleName,
 		}
 		return types.GenAndDeliverTxWithFees(txCtx, Gas, Fees)

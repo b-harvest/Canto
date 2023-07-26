@@ -595,7 +595,7 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (
 		return
 	}
 
-	pairingInsurances, validatorMap := k.getPairingInsurances(ctx)
+	pairingInsurances, validatorMap := k.GetPairingInsurances(ctx)
 	numPairingInsurances := sdk.NewIntFromUint64(uint64(len(pairingInsurances)))
 	if chunksToCreate.GT(numPairingInsurances) {
 		err = types.ErrNoPairingInsurance
