@@ -22,7 +22,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/staking"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	ethermint "github.com/evmos/ethermint/types"
 )
 
 const (
@@ -85,7 +84,7 @@ func SimulateAdvanceEpoch(
 				panic("epoch mint provision not found")
 			}
 			// mintedCoin := sdk.NewCoin(inflationParams.MintDenom, epochMintProvision.TruncateInt())
-			mintedCoin := sdk.NewCoin(sdk.DefaultBondDenom, sdk.TokensFromConsensusPower(100, ethermint.PowerReduction))
+			mintedCoin := sdk.NewCoin(sdk.DefaultBondDenom, sdk.TokensFromConsensusPower(100, sdk.DefaultPowerReduction))
 			staking, communityPool, err := ik.MintAndAllocateInflation(ctx, mintedCoin)
 			if err != nil {
 				panic(err)
