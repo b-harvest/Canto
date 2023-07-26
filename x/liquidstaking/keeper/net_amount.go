@@ -6,6 +6,7 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
+// TODO: Include Pairing Chunk Balances
 func (k Keeper) GetNetAmountState(ctx sdk.Context) (nas types.NetAmountState) {
 	liquidBondDenom := k.GetLiquidBondDenom(ctx)
 	bondDenom := k.stakingKeeper.BondDenom(ctx)

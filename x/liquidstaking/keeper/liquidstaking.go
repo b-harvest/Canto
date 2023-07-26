@@ -1365,6 +1365,7 @@ func (k Keeper) IsEnoughToCoverSlash(ctx sdk.Context, insurance types.Insurance)
 	return insBal.Amount.GTE(downTimePenaltyAmt.Add(doubleSignPenaltyAmt))
 }
 
+// TODO: Update logic to use U
 // GetAvailableChunkSlots returns a number of chunk which can be paired.
 func (k Keeper) GetAvailableChunkSlots(ctx sdk.Context) sdk.Int {
 	return k.MaxPairedChunks(ctx).Sub(sdk.NewInt(k.getNumPairedChunks(ctx)))
