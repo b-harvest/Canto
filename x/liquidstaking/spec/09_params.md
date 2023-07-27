@@ -4,9 +4,10 @@
 
 The `liquidstaking` module contains the following parameters:
 
-| Param          | Type           | Default                                       |
-|----------------|----------------|-----------------------------------------------|  
-| DynamicFeeRate | DynamicFeeRate | (Please take a look the following section.)   |
+| Param                | Type           | Default                                      |
+|----------------------|----------------|----------------------------------------------|  
+| DynamicFeeRate       | DynamicFeeRate | (Please take a look the following section.)  |
+| MaximumDiscountRate  | sdk.Dec        | 0.030000000000000000 (3%)                    |
 
 ## DynamicFeeRate
 
@@ -47,3 +48,7 @@ If the current utilization ratio is above optimal, the fee rate increases at a f
 ### MaxFeeRate
 
 Maximum fee rate. Fee rate cannot exceed this value.
+
+
+## MaximumDiscountRate
+The cap for the discount rate when claiming accumulated rewards of reward pool. The discount rate cannot exceed this value.

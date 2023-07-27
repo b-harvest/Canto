@@ -106,19 +106,23 @@ This will be consumed at **Handle Queued Withdraw Insurance Requests** when Epoc
 
 - **reward module account’s native token(e.g. `acanto`) balance**
 - **sum of all chunk balance**
-    - The chunk balance will only be as much as the balance accumulated from delegation rewards between epochs. 
-      At the end of each epoch, the cumulated chunk balance will be transferred to the reward module account.
-    - When insurance is withdrawn and there are no candidate insurances, the chunk balance can be the same as the chunk size in tokens.
+  - the chunk balance will only be as much as the balance accumulated from delegation rewards between epochs. 
+    at the end of each epoch, the cumulated chunk balance will be transferred to the reward module account.
+  - when insurance is withdrawn and there are no candidate insurances, the chunk balance can be the same as the chunk size in tokens.
 - **sum of all tokens corresponding delegation shares of paired chunks**
-    - total amount of native tokens currently delegated
-    - may be less than original values due to slashing in the calculation when there was a slashing which will not be covered by insurance.
+  - total amount of native tokens currently delegated
+  - insurance coverage also included which means even if there were a slashing so token value of delegation shares is less than chunk size value,
+    the value will be the same as the chunk size value if insurance can cover the slashing penalty.
 - **sum of all remaining rewards of all chunks delegations**
-    - the remaining reward for each chunk is calculated as follows:
-      ```
-      rest = del_reward - insurance_commission
-      remaining = rest x (1 - dynamic_fee_rate)
-      result = remaining x (1 - discount_rate)
-      ``` 
+  - the remaining reward for each chunk is calculated as follows:
+    ```
+    rest = del_reward - insurance_commission
+    remaining = rest x (1 - dynamic_fee_rate)
+    ``` 
+- **sum of all unbonding balances of chunks**
+  - total amount of native tokens currently in un-delegating
+  - insurance coverage also included which means even if there were a slashing so unbonding balance is less than chunk size value, 
+    the balance will be the same as the chunk size value if insurance can cover the slashing penalty.
 
 **MintRate** is the rate that is calculated from total supply of ls tokens divided by NetAmount.
 
