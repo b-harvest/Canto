@@ -75,6 +75,6 @@ Calculated fee with fee rate is burned and the rest of the delegation reward goe
 
 The rewards accumulated on the **reward module account** can be withdrawn by anyone who has lsToken, at a discounted price.
 
-The discount rate is calculated as follows: `discount rate = reward module account's balance / (num paired chunks * chunk size)`
+The discount rate is calculated as follows: `discount rate = reward module account's balance / NetAmount`
 
 The cap is 3% so the discount rate cannot exceed 3%. This value is a parameter that can be changed by governance.
