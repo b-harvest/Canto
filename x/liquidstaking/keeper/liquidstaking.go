@@ -1351,11 +1351,11 @@ func (k Keeper) IsEnoughToCoverSlash(ctx sdk.Context, insurance types.Insurance)
 }
 
 // GetAvailableChunkSlots returns a number of chunk which can be paired.
-func (k Keeper) GetAvailableChunkSlots(ctx sdk.Context, u sdk.Dec) sdk.Int {
-	hardCap := sdk.MinDec(k.GetParams(ctx).DynamicFeeRate.UHardCap, types.SecurityCap)
+func (k Keeper) GetAvailableChunkSlots(ctx sdk.Context, u, uHardCap sdk.Dec) sdk.Int {
+	hardCap := sdk.MinDec(uHardCap, types.SecurityCap)
 	remainingU := hardCap.Sub(u)
 	totalSupply := k.bankKeeper.GetSupply(ctx, k.stakingKeeper.BondDenom(ctx))
-	return remainingU.MulTruncate(totalSupply.Amount.ToDec()).TruncateInt()
+	return remainingU.Mul(totalSupply.Amount.ToDec()).QuoTruncate(types.ChunkSize.ToDec()).TruncateInt()
 }
 
 // startUnpairing changes status of insurance and chunk to unpairing.

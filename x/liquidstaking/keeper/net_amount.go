@@ -78,6 +78,7 @@ func (k Keeper) GetNetAmountState(ctx sdk.Context) (nas types.NetAmountState) {
 		Add(totalRemainingRewardsBeforeModuleFee)
 	moduleFeeRate, utilizationRatio := k.CalcDynamicFeeRate(ctx, netAmountBeforeModuleFee)
 	totalRemainingRewards = totalRemainingRewardsBeforeModuleFee.Mul(sdk.OneDec().Sub(moduleFeeRate))
+	params := k.GetParams(ctx)
 	nas = types.NetAmountState{
 		LsTokensTotalSupply:                k.bankKeeper.GetSupply(ctx, liquidBondDenom).Amount,
 		TotalLiquidTokens:                  totalLiquidTokens,
@@ -94,12 +95,12 @@ func (k Keeper) GetNetAmountState(ctx sdk.Context) (nas types.NetAmountState) {
 		FeeRate:                            moduleFeeRate,
 		UtilizationRatio:                   utilizationRatio,
 		RewardModuleAccBalance:             rewardPoolBalance,
-		RemainingChunkSlots:                k.GetAvailableChunkSlots(ctx, utilizationRatio),
+		RemainingChunkSlots:                k.GetAvailableChunkSlots(ctx, utilizationRatio, params.DynamicFeeRate.UHardCap),
 		NetAmountBeforeModuleFee:           netAmountBeforeModuleFee,
 	}
 	nas.NetAmount = nas.CalcNetAmount()
 	nas.MintRate = nas.CalcMintRate()
-	nas.DiscountRate = nas.CalcDiscountRate(k.GetParams(ctx).MaximumDiscountRate)
+	nas.DiscountRate = nas.CalcDiscountRate(params.MaximumDiscountRate)
 	return
 }
 
