@@ -33,7 +33,7 @@ func (suite *KeeperTestSuite) TestGetNetAmountState_TotalRemainingRewards() {
 	rest := totalDelReward.ToDec().Mul(sdk.OneDec().Sub(TenPercentFeeRate))
 	remaining := rest.Mul(sdk.OneDec().Sub(nas.FeeRate))
 	result := remaining.Mul(sdk.OneDec().Sub(nas.DiscountRate))
-	suite.Equal("7595237306532985264014.570227833838100000", result.String())
+	suite.Equal("7578851328645878416158.763952739771150000", result.String())
 	suite.Equal(result.String(), nas.TotalRemainingRewards.String())
 	suite.True(
 		totalDelReward.GT(nas.TotalRemainingRewards.TruncateInt()),

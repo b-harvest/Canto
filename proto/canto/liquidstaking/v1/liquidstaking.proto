@@ -72,6 +72,10 @@ message Params {
   option (gogoproto.goproto_getters) = false;
 
   DynamicFeeRate dynamic_fee_rate = 1 [ (gogoproto.nullable) = false ];
+  string maximum_discount_rate = 2 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable) = false
+  ];
 }
 
 // ChunkStatus defines the status of the chunk.
@@ -190,9 +194,9 @@ message NetAmountState {
   ];
 
   // Calculated by reward module account's native token balance + all
-  // chunk's native token balance + sum of all remaining rewards of paired
-  // chunks since last Epoch + all unbonding delegation tokens of unpairing
-  // chunks + reward module account's balance
+  // chunk's native token balance + Sum of token values of all chunk's delegation shares +
+  // sum of all remaining rewards of paired chunks since last Epoch +
+  // all unbonding delegation tokens of unpairing chunks
   string net_amount = 3 [
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
     (gogoproto.nullable) = false
@@ -299,6 +303,13 @@ message NetAmountState {
 
   // The cumulative commissions of all insurances
   string total_remaining_insurance_commissions = 19 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable) = false
+  ];
+
+  // This value is almost same with NetAmount except for remaining rewards of chunk.
+  // When sum remaining rewards of chunk, it does not consider module fee.
+  string net_amount_before_module_fee = 20 [
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
     (gogoproto.nullable) = false
   ];

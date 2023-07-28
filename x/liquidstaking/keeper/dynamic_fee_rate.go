@@ -6,26 +6,18 @@ import (
 )
 
 // CalcUtilizationRatio returns a utilization ratio of liquidstaking module.
-func (k Keeper) CalcUtilizationRatio(ctx sdk.Context) sdk.Dec {
+func (k Keeper) CalcUtilizationRatio(ctx sdk.Context, netAmountBeforeModuleFee sdk.Dec) sdk.Dec {
 	totalSupply := k.bankKeeper.GetSupply(ctx, k.stakingKeeper.BondDenom(ctx))
-	var numPairedChunks int64 = 0
-	k.IterateAllChunks(ctx, func(chunk types.Chunk) bool {
-		if chunk.Status != types.CHUNK_STATUS_PAIRED {
-			return false
-		}
-		numPairedChunks++
-		return false
-	})
-	if totalSupply.IsZero() || numPairedChunks == 0 {
+	if totalSupply.IsZero() || netAmountBeforeModuleFee.IsZero() {
 		return sdk.ZeroDec()
 	}
-	// chunkSize * numPairedChunks / totalSupply
-	return types.ChunkSize.Mul(sdk.NewInt(numPairedChunks)).ToDec().Quo(totalSupply.Amount.ToDec())
+	// netAmountBeforeModuleFee / totalSupply
+	return netAmountBeforeModuleFee.Quo(totalSupply.Amount.ToDec())
 }
 
 // CalcDynamicFeeRate returns a dynamic fee rate of a module
 // and utilization ratio when it used to calculate the fee rate.
-func (k Keeper) CalcDynamicFeeRate(ctx sdk.Context) (
+func (k Keeper) CalcDynamicFeeRate(ctx sdk.Context, netAmountBeforeModuleFee sdk.Dec) (
 	feeRate, utilizationRatio sdk.Dec,
 ) {
 	dynamicFeeParams := k.GetParams(ctx).DynamicFeeRate
@@ -35,7 +27,7 @@ func (k Keeper) CalcDynamicFeeRate(ctx sdk.Context) (
 		dynamicFeeParams.Slope1, dynamicFeeParams.Slope2
 
 	hardCap = sdk.MinDec(hardCap, types.SecurityCap)
-	utilizationRatio = k.CalcUtilizationRatio(ctx)
+	utilizationRatio = k.CalcUtilizationRatio(ctx, netAmountBeforeModuleFee)
 	if utilizationRatio.LT(softCap) {
 		feeRate = r0
 		return feeRate, utilizationRatio

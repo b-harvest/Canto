@@ -2803,15 +2803,15 @@ func (suite *KeeperTestSuite) TestDynamicFee() {
 				},
 			)
 			{
-				feeRate, u := suite.app.LiquidStakingKeeper.CalcDynamicFeeRate(suite.ctx)
+				nas := suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
 				// Check current state before reaching epoch
 				suite.Equal(
 					tc.u.String(),
-					u.String(),
+					nas.UtilizationRatio.String(),
 				)
 				suite.Equal(
 					tc.dynamicFeeRate.String(),
-					feeRate.String(),
+					nas.FeeRate.String(),
 				)
 			}
 			beforeNas := suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
@@ -2855,12 +2855,12 @@ func (suite *KeeperTestSuite) TestCalcDiscountRate() {
 		{
 			"a lot of rewards but cannot exceed MaximumDiscountRate",
 			100,
-			types.MaximumDiscountRate,
+			types.DefaultMaximumDiscountRate,
 		},
 		{
 			"small reward",
 			10,
-			sdk.MustNewDecFromStr("0.003239961120466553"),
+			sdk.MustNewDecFromStr("0.003229497673565564"),
 		},
 	}
 
@@ -2870,8 +2870,8 @@ func (suite *KeeperTestSuite) TestCalcDiscountRate() {
 			cachedCtx = suite.advanceHeight(cachedCtx, tc.numRewardEpochs-1, fmt.Sprintf("let's pass %d reward epoch", tc.numRewardEpochs))
 			cachedCtx = suite.advanceEpoch(cachedCtx) // reward is accumulated to reward pool
 			cachedCtx = suite.advanceHeight(cachedCtx, 1, "liquid staking endblocker is triggered")
-			discountRate := suite.app.LiquidStakingKeeper.CalcDiscountRate(cachedCtx)
-			suite.Equal(tc.expectedDiscountRate.String(), discountRate.String())
+			nas := suite.app.LiquidStakingKeeper.GetNetAmountState(cachedCtx)
+			suite.Equal(tc.expectedDiscountRate.String(), nas.DiscountRate.String())
 		})
 	}
 
@@ -2920,18 +2920,18 @@ func (suite *KeeperTestSuite) TestDoClaimDiscountedReward() {
 			"discounted little and claim all",
 			100,
 			expected{
-				"0.003239996112004664",
+				"0.003229532439457230",
 				"8047671917274489914949",
-				"251625263904734654233524",
+				"251622622449703783661134",
 				true,
 				"0.996770467560542769",
 				"0",
 				"250000000000000000000000",
-				"0.996780931233090204",
+				"0.996780897440320276",
 				"8099990280011661750000",
-				"241952328082725510085051",
-				"0.000010463672547435",
-				"8047671917274489914949",
+				"241952243600800690588158",
+				"0.000010429879777507",
+				"8047756399199309411842",
 			},
 			types.NewMsgClaimDiscountedReward(
 				env.delegators[0].String(),
@@ -2943,8 +2943,8 @@ func (suite *KeeperTestSuite) TestDoClaimDiscountedReward() {
 			"discounted little and claim little",
 			100,
 			expected{
-				"0.003239996112004664",
-				"8047671917274489914949",
+				"0.003229532439457230",
+				"8047756399199309411842",
 				"1006",
 				false,
 				"0.996770467560542769",
@@ -3017,10 +3017,10 @@ func (suite *KeeperTestSuite) TestDoClaimDiscountedReward() {
 			cachedCtx = suite.advanceEpoch(cachedCtx) // reward is accumulated to reward pool
 			cachedCtx = suite.advanceHeight(cachedCtx, 1, "liquid staking endblocker is triggered")
 			requester := tc.msg.GetRequestser()
-			suite.Equal(tc.expected.discountRate, suite.app.LiquidStakingKeeper.CalcDiscountRate(cachedCtx).String())
-			discountRate := suite.app.LiquidStakingKeeper.CalcDiscountRate(cachedCtx)
+			nas := suite.app.LiquidStakingKeeper.GetNetAmountState(cachedCtx)
+			suite.Equal(tc.expected.discountRate, nas.DiscountRate.String())
 			discountedMintRate := suite.app.LiquidStakingKeeper.GetNetAmountState(cachedCtx).MintRate.Mul(
-				sdk.OneDec().Sub(discountRate),
+				sdk.OneDec().Sub(nas.DiscountRate),
 			)
 			claimableAmt := suite.app.BankKeeper.GetBalance(cachedCtx, types.RewardPool, suite.denom)
 			lsTokenToGetAll := claimableAmt.Amount.ToDec().Mul(discountedMintRate).Ceil().TruncateInt()
