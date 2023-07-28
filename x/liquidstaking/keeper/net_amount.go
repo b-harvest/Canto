@@ -109,8 +109,8 @@ func (k Keeper) calcTokenValueWithInsuranceCoverage(
 	// If penaltyAmt > 0 and paired insurance can cover it, then token value is same with ChunkSize
 	if penaltyAmt.IsPositive() {
 		// Consider insurance coverage
-		pairedInsBal := k.bankKeeper.GetBalance(ctx, ins.DerivedAddress(), k.stakingKeeper.BondDenom(ctx))
-		penaltyAmt = penaltyAmt.Sub(pairedInsBal.Amount)
+		insBal := k.bankKeeper.GetBalance(ctx, ins.DerivedAddress(), k.stakingKeeper.BondDenom(ctx))
+		penaltyAmt = penaltyAmt.Sub(insBal.Amount)
 		if penaltyAmt.IsPositive() {
 			// It means insurance can't cover penalty perfectly
 			tokenValue = tokenValue.Sub(penaltyAmt)
