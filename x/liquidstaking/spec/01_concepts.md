@@ -61,7 +61,7 @@ Delegation reward are distributed as follows:
 The fee is calculated as follows: `fee = (delegation reward - insurance commission) * feeRate`
 
 **Fee rate** is calculated based on **utilization ratio** and **fee rate parameters** set by the governance.
-* u (= utilization ratio) = `NetAmount / total supply of native token` (for NetAmount, pelase refer to [02_state.md](02_state.md#netamountstate-in-memory-only))
+* u (= utilization ratio) = `NetAmountBeforeModuleFee / total supply of native token` (for `NetAmountBeforeModuleFee`, please refer to [02_state.md](02_state.md#netamountstate-in-memory-only))
 * if u < softCap then, **fee rate =** `r0`
 * if softCap <= u <= optimal then, **fee rate =** `r0 + ((u - softcap) / (optimal - softcap) x slope1)`
 * if optimal < u <= hardCap then, **fee rate =** `r0 + slope1 + ((min(u, hardcap) - optimal) / (hardcap - optimal) x slope2)`

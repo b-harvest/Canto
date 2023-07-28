@@ -124,6 +124,9 @@ This will be consumed at **Handle Queued Withdraw Insurance Requests** when Epoc
   - insurance coverage also included which means even if there were a slashing so unbonding balance is less than chunk size value, 
     the balance will be the same as the chunk size value if insurance can cover the slashing penalty.
 
+**NetAmountBeforeModuleFee** is almost the same as **NetAmount** except that it does not deduct module fee rate from delegation rewards.
+This value is used when calculating the utilization ratio. 
+
 **MintRate** is the rate that is calculated from total supply of ls tokens divided by NetAmount.
 
 - LsTokenTotalSupply / NetAmount
