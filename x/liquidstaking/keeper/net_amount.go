@@ -96,7 +96,6 @@ func (k Keeper) GetNetAmountState(ctx sdk.Context) (nas types.NetAmountState) {
 		UtilizationRatio:                   utilizationRatio,
 		RewardModuleAccBalance:             rewardPoolBalance,
 		RemainingChunkSlots:                k.GetAvailableChunkSlots(ctx, utilizationRatio, params.DynamicFeeRate.UHardCap),
-		NetAmountBeforeModuleFee:           netAmountBeforeModuleFee,
 	}
 	nas.NetAmount = nas.CalcNetAmount()
 	nas.MintRate = nas.CalcMintRate()

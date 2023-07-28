@@ -123,7 +123,6 @@ func (k Keeper) CollectRewardAndFee(
 // Keeper.CollectRewardAndFee will be called during withdrawing process.
 func (k Keeper) DistributeReward(ctx sdk.Context) {
 	nas := k.GetNetAmountState(ctx)
-	feeRate, _ := k.CalcDynamicFeeRate(ctx, nas.NetAmountBeforeModuleFee)
 	k.IterateAllChunks(ctx, func(chunk types.Chunk) bool {
 		if chunk.Status != types.CHUNK_STATUS_PAIRED {
 			return false
@@ -134,7 +133,7 @@ func (k Keeper) DistributeReward(ctx sdk.Context) {
 			panic(err)
 		}
 
-		k.CollectRewardAndFee(ctx, feeRate, chunk, pairedIns)
+		k.CollectRewardAndFee(ctx, nas.FeeRate, chunk, pairedIns)
 		return false
 	})
 }

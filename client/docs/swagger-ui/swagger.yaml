@@ -2039,6 +2039,8 @@ paths:
                     description: >-
                       DynamicFeeRate defines parameters realated with dynamic
                       fee rate mechanism.
+                  maximum_discount_rate:
+                    type: string
             description: >-
               QueryParamsResponse is the response type for the Query/Params RPC
               method.
@@ -2227,13 +2229,14 @@ paths:
                       Calculated by reward module account's native token balance
                       + all
 
-                      chunk's native token balance + sum of all remaining
-                      rewards of paired
+                      all chunk's native token balance + sum of token values of
+                      all chunk's
 
-                      chunks since last Epoch + all unbonding delegation tokens
-                      of unpairing
+                      delegation shares + sum of all remaining rewards of paired
+                      chunks since
 
-                      chunks + reward module account's balance
+                      last Epoch + all unbonding delegation tokens of unpairing
+                      chunks
                   total_liquid_tokens:
                     type: string
                     title: >-
@@ -35763,11 +35766,15 @@ definitions:
           ls tokens
       net_amount:
         type: string
-        title: |-
+        title: >-
           Calculated by reward module account's native token balance + all
-          chunk's native token balance + sum of all remaining rewards of paired
-          chunks since last Epoch + all unbonding delegation tokens of unpairing
-          chunks + reward module account's balance
+
+          all chunk's native token balance + sum of token values of all chunk's
+
+          delegation shares + sum of all remaining rewards of paired chunks
+          since
+
+          last Epoch + all unbonding delegation tokens of unpairing chunks
       total_liquid_tokens:
         type: string
         title: |-
@@ -35896,6 +35903,8 @@ definitions:
         description: >-
           DynamicFeeRate defines parameters realated with dynamic fee rate
           mechanism.
+      maximum_discount_rate:
+        type: string
     description: Params defines the parameters for the module.
   canto.liquidstaking.v1.QueryChunkResponse:
     type: object
@@ -36350,6 +36359,8 @@ definitions:
             description: >-
               DynamicFeeRate defines parameters realated with dynamic fee rate
               mechanism.
+          maximum_discount_rate:
+            type: string
     description: QueryParamsResponse is the response type for the Query/Params RPC method.
   canto.liquidstaking.v1.QueryRedelegationInfoResponse:
     type: object
@@ -36425,13 +36436,13 @@ definitions:
             title: >-
               Calculated by reward module account's native token balance + all
 
-              chunk's native token balance + sum of all remaining rewards of
-              paired
+              all chunk's native token balance + sum of token values of all
+              chunk's
 
-              chunks since last Epoch + all unbonding delegation tokens of
-              unpairing
+              delegation shares + sum of all remaining rewards of paired chunks
+              since
 
-              chunks + reward module account's balance
+              last Epoch + all unbonding delegation tokens of unpairing chunks
           total_liquid_tokens:
             type: string
             title: >-
