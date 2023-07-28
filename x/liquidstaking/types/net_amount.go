@@ -13,13 +13,6 @@ func (nas NetAmountState) CalcNetAmount() sdk.Dec {
 		Add(nas.TotalRemainingRewards)
 }
 
-func (nas NetAmountState) CalcNetAmountBeforeModuleFee(totalRemainingRewardsBeforeModuleFee sdk.Dec) sdk.Dec {
-	return nas.RewardModuleAccBalance.Add(nas.TotalChunksBalance).
-		Add(nas.TotalLiquidTokens).
-		Add(nas.TotalUnbondingChunksBalance).ToDec().
-		Add(totalRemainingRewardsBeforeModuleFee)
-}
-
 func (nas NetAmountState) CalcMintRate() sdk.Dec {
 	if nas.NetAmount.IsNil() || !nas.NetAmount.IsPositive() {
 		return sdk.ZeroDec()
