@@ -252,12 +252,13 @@ func (suite *KeeperTestSuite) TestLiquidStakeFail() {
 	)
 	oneChunk, oneInsurance := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
 	suite.fundAccount(suite.ctx, fundingAccount, oneChunk.Amount.MulRaw(100).Add(oneInsurance.Amount.MulRaw(10)))
-	maxPairedChunks := suite.app.LiquidStakingKeeper.MaxPairedChunks(suite.ctx).Int64()
+	nas := suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
+	remainingChunkSlots := nas.RemainingChunkSlots
 	suite.Equal(
-		maxPairedChunks, int64(10),
+		remainingChunkSlots, sdk.NewInt(10),
 		"set total supply by creating funding account to fix max paired chunks",
 	)
-	addrs, balances := suite.AddTestAddrsWithFunding(fundingAccount, int(maxPairedChunks-1), oneChunk.Amount)
+	addrs, balances := suite.AddTestAddrsWithFunding(fundingAccount, int(remainingChunkSlots.SubRaw(1).Int64()), oneChunk.Amount)
 
 	// TC: There are no pairing insurances yet. Insurances must be provided to liquid stake
 	acc1 := addrs[0]
@@ -265,7 +266,7 @@ func (suite *KeeperTestSuite) TestLiquidStakeFail() {
 	_, _, _, err := suite.app.LiquidStakingKeeper.DoLiquidStake(suite.ctx, msg)
 	suite.ErrorContains(err, types.ErrNoPairingInsurance.Error())
 
-	providers, providerBalances := suite.AddTestAddrsWithFunding(fundingAccount, int(maxPairedChunks), oneInsurance.Amount)
+	providers, providerBalances := suite.AddTestAddrsWithFunding(fundingAccount, int(remainingChunkSlots.Int64()), oneInsurance.Amount)
 	suite.provideInsurances(suite.ctx, providers, valAddrs, providerBalances, sdk.ZeroDec(), nil)
 
 	// TC: Not enough amount to liquid stake

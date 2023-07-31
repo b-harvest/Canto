@@ -76,9 +76,11 @@ func (k Keeper) GetNetAmountState(ctx sdk.Context) (nas types.NetAmountState) {
 		Add(totalLiquidTokens).
 		Add(totalUnbondingChunksBalance).ToDec().
 		Add(totalRemainingRewardsBeforeModuleFee)
-	moduleFeeRate, utilizationRatio := k.CalcDynamicFeeRate(ctx, netAmountBeforeModuleFee)
-	totalRemainingRewards = totalRemainingRewardsBeforeModuleFee.Mul(sdk.OneDec().Sub(moduleFeeRate))
+	totalSupplyAmt := k.bankKeeper.GetSupply(ctx, bondDenom).Amount
 	params := k.GetParams(ctx)
+	u := types.CalcUtilizationRatio(netAmountBeforeModuleFee, totalSupplyAmt)
+	moduleFeeRate := types.CalcDynamicFeeRate(u, params.DynamicFeeRate)
+	totalRemainingRewards = totalRemainingRewardsBeforeModuleFee.Mul(sdk.OneDec().Sub(moduleFeeRate))
 	nas = types.NetAmountState{
 		LsTokensTotalSupply:                k.bankKeeper.GetSupply(ctx, liquidBondDenom).Amount,
 		TotalLiquidTokens:                  totalLiquidTokens,
@@ -93,9 +95,9 @@ func (k Keeper) GetNetAmountState(ctx sdk.Context) (nas types.NetAmountState) {
 		TotalPairedInsuranceTokens:         totalPairedInsuranceTokens,
 		TotalUnpairingInsuranceTokens:      totalUnpairingInsuranceTokens,
 		FeeRate:                            moduleFeeRate,
-		UtilizationRatio:                   utilizationRatio,
+		UtilizationRatio:                   u,
 		RewardModuleAccBalance:             rewardPoolBalance,
-		RemainingChunkSlots:                k.GetAvailableChunkSlots(ctx, utilizationRatio, params.DynamicFeeRate.UHardCap),
+		RemainingChunkSlots:                types.GetAvailableChunkSlots(u, params.DynamicFeeRate.UHardCap, totalSupplyAmt),
 	}
 	nas.NetAmount = nas.CalcNetAmount()
 	nas.MintRate = nas.CalcMintRate()
