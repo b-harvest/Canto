@@ -137,7 +137,10 @@ func SimulateMsgLiquidStake(ak types.AccountKeeper, bk types.BankKeeper, k keepe
 		spendable := bk.SpendableCoins(ctx, delegator)
 
 		chunksToLiquidStake := int64(simtypes.RandIntBetween(r, 1, 3))
-		availableChunkSlots := k.GetAvailableChunkSlots(ctx).Int64()
+		nas := k.GetNetAmountState(ctx)
+		params := k.GetParams(ctx)
+		totalSupplyAmt := bk.GetSupply(ctx, sdk.DefaultBondDenom).Amount
+		availableChunkSlots := types.GetAvailableChunkSlots(nas.UtilizationRatio, params.DynamicFeeRate.UHardCap, totalSupplyAmt).Int64()
 		if availableChunkSlots == 0 {
 			return simtypes.NoOpMsg(types.ModuleName, types.TypeMsgLiquidStake, "no available chunk slots"), nil, nil
 		}

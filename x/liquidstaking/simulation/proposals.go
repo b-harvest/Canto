@@ -8,7 +8,6 @@ import (
 	inflationkeeper "github.com/Canto-Network/Canto/v6/x/inflation/keeper"
 	inflationtypes "github.com/Canto-Network/Canto/v6/x/inflation/types"
 	"github.com/Canto-Network/Canto/v6/x/liquidstaking/keeper"
-	"github.com/Canto-Network/Canto/v6/x/liquidstaking/types"
 	"github.com/armon/go-metrics"
 	"github.com/cosmos/cosmos-sdk/telemetry"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -45,14 +44,14 @@ func ProposalContents(
 			SimulateUpdateDynamicFeeRateProposal(k),
 		),
 		simulation.NewWeightedProposalContent(
+			OpWeightSimulateUpdateMaximumDiscountRate,
+			params.DefaultWeightUpdateMaximumDiscountRate,
+			SimulateUpdateMaximumDiscountRate(k),
+		),
+		simulation.NewWeightedProposalContent(
 			OpWeightSimulateAdvanceEpoch,
 			params.DefaultWeightAdvanceEpoch,
 			SimulateAdvanceEpoch(k, ak, bk, sk, dk, ik),
-		),
-		simulation.NewWeightedProposalContent(
-			OpWeightSimulateUpdateMaximumDiscountRate,
-			app.DefaultWeightUpdateMaximumDiscountRate,
-			SimulateUpdateMaximumDiscountRate(k),
 		),
 	}
 }
