@@ -2,6 +2,7 @@ package types
 
 import (
 	"fmt"
+	"gopkg.in/yaml.v2"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
@@ -64,7 +65,7 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	}
 }
 
-func (p Params) Validate() error {
+func (p *Params) Validate() error {
 	for _, v := range []struct {
 		value     interface{}
 		validator func(interface{}) error
@@ -81,6 +82,12 @@ func (p Params) Validate() error {
 		}
 	}
 	return nil
+}
+
+// String returns a human-readable string representation of the parameters.
+func (p *Params) String() string {
+	out, _ := yaml.Marshal(p)
+	return string(out)
 }
 
 // TODO: Write test codes for it right now!!

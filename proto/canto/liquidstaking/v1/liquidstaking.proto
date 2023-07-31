@@ -70,6 +70,7 @@ message DynamicFeeRate {
 // Params defines the parameters for the module.
 message Params {
   option (gogoproto.goproto_getters) = false;
+  option (gogoproto.goproto_stringer) = false;
 
   DynamicFeeRate dynamic_fee_rate = 1 [ (gogoproto.nullable) = false ];
   string maximum_discount_rate = 2 [
