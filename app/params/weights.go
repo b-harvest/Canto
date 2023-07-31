@@ -13,5 +13,5 @@ const (
 
 	DefaultWeightUpdateDynamicFeeRateProposal int = 2
 	DefaultWeightUpdateMaximumDiscountRate        = 2
-	DefaultWeightAdvanceEpoch                 int = 30
+	DefaultWeightAdvanceEpoch                 int = 5
 )

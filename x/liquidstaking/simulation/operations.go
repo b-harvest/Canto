@@ -283,10 +283,11 @@ func SimulateMsgProvideInsurance(ak types.AccountKeeper, bk types.BankKeeper, sk
 				minCollateral.Mul(types.ChunkSize.ToDec()).Ceil().TruncateInt(),
 			),
 		)
+		maximumFeeRate := sdk.MustNewDecFromStr("0.5")
 		var validators []stakingtypes.Validator
 		sk.IterateBondedValidatorsByPower(ctx, func(index int64, validator stakingtypes.ValidatorI) (stop bool) {
 			// Only select validators with commission rate less than 50%
-			if validator.GetCommission().LT(sdk.MustNewDecFromStr("0.5")) {
+			if validator.GetCommission().LT(maximumFeeRate) {
 				v, ok := validator.(stakingtypes.Validator)
 				if !ok {
 					return false
@@ -303,8 +304,8 @@ func SimulateMsgProvideInsurance(ak types.AccountKeeper, bk types.BankKeeper, sk
 		validator := validators[r.Intn(len(validators))]
 
 		feeRate := simtypes.RandomDecAmount(r, sdk.MustNewDecFromStr("0.15"))
-		if validator.GetCommission().Add(feeRate).GTE(sdk.MustNewDecFromStr("0.5")) {
-			feeRate = sdk.MustNewDecFromStr("0.5").Sub(sdk.OneDec()).Sub(validator.GetCommission())
+		if validator.GetCommission().Add(feeRate).GTE(maximumFeeRate) {
+			feeRate = maximumFeeRate.Sub(validator.GetCommission()).Sub(sdk.MustNewDecFromStr("0.001"))
 		}
 
 		if !spendable.AmountOf(sdk.DefaultBondDenom).GTE(collaterals[0].Amount) {

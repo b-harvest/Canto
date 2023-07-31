@@ -43,6 +43,7 @@ func genMaximumDiscountRate(r *rand.Rand) sdk.Dec {
 
 func RandomizedGenState(simState *module.SimulationState) {
 	genesis := types.DefaultGenesisState()
+	genesis.Epoch.StartTime = simState.GenTimestamp
 
 	simState.AppParams.GetOrGenerate(
 		simState.Cdc, dynamicFeeRate, &genesis.Params.DynamicFeeRate, simState.Rand,

@@ -88,6 +88,10 @@ func SimulateAdvanceEpoch(
 		// BEGIN BLOCK
 		bondDenom := sk.BondDenom(ctx)
 		lsmEpoch := k.GetEpoch(ctx)
+		if ctx.BlockHeight() <= lsmEpoch.StartHeight {
+			// already advanced epoch
+			return nil
+		}
 		ctx = ctx.WithBlockTime(lsmEpoch.StartTime.Add(lsmEpoch.Duration))
 		staking.BeginBlocker(ctx, sk)
 
