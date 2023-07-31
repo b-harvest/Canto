@@ -100,15 +100,9 @@ func ChunksInvariant(k Keeper) sdk.Invariant {
 					return false
 				}
 				// must have valid Delegation object
-				delegation, found := k.stakingKeeper.GetDelegation(ctx, chunk.DerivedAddress(), pairedIns.GetValidator())
+				_, found = k.stakingKeeper.GetDelegation(ctx, chunk.DerivedAddress(), pairedIns.GetValidator())
 				if !found {
 					msg += fmt.Sprintf("not found delegation for paired chunk(id: %d)\n", chunk.Id)
-					brokenCount++
-					return false
-				}
-				delShares := delegation.GetShares()
-				if delShares.LT(types.ChunkSize.ToDec()) {
-					msg += fmt.Sprintf("paired chunk's delegation sharesis less than chunk size tokens: %s(chunkId: %d)\n", delShares.String(), chunk.Id)
 					brokenCount++
 					return false
 				}

@@ -200,12 +200,12 @@ func SimulateMsgLiquidUnstake(ak types.AccountKeeper, bk types.BankKeeper, k kee
 		var delegator sdk.AccAddress
 		var spendable sdk.Coins
 
+		liquidBondDenom := k.GetLiquidBondDenom(ctx)
 		nas := k.GetNetAmountState(ctx)
 		if nas.MintRate.IsZero() {
 			return simtypes.NoOpMsg(types.ModuleName, types.TypeMsgLiquidUnstake, "cannot unstake because there are no chunks"), nil, nil
 		}
-		oneChunk, _ := k.GetMinimumRequirements(ctx)
-		lsTokensToPayForOneChunk := nas.MintRate.Mul(oneChunk.Amount.ToDec()).Ceil().TruncateInt()
+		lsTokensToPayForOneChunk := nas.MintRate.Mul(types.ChunkSize.ToDec()).Ceil().TruncateInt()
 		for i := 0; i < len(accs); i++ {
 			simAccount, _ = simtypes.RandomAcc(r, accs)
 			account := ak.GetAccount(ctx, simAccount.Address)
@@ -213,11 +213,11 @@ func SimulateMsgLiquidUnstake(ak types.AccountKeeper, bk types.BankKeeper, k kee
 
 			delegator = account.GetAddress()
 			// delegator must have enough ls tokens to pay for one chunk
-			if spendable.AmountOf(types.DefaultLiquidBondDenom).GTE(lsTokensToPayForOneChunk) {
+			if spendable.AmountOf(liquidBondDenom).GTE(lsTokensToPayForOneChunk) {
 				break
 			}
 		}
-		if !spendable.AmountOf(types.DefaultLiquidBondDenom).GTE(lsTokensToPayForOneChunk) {
+		if !spendable.AmountOf(liquidBondDenom).GTE(lsTokensToPayForOneChunk) {
 			return simtypes.NoOpMsg(types.ModuleName, types.TypeMsgLiquidUnstake, "not enough ls tokens to liquid unstake an one chunk"), nil, nil
 		}
 
@@ -243,7 +243,7 @@ func SimulateMsgLiquidUnstake(ak types.AccountKeeper, bk types.BankKeeper, k kee
 			chunksToLiquidStake = numPairedChunks
 		}
 
-		unstakingCoin := sdk.NewCoin(sdk.DefaultBondDenom, oneChunk.Amount.MulRaw(chunksToLiquidStake))
+		unstakingCoin := sdk.NewCoin(sdk.DefaultBondDenom, types.ChunkSize.MulRaw(chunksToLiquidStake))
 
 		msg := types.NewMsgLiquidUnstake(delegator.String(), unstakingCoin)
 		txCtx := simulation.OperationInput{

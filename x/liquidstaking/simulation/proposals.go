@@ -86,7 +86,6 @@ func SimulateAdvanceEpoch(
 ) simtypes.ContentSimulatorFn {
 	return func(r *rand.Rand, ctx sdk.Context, accs []simtypes.Account) simtypes.Content {
 		// BEGIN BLOCK
-		bondDenom := sk.BondDenom(ctx)
 		lsmEpoch := k.GetEpoch(ctx)
 		if ctx.BlockHeight() <= lsmEpoch.StartHeight {
 			// already advanced epoch
@@ -147,7 +146,7 @@ func SimulateAdvanceEpoch(
 		// mimic the begin block logic of distribution module
 		{
 			feeCollectorBalance := bk.SpendableCoins(ctx, feeCollector.GetAddress())
-			rewardsToBeDistributed := feeCollectorBalance.AmountOf(bondDenom)
+			rewardsToBeDistributed := feeCollectorBalance.AmountOf(sdk.DefaultBondDenom)
 
 			// mimic distribution.BeginBlock (AllocateTokens, get rewards from feeCollector, AllocateTokensToValidator, add remaining to feePool)
 			err := bk.SendCoinsFromModuleToModule(ctx, authtypes.FeeCollectorName, distrtypes.ModuleName, feeCollectorBalance)
@@ -166,7 +165,7 @@ func SimulateAdvanceEpoch(
 					consPower := validator.GetConsensusPower(sk.PowerReduction(ctx))
 					powerFraction := sdk.NewDec(consPower).QuoTruncate(sdk.NewDec(totalPower))
 					reward := rewardsToBeDistributed.ToDec().MulTruncate(powerFraction)
-					dk.AllocateTokensToValidator(ctx, validator, sdk.DecCoins{{Denom: bondDenom, Amount: reward}})
+					dk.AllocateTokensToValidator(ctx, validator, sdk.DecCoins{{Denom: sdk.DefaultBondDenom, Amount: reward}})
 					totalRewards = totalRewards.Add(reward)
 					return false
 				})
@@ -174,7 +173,7 @@ func SimulateAdvanceEpoch(
 			remaining := rewardsToBeDistributed.ToDec().Sub(totalRewards)
 			feePool := dk.GetFeePool(ctx)
 			feePool.CommunityPool = feePool.CommunityPool.Add(sdk.DecCoins{
-				{Denom: bondDenom, Amount: remaining}}...)
+				{Denom: sdk.DefaultBondDenom, Amount: remaining}}...)
 			dk.SetFeePool(ctx, feePool)
 		}
 		k.CoverRedelegationPenalty(ctx)
