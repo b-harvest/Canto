@@ -602,7 +602,6 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (
 		return
 	}
 
-	mintRate := nas.CalcMintRate()
 	types.SortInsurances(validatorMap, pairingInsurances, false)
 	totalNewShares := sdk.ZeroDec()
 	totalLsTokenMintAmount := sdk.ZeroInt()
@@ -641,7 +640,7 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (
 		// Mint the liquid staking token
 		lsTokenMintAmount = types.ChunkSize
 		if nas.LsTokensTotalSupply.IsPositive() {
-			lsTokenMintAmount = mintRate.MulTruncate(types.ChunkSize.ToDec()).TruncateInt()
+			lsTokenMintAmount = nas.MintRate.MulTruncate(types.ChunkSize.ToDec()).TruncateInt()
 		}
 		if !lsTokenMintAmount.IsPositive() {
 			err = sdkerrors.Wrapf(types.ErrInvalidAmount, "amount must be greater than or equal to %s", amount.String())
@@ -1347,14 +1346,6 @@ func (k Keeper) IsEnoughToCoverSlash(ctx sdk.Context, insurance types.Insurance)
 	insBal := k.bankKeeper.GetBalance(ctx, insurance.DerivedAddress(), k.stakingKeeper.BondDenom(ctx))
 	doubleSignPenaltyAmt := types.ChunkSize.ToDec().Mul(params.SlashFractionDoubleSign).Ceil().TruncateInt()
 	return insBal.Amount.GTE(downTimePenaltyAmt.Add(doubleSignPenaltyAmt))
-}
-
-// GetAvailableChunkSlots returns a number of chunk which can be paired.
-func (k Keeper) GetAvailableChunkSlots(ctx sdk.Context, u, uHardCap sdk.Dec) sdk.Int {
-	hardCap := sdk.MinDec(uHardCap, types.SecurityCap)
-	remainingU := hardCap.Sub(u)
-	totalSupply := k.bankKeeper.GetSupply(ctx, k.stakingKeeper.BondDenom(ctx))
-	return remainingU.Mul(totalSupply.Amount.ToDec()).QuoTruncate(types.ChunkSize.ToDec()).TruncateInt()
 }
 
 // startUnpairing changes status of insurance and chunk to unpairing.
