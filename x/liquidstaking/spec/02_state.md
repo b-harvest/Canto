@@ -23,6 +23,8 @@ The fee rate is determined by the sum of the insurance fee rate set by the insur
 the commission fee rate set by the validator designated by the insurance provider.
 3. `Unpairing`: A paired chunk enters this status when paired insurance is started to be withdrawn or 
 it's balance <= 5.75%(double_sign_fraction + down_time_fraction) or the validator becomes invalid(e.g. tombstoned).
+  * 5.75%(double_sign_fraction + down_time_fraction) is guaranteed when slashing param change is limited through antehandler. we already have this mechanism. 
+please check **[Param Change Ante Handlers](10_param_change_ante_handlers.md#param-change-ante-handlers).** for detail.
 4. `UnpairingForUnstaking`: When a delegator (also known as a liquid staker) sends a `MsgLiquidUnstake`, it is queued as a `UnpairingForUnstakingChunkInfo`. 
 At the end of the epoch, the actual undelegation is triggered and the chunk enters this state. 
 Once the unbonding period is over in next epoch, the tokens corresponding chunk size are returned to the delegator's account and the associated chunk object is removed.
@@ -102,24 +104,34 @@ This will be consumed at **Handle Queued Withdraw Insurance Requests** when Epoc
 
 **NetAmount** is the sum of the following items
 
-- reward module account’s native token(e.g. `acanto`) balance
-- sum of all chunk balance
-    - The chunk balance will only be as much as the balance accumulated from delegation rewards between epochs. 
-      At the end of each epoch, the cumulated chunk balance will be transferred to the reward module account.
-    - When insurance is withdrawn and there are no candidate insurances, the chunk balance can be the same as the chunk size in tokens.
-- sum of all tokens corresponding delegation shares of paired chunks
-    - total amount of native tokens currently delegated
-    - may be less than the sum of the delegation shares due to slashing in the calculation
-        - This will be an edge case because insurance will cover any penalty.
-- sum of all remaining rewards of all chunks delegations
-    - not yet claimed native tokens
-        - `cumulated delegation rewards x (1 - paired insurance commission rates - module's fee rate)`
+- **reward module account’s native token(e.g. `acanto`) balance**
+- **sum of all chunk balance**
+  - the chunk balance will only be as much as the balance accumulated from delegation rewards between epochs. 
+    at the end of each epoch, the cumulated chunk balance will be transferred to the reward module account.
+  - when insurance is withdrawn and there are no candidate insurances, the chunk balance can be the same as the chunk size in tokens.
+- **sum of all tokens corresponding delegation shares of paired chunks**
+  - total amount of native tokens currently delegated
+  - insurance coverage also included which means even if there were a slashing so token value of delegation shares is less than chunk size value,
+    the value will be the same as the chunk size value if insurance can cover the slashing penalty.
+- **sum of all remaining rewards of all chunks delegations**
+  - the remaining reward for each chunk is calculated as follows:
+    ```
+    rest = del_reward - insurance_commission
+    remaining = rest x (1 - dynamic_fee_rate)
+    ``` 
+- **sum of all unbonding balances of chunks**
+  - total amount of native tokens currently in un-delegating
+  - insurance coverage also included which means even if there were a slashing so unbonding balance is less than chunk size value, 
+    the balance will be the same as the chunk size value if insurance can cover the slashing penalty.
 
-**MintRate** is the rate that is calculated from total supply of bTokens divided by NetAmount.
+**NetAmountBeforeModuleFee** is almost the same as **NetAmount** except that it does not deduct module fee rate from delegation rewards.
+This value is used when calculating the utilization ratio. 
+
+**MintRate** is the rate that is calculated from total supply of ls tokens divided by NetAmount.
 
 - LsTokenTotalSupply / NetAmount
 
-Depending on the equation, the value transformation between native tokens and bTokens can be calculated as follows:
+Depending on the equation, the value transformation between native tokens and ls tokens can be calculated as follows:
 
 - NativeTokenToLsToken: `nativeTokenAmount * lsTokenTotalSupply / NetAmount` with truncations
 - LsTokenToNativeToken: `lsTokenAmount * NetAmount / LsTokenTotalSupply` with truncations

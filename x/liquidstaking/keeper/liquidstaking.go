@@ -122,7 +122,7 @@ func (k Keeper) CollectRewardAndFee(
 // DistributeReward withdraws delegation rewards from all paired chunks
 // Keeper.CollectRewardAndFee will be called during withdrawing process.
 func (k Keeper) DistributeReward(ctx sdk.Context) {
-	feeRate, _ := k.CalcDynamicFeeRate(ctx)
+	nas := k.GetNetAmountState(ctx)
 	k.IterateAllChunks(ctx, func(chunk types.Chunk) bool {
 		if chunk.Status != types.CHUNK_STATUS_PAIRED {
 			return false
@@ -133,7 +133,7 @@ func (k Keeper) DistributeReward(ctx sdk.Context) {
 			panic(err)
 		}
 
-		k.CollectRewardAndFee(ctx, feeRate, chunk, pairedIns)
+		k.CollectRewardAndFee(ctx, nas.FeeRate, chunk, pairedIns)
 		return false
 	})
 }
@@ -584,25 +584,24 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (
 		return
 	}
 	chunksToCreate := amount.Amount.Quo(types.ChunkSize)
-	availableChunkSlots := k.GetAvailableChunkSlots(ctx)
-	if availableChunkSlots.LT(chunksToCreate) {
+	nas := k.GetNetAmountState(ctx)
+	if nas.RemainingChunkSlots.LT(chunksToCreate) {
 		err = sdkerrors.Wrapf(
 			types.ErrExceedAvailableChunks,
-			"requested chunks to create: %s, available chunks: %s",
+			"requested chunks to create: %d, available chunks: %s",
 			chunksToCreate,
-			availableChunkSlots,
+			nas.RemainingChunkSlots.String(),
 		)
 		return
 	}
 
-	pairingInsurances, validatorMap := k.GetPairingInsurances(ctx)
+	pairingInsurances, validatorMap := k.getPairingInsurances(ctx)
 	numPairingInsurances := sdk.NewIntFromUint64(uint64(len(pairingInsurances)))
 	if chunksToCreate.GT(numPairingInsurances) {
 		err = types.ErrNoPairingInsurance
 		return
 	}
 
-	nas := k.GetNetAmountState(ctx)
 	types.SortInsurances(validatorMap, pairingInsurances, false)
 	totalNewShares := sdk.ZeroDec()
 	totalLsTokenMintAmount := sdk.ZeroInt()
@@ -641,8 +640,7 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (
 		// Mint the liquid staking token
 		lsTokenMintAmount = types.ChunkSize
 		if nas.LsTokensTotalSupply.IsPositive() {
-			conservativeNetAmount := nas.CalcConservativeNetAmount(nas.RewardModuleAccBalance)
-			lsTokenMintAmount = types.NativeTokenToLiquidStakeToken(lsTokenMintAmount, nas.LsTokensTotalSupply, conservativeNetAmount)
+			lsTokenMintAmount = nas.MintRate.MulTruncate(types.ChunkSize.ToDec()).TruncateInt()
 		}
 		if !lsTokenMintAmount.IsPositive() {
 			err = sdkerrors.Wrapf(types.ErrInvalidAmount, "amount must be greater than or equal to %s", amount.String())
@@ -773,7 +771,7 @@ func (k Keeper) DoProvideInsurance(ctx sdk.Context, msg *types.MsgProvideInsuran
 	// Check if the amount is greater than minimum coverage
 	_, minimumCollateral := k.GetMinimumRequirements(ctx)
 	if amount.IsLT(minimumCollateral) {
-		err = sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "amount(%s) must be greater than minimum collateral: %s", msg.Amount, minimumCollateral)
+		err = sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "amount must be greater than minimum collateral: %s", minimumCollateral)
 		return
 	}
 
@@ -916,15 +914,14 @@ func (k Keeper) DoClaimDiscountedReward(ctx sdk.Context, msg *types.MsgClaimDisc
 		return
 	}
 
-	discountRate := k.CalcDiscountRate(ctx)
+	nas := k.GetNetAmountState(ctx)
 	// discount rate >= minimum discount rate
 	// if discount rate(e.g. 10%) is lower than minimum discount rate(e.g. 20%), then it is not profitable to claim reward.
-	if discountRate.LT(msg.MinimumDiscountRate) {
-		err = sdkerrors.Wrapf(types.ErrDiscountRateTooLow, "current discount rate: %s", discountRate)
+	if nas.DiscountRate.LT(msg.MinimumDiscountRate) {
+		err = sdkerrors.Wrapf(types.ErrDiscountRateTooLow, "current discount rate: %s", nas.DiscountRate)
 		return
 	}
-	nas := k.GetNetAmountState(ctx)
-	discountedMintRate = nas.MintRate.Mul(sdk.OneDec().Sub(discountRate))
+	discountedMintRate = nas.MintRate.Mul(sdk.OneDec().Sub(nas.DiscountRate))
 
 	var claimableCoin sdk.Coin
 	var burnAmt sdk.Coin
@@ -951,20 +948,6 @@ func (k Keeper) DoClaimDiscountedReward(ctx sdk.Context, msg *types.MsgClaimDisc
 		return
 	}
 	return
-}
-
-// CalcDiscountRate calculates the current discount rate.
-// reward module account's balance / (num paired chunks * chunk size)
-func (k Keeper) CalcDiscountRate(ctx sdk.Context) sdk.Dec {
-	accumulatedReward := k.bankKeeper.GetBalance(ctx, types.RewardPool, k.stakingKeeper.BondDenom(ctx))
-	numPairedChunks := k.getNumPairedChunks(ctx)
-	if accumulatedReward.IsZero() || numPairedChunks == 0 {
-		return sdk.ZeroDec()
-	}
-	discountRate := accumulatedReward.Amount.ToDec().QuoTruncate(
-		sdk.NewInt(numPairedChunks).Mul(types.ChunkSize).ToDec(),
-	)
-	return sdk.MinDec(discountRate, types.MaximumDiscountRate)
 }
 
 func (k Keeper) SetLiquidBondDenom(ctx sdk.Context, denom string) {
@@ -1363,11 +1346,6 @@ func (k Keeper) IsEnoughToCoverSlash(ctx sdk.Context, insurance types.Insurance)
 	insBal := k.bankKeeper.GetBalance(ctx, insurance.DerivedAddress(), k.stakingKeeper.BondDenom(ctx))
 	doubleSignPenaltyAmt := types.ChunkSize.ToDec().Mul(params.SlashFractionDoubleSign).Ceil().TruncateInt()
 	return insBal.Amount.GTE(downTimePenaltyAmt.Add(doubleSignPenaltyAmt))
-}
-
-// GetAvailableChunkSlots returns a number of chunk which can be paired.
-func (k Keeper) GetAvailableChunkSlots(ctx sdk.Context) sdk.Int {
-	return k.MaxPairedChunks(ctx).Sub(sdk.NewInt(k.getNumPairedChunks(ctx)))
 }
 
 // startUnpairing changes status of insurance and chunk to unpairing.

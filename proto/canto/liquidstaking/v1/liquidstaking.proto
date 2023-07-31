@@ -70,8 +70,13 @@ message DynamicFeeRate {
 // Params defines the parameters for the module.
 message Params {
   option (gogoproto.goproto_getters) = false;
+  option (gogoproto.goproto_stringer) = false;
 
   DynamicFeeRate dynamic_fee_rate = 1 [ (gogoproto.nullable) = false ];
+  string maximum_discount_rate = 2 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable) = false
+  ];
 }
 
 // ChunkStatus defines the status of the chunk.
@@ -189,10 +194,10 @@ message NetAmountState {
     (gogoproto.nullable) = false
   ];
 
-  // Calculated by reward module account's native token balance + all paired
-  // chunk's native token balance + all delegation tokens of paired chunks
-  // since last Epoch + all unbonding delegation tokens of unpairing chunks +
-  // reward module account's balance
+  // Calculated by reward module account's native token balance + all
+  // all chunk's native token balance + sum of token values of all chunk's
+  // delegation shares + sum of all remaining rewards of paired chunks since
+  // last Epoch + all unbonding delegation tokens of unpairing chunks
   string net_amount = 3 [
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
     (gogoproto.nullable) = false
