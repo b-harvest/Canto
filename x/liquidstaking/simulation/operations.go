@@ -361,7 +361,7 @@ func SimulateMsgCancelProvideInsurance(ak types.AccountKeeper, bk types.BankKeep
 			account := ak.GetAccount(ctx, simAccount.Address)
 			provider = account.GetAddress()
 			k.IterateAllInsurances(ctx, func(insurance types.Insurance) bool {
-				if insurance.GetProvider().Equals(provider) {
+				if insurance.GetProvider().Equals(provider) && insurance.Status == types.INSURANCE_STATUS_PAIRING {
 					cancelableInsurances = append(cancelableInsurances, insurance)
 				}
 				return false
