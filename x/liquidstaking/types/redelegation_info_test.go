@@ -41,8 +41,8 @@ func (suite *redelegationInfoTestSuite) TestMatured() {
 	c := types.NewChunk(1)
 	blockTime := time.Now()
 	// sub one hour from blockTime
-	oneHourBeforeBlockTime := blockTime.Add(-time.Hour)
-	info := types.NewRedelegationInfo(c.Id, oneHourBeforeBlockTime)
+	oneHourAfterBlockTime := blockTime.Add(time.Hour)
+	info := types.NewRedelegationInfo(c.Id, oneHourAfterBlockTime)
 	suite.False(info.Matured(blockTime))
 
 	info.CompletionTime = blockTime
