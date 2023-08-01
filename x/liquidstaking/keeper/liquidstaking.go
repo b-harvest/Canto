@@ -1565,7 +1565,7 @@ func (k Keeper) mustValidateRedelegationInfo(ctx sdk.Context, info types.Redeleg
 		dstIns.GetValidator(),
 	)
 	if len(reDels) != 1 {
-		panic(fmt.Sprintf("chunk id: %d must have one re-delegation", chunk.Id))
+		panic(fmt.Sprintf("chunk id: %d must have one re-delegation, got: %d", chunk.Id, len(reDels)))
 	}
 	red := reDels[0]
 	if len(red.Entries) != 1 {

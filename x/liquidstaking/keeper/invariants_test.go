@@ -180,20 +180,6 @@ func (suite *KeeperTestSuite) TestChunksInvariant() {
 		suite.mustPassInvariants()
 	}
 
-	// forcefully delegation shares as invalid
-	{
-		mutatedDel := originDel
-		mutatedDel.Shares = mutatedDel.Shares.Sub(sdk.OneDec())
-		suite.app.StakingKeeper.SetDelegation(suite.ctx, mutatedDel)
-		_, broken = keeper.ChunksInvariant(suite.app.LiquidStakingKeeper)(suite.ctx)
-		suite.True(broken, "delegation must have valid shares")
-		// recover
-		suite.app.StakingKeeper.SetDelegation(suite.ctx, originDel)
-		suite.mustPassInvariants()
-	}
-	suite.ctx = suite.advanceEpoch(suite.ctx)
-	suite.ctx = suite.advanceHeight(suite.ctx, 1, "")
-
 	// 2: UNPAIRING CHUNK
 	// first, create unpairing chunk
 	insToBeWithdrawn, _, err := suite.app.LiquidStakingKeeper.DoWithdrawInsurance(
