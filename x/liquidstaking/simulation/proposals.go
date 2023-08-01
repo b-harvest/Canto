@@ -1,26 +1,19 @@
 package simulation
 
 import (
-	"fmt"
+	"github.com/cosmos/cosmos-sdk/x/staking"
 	"math/rand"
 
 	"github.com/Canto-Network/Canto/v6/app/params"
 	inflationkeeper "github.com/Canto-Network/Canto/v6/x/inflation/keeper"
-	inflationtypes "github.com/Canto-Network/Canto/v6/x/inflation/types"
 	"github.com/Canto-Network/Canto/v6/x/liquidstaking/keeper"
-	"github.com/armon/go-metrics"
-	"github.com/cosmos/cosmos-sdk/telemetry"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	distrkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
-	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	"github.com/cosmos/cosmos-sdk/x/simulation"
-	"github.com/cosmos/cosmos-sdk/x/staking"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
 const (
@@ -98,84 +91,49 @@ func SimulateAdvanceEpoch(
 		// currently epoch module use hooks when begin block and inflation module
 		// implemented that hook, so actual logic is in inflation module.
 		{
-			epochMintProvision, found := ik.GetEpochMintProvision(ctx)
+			_, found := ik.GetEpochMintProvision(ctx)
 			if !found {
 				panic("epoch mint provision not found")
 			}
-			// mintedCoin := sdk.NewCoin(inflationParams.MintDenom, epochMintProvision.TruncateInt())
 			mintedCoin := sdk.NewCoin(sdk.DefaultBondDenom, sdk.TokensFromConsensusPower(100, sdk.DefaultPowerReduction))
-			staking, communityPool, err := ik.MintAndAllocateInflation(ctx, mintedCoin)
+			_, _, err := ik.MintAndAllocateInflation(ctx, mintedCoin)
 			if err != nil {
 				panic(err)
 			}
-			defer func() {
-				if mintedCoin.Amount.IsInt64() {
-					telemetry.IncrCounterWithLabels(
-						[]string{"inflation", "allocate", "total"},
-						float32(mintedCoin.Amount.Int64()),
-						[]metrics.Label{telemetry.NewLabel("denom", mintedCoin.Denom)},
-					)
-				}
-				if staking.AmountOf(mintedCoin.Denom).IsInt64() {
-					telemetry.IncrCounterWithLabels(
-						[]string{"inflation", "allocate", "staking", "total"},
-						float32(staking.AmountOf(mintedCoin.Denom).Int64()),
-						[]metrics.Label{telemetry.NewLabel("denom", mintedCoin.Denom)},
-					)
-				}
-				if communityPool.AmountOf(mintedCoin.Denom).IsInt64() {
-					telemetry.IncrCounterWithLabels(
-						[]string{"inflation", "allocate", "community_pool", "total"},
-						float32(communityPool.AmountOf(mintedCoin.Denom).Int64()),
-						[]metrics.Label{telemetry.NewLabel("denom", mintedCoin.Denom)},
-					)
-				}
-			}()
-
-			ctx.EventManager().EmitEvent(
-				sdk.NewEvent(
-					inflationtypes.EventTypeMint,
-					sdk.NewAttribute(inflationtypes.AttributeEpochNumber, fmt.Sprintf("%d", -1)),
-					sdk.NewAttribute(inflationtypes.AttributeKeyEpochProvisions, epochMintProvision.String()),
-					sdk.NewAttribute(sdk.AttributeKeyAmount, mintedCoin.Amount.String()),
-				),
-			)
 		}
 
-		feeCollector := ak.GetModuleAccount(ctx, authtypes.FeeCollectorName)
+		//feeCollector := ak.GetModuleAccount(ctx, authtypes.FeeCollectorName)
 		// mimic the begin block logic of distribution module
-		{
-			feeCollectorBalance := bk.SpendableCoins(ctx, feeCollector.GetAddress())
-			rewardsToBeDistributed := feeCollectorBalance.AmountOf(sdk.DefaultBondDenom)
-
-			// mimic distribution.BeginBlock (AllocateTokens, get rewards from feeCollector, AllocateTokensToValidator, add remaining to feePool)
-			err := bk.SendCoinsFromModuleToModule(ctx, authtypes.FeeCollectorName, distrtypes.ModuleName, feeCollectorBalance)
-			if err != nil {
-				panic(err)
-			}
-			totalRewards := sdk.ZeroDec()
-			totalPower := int64(0)
-			sk.IterateBondedValidatorsByPower(ctx, func(index int64, validator stakingtypes.ValidatorI) (stop bool) {
-				consPower := validator.GetConsensusPower(sk.PowerReduction(ctx))
-				totalPower = totalPower + consPower
-				return false
-			})
-			if totalPower != 0 {
-				sk.IterateBondedValidatorsByPower(ctx, func(index int64, validator stakingtypes.ValidatorI) (stop bool) {
-					consPower := validator.GetConsensusPower(sk.PowerReduction(ctx))
-					powerFraction := sdk.NewDec(consPower).QuoTruncate(sdk.NewDec(totalPower))
-					reward := rewardsToBeDistributed.ToDec().MulTruncate(powerFraction)
-					dk.AllocateTokensToValidator(ctx, validator, sdk.DecCoins{{Denom: sdk.DefaultBondDenom, Amount: reward}})
-					totalRewards = totalRewards.Add(reward)
-					return false
-				})
-			}
-			remaining := rewardsToBeDistributed.ToDec().Sub(totalRewards)
-			feePool := dk.GetFeePool(ctx)
-			feePool.CommunityPool = feePool.CommunityPool.Add(sdk.DecCoins{
-				{Denom: sdk.DefaultBondDenom, Amount: remaining}}...)
-			dk.SetFeePool(ctx, feePool)
-		}
+		//{
+		//	feeCollectorCoins := bk.GetAllBalances(ctx, feeCollector.GetAddress())
+		//	feeCollected := sdk.NewDecCoinsFromCoins(feeCollectorCoins...)
+		//	remaining := feeCollected
+		//
+		//	// mimic distribution.BeginBlock (AllocateTokens, get rewards from feeCollector, AllocateTokensToValidator, add remaining to feePool)
+		//	err := bk.SendCoinsFromModuleToModule(ctx, authtypes.FeeCollectorName, distrtypes.ModuleName, feeCollectorCoins)
+		//	if err != nil {
+		//		panic(err)
+		//	}
+		//	totalPower := int64(0)
+		//	sk.IterateBondedValidatorsByPower(ctx, func(index int64, validator stakingtypes.ValidatorI) (stop bool) {
+		//		consPower := validator.GetConsensusPower(sk.PowerReduction(ctx))
+		//		totalPower = totalPower + consPower
+		//		return false
+		//	})
+		//	feePool := dk.GetFeePool(ctx)
+		//	if totalPower != 0 {
+		//		sk.IterateBondedValidatorsByPower(ctx, func(index int64, validator stakingtypes.ValidatorI) (stop bool) {
+		//			consPower := validator.GetConsensusPower(sk.PowerReduction(ctx))
+		//			powerFraction := sdk.NewDec(consPower).QuoTruncate(sdk.NewDec(totalPower))
+		//			rewards := feeCollected.MulDecTruncate(powerFraction)
+		//			dk.AllocateTokensToValidator(ctx, validator, rewards)
+		//			remaining.Sub(rewards)
+		//			return false
+		//		})
+		//	}
+		//	feePool.CommunityPool = feePool.CommunityPool.Add(remaining...)
+		//	dk.SetFeePool(ctx, feePool)
+		//}
 		k.CoverRedelegationPenalty(ctx)
 
 		// END BLOCK

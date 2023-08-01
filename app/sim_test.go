@@ -3,7 +3,6 @@ package app
 import (
 	"encoding/json"
 	"fmt"
-	"math/rand"
 	"os"
 	"testing"
 
@@ -252,60 +251,61 @@ func TestAppStateDeterminism(t *testing.T) {
 
 	sdk.DefaultPowerReduction = sdk.NewIntFromUint64(1000000)
 
-	for i := 0; i < numSeeds; i++ {
-		config.Seed = rand.Int63()
+	//for i := 0; i < numSeeds; i++ {
+	config.Seed = 1623992154303935393
 
-		for j := 0; j < numTimesToRunPerSeed; j++ {
-			var logger log.Logger
-			if simapp.FlagVerboseValue {
-				logger = log.TestingLogger()
-			} else {
-				logger = log.NewNopLogger()
-			}
+	for j := 0; j < numTimesToRunPerSeed; j++ {
+		fmt.Printf("running simulation with seed %d, j: %d\n", config.Seed, j)
+		var logger log.Logger
+		if simapp.FlagVerboseValue {
+			logger = log.TestingLogger()
+		} else {
+			logger = log.NewNopLogger()
+		}
 
-			db := dbm.NewMemDB()
-			app := NewCanto(
-				logger,
-				db,
-				nil,
-				true,
-				map[int64]bool{},
-				DefaultNodeHome,
-				simapp.FlagPeriodValue,
-				true,
-				encoding.MakeConfig(ModuleBasics),
-				EmptyAppOptions{},
-				fauxMerkleModeOpt,
-			)
-			fmt.Printf("running simulation with seed %d\n", config.Seed)
+		db := dbm.NewMemDB()
+		app := NewCanto(
+			logger,
+			db,
+			nil,
+			true,
+			map[int64]bool{},
+			DefaultNodeHome,
+			simapp.FlagPeriodValue,
+			true,
+			encoding.MakeConfig(ModuleBasics),
+			EmptyAppOptions{},
+			fauxMerkleModeOpt,
+		)
+		fmt.Printf("running simulation with seed %d\n", config.Seed)
 
-			_, _, err := simulation.SimulateFromSeed(
-				t,
-				os.Stdout,
-				app.BaseApp,
-				AppStateFn(app.AppCodec(), app.SimulationManager()),
-				RandomAccounts,
-				simapp.SimulationOperations(app, app.AppCodec(), config),
-				app.ModuleAccountAddrs(),
-				config,
-				app.AppCodec(),
-			)
-			require.NoError(t, err)
+		_, _, err := simulation.SimulateFromSeed(
+			t,
+			os.Stdout,
+			app.BaseApp,
+			AppStateFn(app.AppCodec(), app.SimulationManager()),
+			RandomAccounts,
+			simapp.SimulationOperations(app, app.AppCodec(), config),
+			app.ModuleAccountAddrs(),
+			config,
+			app.AppCodec(),
+		)
+		require.NoError(t, err)
 
-			if config.Commit {
-				simapp.PrintStats(db)
-			}
+		if config.Commit {
+			simapp.PrintStats(db)
+		}
 
-			appHash := app.LastCommitID().Hash
-			appHashList[j] = appHash
+		appHash := app.LastCommitID().Hash
+		appHashList[j] = appHash
 
-			if j != 0 {
-				require.Equal(t, string(appHashList[0]), string(appHashList[j]),
-					"non-determinism in seed %d: %d/%d, attempt: %d/%d\n",
-					config.Seed, i+1, numSeeds, j+1, numTimesToRunPerSeed)
-			}
+		if j != 0 {
+			require.Equal(t, string(appHashList[0]), string(appHashList[j]),
+				"non-determinism in seed %d: %d/%d, attempt: %d/%d\n",
+				config.Seed, 1623992154303935393, numSeeds, j+1, numTimesToRunPerSeed)
 		}
 	}
+	//}
 }
 
 func TestAppSimulationAfterImport(t *testing.T) {

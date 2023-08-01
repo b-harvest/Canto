@@ -91,11 +91,11 @@ func WeightedOperations(
 	return simulation.WeightedOperations{
 		simulation.NewWeightedOperation(
 			weightMsgLiquidStake,
-			SimulateMsgLiquidStake(ak, bk, k),
+			SimulateMsgLiquidStake(ak, bk, sk, k),
 		),
 		simulation.NewWeightedOperation(
 			weightMsgLiquidUnstake,
-			SimulateMsgLiquidUnstake(ak, bk, k),
+			SimulateMsgLiquidUnstake(ak, bk, sk, k),
 		),
 		simulation.NewWeightedOperation(
 			weightMsgProvideInsurance,
@@ -107,7 +107,7 @@ func WeightedOperations(
 		),
 		simulation.NewWeightedOperation(
 			weightMsgDepositInsurance,
-			SimulateMsgDepositInsurance(ak, bk, k),
+			SimulateMsgDepositInsurance(ak, bk, sk, k),
 		),
 		simulation.NewWeightedOperation(
 			weightMsgWithdrawInsurance,
@@ -127,10 +127,11 @@ func WeightedOperations(
 // TODO: add msgs for staking module
 
 // SimulateMsgLiquidStake generates a MsgLiquidStake with random values.
-func SimulateMsgLiquidStake(ak types.AccountKeeper, bk types.BankKeeper, k keeper.Keeper) simtypes.Operation {
+func SimulateMsgLiquidStake(ak types.AccountKeeper, bk types.BankKeeper, sk types.StakingKeeper, k keeper.Keeper) simtypes.Operation {
 	return func(
 		r *rand.Rand, app *baseapp.BaseApp, ctx sdk.Context, accs []simtypes.Account, chainID string,
 	) (simtypes.OperationMsg, []simtypes.FutureOperation, error) {
+		bondDenom := sk.BondDenom(ctx)
 		simAccount, _ := simtypes.RandomAcc(r, accs)
 		account := ak.GetAccount(ctx, simAccount.Address)
 		delegator := account.GetAddress()
@@ -138,9 +139,9 @@ func SimulateMsgLiquidStake(ak types.AccountKeeper, bk types.BankKeeper, k keepe
 
 		chunksToLiquidStake := int64(simtypes.RandIntBetween(r, 1, 3))
 		nas := k.GetNetAmountState(ctx)
-		params := k.GetParams(ctx)
-		totalSupplyAmt := bk.GetSupply(ctx, sdk.DefaultBondDenom).Amount
-		availableChunkSlots := types.GetAvailableChunkSlots(nas.UtilizationRatio, params.DynamicFeeRate.UHardCap, totalSupplyAmt).Int64()
+		lsmParams := k.GetParams(ctx)
+		totalSupplyAmt := bk.GetSupply(ctx, bondDenom).Amount
+		availableChunkSlots := types.GetAvailableChunkSlots(nas.UtilizationRatio, lsmParams.DynamicFeeRate.UHardCap, totalSupplyAmt).Int64()
 		if availableChunkSlots == 0 {
 			return simtypes.NoOpMsg(types.ModuleName, types.TypeMsgLiquidStake, "no available chunk slots"), nil, nil
 		}
@@ -158,11 +159,11 @@ func SimulateMsgLiquidStake(ak types.AccountKeeper, bk types.BankKeeper, k keepe
 
 		stakingCoins := sdk.NewCoins(
 			sdk.NewCoin(
-				sdk.DefaultBondDenom,
+				bondDenom,
 				types.ChunkSize.MulRaw(chunksToLiquidStake),
 			),
 		)
-		if !spendable.AmountOf(sdk.DefaultBondDenom).GTE(stakingCoins[0].Amount) {
+		if !spendable.AmountOf(bondDenom).GTE(stakingCoins[0].Amount) {
 			if err := bk.MintCoins(ctx, types.ModuleName, stakingCoins); err != nil {
 				panic(err)
 			}
@@ -192,10 +193,11 @@ func SimulateMsgLiquidStake(ak types.AccountKeeper, bk types.BankKeeper, k keepe
 }
 
 // SimulateMsgLiquidUnstake generates a MsgLiquidUnstake with random values.
-func SimulateMsgLiquidUnstake(ak types.AccountKeeper, bk types.BankKeeper, k keeper.Keeper) simtypes.Operation {
+func SimulateMsgLiquidUnstake(ak types.AccountKeeper, bk types.BankKeeper, sk types.StakingKeeper, k keeper.Keeper) simtypes.Operation {
 	return func(
 		r *rand.Rand, app *baseapp.BaseApp, ctx sdk.Context, accs []simtypes.Account, chainID string,
 	) (simtypes.OperationMsg, []simtypes.FutureOperation, error) {
+		bondDenom := sk.BondDenom(ctx)
 		var simAccount simtypes.Account
 		var delegator sdk.AccAddress
 		var spendable sdk.Coins
@@ -222,6 +224,9 @@ func SimulateMsgLiquidUnstake(ak types.AccountKeeper, bk types.BankKeeper, k kee
 		}
 
 		maxAvailableNumChunksToLiquidUnstake := spendable.AmountOf(types.DefaultLiquidBondDenom).Quo(lsTokensToPayForOneChunk).Int64()
+		if maxAvailableNumChunksToLiquidUnstake == 0 {
+			return simtypes.NoOpMsg(types.ModuleName, types.TypeMsgLiquidUnstake, "not enough ls tokens to liquid unstake an one chunk"), nil, nil
+		}
 
 		var chunksToLiquidStake int64
 		if maxAvailableNumChunksToLiquidUnstake > 1 {
@@ -239,11 +244,15 @@ func SimulateMsgLiquidUnstake(ak types.AccountKeeper, bk types.BankKeeper, k kee
 		})
 
 		numPairedChunks := int64(len(pairedChunks))
+		if numPairedChunks == 0 {
+			return simtypes.NoOpMsg(types.ModuleName, types.TypeMsgLiquidUnstake, "no paired chunks"), nil, nil
+		}
+
 		if numPairedChunks < maxAvailableNumChunksToLiquidUnstake {
 			chunksToLiquidStake = numPairedChunks
 		}
 
-		unstakingCoin := sdk.NewCoin(sdk.DefaultBondDenom, types.ChunkSize.MulRaw(chunksToLiquidStake))
+		unstakingCoin := sdk.NewCoin(bondDenom, types.ChunkSize.MulRaw(chunksToLiquidStake))
 
 		msg := types.NewMsgLiquidUnstake(delegator.String(), unstakingCoin)
 		txCtx := simulation.OperationInput{
@@ -269,6 +278,7 @@ func SimulateMsgProvideInsurance(ak types.AccountKeeper, bk types.BankKeeper, sk
 	return func(
 		r *rand.Rand, app *baseapp.BaseApp, ctx sdk.Context, accs []simtypes.Account, chainID string,
 	) (simtypes.OperationMsg, []simtypes.FutureOperation, error) {
+		bondDenom := sk.BondDenom(ctx)
 		simAccount, _ := simtypes.RandomAcc(r, accs)
 		account := ak.GetAccount(ctx, simAccount.Address)
 		provider := account.GetAddress()
@@ -279,7 +289,7 @@ func SimulateMsgProvideInsurance(ak types.AccountKeeper, bk types.BankKeeper, sk
 		minCollateral = minCollateral.Add(upperThanMinimumCollateral)
 		collaterals := sdk.NewCoins(
 			sdk.NewCoin(
-				sdk.DefaultBondDenom,
+				bondDenom,
 				minCollateral.Mul(types.ChunkSize.ToDec()).Ceil().TruncateInt(),
 			),
 		)
@@ -308,7 +318,7 @@ func SimulateMsgProvideInsurance(ak types.AccountKeeper, bk types.BankKeeper, sk
 			feeRate = maximumFeeRate.Sub(validator.GetCommission()).Sub(sdk.MustNewDecFromStr("0.001"))
 		}
 
-		if !spendable.AmountOf(sdk.DefaultBondDenom).GTE(collaterals[0].Amount) {
+		if !spendable.AmountOf(bondDenom).GTE(collaterals[0].Amount) {
 			if err := bk.MintCoins(ctx, types.ModuleName, collaterals); err != nil {
 				panic(err)
 			}
@@ -389,10 +399,11 @@ func SimulateMsgCancelProvideInsurance(ak types.AccountKeeper, bk types.BankKeep
 }
 
 // SimulateMsgDepositInsurance generates a MsgDepositInsurance with random values.
-func SimulateMsgDepositInsurance(ak types.AccountKeeper, bk types.BankKeeper, k keeper.Keeper) simtypes.Operation {
+func SimulateMsgDepositInsurance(ak types.AccountKeeper, bk types.BankKeeper, sk types.StakingKeeper, k keeper.Keeper) simtypes.Operation {
 	return func(
 		r *rand.Rand, app *baseapp.BaseApp, ctx sdk.Context, accs []simtypes.Account, chainID string,
 	) (simtypes.OperationMsg, []simtypes.FutureOperation, error) {
+		bondDenom := sk.BondDenom(ctx)
 		var simAccount simtypes.Account
 		var provider sdk.AccAddress
 		var spendable sdk.Coins
@@ -426,7 +437,7 @@ func SimulateMsgDepositInsurance(ak types.AccountKeeper, bk types.BankKeeper, k 
 
 		minCollateral := sdk.MustNewDecFromStr(types.MinimumCollateral)
 		collateral := sdk.NewCoin(
-			sdk.DefaultBondDenom,
+			bondDenom,
 			minCollateral.Mul(types.ChunkSize.ToDec()).Ceil().TruncateInt(),
 		)
 
@@ -434,12 +445,12 @@ func SimulateMsgDepositInsurance(ak types.AccountKeeper, bk types.BankKeeper, k 
 		depositPortion := types.RandomDec(r, sdk.MustNewDecFromStr("0.01"), sdk.MustNewDecFromStr("0.1"))
 		deposits := sdk.NewCoins(
 			sdk.NewCoin(
-				sdk.DefaultBondDenom,
+				bondDenom,
 				collateral.Amount.ToDec().Mul(depositPortion).TruncateInt(),
 			),
 		)
 
-		if !spendable.AmountOf(sdk.DefaultBondDenom).GTE(deposits[0].Amount) {
+		if !spendable.AmountOf(bondDenom).GTE(deposits[0].Amount) {
 			if err := bk.MintCoins(ctx, types.ModuleName, deposits); err != nil {
 				panic(err)
 			}
@@ -589,6 +600,8 @@ func SimulateMsgClaimDiscountedReward(ak types.AccountKeeper, bk types.BankKeepe
 		var lsTokenHolder sdk.AccAddress
 		var spendable sdk.Coins
 
+		liquidBondDenom := k.GetLiquidBondDenom(ctx)
+
 		nas := k.GetNetAmountState(ctx)
 		if !nas.DiscountRate.IsPositive() {
 			return simtypes.NoOpMsg(types.ModuleName, types.TypeMsgClaimDiscountedReward, "discount rate is zero"), nil, nil
@@ -607,15 +620,15 @@ func SimulateMsgClaimDiscountedReward(ak types.AccountKeeper, bk types.BankKeepe
 
 			lsTokenHolder = account.GetAddress()
 			// delegator must have enough ls tokens to pay for one chunk
-			if spendable.AmountOf(types.DefaultLiquidBondDenom).IsPositive() {
+			if spendable.AmountOf(liquidBondDenom).IsPositive() {
 				break
 			}
 		}
 		maxLsTokensToGetAllRewards := nas.MintRate.Mul(minimumDiscountRate).Mul(nas.RewardModuleAccBalance.ToDec()).Ceil().TruncateInt()
-		amountToUse := types.RandomInt(r, spendable.AmountOf(types.DefaultLiquidBondDenom), maxLsTokensToGetAllRewards)
-		lsTokensToUse := sdk.NewCoins(sdk.NewCoin(types.DefaultLiquidBondDenom, amountToUse))
+		amountToUse := types.RandomInt(r, spendable.AmountOf(liquidBondDenom), maxLsTokensToGetAllRewards)
+		lsTokensToUse := sdk.NewCoins(sdk.NewCoin(liquidBondDenom, amountToUse))
 
-		msg := types.NewMsgClaimDiscountedReward(lsTokenHolder.String(), sdk.NewCoin(sdk.DefaultBondDenom, amountToUse), minimumDiscountRate)
+		msg := types.NewMsgClaimDiscountedReward(lsTokenHolder.String(), sdk.NewCoin(liquidBondDenom, amountToUse), minimumDiscountRate)
 		txCtx := simulation.OperationInput{
 			R:               r,
 			App:             app,
