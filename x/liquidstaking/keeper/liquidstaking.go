@@ -1266,6 +1266,7 @@ func (k Keeper) handlePairedChunk(ctx sdk.Context, chunk types.Chunk) {
 				if epoch.GetStartHeight() >= latestEvidence.GetHeight() {
 					coveredAmt := k.mustCoverDoubleSignPenaltyFromUnpairingInsurance(ctx, chunk)
 					penaltyAmt = penaltyAmt.Sub(coveredAmt)
+					penaltyAmt = sdk.MaxInt(penaltyAmt, sdk.ZeroInt())
 					// update variables after cover double sign penalty
 					_, validator, del = k.mustValidatePairedChunk(ctx, chunk)
 				}
@@ -1277,29 +1278,31 @@ func (k Keeper) handlePairedChunk(ctx sdk.Context, chunk types.Chunk) {
 				panic(err)
 			}
 		}
-		pairedInsBal := k.bankKeeper.GetBalance(ctx, pairedIns.DerivedAddress(), bondDenom)
-		// EDGE CASE: paired insurance cannot cover penalty
-		if penaltyAmt.GT(pairedInsBal.Amount) {
-			// At this time, insurance does not cover the penalty because it has already been determined that the chunk was damaged.
-			// Just un-delegate(=unpair) the chunk, so it can be naturally handled by the unpairing logic in the next epoch.
-			// Insurance will send penalty to the reward pool at next epoch and chunk's token will go to reward pool.
-			// Check the logic of handleUnpairingChunk for detail.
-			k.startUnpairing(ctx, pairedIns, chunk)
-			k.mustUndelegate(ctx, chunk, validator, del, types.AttributeValueReasonNotEnoughPairedInsCoverage)
-			undelegated = true
-		} else {
-			// happy case: paired insurance can cover penalty and there is no un-covered penalty from unpairing insurance.
-			// 1. Send penalty to chunk
-			// 2. chunk delegate additional tokens to validator
-			penaltyCoin := sdk.NewCoin(bondDenom, penaltyAmt)
-			// send penalty to chunk
-			if err = k.bankKeeper.SendCoins(ctx, pairedIns.DerivedAddress(), chunk.DerivedAddress(), sdk.NewCoins(penaltyCoin)); err != nil {
-				panic(err)
+		if penaltyAmt.IsPositive() {
+			pairedInsBal := k.bankKeeper.GetBalance(ctx, pairedIns.DerivedAddress(), bondDenom)
+			// EDGE CASE: paired insurance cannot cover penalty
+			if penaltyAmt.GT(pairedInsBal.Amount) {
+				// At this time, insurance does not cover the penalty because it has already been determined that the chunk was damaged.
+				// Just un-delegate(=unpair) the chunk, so it can be naturally handled by the unpairing logic in the next epoch.
+				// Insurance will send penalty to the reward pool at next epoch and chunk's token will go to reward pool.
+				// Check the logic of handleUnpairingChunk for detail.
+				k.startUnpairing(ctx, pairedIns, chunk)
+				k.mustUndelegate(ctx, chunk, validator, del, types.AttributeValueReasonNotEnoughPairedInsCoverage)
+				undelegated = true
+			} else {
+				// happy case: paired insurance can cover penalty and there is no un-covered penalty from unpairing insurance.
+				// 1. Send penalty to chunk
+				// 2. chunk delegate additional tokens to validator
+				penaltyCoin := sdk.NewCoin(bondDenom, penaltyAmt)
+				// send penalty to chunk
+				if err = k.bankKeeper.SendCoins(ctx, pairedIns.DerivedAddress(), chunk.DerivedAddress(), sdk.NewCoins(penaltyCoin)); err != nil {
+					panic(err)
+				}
+				// delegate additional tokens to validator as chunk.DerivedAddress()
+				k.mustDelegatePenaltyAmt(ctx, chunk, penaltyCoin.Amount, validator, pairedIns.Id, types.AttributeValueReasonPairedInsCoverPenalty)
+				// update variables after delegate
+				_, validator, del = k.mustValidatePairedChunk(ctx, chunk)
 			}
-			// delegate additional tokens to validator as chunk.DerivedAddress()
-			k.mustDelegatePenaltyAmt(ctx, chunk, penaltyCoin.Amount, validator, pairedIns.Id, types.AttributeValueReasonPairedInsCoverPenalty)
-			// update variables after delegate
-			_, validator, del = k.mustValidatePairedChunk(ctx, chunk)
 		}
 	}
 
