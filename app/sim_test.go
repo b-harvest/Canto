@@ -3,6 +3,8 @@ package app
 import (
 	"encoding/json"
 	"fmt"
+	epochstypes "github.com/Canto-Network/Canto/v6/x/epochs/types"
+	inflationtypes "github.com/Canto-Network/Canto/v6/x/inflation/types"
 	"math/rand"
 	"os"
 	"testing"
@@ -36,6 +38,8 @@ import (
 // Get flags every time the simulator is run
 func init() {
 	simapp.GetSimulatorFlags()
+	sdk.DefaultPowerReduction = sdk.NewIntFromUint64(1_000_000)
+	liquidstakingtypes.ChunkSize = sdk.TokensFromConsensusPower(250_000, sdk.DefaultPowerReduction)
 }
 
 type StoreKeysPrefixes struct {
@@ -57,7 +61,6 @@ func interBlockCacheOpt() func(app *baseapp.BaseApp) {
 }
 
 func TestFullAppSimulation(t *testing.T) {
-	liquidstakingtypes.ChunkSize = sdk.TokensFromConsensusPower(250_000, sdk.DefaultPowerReduction)
 	config, db, dir, logger, skip, err := simapp.SetupSimulation("leveldb-cantoApp-sim", "Simulation")
 	if skip {
 		t.Skip("skipping application simulation")
@@ -99,7 +102,6 @@ func TestFullAppSimulation(t *testing.T) {
 }
 
 func TestAppImportExport(t *testing.T) {
-	liquidstakingtypes.ChunkSize = sdk.TokensFromConsensusPower(250_000, sdk.DefaultPowerReduction)
 	config, db, dir, logger, skip, err := simapp.SetupSimulation("leveldb-app-sim", "Simulation")
 	if skip {
 		t.Skip("skipping application import/export simulation")
@@ -236,7 +238,6 @@ func TestAppImportExport(t *testing.T) {
 }
 
 func TestAppStateDeterminism(t *testing.T) {
-	liquidstakingtypes.ChunkSize = sdk.TokensFromConsensusPower(250_000, sdk.DefaultPowerReduction)
 	if !simapp.FlagEnabledValue {
 		t.Skip("skipping application simulation")
 	}

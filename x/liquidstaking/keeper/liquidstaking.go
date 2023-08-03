@@ -457,7 +457,7 @@ func (k Keeper) RePairRankedInsurances(
 		if chunkBal.Amount.LT(types.ChunkSize) {
 			panic(fmt.Sprintf("pairing chunk balance is below chunk size(bal: %s, chunkId: %d)", chunkBal, chunk.Id))
 		}
-		_, _, newShares, err := k.pairChunkAndDelegate(ctx, chunk, newIns, validator, chunkBal.Amount)
+		_, _, newShares, err := k.mustPairChunkAndDelegate(ctx, chunk, newIns, newIns.GetValidator(), chunkBal.Amount)
 		if err != nil {
 			panic(err)
 		}
@@ -623,14 +623,13 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (
 		if err = k.bankKeeper.SendCoins(ctx, delAddr, chunk.DerivedAddress(), chunkSizeCoins); err != nil {
 			return
 		}
-		validator := validatorMap[cheapestIns.ValidatorAddress]
 
 		// Delegate to the validator
 		// Delegator: DerivedAddress(chunk.Id)
 		// Validator: insurance.ValidatorAddress
 		// Amount: msg.Amount
-		chunk, cheapestIns, newShares, err = k.pairChunkAndDelegate(
-			ctx, chunk, cheapestIns, validator, types.ChunkSize,
+		chunk, cheapestIns, newShares, err = k.mustPairChunkAndDelegate(
+			ctx, chunk, cheapestIns, cheapestIns.GetValidator(), types.ChunkSize,
 		)
 		if err != nil {
 			return
@@ -1446,14 +1445,14 @@ func (k Keeper) withdrawInsurance(ctx sdk.Context, insurance types.Insurance) er
 	return nil
 }
 
-// pairChunkAndDelegate pairs chunk and delegate it to validator pointed by insurance.
-func (k Keeper) pairChunkAndDelegate(
-	ctx sdk.Context,
-	chunk types.Chunk,
-	ins types.Insurance,
-	validator stakingtypes.Validator,
-	amt sdk.Int,
+// mustPairChunkAndDelegate pairs chunk and delegate it to validator pointed by insurance.
+func (k Keeper) mustPairChunkAndDelegate(
+	ctx sdk.Context, chunk types.Chunk, ins types.Insurance, valAddr sdk.ValAddress, amt sdk.Int,
 ) (types.Chunk, types.Insurance, sdk.Dec, error) {
+	validator, found := k.stakingKeeper.GetValidator(ctx, valAddr)
+	if !found {
+		return types.Chunk{}, types.Insurance{}, sdk.Dec{}, fmt.Errorf("validator %s not found", valAddr)
+	}
 	newShares, err := k.stakingKeeper.Delegate(
 		ctx, chunk.DerivedAddress(), amt, stakingtypes.Unbonded, validator, true,
 	)
