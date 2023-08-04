@@ -542,9 +542,12 @@ func (k Keeper) RePairRankedInsurances(
 	// No more candidate insurances to replace, so just start unbonding.
 	for _, outIns := range restOutInsurances {
 		chunk := k.mustGetChunk(ctx, outIns.ChunkId)
-		if chunk.Status != types.CHUNK_STATUS_UNPAIRING {
-			panic(fmt.Sprintf("chunk status is not unpairing(chunkId: %d, status: %s)", chunk.Id, chunk.Status))
-		}
+		chunk.SetStatus(types.CHUNK_STATUS_UNPAIRING)
+		chunk.EmptyPairedInsurance()
+		chunk.UnpairingInsuranceId = outIns.Id
+		k.SetChunk(ctx, chunk)
+		outIns.SetStatus(types.INSURANCE_STATUS_UNPAIRING)
+		k.SetInsurance(ctx, outIns)
 		// get delegation shares of out insurance
 		delegation, found := k.stakingKeeper.GetDelegation(ctx, chunk.DerivedAddress(), outIns.GetValidator())
 		if !found {
