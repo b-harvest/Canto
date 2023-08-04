@@ -228,11 +228,11 @@ func SimulateMsgLiquidUnstake(ak types.AccountKeeper, bk types.BankKeeper, sk ty
 			return simtypes.NoOpMsg(types.ModuleName, types.TypeMsgLiquidUnstake, "not enough ls tokens to liquid unstake an one chunk"), nil, nil
 		}
 
-		var chunksToLiquidStake int64
+		var chunksToLiquidUnstake int64
 		if maxAvailableNumChunksToLiquidUnstake > 1 {
-			chunksToLiquidStake = int64(simtypes.RandIntBetween(r, 1, int(maxAvailableNumChunksToLiquidUnstake)))
+			chunksToLiquidUnstake = int64(simtypes.RandIntBetween(r, 1, int(maxAvailableNumChunksToLiquidUnstake)))
 		} else {
-			chunksToLiquidStake = maxAvailableNumChunksToLiquidUnstake
+			chunksToLiquidUnstake = maxAvailableNumChunksToLiquidUnstake
 		}
 		// delegator can liquid unstake one or more chunks
 		var pairedChunks []types.Chunk
@@ -249,10 +249,10 @@ func SimulateMsgLiquidUnstake(ak types.AccountKeeper, bk types.BankKeeper, sk ty
 		}
 
 		if numPairedChunks < maxAvailableNumChunksToLiquidUnstake {
-			chunksToLiquidStake = numPairedChunks
+			chunksToLiquidUnstake = numPairedChunks
 		}
 
-		unstakingCoin := sdk.NewCoin(bondDenom, types.ChunkSize.MulRaw(chunksToLiquidStake))
+		unstakingCoin := sdk.NewCoin(bondDenom, types.ChunkSize.MulRaw(chunksToLiquidUnstake))
 
 		msg := types.NewMsgLiquidUnstake(delegator.String(), unstakingCoin)
 		txCtx := simulation.OperationInput{
