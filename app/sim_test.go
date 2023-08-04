@@ -214,9 +214,12 @@ func TestAppImportExport(t *testing.T) {
 		{app.keys[ibctransfertypes.StoreKey], newApp.keys[ibctransfertypes.StoreKey], [][]byte{}},
 		// {app.keys[evmtypes.StoreKey], newApp.keys[evmtypes.StoreKey], [][]byte{}},
 		{app.keys[feemarkettypes.StoreKey], newApp.keys[feemarkettypes.StoreKey], [][]byte{}},
-		// {app.keys[inflationtypes.StoreKey], newApp.keys[inflationtypes.StoreKey], [][]byte{}},
+		{app.keys[inflationtypes.StoreKey], newApp.keys[inflationtypes.StoreKey], [][]byte{}},
 		// {app.keys[erc20types.StoreKey], newApp.keys[erc20types.StoreKey], [][]byte{}},
-		// {app.keys[epochstypes.StoreKey], newApp.keys[epochstypes.StoreKey], [][]byte{}},
+		{app.keys[epochstypes.StoreKey], newApp.keys[epochstypes.StoreKey], [][]byte{
+			// EpochInfo.CurrentEpochStartHeight is set to the block height at the time of init genesis.
+			epochstypes.KeyPrefixEpoch,
+		}},
 		// {app.keys[vestingtypes.StoreKey], newApp.keys[vestingtypes.StoreKey], [][]byte{}},
 		// {app.keys[recoverytypes.StoreKey], newApp.keys[recoverytypes.StoreKey], [][]byte{}},
 		// {app.keys[feestypes.StoreKey], newApp.keys[feestypes.StoreKey], [][]byte{}},
