@@ -31,21 +31,21 @@ func ProposalContents(
 	ik inflationkeeper.Keeper,
 ) []simtypes.WeightedProposalContent {
 	return []simtypes.WeightedProposalContent{
-		simulation.NewWeightedProposalContent(
-			OpWeightSimulateUpdateDynamicFeeRateProposal,
-			params.DefaultWeightUpdateDynamicFeeRateProposal,
-			SimulateUpdateDynamicFeeRateProposal(k),
-		),
+		//simulation.NewWeightedProposalContent(
+		//	OpWeightSimulateUpdateDynamicFeeRateProposal,
+		//	params.DefaultWeightUpdateDynamicFeeRateProposal,
+		//	SimulateUpdateDynamicFeeRateProposal(k),
+		//),
 		simulation.NewWeightedProposalContent(
 			OpWeightSimulateUpdateMaximumDiscountRate,
 			params.DefaultWeightUpdateMaximumDiscountRate,
 			SimulateUpdateMaximumDiscountRate(k),
 		),
-		simulation.NewWeightedProposalContent(
-			OpWeightSimulateAdvanceEpoch,
-			params.DefaultWeightAdvanceEpoch,
-			SimulateAdvanceEpoch(k, ak, bk, sk, dk, ik),
-		),
+		//simulation.NewWeightedProposalContent(
+		//	OpWeightSimulateAdvanceEpoch,
+		//	params.DefaultWeightAdvanceEpoch,
+		//	SimulateAdvanceEpoch(k, ak, bk, sk, dk, ik),
+		//),
 	}
 }
 

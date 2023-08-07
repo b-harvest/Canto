@@ -16,24 +16,24 @@ const (
 )
 
 func genDynamicFeeRate(r *rand.Rand) types.DynamicFeeRate {
-	maxFeeRate := types.RandomDec(r, sdk.MustNewDecFromStr("0.4"), sdk.MustNewDecFromStr("0.5"))
-
-	r0 := types.RandomDec(r, sdk.ZeroDec(), sdk.MustNewDecFromStr("0.01"))
-	slope1 := types.RandomDec(r, sdk.ZeroDec(), sdk.MustNewDecFromStr("0.3"))
-	slope2 := maxFeeRate.Sub(slope1).Sub(r0)
-
-	uSoftCap := types.RandomDec(r, sdk.MustNewDecFromStr("0.05"), sdk.MustNewDecFromStr("0.06"))
-	uOptimal := types.RandomDec(r, sdk.MustNewDecFromStr("0.07"), sdk.MustNewDecFromStr("0.09"))
-	uHardCap := types.RandomDec(r, sdk.MustNewDecFromStr("0.1"), types.SecurityCap)
+	//maxFeeRate := types.RandomDec(r, sdk.MustNewDecFromStr("0.4"), sdk.MustNewDecFromStr("0.5"))
+	//
+	//r0 := types.RandomDec(r, sdk.ZeroDec(), sdk.MustNewDecFromStr("0.01"))
+	//slope1 := types.RandomDec(r, sdk.ZeroDec(), sdk.MustNewDecFromStr("0.3"))
+	//slope2 := maxFeeRate.Sub(slope1).Sub(r0)
+	//
+	//uSoftCap := types.RandomDec(r, sdk.MustNewDecFromStr("0.05"), sdk.MustNewDecFromStr("0.06"))
+	//uOptimal := types.RandomDec(r, sdk.MustNewDecFromStr("0.07"), sdk.MustNewDecFromStr("0.09"))
+	//uHardCap := types.RandomDec(r, sdk.MustNewDecFromStr("0.1"), types.SecurityCap)
 
 	return types.DynamicFeeRate{
-		R0:         r0,
-		USoftCap:   uSoftCap,
-		UHardCap:   uHardCap,
-		UOptimal:   uOptimal,
-		Slope1:     slope1,
-		Slope2:     slope2,
-		MaxFeeRate: maxFeeRate,
+		R0:         types.DefaultR0,
+		USoftCap:   types.DefaultUSoftCap,
+		UHardCap:   types.DefaultUHardCap,
+		UOptimal:   types.DefaultUOptimal,
+		Slope1:     types.DefaultSlope1,
+		Slope2:     types.DefaultSlope2,
+		MaxFeeRate: types.DefaultMaxFee,
 	}
 }
 
