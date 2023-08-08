@@ -546,8 +546,6 @@ func (k Keeper) RePairRankedInsurances(
 		chunk.EmptyPairedInsurance()
 		chunk.UnpairingInsuranceId = outIns.Id
 		k.SetChunk(ctx, chunk)
-		outIns.SetStatus(types.INSURANCE_STATUS_UNPAIRING)
-		k.SetInsurance(ctx, outIns)
 		// get delegation shares of out insurance
 		delegation, found := k.stakingKeeper.GetDelegation(ctx, chunk.DerivedAddress(), outIns.GetValidator())
 		if !found {
@@ -1492,17 +1490,6 @@ func (k Keeper) rePairChunkAndInsurance(ctx sdk.Context, chunk types.Chunk, newI
 			sdk.NewAttribute(types.AttributeKeyOutInsuranceId, fmt.Sprintf("%d", outIns.Id)),
 		),
 	)
-}
-
-func (k Keeper) getNumPairedChunks(ctx sdk.Context) (numPairedChunks int64) {
-	k.IterateAllChunks(ctx, func(chunk types.Chunk) bool {
-		if chunk.Status != types.CHUNK_STATUS_PAIRED {
-			return false
-		}
-		numPairedChunks++
-		return false
-	})
-	return
 }
 
 // validateUnpairingChunk validates unpairing or unpairing for unstaking chunk.
