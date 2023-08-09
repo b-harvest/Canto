@@ -259,10 +259,7 @@ func TestAppStateDeterminism(t *testing.T) {
 	sdk.DefaultPowerReduction = sdk.NewIntFromUint64(1000000)
 
 	for i := 0; i < numSeeds; i++ {
-		//config.Seed = 1623992154303935393
-		//j := 3
 		config.Seed = rand.Int63()
-
 		for j := 0; j < numTimesToRunPerSeed; j++ {
 			fmt.Printf("running simulation with seed %d, j: %d\n", config.Seed, j)
 			var logger log.Logger

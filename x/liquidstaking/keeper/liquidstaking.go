@@ -1678,3 +1678,29 @@ func (k Keeper) CalcCeiledPenalty(validator stakingtypes.Validator, penaltyAmt s
 	}
 	return penaltyAmt
 }
+
+// GetInsuranceState returns current insurance state.
+func (k Keeper) GetInsuranceState(ctx sdk.Context) types.InsuranceState {
+	bondDenom := k.stakingKeeper.BondDenom(ctx)
+	totalPairedInsuranceTokens, totalUnpairingInsuranceTokens, totalInsuranceTokens := sdk.ZeroInt(), sdk.ZeroInt(), sdk.ZeroInt()
+	totalRemainingInsuranceCommissions := sdk.ZeroDec()
+	k.IterateAllInsurances(ctx, func(insurance types.Insurance) (stop bool) {
+		insuranceBalance := k.bankKeeper.GetBalance(ctx, insurance.DerivedAddress(), bondDenom)
+		commission := k.bankKeeper.GetBalance(ctx, insurance.FeePoolAddress(), bondDenom)
+		switch insurance.Status {
+		case types.INSURANCE_STATUS_PAIRED:
+			totalPairedInsuranceTokens = totalPairedInsuranceTokens.Add(insuranceBalance.Amount)
+		case types.INSURANCE_STATUS_UNPAIRING:
+			totalUnpairingInsuranceTokens = totalUnpairingInsuranceTokens.Add(insuranceBalance.Amount)
+		}
+		totalInsuranceTokens = totalInsuranceTokens.Add(insuranceBalance.Amount)
+		totalRemainingInsuranceCommissions = totalRemainingInsuranceCommissions.Add(commission.Amount.ToDec())
+		return false
+	})
+	return types.InsuranceState{
+		TotalPairedInsuranceTokens:         totalPairedInsuranceTokens,
+		TotalUnpairingInsuranceTokens:      totalUnpairingInsuranceTokens,
+		TotalInsuranceTokens:               totalInsuranceTokens,
+		TotalRemainingInsuranceCommissions: totalRemainingInsuranceCommissions,
+	}
+}

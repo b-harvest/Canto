@@ -4,22 +4,18 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"math/rand"
-
-	inflationkeeper "github.com/Canto-Network/Canto/v6/x/inflation/keeper"
 	inflationtypes "github.com/Canto-Network/Canto/v6/x/inflation/types"
-	"github.com/Canto-Network/Canto/v6/x/liquidstaking/simulation"
 	"github.com/armon/go-metrics"
 	"github.com/cosmos/cosmos-sdk/telemetry"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
-	distrkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	"github.com/cosmos/cosmos-sdk/x/staking"
-	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	ethermint "github.com/evmos/ethermint/types"
+	"math/rand"
 
+	inflationkeeper "github.com/Canto-Network/Canto/v6/x/inflation/keeper"
+	"github.com/Canto-Network/Canto/v6/x/liquidstaking/simulation"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -27,6 +23,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/module"
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
+	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
+	distrkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
+	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
@@ -217,12 +216,12 @@ func (am AppModule) GenerateGenesisState(simState *module.SimulationState) {
 
 // ProposalContents returns content functions for governance proposals.
 func (am AppModule) ProposalContents(simState module.SimulationState) []simtypes.WeightedProposalContent {
-	return simulation.ProposalContents(am.keeper, am.ak, am.bk, am.sk, am.dk, am.ik)
+	return []simtypes.WeightedProposalContent{}
 }
 
 // RandomizedParams creates randomized liquidstaking param changes for the simulator.
 func (am AppModule) RandomizedParams(r *rand.Rand) []simtypes.ParamChange {
-	return simulation.ParamChanges(r)
+	return []simtypes.ParamChange{}
 }
 
 // RegisterStoreDecoder registers a decoder for liquidstaking module's types.

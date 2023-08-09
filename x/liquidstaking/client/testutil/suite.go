@@ -199,8 +199,9 @@ func (suite *IntegrationTestSuite) TestLiquidStaking() {
 	epoch := suite.getEpoch(clientCtx)
 	suite.Equal(stakingtypes.DefaultUnbondingTime, epoch.Duration)
 
-	states := suite.getStates(clientCtx)
-	suite.True(states.IsZeroState())
+	nat, is := suite.getStates(clientCtx)
+	suite.True(nat.IsZeroState())
+	suite.True(is.IsZeroState())
 
 	minCollateral := suite.getMinimumCollateral(clientCtx)
 	// provide an insurance
@@ -222,9 +223,9 @@ func (suite *IntegrationTestSuite) TestLiquidStaking() {
 		result := suite.getInsurance(clientCtx, insurance.Id)
 		suite.True(result.Equal(insurance))
 	}
-	states = suite.getStates(clientCtx)
+	nat, is = suite.getStates(clientCtx)
 	suite.True(
-		states.TotalInsuranceTokens.Equal(oneInsuranceAmt.MulRaw(3)),
+		is.TotalInsuranceTokens.Equal(oneInsuranceAmt.MulRaw(3)),
 		"3 insurances are provided so total insurance tokens should be 3",
 	)
 	// Cancel 1 insurance
@@ -234,9 +235,9 @@ func (suite *IntegrationTestSuite) TestLiquidStaking() {
 		3,
 	)
 	suite.NoError(err)
-	states = suite.getStates(clientCtx)
+	nat, is = suite.getStates(clientCtx)
 	suite.True(
-		states.TotalInsuranceTokens.Equal(oneInsuranceAmt.MulRaw(2)),
+		is.TotalInsuranceTokens.Equal(oneInsuranceAmt.MulRaw(2)),
 		"1 insurance is canceled so total insurance tokens should be 2",
 	)
 
@@ -255,23 +256,24 @@ func (suite *IntegrationTestSuite) TestLiquidStaking() {
 		result := suite.getChunk(clientCtx, chunk.Id)
 		suite.True(chunk.Equal(result))
 	}
-	states = suite.getStates(clientCtx)
-	fmt.Println(states.RemainingChunkSlots.String())
-	suite.True(states.Equal(types.NetAmountState{
-		MintRate:                           sdk.OneDec(),
-		LsTokensTotalSupply:                types.ChunkSize.MulRaw(2),
-		NetAmount:                          types.ChunkSize.MulRaw(2).ToDec(),
-		TotalLiquidTokens:                  types.ChunkSize.MulRaw(2),
-		RewardModuleAccBalance:             sdk.ZeroInt(),
-		FeeRate:                            sdk.ZeroDec(),
-		UtilizationRatio:                   sdk.MustNewDecFromStr("0.0004"),
-		RemainingChunkSlots:                sdk.NewInt(498),
-		NumPairedChunks:                    sdk.NewInt(2),
-		DiscountRate:                       sdk.ZeroDec(),
-		TotalDelShares:                     types.ChunkSize.MulRaw(2).ToDec(),
-		TotalRemainingRewards:              sdk.ZeroDec(),
-		TotalChunksBalance:                 sdk.ZeroInt(),
-		TotalUnbondingChunksBalance:        sdk.ZeroInt(),
+	nat, is = suite.getStates(clientCtx)
+	suite.True(nat.Equal(types.NetAmountState{
+		MintRate:                    sdk.OneDec(),
+		LsTokensTotalSupply:         types.ChunkSize.MulRaw(2),
+		NetAmount:                   types.ChunkSize.MulRaw(2).ToDec(),
+		TotalLiquidTokens:           types.ChunkSize.MulRaw(2),
+		RewardModuleAccBalance:      sdk.ZeroInt(),
+		FeeRate:                     sdk.ZeroDec(),
+		UtilizationRatio:            sdk.MustNewDecFromStr("0.0004"),
+		RemainingChunkSlots:         sdk.NewInt(498),
+		NumPairedChunks:             sdk.NewInt(2),
+		DiscountRate:                sdk.ZeroDec(),
+		TotalDelShares:              types.ChunkSize.MulRaw(2).ToDec(),
+		TotalRemainingRewards:       sdk.ZeroDec(),
+		TotalChunksBalance:          sdk.ZeroInt(),
+		TotalUnbondingChunksBalance: sdk.ZeroInt(),
+	}))
+	suite.True(is.Equal(types.InsuranceState{
 		TotalInsuranceTokens:               oneInsuranceAmt.MulRaw(2),
 		TotalPairedInsuranceTokens:         oneInsuranceAmt.MulRaw(2),
 		TotalUnpairingInsuranceTokens:      sdk.ZeroInt(),
@@ -336,7 +338,7 @@ func (suite *IntegrationTestSuite) getParams(ctx client.Context) types.Params {
 }
 
 // getStates returns all states by using cmdQueryStates
-func (suite *IntegrationTestSuite) getStates(ctx client.Context) types.NetAmountState {
+func (suite *IntegrationTestSuite) getStates(ctx client.Context) (types.NetAmountState, types.InsuranceState) {
 	var res types.QueryStatesResponse
 	out, err := clitestutil.ExecTestCLICmd(
 		ctx,
@@ -345,7 +347,7 @@ func (suite *IntegrationTestSuite) getStates(ctx client.Context) types.NetAmount
 	)
 	suite.NoError(err)
 	suite.NoError(suite.cfg.Codec.UnmarshalJSON(out.Bytes(), &res), out.String())
-	return res.NetAmountState
+	return res.NetAmountState, res.InsuranceState
 }
 
 // getAllChunks returns all chunks by using cmdQueryChunks

@@ -342,31 +342,34 @@ func (suite *KeeperTestSuite) TestLiquidStakeWithAdvanceBlocks() {
 
 	_, oneInsurance := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
 	nas := suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
+	is := suite.app.LiquidStakingKeeper.GetInsuranceState(suite.ctx)
 	pairedChunksInt := sdk.NewInt(int64(len(env.pairedChunks)))
 	// 1 chunk size * number of paired chunks (=3) tokens are liquidated
 	currentLiquidatedTokens := types.ChunkSize.Mul(pairedChunksInt)
 	currentInsuranceTokens := oneInsurance.Amount.Mul(pairedChunksInt)
 	{
 		suite.True(nas.Equal(types.NetAmountState{
-			MintRate:                           sdk.OneDec(),
-			LsTokensTotalSupply:                currentLiquidatedTokens,
-			NetAmount:                          currentLiquidatedTokens.ToDec(),
-			TotalLiquidTokens:                  currentLiquidatedTokens,
-			RewardModuleAccBalance:             sdk.ZeroInt(),
-			FeeRate:                            sdk.ZeroDec(),
-			UtilizationRatio:                   sdk.MustNewDecFromStr("0.005999999856000003"),
-			RemainingChunkSlots:                sdk.NewInt(47),
-			DiscountRate:                       sdk.ZeroDec(),
-			TotalDelShares:                     currentLiquidatedTokens.ToDec(),
-			TotalRemainingRewards:              sdk.ZeroDec(),
-			TotalChunksBalance:                 sdk.ZeroInt(),
-			TotalUnbondingChunksBalance:        sdk.ZeroInt(),
-			NumPairedChunks:                    sdk.NewInt(3),
+			MintRate:                    sdk.OneDec(),
+			LsTokensTotalSupply:         currentLiquidatedTokens,
+			NetAmount:                   currentLiquidatedTokens.ToDec(),
+			TotalLiquidTokens:           currentLiquidatedTokens,
+			RewardModuleAccBalance:      sdk.ZeroInt(),
+			FeeRate:                     sdk.ZeroDec(),
+			UtilizationRatio:            sdk.MustNewDecFromStr("0.005999999856000003"),
+			RemainingChunkSlots:         sdk.NewInt(47),
+			DiscountRate:                sdk.ZeroDec(),
+			TotalDelShares:              currentLiquidatedTokens.ToDec(),
+			TotalRemainingRewards:       sdk.ZeroDec(),
+			TotalChunksBalance:          sdk.ZeroInt(),
+			TotalUnbondingChunksBalance: sdk.ZeroInt(),
+			NumPairedChunks:             sdk.NewInt(3),
+		}), "no epoch(=1 block in test) processed yet, so there are no mint rate change and remaining rewards yet")
+		suite.True(is.Equal(types.InsuranceState{
 			TotalInsuranceTokens:               oneInsurance.Amount.Mul(sdk.NewInt(int64(len(env.insurances)))),
 			TotalPairedInsuranceTokens:         currentInsuranceTokens,
 			TotalUnpairingInsuranceTokens:      sdk.ZeroInt(),
 			TotalRemainingInsuranceCommissions: sdk.ZeroDec(),
-		}), "no epoch(=1 block in test) processed yet, so there are no mint rate change and remaining rewards yet")
+		}))
 	}
 
 	suite.ctx = suite.advanceHeight(suite.ctx, 1, "")
@@ -381,9 +384,11 @@ func (suite *KeeperTestSuite) TestLiquidStakeWithAdvanceBlocks() {
 	}
 
 	beforeNas = nas
+	beforeIs := is
 	suite.ctx = suite.advanceEpoch(suite.ctx)
 	suite.ctx = suite.advanceHeight(suite.ctx, 1, "delegation reward are distributed to insurance and reward module")
 	nas = suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
+	is = suite.app.LiquidStakingKeeper.GetInsuranceState(suite.ctx)
 	{
 		suite.Equal(
 			"-80999676001295325000.000000000000000000",
@@ -396,7 +401,7 @@ func (suite *KeeperTestSuite) TestLiquidStakeWithAdvanceBlocks() {
 		)
 		suite.Equal(
 			"17999928000287925000.000000000000000000",
-			nas.TotalRemainingInsuranceCommissions.Sub(beforeNas.TotalRemainingInsuranceCommissions).String(),
+			is.TotalRemainingInsuranceCommissions.Sub(beforeIs.TotalRemainingInsuranceCommissions).String(),
 			"delegation reward are distributed to insurance",
 		)
 		suite.Equal("0.999784047509547900", nas.MintRate.String())
@@ -426,36 +431,41 @@ func (suite *KeeperTestSuite) TestLiquidUnstakeWithAdvanceBlocks() {
 	mostExpensivePairedChunk := suite.getMostExpensivePairedChunk(env.pairedChunks)
 	nas := suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
 	fmt.Println(nas)
+	is := suite.app.LiquidStakingKeeper.GetInsuranceState(suite.ctx)
 	// 1 chunk size * number of paired chunks (=3) tokens are liquidated
 	currentLiquidatedTokens := types.ChunkSize.Mul(pairedChunksInt)
 	currentInsuranceTokens := oneInsurance.Amount.Mul(pairedChunksInt)
 	{
 		suite.True(nas.Equal(types.NetAmountState{
-			MintRate:                           sdk.OneDec(),
-			LsTokensTotalSupply:                currentLiquidatedTokens,
-			NetAmount:                          currentLiquidatedTokens.ToDec(),
-			TotalLiquidTokens:                  currentLiquidatedTokens,
-			RewardModuleAccBalance:             sdk.ZeroInt(),
-			FeeRate:                            sdk.ZeroDec(),
-			UtilizationRatio:                   sdk.MustNewDecFromStr("0.005999999856000003"),
-			RemainingChunkSlots:                sdk.NewInt(47),
-			DiscountRate:                       sdk.ZeroDec(),
-			TotalDelShares:                     currentLiquidatedTokens.ToDec(),
-			TotalRemainingRewards:              sdk.ZeroDec(),
-			TotalChunksBalance:                 sdk.ZeroInt(),
-			TotalUnbondingChunksBalance:        sdk.ZeroInt(),
-			NumPairedChunks:                    sdk.NewInt(3),
+			MintRate:                    sdk.OneDec(),
+			LsTokensTotalSupply:         currentLiquidatedTokens,
+			NetAmount:                   currentLiquidatedTokens.ToDec(),
+			TotalLiquidTokens:           currentLiquidatedTokens,
+			RewardModuleAccBalance:      sdk.ZeroInt(),
+			FeeRate:                     sdk.ZeroDec(),
+			UtilizationRatio:            sdk.MustNewDecFromStr("0.005999999856000003"),
+			RemainingChunkSlots:         sdk.NewInt(47),
+			DiscountRate:                sdk.ZeroDec(),
+			TotalDelShares:              currentLiquidatedTokens.ToDec(),
+			TotalRemainingRewards:       sdk.ZeroDec(),
+			TotalChunksBalance:          sdk.ZeroInt(),
+			TotalUnbondingChunksBalance: sdk.ZeroInt(),
+			NumPairedChunks:             sdk.NewInt(3),
+		}), "no epoch(=1 block in test) processed yet, so there are no mint rate change and remaining rewards yet")
+		suite.True(is.Equal(types.InsuranceState{
 			TotalInsuranceTokens:               oneInsurance.Amount.Mul(sdk.NewInt(int64(len(env.insurances)))),
 			TotalPairedInsuranceTokens:         currentInsuranceTokens,
 			TotalUnpairingInsuranceTokens:      sdk.ZeroInt(),
 			TotalRemainingInsuranceCommissions: sdk.ZeroDec(),
-		}), "no epoch(=1 block in test) processed yet, so there are no mint rate change and remaining rewards yet")
+		}))
 	}
 	// advance 1 block(= epoch period in test environment) so reward is accumulated which means mint rate is changed
 	suite.ctx = suite.advanceHeight(suite.ctx, 1, "")
 
 	beforeNas := nas
+	beforeIs := is
 	nas = suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
+	is = suite.app.LiquidStakingKeeper.GetInsuranceState(suite.ctx)
 	{
 		suite.Equal(
 			"80999676001295325000.000000000000000000",
@@ -504,8 +514,9 @@ func (suite *KeeperTestSuite) TestLiquidUnstakeWithAdvanceBlocks() {
 	suite.ctx = suite.advanceEpoch(suite.ctx)
 	suite.ctx = suite.advanceHeight(suite.ctx, 1, "The actual unstaking started\nThe insurance commission and reward are claimed")
 	beforeNas = nas
+	beforeIs = is
 	nas = suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
-	fmt.Println(nas)
+	is = suite.app.LiquidStakingKeeper.GetInsuranceState(suite.ctx)
 
 	// Check NetAmounState changed right
 	{
@@ -539,7 +550,7 @@ func (suite *KeeperTestSuite) TestLiquidUnstakeWithAdvanceBlocks() {
 		)
 		suite.Equal(
 			oneInsurance.Amount.String(),
-			nas.TotalUnpairingInsuranceTokens.Sub(beforeNas.TotalUnpairingInsuranceTokens).String(),
+			is.TotalUnpairingInsuranceTokens.Sub(beforeIs.TotalUnpairingInsuranceTokens).String(),
 			"",
 		)
 		suite.True(nas.MintRate.LT(beforeNas.MintRate), "mint rate decreased because of reward is accumulated")

@@ -49,25 +49,21 @@ func (suite *netAmountTestSuite) TestCalcMintRate() {
 
 func (suite *netAmountTestSuite) TestEqual() {
 	nas := types.NetAmountState{
-		MintRate:                           sdk.ZeroDec(),
-		LsTokensTotalSupply:                sdk.ZeroInt(),
-		NetAmount:                          sdk.ZeroDec(),
-		TotalLiquidTokens:                  sdk.ZeroInt(),
-		RewardModuleAccBalance:             sdk.ZeroInt(),
-		FeeRate:                            sdk.ZeroDec(),
-		UtilizationRatio:                   sdk.ZeroDec(),
-		RemainingChunkSlots:                sdk.ZeroInt(),
-		DiscountRate:                       sdk.ZeroDec(),
-		NumPairedChunks:                    sdk.ZeroInt(),
-		ChunkSize:                          sdk.ZeroInt(),
-		TotalDelShares:                     sdk.ZeroDec(),
-		TotalRemainingRewards:              sdk.ZeroDec(),
-		TotalChunksBalance:                 sdk.ZeroInt(),
-		TotalUnbondingChunksBalance:        sdk.ZeroInt(),
-		TotalInsuranceTokens:               sdk.ZeroInt(),
-		TotalPairedInsuranceTokens:         sdk.ZeroInt(),
-		TotalUnpairingInsuranceTokens:      sdk.ZeroInt(),
-		TotalRemainingInsuranceCommissions: sdk.ZeroDec(),
+		MintRate:                    sdk.ZeroDec(),
+		LsTokensTotalSupply:         sdk.ZeroInt(),
+		NetAmount:                   sdk.ZeroDec(),
+		TotalLiquidTokens:           sdk.ZeroInt(),
+		RewardModuleAccBalance:      sdk.ZeroInt(),
+		FeeRate:                     sdk.ZeroDec(),
+		UtilizationRatio:            sdk.ZeroDec(),
+		RemainingChunkSlots:         sdk.ZeroInt(),
+		DiscountRate:                sdk.ZeroDec(),
+		NumPairedChunks:             sdk.ZeroInt(),
+		ChunkSize:                   sdk.ZeroInt(),
+		TotalDelShares:              sdk.ZeroDec(),
+		TotalRemainingRewards:       sdk.ZeroDec(),
+		TotalChunksBalance:          sdk.ZeroInt(),
+		TotalUnbondingChunksBalance: sdk.ZeroInt(),
 	}
 	cpy := nas
 	suite.True(nas.Equal(cpy))
@@ -177,34 +173,6 @@ func (suite *netAmountTestSuite) TestEqual() {
 	)
 
 	cpy = nas
-	cpy.TotalInsuranceTokens = nas.TotalInsuranceTokens.Add(sdk.OneInt())
-	suite.False(
-		nas.Equal(cpy),
-		"total insurance tokens should affect equality",
-	)
-
-	cpy = nas
-	cpy.TotalPairedInsuranceTokens = nas.TotalPairedInsuranceTokens.Add(sdk.OneInt())
-	suite.False(
-		nas.Equal(cpy),
-		"total paired insurance tokens should affect equality",
-	)
-
-	cpy = nas
-	cpy.TotalUnpairingInsuranceTokens = nas.TotalUnpairingInsuranceTokens.Add(sdk.OneInt())
-	suite.False(
-		nas.Equal(cpy),
-		"total unpairing insurance tokens should affect equality",
-	)
-
-	cpy = nas
-	cpy.TotalRemainingInsuranceCommissions = nas.TotalRemainingInsuranceCommissions.Add(sdk.OneDec())
-	suite.False(
-		nas.Equal(cpy),
-		"total remaining insurance commissions should affect equality",
-	)
-
-	cpy = nas
 	cpy.NumPairedChunks = nas.NumPairedChunks.Add(sdk.OneInt())
 	suite.False(
 		nas.Equal(cpy),
@@ -214,25 +182,21 @@ func (suite *netAmountTestSuite) TestEqual() {
 
 func (suite *netAmountTestSuite) TestIsZeroState() {
 	nas := types.NetAmountState{
-		MintRate:                           sdk.ZeroDec(),
-		LsTokensTotalSupply:                sdk.ZeroInt(),
-		NetAmount:                          sdk.ZeroDec(),
-		TotalLiquidTokens:                  sdk.ZeroInt(),
-		RewardModuleAccBalance:             sdk.ZeroInt(),
-		FeeRate:                            sdk.ZeroDec(),
-		UtilizationRatio:                   sdk.ZeroDec(),
-		RemainingChunkSlots:                sdk.ZeroInt(),
-		DiscountRate:                       sdk.ZeroDec(),
-		NumPairedChunks:                    sdk.ZeroInt(),
-		ChunkSize:                          sdk.ZeroInt(),
-		TotalDelShares:                     sdk.ZeroDec(),
-		TotalRemainingRewards:              sdk.ZeroDec(),
-		TotalChunksBalance:                 sdk.ZeroInt(),
-		TotalUnbondingChunksBalance:        sdk.ZeroInt(),
-		TotalInsuranceTokens:               sdk.ZeroInt(),
-		TotalPairedInsuranceTokens:         sdk.ZeroInt(),
-		TotalUnpairingInsuranceTokens:      sdk.ZeroInt(),
-		TotalRemainingInsuranceCommissions: sdk.ZeroDec(),
+		MintRate:                    sdk.ZeroDec(),
+		LsTokensTotalSupply:         sdk.ZeroInt(),
+		NetAmount:                   sdk.ZeroDec(),
+		TotalLiquidTokens:           sdk.ZeroInt(),
+		RewardModuleAccBalance:      sdk.ZeroInt(),
+		FeeRate:                     sdk.ZeroDec(),
+		UtilizationRatio:            sdk.ZeroDec(),
+		RemainingChunkSlots:         sdk.ZeroInt(),
+		DiscountRate:                sdk.ZeroDec(),
+		NumPairedChunks:             sdk.ZeroInt(),
+		ChunkSize:                   sdk.ZeroInt(),
+		TotalDelShares:              sdk.ZeroDec(),
+		TotalRemainingRewards:       sdk.ZeroDec(),
+		TotalChunksBalance:          sdk.ZeroInt(),
+		TotalUnbondingChunksBalance: sdk.ZeroInt(),
 	}
 	suite.True(nas.IsZeroState())
 
@@ -241,13 +205,6 @@ func (suite *netAmountTestSuite) TestIsZeroState() {
 	suite.True(
 		cpy.IsZeroState(),
 		"remaining chunk slots should not affect zero state",
-	)
-
-	cpy = nas
-	cpy.TotalInsuranceTokens = nas.TotalInsuranceTokens.Add(sdk.OneInt())
-	suite.True(
-		cpy.IsZeroState(),
-		"total insurance tokens should not affect zero state",
 	)
 
 	cpy = nas
@@ -260,25 +217,21 @@ func (suite *netAmountTestSuite) TestIsZeroState() {
 
 func (suite *netAmountTestSuite) TestString() {
 	nas := types.NetAmountState{
-		MintRate:                           sdk.NewDec(1),
-		LsTokensTotalSupply:                sdk.NewInt(1),
-		NetAmount:                          sdk.NewDec(1),
-		TotalLiquidTokens:                  sdk.NewInt(1),
-		RewardModuleAccBalance:             sdk.NewInt(1),
-		FeeRate:                            sdk.NewDec(1),
-		UtilizationRatio:                   sdk.NewDec(1),
-		RemainingChunkSlots:                sdk.NewInt(1),
-		DiscountRate:                       sdk.NewDec(1),
-		NumPairedChunks:                    sdk.NewInt(1),
-		ChunkSize:                          sdk.NewInt(1),
-		TotalDelShares:                     sdk.NewDec(1),
-		TotalRemainingRewards:              sdk.NewDec(1),
-		TotalChunksBalance:                 sdk.NewInt(1),
-		TotalUnbondingChunksBalance:        sdk.NewInt(1),
-		TotalInsuranceTokens:               sdk.NewInt(1),
-		TotalPairedInsuranceTokens:         sdk.NewInt(1),
-		TotalUnpairingInsuranceTokens:      sdk.NewInt(1),
-		TotalRemainingInsuranceCommissions: sdk.NewDec(1),
+		MintRate:                    sdk.NewDec(1),
+		LsTokensTotalSupply:         sdk.NewInt(1),
+		NetAmount:                   sdk.NewDec(1),
+		TotalLiquidTokens:           sdk.NewInt(1),
+		RewardModuleAccBalance:      sdk.NewInt(1),
+		FeeRate:                     sdk.NewDec(1),
+		UtilizationRatio:            sdk.NewDec(1),
+		RemainingChunkSlots:         sdk.NewInt(1),
+		DiscountRate:                sdk.NewDec(1),
+		NumPairedChunks:             sdk.NewInt(1),
+		ChunkSize:                   sdk.NewInt(1),
+		TotalDelShares:              sdk.NewDec(1),
+		TotalRemainingRewards:       sdk.NewDec(1),
+		TotalChunksBalance:          sdk.NewInt(1),
+		TotalUnbondingChunksBalance: sdk.NewInt(1),
 	}
 	suite.Equal(
 		`NetAmountState:
@@ -297,10 +250,6 @@ func (suite *netAmountTestSuite) TestString() {
 	TotalRemainingRewards:      1.000000000000000000	
 	TotalChunksBalance:         1	
 	TotalUnbondingBalance:      1
-	TotalInsuranceTokens:       1
-	TotalPairedInsuranceTokens: 1
-    TotalUnpairingInsuranceTokens: 1
-    TotalRemainingInsuranceCommissions: 1.000000000000000000
 `,
 		nas.String(),
 	)

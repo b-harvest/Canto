@@ -44,10 +44,6 @@ func (nas NetAmountState) Equal(nas2 NetAmountState) bool {
 		nas.TotalRemainingRewards.Equal(nas2.TotalRemainingRewards) &&
 		nas.TotalChunksBalance.Equal(nas2.TotalChunksBalance) &&
 		nas.TotalUnbondingChunksBalance.Equal(nas2.TotalUnbondingChunksBalance) &&
-		nas.TotalInsuranceTokens.Equal(nas2.TotalInsuranceTokens) &&
-		nas.TotalPairedInsuranceTokens.Equal(nas2.TotalPairedInsuranceTokens) &&
-		nas.TotalUnpairingInsuranceTokens.Equal(nas2.TotalUnpairingInsuranceTokens) &&
-		nas.TotalRemainingInsuranceCommissions.Equal(nas2.TotalRemainingInsuranceCommissions) &&
 		nas.NumPairedChunks.Equal(nas2.NumPairedChunks)
 	// Don't check ChunkSize because it is constant defined in module.
 }
@@ -70,14 +66,9 @@ func (nas NetAmountState) IsZeroState() bool {
 		nas.TotalRemainingRewards.IsZero() &&
 		nas.TotalChunksBalance.IsZero() &&
 		nas.TotalUnbondingChunksBalance.IsZero() &&
-		nas.NumPairedChunks.IsZero() &&
 		// Don't check ChunkSize because it is constant defined in module.
 		// nas.ChunkSize
-		// Total insurances includes Pairing insurances, so we should skip this
-		// nas.TotalInsuranceTokens.IsZero() &&
-		nas.TotalPairedInsuranceTokens.IsZero() &&
-		nas.TotalUnpairingInsuranceTokens.IsZero() &&
-		nas.TotalRemainingInsuranceCommissions.IsZero()
+		nas.NumPairedChunks.IsZero()
 }
 
 func (nas NetAmountState) String() string {
@@ -98,10 +89,6 @@ func (nas NetAmountState) String() string {
 	TotalRemainingRewards:      %s	
 	TotalChunksBalance:         %s	
 	TotalUnbondingBalance:      %s
-	TotalInsuranceTokens:       %s
-	TotalPairedInsuranceTokens: %s
-    TotalUnpairingInsuranceTokens: %s
-    TotalRemainingInsuranceCommissions: %s
 `,
 		nas.MintRate,
 		nas.LsTokensTotalSupply,
@@ -118,9 +105,5 @@ func (nas NetAmountState) String() string {
 		nas.TotalRemainingRewards,
 		nas.TotalChunksBalance,
 		nas.TotalUnbondingChunksBalance,
-		nas.TotalInsuranceTokens,
-		nas.TotalPairedInsuranceTokens,
-		nas.TotalUnpairingInsuranceTokens,
-		nas.TotalRemainingInsuranceCommissions,
 	)
 }

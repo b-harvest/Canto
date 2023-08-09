@@ -196,6 +196,32 @@ TotalRemainingInsuranceCommissions github_com_cosmos_cosmos_sdk_types.Dec
 }
 ```
 
+## InsuranceState (in-memory only)
+
+This state is used when query states of the module. InsuranceState is not used in any core logics (e.g. LiquidStake, LiquidUnstake, ProvideInsurance, etc...).
+It is just for query purpose.
+
+```go
+// InsuranceState is type for insurance raw data, This is a value that depends
+// on the several module state every time, so it is used only for calculation
+// and query and is not stored in kv.
+type InsuranceState struct {
+	// --- Insurance related fields
+	// The sum of all insurances' amount (= DerivedAddress(Insurance.Id).Balance)
+	TotalInsuranceTokens github_com_cosmos_cosmos_sdk_types.Int 
+	// The sum of all paired insurances' amount (=
+	// DerivedAddress(Insurance.Id).Balance)
+	TotalPairedInsuranceTokens github_com_cosmos_cosmos_sdk_types.Int 
+	// The sum of all unpairing insurances' amount (=
+	// DerivedAddress(Insurance.Id).Balance)
+	TotalUnpairingInsuranceTokens github_com_cosmos_cosmos_sdk_types.Int 
+	// The cumulative commissions of all insurances
+	TotalRemainingInsuranceCommissions github_com_cosmos_cosmos_sdk_types.Dec 
+}
+```
+
+
+
 # Store
 
 **The key retrieves liquid bond denom**

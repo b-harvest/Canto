@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"fmt"
 	"github.com/Canto-Network/Canto/v6/x/liquidstaking/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -13,28 +14,12 @@ func (k Keeper) GetNetAmountState(ctx sdk.Context) (nas types.NetAmountState) {
 	totalChunksBalance := sdk.ZeroInt()
 	totalRemainingRewards := sdk.ZeroDec()
 	totalRemainingRewardsBeforeModuleFee := sdk.ZeroDec()
-	totalRemainingInsuranceCommissions := sdk.ZeroDec()
 	totalLiquidTokens := sdk.ZeroInt()
-	totalInsuranceTokens := sdk.ZeroInt()
-	totalPairedInsuranceTokens := sdk.ZeroInt()
-	totalUnpairingInsuranceTokens := sdk.ZeroInt()
 	totalUnbondingChunksBalance := sdk.ZeroInt()
 	numPairedChunks := sdk.ZeroInt()
 
-	k.IterateAllInsurances(ctx, func(insurance types.Insurance) (stop bool) {
-		insuranceBalance := k.bankKeeper.GetBalance(ctx, insurance.DerivedAddress(), bondDenom)
-		commission := k.bankKeeper.GetBalance(ctx, insurance.FeePoolAddress(), bondDenom)
-		switch insurance.Status {
-		case types.INSURANCE_STATUS_PAIRED:
-			totalPairedInsuranceTokens = totalPairedInsuranceTokens.Add(insuranceBalance.Amount)
-		case types.INSURANCE_STATUS_UNPAIRING:
-			totalUnpairingInsuranceTokens = totalUnpairingInsuranceTokens.Add(insuranceBalance.Amount)
-		case types.INSURANCE_STATUS_UNPAIRED:
-		}
-		totalInsuranceTokens = totalInsuranceTokens.Add(insuranceBalance.Amount)
-		totalRemainingInsuranceCommissions = totalRemainingInsuranceCommissions.Add(commission.Amount.ToDec())
-		return false
-	})
+	// To reduce gas consumption, store validator info in map
+	insValMap := make(map[string]stakingtypes.Validator)
 	k.IterateAllChunks(ctx, func(chunk types.Chunk) (stop bool) {
 		balance := k.bankKeeper.GetBalance(ctx, chunk.DerivedAddress(), k.stakingKeeper.BondDenom(ctx))
 		totalChunksBalance = totalChunksBalance.Add(balance.Amount)
@@ -42,7 +27,24 @@ func (k Keeper) GetNetAmountState(ctx sdk.Context) (nas types.NetAmountState) {
 		switch chunk.Status {
 		case types.CHUNK_STATUS_PAIRED:
 			numPairedChunks = numPairedChunks.Add(sdk.OneInt())
-			pairedIns, validator, del := k.mustValidatePairedChunk(ctx, chunk)
+			pairedIns := k.mustGetInsurance(ctx, chunk.PairedInsuranceId)
+			valAddr := pairedIns.GetValidator()
+			// Use map to reduce gas consumption
+			if _, ok := insValMap[valAddr.String()]; !ok {
+				validator, found := k.stakingKeeper.GetValidator(ctx, pairedIns.GetValidator())
+				if !found {
+					panic(fmt.Sprintf("validator of paired ins %s not found(insuranceId: %d)", pairedIns.GetValidator(), pairedIns.Id))
+				}
+				insValMap[valAddr.String()] = validator
+			}
+			validator := insValMap[valAddr.String()]
+
+			// Get delegation of chunk
+			del, found := k.stakingKeeper.GetDelegation(ctx, chunk.DerivedAddress(), validator.GetOperator())
+			if !found {
+				panic(fmt.Sprintf("delegation not found: %s(chunkId: %d)", chunk.DerivedAddress(), chunk.Id))
+			}
+
 			totalDelShares = totalDelShares.Add(del.GetShares())
 			tokenValue := validator.TokensFromSharesTruncated(del.GetShares()).TruncateInt()
 			// TODO: Currently we don't consider unpairing insurance's balance for re-pairing or re-delegation scenarios.
@@ -71,6 +73,7 @@ func (k Keeper) GetNetAmountState(ctx sdk.Context) (nas types.NetAmountState) {
 		}
 		return false
 	})
+
 	rewardPoolBalance := k.bankKeeper.GetBalance(ctx, types.RewardPool, bondDenom).Amount
 	netAmountBeforeModuleFee := rewardPoolBalance.Add(totalChunksBalance).
 		Add(totalLiquidTokens).
@@ -82,22 +85,18 @@ func (k Keeper) GetNetAmountState(ctx sdk.Context) (nas types.NetAmountState) {
 	moduleFeeRate := types.CalcDynamicFeeRate(u, params.DynamicFeeRate)
 	totalRemainingRewards = totalRemainingRewardsBeforeModuleFee.Mul(sdk.OneDec().Sub(moduleFeeRate))
 	nas = types.NetAmountState{
-		LsTokensTotalSupply:                k.bankKeeper.GetSupply(ctx, liquidBondDenom).Amount,
-		TotalLiquidTokens:                  totalLiquidTokens,
-		TotalChunksBalance:                 totalChunksBalance,
-		TotalDelShares:                     totalDelShares,
-		TotalRemainingRewards:              totalRemainingRewards,
-		TotalUnbondingChunksBalance:        totalUnbondingChunksBalance,
-		NumPairedChunks:                    numPairedChunks,
-		ChunkSize:                          types.ChunkSize,
-		TotalRemainingInsuranceCommissions: totalRemainingInsuranceCommissions,
-		TotalInsuranceTokens:               totalInsuranceTokens,
-		TotalPairedInsuranceTokens:         totalPairedInsuranceTokens,
-		TotalUnpairingInsuranceTokens:      totalUnpairingInsuranceTokens,
-		FeeRate:                            moduleFeeRate,
-		UtilizationRatio:                   u,
-		RewardModuleAccBalance:             rewardPoolBalance,
-		RemainingChunkSlots:                types.GetAvailableChunkSlots(u, params.DynamicFeeRate.UHardCap, totalSupplyAmt),
+		LsTokensTotalSupply:         k.bankKeeper.GetSupply(ctx, liquidBondDenom).Amount,
+		TotalLiquidTokens:           totalLiquidTokens,
+		TotalChunksBalance:          totalChunksBalance,
+		TotalDelShares:              totalDelShares,
+		TotalRemainingRewards:       totalRemainingRewards,
+		TotalUnbondingChunksBalance: totalUnbondingChunksBalance,
+		NumPairedChunks:             numPairedChunks,
+		ChunkSize:                   types.ChunkSize,
+		FeeRate:                     moduleFeeRate,
+		UtilizationRatio:            u,
+		RewardModuleAccBalance:      rewardPoolBalance,
+		RemainingChunkSlots:         types.GetAvailableChunkSlots(u, params.DynamicFeeRate.UHardCap, totalSupplyAmt),
 	}
 	nas.NetAmount = nas.CalcNetAmount()
 	nas.MintRate = nas.CalcMintRate()

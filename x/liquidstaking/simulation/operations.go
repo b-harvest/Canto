@@ -124,8 +124,6 @@ func WeightedOperations(
 	}
 }
 
-// TODO: add msgs for staking module
-
 // SimulateMsgLiquidStake generates a MsgLiquidStake with random values.
 func SimulateMsgLiquidStake(ak types.AccountKeeper, bk types.BankKeeper, sk types.StakingKeeper, k keeper.Keeper) simtypes.Operation {
 	return func(
