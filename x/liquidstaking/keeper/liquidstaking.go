@@ -546,6 +546,11 @@ func (k Keeper) RePairRankedInsurances(
 		chunk.EmptyPairedInsurance()
 		chunk.UnpairingInsuranceId = outIns.Id
 		k.SetChunk(ctx, chunk)
+		if outIns.Status != types.INSURANCE_STATUS_UNPAIRING_FOR_WITHDRAWAL &&
+			outIns.Status != types.INSURANCE_STATUS_UNPAIRING {
+			outIns.Status = types.INSURANCE_STATUS_UNPAIRING
+			k.SetInsurance(ctx, outIns)
+		}
 		// get delegation shares of out insurance
 		delegation, found := k.stakingKeeper.GetDelegation(ctx, chunk.DerivedAddress(), outIns.GetValidator())
 		if !found {
