@@ -238,6 +238,11 @@ func SimulateMsgLiquidUnstake(ak types.AccountKeeper, bk types.BankKeeper, sk ty
 		var pairedChunks []types.Chunk
 		k.IterateAllChunks(ctx, func(chunk types.Chunk) bool {
 			if chunk.Status == types.CHUNK_STATUS_PAIRED {
+				// check whether the chunk is already have unstaking requests in queue.
+				_, found := k.GetUnpairingForUnstakingChunkInfo(ctx, chunk.Id)
+				if found {
+					return false
+				}
 				pairedChunks = append(pairedChunks, chunk)
 			}
 			return false
