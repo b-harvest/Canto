@@ -239,4 +239,5 @@ message QueryStatesRequest {}
 
 message QueryStatesResponse {
   NetAmountState net_amount_state = 1 [ (gogoproto.nullable) = false ];
+  InsuranceState insurance_state = 2 [ (gogoproto.nullable) = false ];
 }
