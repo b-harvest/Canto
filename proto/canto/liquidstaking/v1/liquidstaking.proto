@@ -280,30 +280,39 @@ message NetAmountState {
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
     (gogoproto.nullable) = false
   ];
+}
+
+// InsuranceState is type for insurance raw data, This is a value that depends
+// on the several module state every time, so it is used only for calculation
+// and query and is not stored in kv.
+message InsuranceState {
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = true;
+  option (gogoproto.goproto_stringer) = false;
 
   // --- Insurance related fields
   // The sum of all insurances' amount (= DerivedAddress(Insurance.Id).Balance)
-  string total_insurance_tokens = 16 [
+  string total_insurance_tokens = 1 [
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
     (gogoproto.nullable) = false
   ];
 
   // The sum of all paired insurances' amount (=
   // DerivedAddress(Insurance.Id).Balance)
-  string total_paired_insurance_tokens = 17 [
+  string total_paired_insurance_tokens = 2 [
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
     (gogoproto.nullable) = false
   ];
 
   // The sum of all unpairing insurances' amount (=
   // DerivedAddress(Insurance.Id).Balance)
-  string total_unpairing_insurance_tokens = 18 [
+  string total_unpairing_insurance_tokens = 3 [
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
     (gogoproto.nullable) = false
   ];
 
   // The cumulative commissions of all insurances
-  string total_remaining_insurance_commissions = 19 [
+  string total_remaining_insurance_commissions = 4 [
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
     (gogoproto.nullable) = false
   ];
