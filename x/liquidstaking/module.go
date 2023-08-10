@@ -113,7 +113,7 @@ type AppModule struct {
 	AppModuleBasic
 	keeper keeper.Keeper
 	ak     authkeeper.AccountKeeper
-	bk     bankkeeper.BaseKeeper
+	bk     bankkeeper.Keeper
 	sk     stakingkeeper.Keeper
 	dk     distrkeeper.Keeper
 	ik     inflationkeeper.Keeper
@@ -124,7 +124,7 @@ func NewAppModule(
 	cdc codec.Codec,
 	k keeper.Keeper,
 	ak authkeeper.AccountKeeper,
-	bk bankkeeper.BaseKeeper,
+	bk bankkeeper.Keeper,
 	sk stakingkeeper.Keeper,
 	dk distrkeeper.Keeper,
 	ik inflationkeeper.Keeper,
