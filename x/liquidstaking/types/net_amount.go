@@ -2,74 +2,7 @@ package types
 
 import (
 	"fmt"
-
-	sdk "github.com/cosmos/cosmos-sdk/types"
 )
-
-func (nas NetAmountState) CalcNetAmount() sdk.Dec {
-	return nas.RewardModuleAccBalance.Add(nas.TotalChunksBalance).
-		Add(nas.TotalLiquidTokens).
-		Add(nas.TotalUnbondingChunksBalance).ToDec().
-		Add(nas.TotalRemainingRewards)
-}
-
-func (nas NetAmountState) CalcMintRate() sdk.Dec {
-	if nas.NetAmount.IsNil() || !nas.NetAmount.IsPositive() {
-		return sdk.ZeroDec()
-	}
-	return nas.LsTokensTotalSupply.ToDec().QuoTruncate(nas.NetAmount)
-}
-
-// CalcDiscountRate calculates the current discount rate.
-// reward module account's balance / (num paired chunks * chunk size)
-func (nas NetAmountState) CalcDiscountRate(maximumDiscountRate sdk.Dec) sdk.Dec {
-	if nas.RewardModuleAccBalance.IsZero() || maximumDiscountRate.IsZero() {
-		return sdk.ZeroDec()
-	}
-	discountRate := nas.RewardModuleAccBalance.ToDec().QuoTruncate(nas.NetAmount)
-	return sdk.MinDec(discountRate, sdk.MinDec(MaximumDiscountRateCap, maximumDiscountRate))
-}
-
-func (nas NetAmountState) Equal(nas2 NetAmountState) bool {
-	return nas.MintRate.Equal(nas2.MintRate) &&
-		nas.LsTokensTotalSupply.Equal(nas2.LsTokensTotalSupply) &&
-		nas.NetAmount.Equal(nas2.NetAmount) &&
-		nas.TotalLiquidTokens.Equal(nas2.TotalLiquidTokens) &&
-		nas.RewardModuleAccBalance.Equal(nas2.RewardModuleAccBalance) &&
-		nas.FeeRate.Equal(nas2.FeeRate) &&
-		nas.UtilizationRatio.Equal(nas2.UtilizationRatio) &&
-		nas.RemainingChunkSlots.Equal(nas2.RemainingChunkSlots) &&
-		nas.DiscountRate.Equal(nas2.DiscountRate) &&
-		nas.TotalDelShares.Equal(nas2.TotalDelShares) &&
-		nas.TotalRemainingRewards.Equal(nas2.TotalRemainingRewards) &&
-		nas.TotalChunksBalance.Equal(nas2.TotalChunksBalance) &&
-		nas.TotalUnbondingChunksBalance.Equal(nas2.TotalUnbondingChunksBalance) &&
-		nas.NumPairedChunks.Equal(nas2.NumPairedChunks)
-	// Don't check ChunkSize because it is constant defined in module.
-}
-
-// IsZeroState checks if the NetAmountState is initial state or not.
-// Some fields(e.g. TotalRemainingRewards) are not checked because they will rarely be zero.
-func (nas NetAmountState) IsZeroState() bool {
-	return nas.MintRate.IsZero() &&
-		nas.LsTokensTotalSupply.IsZero() &&
-		nas.NetAmount.IsZero() &&
-		nas.TotalLiquidTokens.IsZero() &&
-		nas.RewardModuleAccBalance.IsZero() &&
-		nas.FeeRate.IsZero() &&
-		nas.UtilizationRatio.IsZero() &&
-		// As long as there is a total supply and a hard cap, this value will rarely be zero.
-		// So we skip this
-		// nas.RemainingChunkSlots.IsZero() &&
-		nas.DiscountRate.IsZero() &&
-		nas.TotalDelShares.IsZero() &&
-		nas.TotalRemainingRewards.IsZero() &&
-		nas.TotalChunksBalance.IsZero() &&
-		nas.TotalUnbondingChunksBalance.IsZero() &&
-		// Don't check ChunkSize because it is constant defined in module.
-		// nas.ChunkSize
-		nas.NumPairedChunks.IsZero()
-}
 
 func (nas NetAmountState) String() string {
 	// Print all fields with field name
@@ -89,6 +22,10 @@ func (nas NetAmountState) String() string {
 	TotalRemainingRewards:      %s	
 	TotalChunksBalance:         %s	
 	TotalUnbondingBalance:      %s
+	TotalInsuranceTokens:       %s
+	TotalPairedInsuranceTokens: %s
+    TotalUnpairingInsuranceTokens: %s
+    TotalRemainingInsuranceCommissions: %s
 `,
 		nas.MintRate,
 		nas.LsTokensTotalSupply,
@@ -105,5 +42,9 @@ func (nas NetAmountState) String() string {
 		nas.TotalRemainingRewards,
 		nas.TotalChunksBalance,
 		nas.TotalUnbondingChunksBalance,
+		nas.TotalInsuranceTokens,
+		nas.TotalPairedInsuranceTokens,
+		nas.TotalUnpairingInsuranceTokens,
+		nas.TotalRemainingInsuranceCommissions,
 	)
 }

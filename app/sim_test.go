@@ -312,7 +312,6 @@ func TestAppStateDeterminism(t *testing.T) {
 }
 
 func TestAppSimulationAfterImport(t *testing.T) {
-	liquidstakingtypes.ChunkSize = sdk.TokensFromConsensusPower(250_000, sdk.DefaultPowerReduction)
 	config, db, dir, logger, skip, err := simapp.SetupSimulation("leveldb-app-sim", "Simulation")
 	if skip {
 		t.Skip("skipping application simulation after import")

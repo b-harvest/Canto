@@ -122,7 +122,7 @@ func (k Keeper) CollectRewardAndFee(
 // DistributeReward withdraws delegation rewards from all paired chunks
 // Keeper.CollectRewardAndFee will be called during withdrawing process.
 func (k Keeper) DistributeReward(ctx sdk.Context) {
-	nas := k.GetNetAmountState(ctx)
+	nas := k.GetNetAmountStateEssentials(ctx)
 	k.IterateAllChunks(ctx, func(chunk types.Chunk) bool {
 		if chunk.Status != types.CHUNK_STATUS_PAIRED {
 			return false
@@ -590,7 +590,7 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (
 		return
 	}
 	chunksToCreate := amount.Amount.Quo(types.ChunkSize)
-	nas := k.GetNetAmountState(ctx)
+	nas := k.GetNetAmountStateEssentials(ctx)
 	if nas.RemainingChunkSlots.LT(chunksToCreate) {
 		err = sdkerrors.Wrapf(
 			types.ErrExceedAvailableChunks,
@@ -724,7 +724,7 @@ func (k Keeper) QueueLiquidUnstake(ctx sdk.Context, msg *types.MsgLiquidUnstake)
 	types.SortInsurances(validatorMap, insurances, true)
 
 	// How much ls tokens must be burned
-	nas := k.GetNetAmountState(ctx)
+	nas := k.GetNetAmountStateEssentials(ctx)
 	liquidBondDenom := k.GetLiquidBondDenom(ctx)
 	for i := int64(0); i < chunksToLiquidUnstake; i++ {
 		// Escrow ls tokens from the delegator
@@ -919,7 +919,7 @@ func (k Keeper) DoClaimDiscountedReward(ctx sdk.Context, msg *types.MsgClaimDisc
 		return
 	}
 
-	nas := k.GetNetAmountState(ctx)
+	nas := k.GetNetAmountStateEssentials(ctx)
 	// discount rate >= minimum discount rate
 	// if discount rate(e.g. 10%) is lower than minimum discount rate(e.g. 20%), then it is not profitable to claim reward.
 	if nas.DiscountRate.LT(msg.MinimumDiscountRate) {
@@ -1677,30 +1677,4 @@ func (k Keeper) CalcCeiledPenalty(validator stakingtypes.Validator, penaltyAmt s
 		return validator.TokensFromShares(penaltyShares).Ceil().TruncateInt()
 	}
 	return penaltyAmt
-}
-
-// GetInsuranceState returns current insurance state.
-func (k Keeper) GetInsuranceState(ctx sdk.Context) types.InsuranceState {
-	bondDenom := k.stakingKeeper.BondDenom(ctx)
-	totalPairedInsuranceTokens, totalUnpairingInsuranceTokens, totalInsuranceTokens := sdk.ZeroInt(), sdk.ZeroInt(), sdk.ZeroInt()
-	totalRemainingInsuranceCommissions := sdk.ZeroDec()
-	k.IterateAllInsurances(ctx, func(insurance types.Insurance) (stop bool) {
-		insuranceBalance := k.bankKeeper.GetBalance(ctx, insurance.DerivedAddress(), bondDenom)
-		commission := k.bankKeeper.GetBalance(ctx, insurance.FeePoolAddress(), bondDenom)
-		switch insurance.Status {
-		case types.INSURANCE_STATUS_PAIRED:
-			totalPairedInsuranceTokens = totalPairedInsuranceTokens.Add(insuranceBalance.Amount)
-		case types.INSURANCE_STATUS_UNPAIRING:
-			totalUnpairingInsuranceTokens = totalUnpairingInsuranceTokens.Add(insuranceBalance.Amount)
-		}
-		totalInsuranceTokens = totalInsuranceTokens.Add(insuranceBalance.Amount)
-		totalRemainingInsuranceCommissions = totalRemainingInsuranceCommissions.Add(commission.Amount.ToDec())
-		return false
-	})
-	return types.InsuranceState{
-		TotalPairedInsuranceTokens:         totalPairedInsuranceTokens,
-		TotalUnpairingInsuranceTokens:      totalUnpairingInsuranceTokens,
-		TotalInsuranceTokens:               totalInsuranceTokens,
-		TotalRemainingInsuranceCommissions: totalRemainingInsuranceCommissions,
-	}
 }

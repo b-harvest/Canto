@@ -33,6 +33,8 @@ require (
 	github.com/evmos/ethermint v0.19.3
 )
 
+require github.com/ulule/deepcopier v0.0.0-20200430083143-45decc6639b6 // indirect
+
 require (
 	cosmossdk.io/errors v1.0.0-beta.7
 	cosmossdk.io/math v1.0.0-beta.3 // indirect

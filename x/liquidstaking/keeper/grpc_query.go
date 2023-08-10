@@ -324,10 +324,8 @@ func (k Keeper) States(c context.Context, req *types.QueryStatesRequest) (*types
 	}
 	ctx := sdk.UnwrapSDKContext(c)
 	nas := k.GetNetAmountState(ctx)
-	is := k.GetInsuranceState(ctx)
 
 	return &types.QueryStatesResponse{
 		NetAmountState: nas,
-		InsuranceState: is,
 	}, nil
 }

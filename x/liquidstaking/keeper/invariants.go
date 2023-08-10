@@ -9,7 +9,7 @@ import (
 
 func RegisterInvariants(ir sdk.InvariantRegistry, k Keeper) {
 	ir.RegisterRoute(types.ModuleName, "net-account",
-		NetAmountInvariant(k))
+		NetAmountEssentialsInvariant(k))
 	ir.RegisterRoute(types.ModuleName, "chunks",
 		ChunksInvariant(k))
 	ir.RegisterRoute(types.ModuleName, "insurances",
@@ -25,7 +25,7 @@ func RegisterInvariants(ir sdk.InvariantRegistry, k Keeper) {
 func AllInvariants(k Keeper) sdk.Invariant {
 	return func(ctx sdk.Context) (string, bool) {
 		for _, inv := range []func(Keeper) sdk.Invariant{
-			NetAmountInvariant,
+			NetAmountEssentialsInvariant,
 			ChunksInvariant,
 			InsurancesInvariant,
 			UnpairingForUnstakingChunkInfosInvariant,
@@ -41,9 +41,9 @@ func AllInvariants(k Keeper) sdk.Invariant {
 	}
 }
 
-func NetAmountInvariant(k Keeper) sdk.Invariant {
+func NetAmountEssentialsInvariant(k Keeper) sdk.Invariant {
 	return func(ctx sdk.Context) (string, bool) {
-		nas := k.GetNetAmountState(ctx)
+		nas := k.GetNetAmountStateEssentials(ctx)
 		// if net amount is positive, it means that there are paired chunks.
 		if nas.LsTokensTotalSupply.IsPositive() && !nas.NetAmount.IsPositive() {
 			return "found positive lsToken supply with non-positive net amount", true

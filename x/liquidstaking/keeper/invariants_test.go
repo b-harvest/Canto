@@ -33,10 +33,9 @@ func (suite *KeeperTestSuite) TestNetAmountInvariant() {
 	suite.ctx = suite.advanceEpoch(suite.ctx)
 	suite.ctx = suite.advanceHeight(suite.ctx, 1, "module epoch reached")
 
-	nas := suite.app.LiquidStakingKeeper.GetNetAmountState(suite.ctx)
-	is := suite.app.LiquidStakingKeeper.GetInsuranceState(suite.ctx)
-	oneChunk, oneInsurance := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
-	suite.True(nas.Equal(types.NetAmountState{
+	nase := suite.app.LiquidStakingKeeper.GetNetAmountStateEssentials(suite.ctx)
+	oneChunk, _ := suite.app.LiquidStakingKeeper.GetMinimumRequirements(suite.ctx)
+	suite.True(nase.Equal(types.NetAmountStateEssentials{
 		MintRate:                    sdk.MustNewDecFromStr("0.990373683313988266"),
 		LsTokensTotalSupply:         types.ChunkSize,
 		NetAmount:                   sdk.MustNewDecFromStr("252429970840349915725000"),
@@ -51,12 +50,6 @@ func (suite *KeeperTestSuite) TestNetAmountInvariant() {
 		TotalRemainingRewards:       sdk.ZeroDec(),
 		TotalChunksBalance:          sdk.ZeroInt(),
 		TotalUnbondingChunksBalance: sdk.ZeroInt(),
-	}))
-	suite.True(is.Equal(types.InsuranceState{
-		TotalInsuranceTokens:               oneInsurance.Amount,
-		TotalPairedInsuranceTokens:         oneInsurance.Amount,
-		TotalUnpairingInsuranceTokens:      sdk.ZeroInt(),
-		TotalRemainingInsuranceCommissions: sdk.MustNewDecFromStr("269996760038879525000"),
 	}))
 
 	// forcefully make net amount zero
@@ -83,7 +76,7 @@ func (suite *KeeperTestSuite) TestNetAmountInvariant() {
 		suite.app.LiquidStakingKeeper.SetChunk(cachedCtx, mutatedChunk)
 
 		oneChunkCoins := sdk.NewCoins(oneChunk)
-		reward := sdk.NewCoins(sdk.NewCoin(suite.denom, nas.RewardModuleAccBalance))
+		reward := sdk.NewCoins(sdk.NewCoin(suite.denom, nase.RewardModuleAccBalance))
 		inputs := []banktypes.Input{
 			banktypes.NewInput(env.pairedChunks[0].DerivedAddress(), oneChunkCoins),
 			banktypes.NewInput(types.RewardPool, reward),
@@ -94,7 +87,7 @@ func (suite *KeeperTestSuite) TestNetAmountInvariant() {
 		}
 
 		suite.NoError(suite.app.BankKeeper.InputOutputCoins(cachedCtx, inputs, outputs))
-		_, broken = keeper.NetAmountInvariant(suite.app.LiquidStakingKeeper)(cachedCtx)
+		_, broken = keeper.NetAmountEssentialsInvariant(suite.app.LiquidStakingKeeper)(cachedCtx)
 		suite.True(broken, "net amount is zero")
 	}
 
@@ -113,7 +106,7 @@ func (suite *KeeperTestSuite) TestNetAmountInvariant() {
 			types.ModuleName,
 			sdk.NewCoins(lsTokenBal),
 		))
-		_, broken = keeper.NetAmountInvariant(suite.app.LiquidStakingKeeper)(cachedCtx)
+		_, broken = keeper.NetAmountEssentialsInvariant(suite.app.LiquidStakingKeeper)(cachedCtx)
 		suite.True(broken, "ls token is zero, but total liquid tokens is not zero")
 	}
 }
