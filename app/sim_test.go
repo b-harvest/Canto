@@ -37,8 +37,6 @@ import (
 // Get flags every time the simulator is run
 func init() {
 	simapp.GetSimulatorFlags()
-	sdk.DefaultPowerReduction = sdk.NewIntFromUint64(1_000_000)
-	liquidstakingtypes.ChunkSize = sdk.TokensFromConsensusPower(250_000, sdk.DefaultPowerReduction)
 }
 
 type StoreKeysPrefixes struct {
@@ -112,8 +110,6 @@ func TestAppImportExport(t *testing.T) {
 		db.Close()
 		require.NoError(t, os.RemoveAll(dir))
 	}()
-
-	sdk.DefaultPowerReduction = sdk.NewIntFromUint64(1000000)
 
 	app := NewCanto(
 		logger,
@@ -253,8 +249,6 @@ func TestAppStateDeterminism(t *testing.T) {
 	numTimesToRunPerSeed := 5
 	appHashList := make([]json.RawMessage, numTimesToRunPerSeed)
 
-	sdk.DefaultPowerReduction = sdk.NewIntFromUint64(1000000)
-
 	for i := 0; i < numSeeds; i++ {
 		config.Seed = rand.Int63()
 		for j := 0; j < numTimesToRunPerSeed; j++ {
@@ -323,8 +317,6 @@ func TestAppSimulationAfterImport(t *testing.T) {
 		db.Close()
 		require.NoError(t, os.RemoveAll(dir))
 	}()
-
-	sdk.DefaultPowerReduction = sdk.NewIntFromUint64(1000000)
 
 	app := NewCanto(
 		logger,
