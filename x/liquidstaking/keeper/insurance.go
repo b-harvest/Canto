@@ -43,6 +43,7 @@ func (k Keeper) GetPairingInsurances(ctx sdk.Context) (
 	validatorMap map[string]stakingtypes.Validator,
 ) {
 	validatorMap = make(map[string]stakingtypes.Validator)
+	iterCnt := 0
 	k.IterateAllInsurances(ctx, func(ins types.Insurance) bool {
 		if ins.Status != types.INSURANCE_STATUS_PAIRING {
 			return false
@@ -58,8 +59,10 @@ func (k Keeper) GetPairingInsurances(ctx sdk.Context) (
 			validatorMap[ins.ValidatorAddress] = validator
 		}
 		pairingInsurances = append(pairingInsurances, ins)
+		iterCnt++
 		return false
 	})
+	k.fileLogger.Debug("GetPairingInsurances", "pairing insurances", iterCnt)
 	return
 }
 

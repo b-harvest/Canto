@@ -20,12 +20,15 @@ func (k Keeper) GetNetAmountStateEssentials(ctx sdk.Context) (nase types.NetAmou
 
 	// To reduce gas consumption, store validator info in map
 	insValMap := make(map[string]stakingtypes.Validator)
+	pairedCnt, unbondingCnt, restCnt := 0, 0, 0
 	k.IterateAllChunks(ctx, func(chunk types.Chunk) (stop bool) {
 		balance := k.bankKeeper.GetBalance(ctx, chunk.DerivedAddress(), k.stakingKeeper.BondDenom(ctx))
 		totalChunksBalance = totalChunksBalance.Add(balance.Amount)
 
+		g := ctx.GasMeter().GasConsumed()
 		switch chunk.Status {
 		case types.CHUNK_STATUS_PAIRED:
+			pairedCnt++
 			numPairedChunks = numPairedChunks.Add(sdk.OneInt())
 			pairedIns := k.mustGetInsurance(ctx, chunk.PairedInsuranceId)
 			valAddr := pairedIns.GetValidator()
@@ -61,18 +64,31 @@ func (k Keeper) GetNetAmountStateEssentials(ctx sdk.Context) (nase types.NetAmou
 			insuranceCommission := delReward.Mul(pairedIns.FeeRate)
 			remainingReward := delReward.Sub(insuranceCommission)
 			totalRemainingRewardsBeforeModuleFee = totalRemainingRewardsBeforeModuleFee.Add(remainingReward)
+
+			diff := ctx.GasMeter().GasConsumed() - g
+			k.fileLogger.Debug("unit paired chunk gas consumption", "gas", diff)
 		default:
+			checked := false
 			k.stakingKeeper.IterateDelegatorUnbondingDelegations(ctx, chunk.DerivedAddress(), func(ubd stakingtypes.UnbondingDelegation) (stop bool) {
+				unbondingCnt++
+				checked = true
 				for _, entry := range ubd.Entries {
 					unpairingIns := k.mustGetInsurance(ctx, chunk.UnpairingInsuranceId)
 					tokenValue := k.calcTokenValueWithInsuranceCoverage(ctx, entry.Balance, unpairingIns)
 					totalUnbondingChunksBalance = totalUnbondingChunksBalance.Add(tokenValue)
 				}
+				diff := ctx.GasMeter().GasConsumed() - g
+				k.fileLogger.Debug("unit unbonding chunk gas consumption", "gas", diff)
 				return false
 			})
+			if !checked {
+				restCnt++
+			}
 		}
+
 		return false
 	})
+	k.fileLogger.Debug("GetNetAmountEssentials", "paired chunks:", pairedCnt, "unbonding chunks", unbondingCnt, "rest chunks", restCnt)
 
 	rewardPoolBalance := k.bankKeeper.GetBalance(ctx, types.RewardPool, bondDenom).Amount
 	netAmountBeforeModuleFee := rewardPoolBalance.Add(totalChunksBalance).
