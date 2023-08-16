@@ -18,7 +18,7 @@ var (
 	ErrNotInWithdrawableStatus                       = sdkerrors.Register(ModuleName, 30014, "insurance is not in withdrawable status")
 	ErrInvalidChunkId                                = sdkerrors.Register(ModuleName, 30015, "invalid chunk id")
 	ErrInvalidInsuranceId                            = sdkerrors.Register(ModuleName, 30016, "invalid insurance id")
-	ErrNotFoundUnpairingForUnstakingChunkInfoChunkId = sdkerrors.Register(ModuleName, 30016, "unpairing for unstake chunk corresponding unpairing for unstaking info must exists")
+	ErrNotFoundUnpairingForUnstakingChunkInfoChunkId = sdkerrors.Register(ModuleName, 30017, "unpairing for unstake chunk corresponding unpairing for unstaking info must exists")
 	ErrNotFoundWithdrawInsuranceRequestInsuranceId   = sdkerrors.Register(ModuleName, 30018, "insurance corresponding withdraw insurance request must exists")
 	ErrAlreadyInQueue                                = sdkerrors.Register(ModuleName, 30019, "liquid ustaking is already in queue")
 	ErrDiscountRateTooLow                            = sdkerrors.Register(ModuleName, 30020, "discount rate must be gte than msg.minimum")
