@@ -2,6 +2,7 @@ package simulation
 
 import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	ethermint "github.com/evmos/ethermint/types"
 	"math/rand"
 
 	"github.com/Canto-Network/Canto/v7/app/params"
@@ -37,6 +38,8 @@ var (
 			Amount: sdk.NewInt(0),
 		},
 	}
+	// Canto mainnet supply is currently 1.05B
+	MainnetTotalSupply = sdk.TokensFromConsensusPower(1_050_000_000, ethermint.PowerReduction)
 )
 
 // WeightedOperations returns all the operations from the module with their respective weights
@@ -162,6 +165,9 @@ func SimulateMsgLiquidStake(ak types.AccountKeeper, bk types.BankKeeper, sk type
 			),
 		)
 		if !spendable.AmountOf(bondDenom).GTE(stakingCoins[0].Amount) {
+			if totalSupplyAmt.Add(stakingCoins[0].Amount).GT(MainnetTotalSupply) {
+				return simtypes.NoOpMsg(types.ModuleName, types.TypeMsgLiquidStake, "total supply is exceeded"), nil, nil
+			}
 			if err := bk.MintCoins(ctx, types.ModuleName, stakingCoins); err != nil {
 				panic(err)
 			}
@@ -322,6 +328,10 @@ func SimulateMsgProvideInsurance(ak types.AccountKeeper, bk types.BankKeeper, sk
 		}
 
 		if !spendable.AmountOf(bondDenom).GTE(collaterals[0].Amount) {
+			totalSupplyAmt := bk.GetSupply(ctx, bondDenom).Amount
+			if totalSupplyAmt.Add(collaterals[0].Amount).GT(MainnetTotalSupply) {
+				return simtypes.NoOpMsg(types.ModuleName, types.TypeMsgProvideInsurance, "total supply is exceeded"), nil, nil
+			}
 			if err := bk.MintCoins(ctx, types.ModuleName, collaterals); err != nil {
 				panic(err)
 			}
@@ -457,6 +467,10 @@ func SimulateMsgDepositInsurance(ak types.AccountKeeper, bk types.BankKeeper, sk
 		)
 
 		if !spendable.AmountOf(bondDenom).GTE(deposits[0].Amount) {
+			totalSupplyAmt := bk.GetSupply(ctx, bondDenom).Amount
+			if totalSupplyAmt.Add(deposits[0].Amount).GT(MainnetTotalSupply) {
+				return simtypes.NoOpMsg(types.ModuleName, types.TypeMsgDepositInsurance, "total supply is exceeded"), nil, nil
+			}
 			if err := bk.MintCoins(ctx, types.ModuleName, deposits); err != nil {
 				panic(err)
 			}
