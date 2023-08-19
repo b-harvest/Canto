@@ -22,7 +22,7 @@ func TestParamChanges(t *testing.T) {
 		subspace    string
 	}{
 		{"inflation/ParamStoreKeyMintDenom", "ParamStoreKeyMintDenom", "\"stake\"", "inflation"},
-		{"inflation/ParamStoreKeyExponentialCalculation", "ParamStoreKeyExponentialCalculation", `{"a":"9793274.000000000000000000","r":"0.140000000000000000","c":"0.000000000000000000","bonding_target":"0.530000000000000000","max_variance":"0.000000000000000000"}`, "inflation"},
+		{"inflation/ParamStoreKeyExponentialCalculation", "ParamStoreKeyExponentialCalculation", `{"a":"9793274.000000000000000000","r":"0.140000000000000000","c":"0.000000000000000000","bonding_target":"0.950000000000000000","max_variance":"0.000000000000000000"}ㄴ`, "inflation"},
 		{"inflation/ParamStoreKeyInflationDistribution", "ParamStoreKeyInflationDistribution", `{"staking_rewards":"6702506.000000000000000000","community_pool":"9387515.000000000000000000"}`, "inflation"},
 		{"inflation/ParamStoreKeyEnableInflation", "ParamStoreKeyEnableInflation", "false", "inflation"},
 	}
