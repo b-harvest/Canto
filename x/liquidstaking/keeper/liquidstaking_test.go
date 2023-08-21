@@ -1228,7 +1228,7 @@ func (suite *KeeperTestSuite) TestEndBlocker() {
 			toBeWithdrawnInsurance.GetValidator(),
 		)
 		suite.True(found)
-		suite.Equal(toBeWithdrawnInsurance.GetValidator().String(), unbondingDelegation.ValidatorAddress)
+		suite.Equal(toBeWithdrawnInsurance.ValidatorAddress, unbondingDelegation.ValidatorAddress)
 	}
 
 	suite.ctx = suite.advanceHeight(suite.ctx, 1, "")

@@ -341,7 +341,7 @@ func (k Keeper) RankInsurances(ctx sdk.Context) (
 			ins.Status != types.INSURANCE_STATUS_PAIRING {
 			return false
 		}
-		if _, ok := candidatesValidatorMap[ins.GetValidator().String()]; !ok {
+		if _, ok := candidatesValidatorMap[ins.ValidatorAddress]; !ok {
 			// Only insurance which directs valid validator can be ranked in
 			validator, found := k.stakingKeeper.GetValidator(ctx, ins.GetValidator())
 			if !found {
@@ -411,7 +411,7 @@ func (k Keeper) RePairRankedInsurances(
 				continue
 			}
 			// Happy case. Same validator so we can skip re-delegation
-			if newRankInIns.GetValidator().Equals(outIns.GetValidator()) {
+			if newRankInIns.ValidatorAddress == outIns.ValidatorAddress {
 				// get chunk by outIns.ChunkId
 				chunk := k.mustGetChunk(ctx, outIns.ChunkId)
 				k.rePairChunkAndInsurance(ctx, chunk, newRankInIns, outIns)
@@ -522,8 +522,8 @@ func (k Keeper) RePairRankedInsurances(
 				types.EventTypeBeginRedelegate,
 				sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
 				sdk.NewAttribute(types.AttributeKeyChunkId, fmt.Sprintf("%d", chunk.Id)),
-				sdk.NewAttribute(types.AttributeKeySrcValidator, outIns.GetValidator().String()),
-				sdk.NewAttribute(types.AttributeKeyDstValidator, newIns.GetValidator().String()),
+				sdk.NewAttribute(types.AttributeKeySrcValidator, outIns.ValidatorAddress),
+				sdk.NewAttribute(types.AttributeKeyDstValidator, newIns.ValidatorAddress),
 				sdk.NewAttribute(types.AttributeKeyCompletionTime, completionTime.Format(time.RFC3339)),
 			),
 		)
@@ -566,7 +566,7 @@ func (k Keeper) RePairRankedInsurances(
 				types.EventTypeBeginUndelegate,
 				sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
 				sdk.NewAttribute(types.AttributeKeyChunkId, fmt.Sprintf("%d", chunk.Id)),
-				sdk.NewAttribute(types.AttributeKeyValidator, outIns.GetValidator().String()),
+				sdk.NewAttribute(types.AttributeKeyValidator, outIns.ValidatorAddress),
 				sdk.NewAttribute(types.AttributeKeyCompletionTime, completionTime.Format(time.RFC3339)),
 				sdk.NewAttribute(types.AttributeKeyReason, types.AttributeValueReasonNoCandidateIns),
 			),
@@ -1606,7 +1606,7 @@ func (k Keeper) isRepairingChunk(ctx sdk.Context, chunk types.Chunk) bool {
 	if chunk.HasPairedInsurance() && chunk.HasUnpairingInsurance() {
 		pairedIns := k.mustGetInsurance(ctx, chunk.PairedInsuranceId)
 		unpairingIns := k.mustGetInsurance(ctx, chunk.UnpairingInsuranceId)
-		if pairedIns.GetValidator().Equals(unpairingIns.GetValidator()) {
+		if pairedIns.ValidatorAddress == unpairingIns.ValidatorAddress {
 			return true
 		}
 	}

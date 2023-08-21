@@ -34,16 +34,15 @@ func (k Keeper) GetNetAmountStateEssentials(ctx sdk.Context) (
 			pairedIns := k.mustGetInsurance(ctx, chunk.PairedInsuranceId)
 			pairedChunkWithInsuranceId[chunk.PairedInsuranceId] = chunk
 			pairedInsurances = append(pairedInsurances, pairedIns)
-			valAddr := pairedIns.GetValidator()
 			// Use map to reduce gas consumption
-			if _, ok := validatorMap[valAddr.String()]; !ok {
+			if _, ok := validatorMap[pairedIns.ValidatorAddress]; !ok {
 				validator, found := k.stakingKeeper.GetValidator(ctx, pairedIns.GetValidator())
 				if !found {
 					panic(fmt.Sprintf("validator of paired ins %s not found(insuranceId: %d)", pairedIns.GetValidator(), pairedIns.Id))
 				}
-				validatorMap[valAddr.String()] = validator
+				validatorMap[pairedIns.ValidatorAddress] = validator
 			}
-			validator := validatorMap[valAddr.String()]
+			validator := validatorMap[pairedIns.ValidatorAddress]
 
 			// Get delegation of chunk
 			del, found := k.stakingKeeper.GetDelegation(ctx, chunk.DerivedAddress(), validator.GetOperator())

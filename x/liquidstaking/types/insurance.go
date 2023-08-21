@@ -55,8 +55,8 @@ func SortInsurances(validatorMap map[string]stakingtypes.Validator, insurances [
 		iInsurance := insurances[i]
 		jInsurance := insurances[j]
 
-		iValidator := validatorMap[iInsurance.GetValidator().String()]
-		jValidator := validatorMap[jInsurance.GetValidator().String()]
+		iValidator := validatorMap[iInsurance.ValidatorAddress]
+		jValidator := validatorMap[jInsurance.ValidatorAddress]
 
 		iFee := iValidator.Commission.Rate.Add(iInsurance.FeeRate)
 		jFee := jValidator.Commission.Rate.Add(jInsurance.FeeRate)
