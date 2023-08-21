@@ -75,9 +75,7 @@ func (k Keeper) GetNetAmountStateEssentials(ctx sdk.Context) (
 			totalRemainingRewardsBeforeModuleFee = totalRemainingRewardsBeforeModuleFee.Add(remainingReward)
 
 		default:
-			checked := false
 			k.stakingKeeper.IterateDelegatorUnbondingDelegations(ctx, chunk.DerivedAddress(), func(ubd stakingtypes.UnbondingDelegation) (stop bool) {
-				checked = true
 				for _, entry := range ubd.Entries {
 					unpairingIns := k.mustGetInsurance(ctx, chunk.UnpairingInsuranceId)
 					tokenValue := k.calcTokenValueWithInsuranceCoverage(ctx, entry.Balance, unpairingIns)
@@ -85,8 +83,6 @@ func (k Keeper) GetNetAmountStateEssentials(ctx sdk.Context) (
 				}
 				return false
 			})
-			if !checked {
-			}
 		}
 
 		return false
