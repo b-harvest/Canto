@@ -85,7 +85,8 @@ The `liquidstaking` module fee is calculated as follows: `fee = (delegation rewa
 * u (= utilization ratio) = `NetAmountBeforeModuleFee / total supply of native token` (for `NetAmountBeforeModuleFee`, please refer to [02_state.md](02_state.md#netamountstate-in-memory-only))
 * if u < softCap then, **fee rate =** `r0`
 * if softCap <= u <= optimal then, **fee rate =** `r0 + ((u - softcap) / (optimal - softcap) x slope1)`
-* if optimal < u <= hardCap then, **fee rate =** `r0 + slope1 + ((min(u, hardcap) - optimal) / (hardcap - optimal) x slope2)`
+* if optimal < u <= hardCap then, **fee rate =** `r0 + slope1 + ((u - optimal) / (hardcap - optimal) x slope2)`
+* if hardCap < u, then, **fee rate =** `r0 + slope1 +slope2`
 
 An explanation of the parameters used in the above formula can be found in [09_params.md](09_params.md). 
 

@@ -126,9 +126,9 @@ It serves to avert such circumstances, maintaining the insurance status as eithe
 
 ```go
 type MsgDepositInsurance struct {
-	ProviderAddress string
-	Id uint64 
-	Amount sdk.Coin
+    ProviderAddress string
+    Id              uint64
+    Amount          sdk.Coin
 }
 ```
 
@@ -144,9 +144,9 @@ This message requests the exchange of lsTokens for native tokens from the reward
 The exchange rate is calcuated by current `MintRate` * `DiscountRate` where `discount rate = reward module account's balance / NetAmount`.
 ```go
 type MsgClaimDiscountedReward struct {
-	RequesterAddress string
-	Amount sdk.Coin
-	MinimumDiscountRate sdk.Dec
+    RequesterAddress    string
+    Amount              sdk.Coin
+    MinimumDiscountRate sdk.Dec
 }
 ```
 

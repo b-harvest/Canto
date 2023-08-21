@@ -20,7 +20,7 @@ The end block logic is executed at the end of each epoch.
 ### For all unpairing for unstake chunks
 
 - calculate the penalty
-  - penalty: `(chunk size tokens)` - `(balance of chunk)`
+  - penalty: `(chunk size tokens) - (balance of chunk)`
 - if the penalty value is positive
   - if the unpairing insurance can cover the penalty
     - the unpairing insurance sends penalty to the chunk
@@ -141,7 +141,7 @@ The end block logic is executed at the end of each epoch.
   - key: insurance id which in **ranked out insurances**
   - value: `Chunk`
 - for every insurances in **newly ranked in insurances**
-  - if there is a rank-out insurance which have same validator
+  - if there is a rank-out insurance which has the same validator
     - replace insurance id of chunk with new one because it directs same validator, we don’t have to re-delegate it
       - Rank out insurance becomes `Unpairing` insurance of chunk (`Paired → Unpairing`)
         - if rank out insurance is withdrawing insurance, just keep it as it is 

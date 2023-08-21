@@ -35,8 +35,8 @@ When a valid `MsgLiquidStake` is received, it will succeed if there is an empty 
 **Triggering Condition**
 The state transition is triggered when all of the following conditions are satisfied:
 
-- EndBlock & Epoch
-- `UnpairingForUnstakingChunkInfo` must exists
+- at the endblock of an epoch
+- `UnpairingForUnstakingChunkInfo` exists
 
 **Operations**
 
@@ -51,7 +51,7 @@ The state transition is triggered when all of the following conditions are satis
 
 **Triggering Condition**
 The state transition is triggered when all of the following conditions are satisfied:
-- EndBlock & Epoch
+- at the endblock of an epoch
 - one or more of the following conditions are met:
   - when paired `Insurance` start to be withdrawn
   - when paired Insurance's balance < 5.75% of chunkSize tokens
@@ -67,7 +67,7 @@ The state transition is triggered when all of the following conditions are satis
 
 **Triggering Condition**
 
-EndBlock & Epoch
+at the endblock of an epoch
 
 **Operations**
 
@@ -83,7 +83,7 @@ EndBlock & Epoch
 **Triggering Condition**
 The state transition is triggered when all of the following conditions are satisfied:
 
-- EndBlock & Epoch
+- at the endblock of an epoch
 - when there are no candidate insurances to pair with
 - chunk is not damaged
 
@@ -97,7 +97,7 @@ The state transition is triggered when all of the following conditions are satis
 **Triggering Condition**
 The state transition is triggered when all of the following conditions are satisfied:
 
-- EndBlock & Epoch
+- at the endblock of an epoch
 - chunk is damaged (insurance fails to cover all penalties, resulting in the chunk size becoming smaller than the designated fixed value)
 
 **Operations**
@@ -125,7 +125,7 @@ Otherwise `MsgProvideInsurance` fails.
 **Triggering Condition**
 One or more of the following conditions are met:
 
-- EndBlock & Epoch
+- at the endblock of an epoch
 - if there are an empty slot and got `MsgLiquidStake`
 
 **Operations**
@@ -138,7 +138,7 @@ One or more of the following conditions are met:
 **Triggering Condition**
 The state transition is triggered when all of the following conditions are satisfied:
 
-- EndBlock & Epoch
+- at the endblock of an epoch
 - if there are a `WithdrawInsuranceRequest`
 
 **Operations**
@@ -153,7 +153,7 @@ The state transition is triggered when all of the following conditions are satis
 **Triggering Condition**
 The state transition is triggered when all of the following conditions are satisfied:
 
-- EndBlock & Epoch
+- at the endblock of an epoch
 - one or more of the following conditions are met:
   - paired `Chunk` is started to undelegate **OR**
   - When paired Insurance's balance < 5.75% of chunkSize tokens **OR**
@@ -169,7 +169,7 @@ The state transition is triggered when all of the following conditions are satis
 **Triggering Condition**
 The state transition is triggered when all of the following conditions are satisfied:
 
-- EndBlock & Epoch
+- at the endblock of an epoch
 - `Insurance` is still valid
   - pointing a valid validator (bonded)
   - insurance balance >= 7% of chunk size of tokens 
@@ -182,7 +182,7 @@ The state transition is triggered when all of the following conditions are satis
 
 **Triggering Condition**
 
-EndBlock & Epoch
+at the endblock of an epoch
 
 **Operations**
 
@@ -193,7 +193,7 @@ EndBlock & Epoch
 **Triggering Condition**
 The state transition is triggered when all of the following conditions are satisfied:
 
-- EndBlock & Epoch
+- at the endblock of an epoch
 - Unpairing chunk is damaged(insurance already send all of its balance to chunk, but still not enough) 
 - insurance balance is 0 
 

@@ -6,10 +6,10 @@
 
 ```go
 type Chunk struct {
-  Id uint64 // Unique id increased by 1
-  PairedInsuranceId uint64 
-  UnpairingInsuranceId uint64 
-  Status ChunkStatus 
+    Id                   uint64 // Unique id increased by 1
+    PairedInsuranceId    uint64
+    UnpairingInsuranceId uint64
+    Status               ChunkStatus
 }
 ```
 A chunk object is created when token holder sends valid `MsgLiquidStake` and empty slot and a `Pairing` insurance are available.
@@ -35,12 +35,12 @@ An insurance object is created when Insurance Provider sends valid `MsgInsurance
 
 ```go
 type Insurance struct {
-  Id uint64 // Unique id increased by 1
-  ValidatorAddress string 
-  ProviderAddress string // An address of Insurance Provider
-  FeeRate staking_types.Dec 
-  ChunkId uint64 // Id of the chunk for which the insurance has a duty
-  Status InsuranceStatus 
+    Id               uint64 // Unique id increased by 1
+    ValidatorAddress string
+    ProviderAddress  string // An address of Insurance Provider
+    FeeRate          staking_types.Dec
+    ChunkId          uint64 // Id of the chunk for which the insurance has a duty
+    Status           InsuranceStatus
 }
 ```
 
@@ -71,10 +71,10 @@ The unstaking request does not take place immediately; it is initiated within th
 
 ```go
 type UnpairingForUnstakingChunkInfo struct {
-  ChunkId uint64 // Which chunk is tracked by this obj
-  DelegatorAddress string // Who requests MsgLiquidUnstake
-  // How much lstokens will be burned when unbonding finished
-  EscrowedLsTokens sdk.Coin 
+    ChunkId          uint64 // Which chunk is tracked by this obj
+    DelegatorAddress string // Who requests MsgLiquidUnstake
+    // How much lstokens will be burned when unbonding finished
+    EscrowedLsTokens sdk.Coin
 }
 ```
 It is removed when the chunk unbonding is finished (**[Cover slashing and handle mature unbondings](06_end_block.md#cover-slashing-and-handle-mature-unbondings)**).
@@ -86,7 +86,7 @@ It is created when msgServer got `MsgWithdrawInsurance`
 
 ```go
 type WithdrawInsuranceRequest struct {
-  InsuranceId uint64 // Which insurance is requested for withdrawal
+	InsuranceId uint64 // Which insurance is requested for withdrawal
 }
 ```
 
@@ -102,8 +102,8 @@ When the chunk is undergoing redelegation, a separate logic (**[Cover redelegati
 
 ```go
 type RedelegationInfo struct {
-  ChunkId uint64 // Which chunk is in re-delegation
-  CompletionTime time.Time // When re-delegation will be finished
+    ChunkId        uint64    // Which chunk is in re-delegation
+    CompletionTime time.Time // When re-delegation will be finished
 }
 ```
 
