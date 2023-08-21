@@ -7,7 +7,10 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
-func (k Keeper) GetNetAmountStateEssentials(ctx sdk.Context) (nase types.NetAmountStateEssentials) {
+func (k Keeper) GetNetAmountStateEssentials(ctx sdk.Context) (
+	nase types.NetAmountStateEssentials, pairedChunkWithInsuranceId map[uint64]types.Chunk,
+	pairedInsurances []types.Insurance, validatorMap map[string]stakingtypes.Validator,
+) {
 	liquidBondDenom := k.GetLiquidBondDenom(ctx)
 	bondDenom := k.stakingKeeper.BondDenom(ctx)
 	totalDelShares := sdk.ZeroDec()
@@ -18,29 +21,31 @@ func (k Keeper) GetNetAmountStateEssentials(ctx sdk.Context) (nase types.NetAmou
 	totalUnbondingChunksBalance := sdk.ZeroInt()
 	numPairedChunks := sdk.ZeroInt()
 
+	pairedChunkWithInsuranceId = make(map[uint64]types.Chunk)
 	// To reduce gas consumption, store validator info in map
-	insValMap := make(map[string]stakingtypes.Validator)
+	validatorMap = make(map[string]stakingtypes.Validator)
 	pairedCnt, unbondingCnt, restCnt := 0, 0, 0
 	k.IterateAllChunks(ctx, func(chunk types.Chunk) (stop bool) {
 		balance := k.bankKeeper.GetBalance(ctx, chunk.DerivedAddress(), k.stakingKeeper.BondDenom(ctx))
 		totalChunksBalance = totalChunksBalance.Add(balance.Amount)
 
-		g := ctx.GasMeter().GasConsumed()
 		switch chunk.Status {
 		case types.CHUNK_STATUS_PAIRED:
 			pairedCnt++
 			numPairedChunks = numPairedChunks.Add(sdk.OneInt())
 			pairedIns := k.mustGetInsurance(ctx, chunk.PairedInsuranceId)
+			pairedChunkWithInsuranceId[chunk.PairedInsuranceId] = chunk
+			pairedInsurances = append(pairedInsurances, pairedIns)
 			valAddr := pairedIns.GetValidator()
 			// Use map to reduce gas consumption
-			if _, ok := insValMap[valAddr.String()]; !ok {
+			if _, ok := validatorMap[valAddr.String()]; !ok {
 				validator, found := k.stakingKeeper.GetValidator(ctx, pairedIns.GetValidator())
 				if !found {
 					panic(fmt.Sprintf("validator of paired ins %s not found(insuranceId: %d)", pairedIns.GetValidator(), pairedIns.Id))
 				}
-				insValMap[valAddr.String()] = validator
+				validatorMap[valAddr.String()] = validator
 			}
-			validator := insValMap[valAddr.String()]
+			validator := validatorMap[valAddr.String()]
 
 			// Get delegation of chunk
 			del, found := k.stakingKeeper.GetDelegation(ctx, chunk.DerivedAddress(), validator.GetOperator())
@@ -65,8 +70,6 @@ func (k Keeper) GetNetAmountStateEssentials(ctx sdk.Context) (nase types.NetAmou
 			remainingReward := delReward.Sub(insuranceCommission)
 			totalRemainingRewardsBeforeModuleFee = totalRemainingRewardsBeforeModuleFee.Add(remainingReward)
 
-			diff := ctx.GasMeter().GasConsumed() - g
-			k.fileLogger.Debug("unit paired chunk gas consumption", "gas", diff)
 		default:
 			checked := false
 			k.stakingKeeper.IterateDelegatorUnbondingDelegations(ctx, chunk.DerivedAddress(), func(ubd stakingtypes.UnbondingDelegation) (stop bool) {
@@ -77,8 +80,6 @@ func (k Keeper) GetNetAmountStateEssentials(ctx sdk.Context) (nase types.NetAmou
 					tokenValue := k.calcTokenValueWithInsuranceCoverage(ctx, entry.Balance, unpairingIns)
 					totalUnbondingChunksBalance = totalUnbondingChunksBalance.Add(tokenValue)
 				}
-				diff := ctx.GasMeter().GasConsumed() - g
-				k.fileLogger.Debug("unit unbonding chunk gas consumption", "gas", diff)
 				return false
 			})
 			if !checked {
@@ -88,7 +89,6 @@ func (k Keeper) GetNetAmountStateEssentials(ctx sdk.Context) (nase types.NetAmou
 
 		return false
 	})
-	k.fileLogger.Debug("GetNetAmountEssentials", "paired chunks:", pairedCnt, "unbonding chunks", unbondingCnt, "rest chunks", restCnt)
 
 	rewardPoolBalance := k.bankKeeper.GetBalance(ctx, types.RewardPool, bondDenom).Amount
 	netAmountBeforeModuleFee := rewardPoolBalance.Add(totalChunksBalance).
@@ -117,6 +117,7 @@ func (k Keeper) GetNetAmountStateEssentials(ctx sdk.Context) (nase types.NetAmou
 	nase.NetAmount = nase.CalcNetAmount()
 	nase.MintRate = nase.CalcMintRate()
 	nase.DiscountRate = nase.CalcDiscountRate(params.MaximumDiscountRate)
+
 	return
 }
 

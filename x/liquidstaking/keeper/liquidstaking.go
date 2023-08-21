@@ -122,7 +122,7 @@ func (k Keeper) CollectRewardAndFee(
 // DistributeReward withdraws delegation rewards from all paired chunks
 // Keeper.CollectRewardAndFee will be called during withdrawing process.
 func (k Keeper) DistributeReward(ctx sdk.Context) {
-	nas := k.GetNetAmountStateEssentials(ctx)
+	nas, _, _, _ := k.GetNetAmountStateEssentials(ctx)
 	k.IterateAllChunks(ctx, func(chunk types.Chunk) bool {
 		if chunk.Status != types.CHUNK_STATUS_PAIRED {
 			return false
@@ -598,11 +598,13 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (
 	g = g2
 	k.fileLogger.Debug("beforeGetNetAmountStateEssentials", "gas", g2, "diff", diff)
 	nas := k.GetNetAmountStateEssentials(ctx)
+	k.fileLogger.Debug(fmt.Sprintf("%s:beforeGetNetAmountStateEssentials", msg.Type()), "gas", g2, "diff", diff)
+	nas, _, _, _ := k.GetNetAmountStateEssentials(ctx)
 
 	g2 = ctx.GasMeter().GasConsumed()
 	diff = g2 - g
 	g = g2
-	k.fileLogger.Debug("afterGetNetAmountStateEssentials", "gas", g2, "diff", diff)
+	k.fileLogger.Debug(fmt.Sprintf("%s:afterGetNetAmountStateEssentials", msg.Type()), "gas", g2, "diff", diff)
 	if nas.RemainingChunkSlots.LT(chunksToCreate) {
 		err = sdkerrors.Wrapf(
 			types.ErrExceedAvailableChunks,
@@ -616,13 +618,13 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (
 	g2 = ctx.GasMeter().GasConsumed()
 	diff = g2 - g
 	g = g2
-	k.fileLogger.Debug("beforeGetPairingInsurances", "gas", g2, "diff", diff)
+	k.fileLogger.Debug(fmt.Sprintf("%s:beforeGetPairingInsurances", msg.Type()), "gas", g2, "diff", diff)
 	pairingInsurances, validatorMap := k.GetPairingInsurances(ctx)
 
 	g2 = ctx.GasMeter().GasConsumed()
 	diff = g2 - g
 	g = g2
-	k.fileLogger.Debug("afterGetPairingInsurances", "gas", g2, "diff", diff)
+	k.fileLogger.Debug(fmt.Sprintf("%s:afterGetPairingInsurances", msg.Type()), "gas", g2, "diff", diff)
 	numPairingInsurances := sdk.NewIntFromUint64(uint64(len(pairingInsurances)))
 	if chunksToCreate.GT(numPairingInsurances) {
 		err = types.ErrNoPairingInsurance
@@ -641,7 +643,7 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (
 		g2 = ctx.GasMeter().GasConsumed()
 		diff = g2 - g
 		g = g2
-		k.fileLogger.Debug("beforeEscrowAndMintLsTokens", "gas", g2, "diff", diff)
+		k.fileLogger.Debug(fmt.Sprintf("%s:beforeEscrowAndMintLsTokens", msg.Type()), "gas", g2, "diff", diff)
 		cheapestIns := pairingInsurances[0]
 		pairingInsurances = pairingInsurances[1:]
 
@@ -687,7 +689,7 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (
 		g2 = ctx.GasMeter().GasConsumed()
 		diff = g2 - g
 		g = g2
-		k.fileLogger.Debug("afterEscrowAndMintLsTokens", "gas", g2, "diff", diff)
+		k.fileLogger.Debug(fmt.Sprintf("%s:afterEscrowAndMintLsTokens", msg.Type()), "gas", g2, "diff", diff)
 		chunks = append(chunks, chunk)
 		chunksToCreate = chunksToCreate.Sub(sdk.OneInt())
 	}
@@ -716,36 +718,22 @@ func (k Keeper) QueueLiquidUnstake(ctx sdk.Context, msg *types.MsgLiquidUnstake)
 
 	chunksToLiquidUnstake := amount.Amount.Quo(types.ChunkSize).Int64()
 
-	chunksWithInsId := make(map[uint64]types.Chunk)
-	var insurances []types.Insurance
-	validatorMap := make(map[string]stakingtypes.Validator)
-	g2 := ctx.GasMeter().GasConsumed()
-	diff := g2 - g
-	g = g2
-	k.fileLogger.Debug("beforeIterateAllChunks", "gas", g2, "diff", diff)
-	k.IterateAllChunks(ctx, func(chunk types.Chunk) (stop bool) {
-		if chunk.Status != types.CHUNK_STATUS_PAIRED {
-			return false
-		}
+	nase, pairedChunksWithInsuranceId, pairedInsurances, validatorMap := k.GetNetAmountStateEssentials(ctx)
+
+	// purelyPairedInsurances contains paired insurances which serve chunk which is not in queue for unstaking.
+	var purelyPairedInsurances []types.Insurance
+	for _, pairedIns := range pairedInsurances {
+		chunk := pairedChunksWithInsuranceId[pairedIns.Id]
 		// check whether the chunk is already have unstaking requests in queue.
 		_, found := k.GetUnpairingForUnstakingChunkInfo(ctx, chunk.Id)
 		if found {
-			return false
+			delete(pairedChunksWithInsuranceId, pairedIns.Id)
+			continue
 		}
+		purelyPairedInsurances = append(purelyPairedInsurances, pairedIns)
+	}
 
-		pairedIns, validator, _ := k.mustValidatePairedChunk(ctx, chunk)
-		if _, ok := validatorMap[pairedIns.GetValidator().String()]; !ok {
-			validatorMap[pairedIns.ValidatorAddress] = validator
-		}
-		insurances = append(insurances, pairedIns)
-		chunksWithInsId[pairedIns.Id] = chunk
-		return false
-	})
-	g2 = ctx.GasMeter().GasConsumed()
-	diff = g2 - g
-	g = g2
-	k.fileLogger.Debug("afterIterateAllChunks", "gas", g2, "diff", diff)
-	pairedChunks := int64(len(chunksWithInsId))
+	pairedChunks := int64(len(pairedChunksWithInsuranceId))
 	if pairedChunks == 0 {
 		err = types.ErrNoPairedChunk
 		return
@@ -760,19 +748,18 @@ func (k Keeper) QueueLiquidUnstake(ctx sdk.Context, msg *types.MsgLiquidUnstake)
 		return
 	}
 	// Sort insurances by descend order
-	types.SortInsurances(validatorMap, insurances, true)
+	types.SortInsurances(validatorMap, purelyPairedInsurances, true)
 
-	g2 = ctx.GasMeter().GasConsumed()
-	diff = g2 - g
+	g2 := ctx.GasMeter().GasConsumed()
+	diff := g2 - g
 	g = g2
-	k.fileLogger.Debug("beforeGetNetAmountStateEssentials", "gas", g2, "diff", diff)
+	k.fileLogger.Debug(fmt.Sprintf("%s:beforeGetNetAmountStateEssentials", msg.Type()), "gas", g2, "diff", diff)
 	// How much ls tokens must be burned
-	nas := k.GetNetAmountStateEssentials(ctx)
 
 	g2 = ctx.GasMeter().GasConsumed()
 	diff = g2 - g
 	g = g2
-	k.fileLogger.Debug("afterGetNetAmountStateEssentials", "gas", g2, "diff", diff)
+	k.fileLogger.Debug(fmt.Sprintf("%s:afterGetNetAmountStateEssentials", msg.Type()), "gas", g2, "diff", diff)
 	liquidBondDenom := k.GetLiquidBondDenom(ctx)
 	for i := int64(0); i < chunksToLiquidUnstake; i++ {
 		g2 = ctx.GasMeter().GasConsumed()
@@ -781,8 +768,8 @@ func (k Keeper) QueueLiquidUnstake(ctx sdk.Context, msg *types.MsgLiquidUnstake)
 		k.fileLogger.Debug("beforeQueueLiquidUnstake", "gas", g2, "diff", diff)
 		// Escrow ls tokens from the delegator
 		lsTokenBurnAmount := types.ChunkSize
-		if nas.LsTokensTotalSupply.IsPositive() {
-			lsTokenBurnAmount = lsTokenBurnAmount.ToDec().Mul(nas.MintRate).TruncateInt()
+		if nase.LsTokensTotalSupply.IsPositive() {
+			lsTokenBurnAmount = lsTokenBurnAmount.ToDec().Mul(nase.MintRate).TruncateInt()
 		}
 		lsTokensToBurn := sdk.NewCoin(liquidBondDenom, lsTokenBurnAmount)
 		if err = k.bankKeeper.SendCoins(
@@ -791,8 +778,8 @@ func (k Keeper) QueueLiquidUnstake(ctx sdk.Context, msg *types.MsgLiquidUnstake)
 			return
 		}
 
-		mostExpensiveInsurance := insurances[i]
-		chunkToBeUndelegated := chunksWithInsId[mostExpensiveInsurance.Id]
+		mostExpensiveInsurance := purelyPairedInsurances[i]
+		chunkToBeUndelegated := pairedChunksWithInsuranceId[mostExpensiveInsurance.Id]
 		_, found := k.GetUnpairingForUnstakingChunkInfo(ctx, chunkToBeUndelegated.Id)
 		if found {
 			err = sdkerrors.Wrapf(
@@ -809,7 +796,7 @@ func (k Keeper) QueueLiquidUnstake(ctx sdk.Context, msg *types.MsgLiquidUnstake)
 			msg.DelegatorAddress,
 			lsTokensToBurn,
 		)
-		toBeUnstakedChunks = append(toBeUnstakedChunks, chunksWithInsId[insurances[i].Id])
+		toBeUnstakedChunks = append(toBeUnstakedChunks, pairedChunksWithInsuranceId[mostExpensiveInsurance.Id])
 		infos = append(infos, info)
 		k.SetUnpairingForUnstakingChunkInfo(ctx, info)
 		g2 = ctx.GasMeter().GasConsumed()
@@ -1012,12 +999,12 @@ func (k Keeper) DoClaimDiscountedReward(ctx sdk.Context, msg *types.MsgClaimDisc
 	g2 := ctx.GasMeter().GasConsumed()
 	diff := g2 - g
 	g = g2
-	k.fileLogger.Debug("beforeGetNetAmountState", "gas", g2, "diff", diff)
-	nas := k.GetNetAmountStateEssentials(ctx)
+	k.fileLogger.Debug(fmt.Sprintf("%s:beforeGetNetAmountState", msg.Type()), "gas", g2, "diff", diff)
+	nas, _, _, _ := k.GetNetAmountStateEssentials(ctx)
 	g2 = ctx.GasMeter().GasConsumed()
 	diff = g2 - g
 	g = g2
-	k.fileLogger.Debug("afterGetNetAmountState", "gas", g2, "diff", diff)
+	k.fileLogger.Debug(fmt.Sprintf("%s:afterGetNetAmountState", msg.Type()), "gas", g2, "diff", diff)
 	// discount rate >= minimum discount rate
 	// if discount rate(e.g. 10%) is lower than minimum discount rate(e.g. 20%), then it is not profitable to claim reward.
 	if nas.DiscountRate.LT(msg.MinimumDiscountRate) {
