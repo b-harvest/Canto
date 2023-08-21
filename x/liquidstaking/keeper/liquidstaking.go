@@ -579,8 +579,6 @@ func (k Keeper) RePairRankedInsurances(
 func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (
 	chunks []types.Chunk, newShares sdk.Dec, lsTokenMintAmount sdk.Int, err error,
 ) {
-	g := ctx.GasMeter().GasConsumed()
-	k.fileLogger.Debug(fmt.Sprintf("start-%s", msg.Type()), "gas", g)
 	delAddr := msg.GetDelegator()
 	amount := msg.Amount
 
@@ -593,16 +591,8 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (
 	}
 	chunksToCreate := amount.Amount.Quo(types.ChunkSize)
 
-	g2 := ctx.GasMeter().GasConsumed()
-	diff := g2 - g
-	g = g2
-	k.fileLogger.Debug(fmt.Sprintf("%s:beforeGetNetAmountStateEssentials", msg.Type()), "gas", g2, "diff", diff)
 	nas, _, _, _ := k.GetNetAmountStateEssentials(ctx)
 
-	g2 = ctx.GasMeter().GasConsumed()
-	diff = g2 - g
-	g = g2
-	k.fileLogger.Debug(fmt.Sprintf("%s:afterGetNetAmountStateEssentials", msg.Type()), "gas", g2, "diff", diff)
 	if nas.RemainingChunkSlots.LT(chunksToCreate) {
 		err = sdkerrors.Wrapf(
 			types.ErrExceedAvailableChunks,
@@ -613,16 +603,8 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (
 		return
 	}
 
-	g2 = ctx.GasMeter().GasConsumed()
-	diff = g2 - g
-	g = g2
-	k.fileLogger.Debug(fmt.Sprintf("%s:beforeGetPairingInsurances", msg.Type()), "gas", g2, "diff", diff)
 	pairingInsurances, validatorMap := k.GetPairingInsurances(ctx)
 
-	g2 = ctx.GasMeter().GasConsumed()
-	diff = g2 - g
-	g = g2
-	k.fileLogger.Debug(fmt.Sprintf("%s:afterGetPairingInsurances", msg.Type()), "gas", g2, "diff", diff)
 	numPairingInsurances := sdk.NewIntFromUint64(uint64(len(pairingInsurances)))
 	if chunksToCreate.GT(numPairingInsurances) {
 		err = types.ErrNoPairingInsurance
@@ -638,10 +620,6 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (
 		if chunksToCreate.IsZero() {
 			break
 		}
-		g2 = ctx.GasMeter().GasConsumed()
-		diff = g2 - g
-		g = g2
-		k.fileLogger.Debug(fmt.Sprintf("%s:beforeEscrowAndMintLsTokens", msg.Type()), "gas", g2, "diff", diff)
 		cheapestIns := pairingInsurances[0]
 		pairingInsurances = pairingInsurances[1:]
 
@@ -684,14 +662,9 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (
 		if err = k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, delAddr, sdk.NewCoins(mintedCoin)); err != nil {
 			return
 		}
-		g2 = ctx.GasMeter().GasConsumed()
-		diff = g2 - g
-		g = g2
-		k.fileLogger.Debug(fmt.Sprintf("%s:afterEscrowAndMintLsTokens", msg.Type()), "gas", g2, "diff", diff)
 		chunks = append(chunks, chunk)
 		chunksToCreate = chunksToCreate.Sub(sdk.OneInt())
 	}
-	k.fileLogger.Debug(fmt.Sprintf("end-%s", msg.Type()), "gas", g)
 	return
 }
 
@@ -702,8 +675,6 @@ func (k Keeper) QueueLiquidUnstake(ctx sdk.Context, msg *types.MsgLiquidUnstake)
 	infos []types.UnpairingForUnstakingChunkInfo,
 	err error,
 ) {
-	g := ctx.GasMeter().GasConsumed()
-	k.fileLogger.Debug(fmt.Sprintf("start-%s", msg.Type()), "gas", ctx.GasMeter().GasConsumed())
 	delAddr := msg.GetDelegator()
 	amount := msg.Amount
 
@@ -748,22 +719,10 @@ func (k Keeper) QueueLiquidUnstake(ctx sdk.Context, msg *types.MsgLiquidUnstake)
 	// Sort insurances by descend order
 	types.SortInsurances(validatorMap, purelyPairedInsurances, true)
 
-	g2 := ctx.GasMeter().GasConsumed()
-	diff := g2 - g
-	g = g2
-	k.fileLogger.Debug(fmt.Sprintf("%s:beforeGetNetAmountStateEssentials", msg.Type()), "gas", g2, "diff", diff)
 	// How much ls tokens must be burned
 
-	g2 = ctx.GasMeter().GasConsumed()
-	diff = g2 - g
-	g = g2
-	k.fileLogger.Debug(fmt.Sprintf("%s:afterGetNetAmountStateEssentials", msg.Type()), "gas", g2, "diff", diff)
 	liquidBondDenom := k.GetLiquidBondDenom(ctx)
 	for i := int64(0); i < chunksToLiquidUnstake; i++ {
-		g2 = ctx.GasMeter().GasConsumed()
-		diff = g2 - g
-		g = g2
-		k.fileLogger.Debug("beforeQueueLiquidUnstake", "gas", g2, "diff", diff)
 		// Escrow ls tokens from the delegator
 		lsTokenBurnAmount := types.ChunkSize
 		if nase.LsTokensTotalSupply.IsPositive() {
@@ -797,18 +756,11 @@ func (k Keeper) QueueLiquidUnstake(ctx sdk.Context, msg *types.MsgLiquidUnstake)
 		toBeUnstakedChunks = append(toBeUnstakedChunks, pairedChunksWithInsuranceId[mostExpensiveInsurance.Id])
 		infos = append(infos, info)
 		k.SetUnpairingForUnstakingChunkInfo(ctx, info)
-		g2 = ctx.GasMeter().GasConsumed()
-		diff = g2 - g
-		g = g2
-		k.fileLogger.Debug("afterQueueLiquidUnstake", "gas", g2, "diff", diff)
 	}
-	k.fileLogger.Debug(fmt.Sprintf("end-%s", msg.Type()), "gas", g)
 	return
 }
 
 func (k Keeper) DoProvideInsurance(ctx sdk.Context, msg *types.MsgProvideInsurance) (ins types.Insurance, err error) {
-	g := ctx.GasMeter().GasConsumed()
-	k.fileLogger.Debug(fmt.Sprintf("start-%s", msg.Type()), "gas", g)
 	providerAddr := msg.GetProvider()
 	valAddr := msg.GetValidator()
 	feeRate := msg.FeeRate
@@ -849,16 +801,10 @@ func (k Keeper) DoProvideInsurance(ctx sdk.Context, msg *types.MsgProvideInsuran
 	}
 	k.SetInsurance(ctx, ins)
 
-	g2 := ctx.GasMeter().GasConsumed()
-	diff := g2 - g
-	g = g2
-	k.fileLogger.Debug(fmt.Sprintf("end-%s", msg.Type()), "gas", g2, "diff", diff)
 	return
 }
 
 func (k Keeper) DoCancelProvideInsurance(ctx sdk.Context, msg *types.MsgCancelProvideInsurance) (ins types.Insurance, err error) {
-	g := ctx.GasMeter().GasConsumed()
-	k.fileLogger.Debug(fmt.Sprintf("start-%s", msg.Type()), "gas", g)
 	providerAddr := msg.GetProvider()
 	insId := msg.Id
 
@@ -884,10 +830,6 @@ func (k Keeper) DoCancelProvideInsurance(ctx sdk.Context, msg *types.MsgCancelPr
 		return ins, err
 	}
 	k.DeleteInsurance(ctx, insId)
-	g2 := ctx.GasMeter().GasConsumed()
-	diff := g2 - g
-	g = g2
-	k.fileLogger.Debug(fmt.Sprintf("end-%s", msg.Type()), "gas", g2, "diff", diff)
 	return
 }
 
@@ -896,8 +838,6 @@ func (k Keeper) DoCancelProvideInsurance(ctx sdk.Context, msg *types.MsgCancelPr
 func (k Keeper) DoWithdrawInsurance(ctx sdk.Context, msg *types.MsgWithdrawInsurance) (
 	ins types.Insurance, req types.WithdrawInsuranceRequest, err error,
 ) {
-	g := ctx.GasMeter().GasConsumed()
-	k.fileLogger.Debug(fmt.Sprintf("start-%s", msg.Type()), "gas", g)
 	if ins, err = k.validateInsurance(ctx, msg.Id, msg.GetProvider(), types.INSURANCE_STATUS_UNSPECIFIED); err != nil {
 		return
 	}
@@ -914,10 +854,6 @@ func (k Keeper) DoWithdrawInsurance(ctx sdk.Context, msg *types.MsgWithdrawInsur
 	default:
 		err = sdkerrors.Wrapf(types.ErrNotInWithdrawableStatus, "ins status: %s", ins.Status)
 	}
-	g2 := ctx.GasMeter().GasConsumed()
-	diff := g2 - g
-	g = g2
-	k.fileLogger.Debug(fmt.Sprintf("end-%s", msg.Type()), "gas", g2, "diff", diff)
 	return
 }
 
@@ -926,8 +862,6 @@ func (k Keeper) DoWithdrawInsuranceCommission(
 	ctx sdk.Context,
 	msg *types.MsgWithdrawInsuranceCommission,
 ) (feePoolBals sdk.Coins, err error) {
-	g := ctx.GasMeter().GasConsumed()
-	k.fileLogger.Debug(fmt.Sprintf("start-%s", msg.Type()), "gas", g)
 	providerAddr := msg.GetProvider()
 	insId := msg.Id
 
@@ -948,17 +882,11 @@ func (k Keeper) DoWithdrawInsuranceCommission(
 	if insBals.IsZero() && feePoolBals.IsZero() {
 		k.DeleteInsurance(ctx, insId)
 	}
-	g2 := ctx.GasMeter().GasConsumed()
-	diff := g2 - g
-	g = g2
-	k.fileLogger.Debug(fmt.Sprintf("end-%s", msg.Type()), "gas", g2, "diff", diff)
 	return
 }
 
 // DoDepositInsurance deposits more coin to insurance.
 func (k Keeper) DoDepositInsurance(ctx sdk.Context, msg *types.MsgDepositInsurance) (err error) {
-	g := ctx.GasMeter().GasConsumed()
-	k.fileLogger.Debug(fmt.Sprintf("start-%s", msg.Type()), "gas", g)
 	providerAddr := msg.GetProvider()
 	insuranceId := msg.Id
 	amount := msg.Amount
@@ -975,10 +903,6 @@ func (k Keeper) DoDepositInsurance(ctx sdk.Context, msg *types.MsgDepositInsuran
 		return
 	}
 
-	g2 := ctx.GasMeter().GasConsumed()
-	diff := g2 - g
-	g = g2
-	k.fileLogger.Debug(fmt.Sprintf("end-%s", msg.Type()), "gas", g2, "diff", diff)
 	return
 }
 
@@ -988,21 +912,11 @@ func (k Keeper) DoClaimDiscountedReward(ctx sdk.Context, msg *types.MsgClaimDisc
 	discountedMintRate sdk.Dec,
 	err error,
 ) {
-	g := ctx.GasMeter().GasConsumed()
-	k.fileLogger.Debug(fmt.Sprintf("start-%s", msg.Type()), "gas", g)
 	if err = k.ShouldBeLiquidBondDenom(ctx, msg.Amount.Denom); err != nil {
 		return
 	}
 
-	g2 := ctx.GasMeter().GasConsumed()
-	diff := g2 - g
-	g = g2
-	k.fileLogger.Debug(fmt.Sprintf("%s:beforeGetNetAmountState", msg.Type()), "gas", g2, "diff", diff)
 	nas, _, _, _ := k.GetNetAmountStateEssentials(ctx)
-	g2 = ctx.GasMeter().GasConsumed()
-	diff = g2 - g
-	g = g2
-	k.fileLogger.Debug(fmt.Sprintf("%s:afterGetNetAmountState", msg.Type()), "gas", g2, "diff", diff)
 	// discount rate >= minimum discount rate
 	// if discount rate(e.g. 10%) is lower than minimum discount rate(e.g. 20%), then it is not profitable to claim reward.
 	if nas.DiscountRate.LT(msg.MinimumDiscountRate) {
@@ -1036,10 +950,6 @@ func (k Keeper) DoClaimDiscountedReward(ctx sdk.Context, msg *types.MsgClaimDisc
 		return
 	}
 
-	g2 = ctx.GasMeter().GasConsumed()
-	diff = g2 - g
-	g = g2
-	k.fileLogger.Debug(fmt.Sprintf("end-%s", msg.Type()), "gas", g2, "diff", diff)
 	return
 }
 

@@ -1,14 +1,9 @@
 package keeper
 
 import (
-	"fmt"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
-	"os"
-	"path/filepath"
-	"time"
-
 	"github.com/tendermint/tendermint/libs/log"
 
 	"github.com/Canto-Network/Canto/v7/x/liquidstaking/types"
@@ -26,8 +21,6 @@ type Keeper struct {
 	stakingKeeper      types.StakingKeeper
 	slashingKeeper     types.SlashingKeeper
 	evidenceKeeper     types.EvidenceKeeper
-
-	fileLogger log.Logger
 }
 
 // NewKeeper creates a new mint Keeper instance
@@ -46,11 +39,6 @@ func NewKeeper(
 	if !subspace.HasKeyTable() {
 		subspace = subspace.WithKeyTable(types.ParamKeyTable())
 	}
-	file, err := os.OpenFile(filepath.Join(os.Getenv("HOME"), "logs", fmt.Sprintf("liquidstaking.log-%s", time.Now().Format(time.RFC3339))), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		panic(err)
-	}
-	fileLogger := log.NewTMLogger(log.NewSyncWriter(file)).With("module", "x/liquidstaking")
 	return Keeper{
 		storeKey:           storeKey,
 		cdc:                cdc,
@@ -61,8 +49,6 @@ func NewKeeper(
 		stakingKeeper:      stakingKeeper,
 		slashingKeeper:     slashingKeeper,
 		evidenceKeeper:     evidenceKeeper,
-
-		fileLogger: fileLogger,
 	}
 }
 

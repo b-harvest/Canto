@@ -170,7 +170,6 @@ func AppStateRandomizedFn(
 	if numInitiallyBonded > numAccs {
 		numInitiallyBonded = numAccs
 	}
-
 	fmt.Printf(
 		`Selected randomly generated parameters for simulated genesis:
 {

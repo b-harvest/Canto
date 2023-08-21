@@ -24,14 +24,12 @@ func (k Keeper) GetNetAmountStateEssentials(ctx sdk.Context) (
 	pairedChunkWithInsuranceId = make(map[uint64]types.Chunk)
 	// To reduce gas consumption, store validator info in map
 	validatorMap = make(map[string]stakingtypes.Validator)
-	pairedCnt, unbondingCnt, restCnt := 0, 0, 0
 	k.IterateAllChunks(ctx, func(chunk types.Chunk) (stop bool) {
 		balance := k.bankKeeper.GetBalance(ctx, chunk.DerivedAddress(), k.stakingKeeper.BondDenom(ctx))
 		totalChunksBalance = totalChunksBalance.Add(balance.Amount)
 
 		switch chunk.Status {
 		case types.CHUNK_STATUS_PAIRED:
-			pairedCnt++
 			numPairedChunks = numPairedChunks.Add(sdk.OneInt())
 			pairedIns := k.mustGetInsurance(ctx, chunk.PairedInsuranceId)
 			pairedChunkWithInsuranceId[chunk.PairedInsuranceId] = chunk
@@ -79,7 +77,6 @@ func (k Keeper) GetNetAmountStateEssentials(ctx sdk.Context) (
 		default:
 			checked := false
 			k.stakingKeeper.IterateDelegatorUnbondingDelegations(ctx, chunk.DerivedAddress(), func(ubd stakingtypes.UnbondingDelegation) (stop bool) {
-				unbondingCnt++
 				checked = true
 				for _, entry := range ubd.Entries {
 					unpairingIns := k.mustGetInsurance(ctx, chunk.UnpairingInsuranceId)
@@ -89,7 +86,6 @@ func (k Keeper) GetNetAmountStateEssentials(ctx sdk.Context) (
 				return false
 			})
 			if !checked {
-				restCnt++
 			}
 		}
 
