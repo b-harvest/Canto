@@ -122,7 +122,7 @@ func (k Keeper) CollectRewardAndFee(
 // DistributeReward withdraws delegation rewards from all paired chunks
 // Keeper.CollectRewardAndFee will be called during withdrawing process.
 func (k Keeper) DistributeReward(ctx sdk.Context) {
-	nas, _, _, _ := k.GetNetAmountStateEssentials(ctx)
+	nase, _, _, _ := k.GetNetAmountStateEssentials(ctx)
 	k.IterateAllChunks(ctx, func(chunk types.Chunk) bool {
 		if chunk.Status != types.CHUNK_STATUS_PAIRED {
 			return false
@@ -133,7 +133,7 @@ func (k Keeper) DistributeReward(ctx sdk.Context) {
 			panic(err)
 		}
 
-		k.CollectRewardAndFee(ctx, nas.FeeRate, chunk, pairedIns)
+		k.CollectRewardAndFee(ctx, nase.FeeRate, chunk, pairedIns)
 		return false
 	})
 }
@@ -591,14 +591,14 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (
 	}
 	chunksToCreate := amount.Amount.Quo(types.ChunkSize)
 
-	nas, _, _, _ := k.GetNetAmountStateEssentials(ctx)
+	nase, _, _, _ := k.GetNetAmountStateEssentials(ctx)
 
-	if nas.RemainingChunkSlots.LT(chunksToCreate) {
+	if nase.RemainingChunkSlots.LT(chunksToCreate) {
 		err = sdkerrors.Wrapf(
 			types.ErrExceedAvailableChunks,
 			"requested chunks to create: %d, available chunks: %s",
 			chunksToCreate,
-			nas.RemainingChunkSlots.String(),
+			nase.RemainingChunkSlots.String(),
 		)
 		return
 	}
@@ -647,8 +647,8 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (
 
 		// Mint the liquid staking token
 		lsTokenMintAmount = types.ChunkSize
-		if nas.LsTokensTotalSupply.IsPositive() {
-			lsTokenMintAmount = nas.MintRate.MulTruncate(types.ChunkSize.ToDec()).TruncateInt()
+		if nase.LsTokensTotalSupply.IsPositive() {
+			lsTokenMintAmount = nase.MintRate.MulTruncate(types.ChunkSize.ToDec()).TruncateInt()
 		}
 		if !lsTokenMintAmount.IsPositive() {
 			err = sdkerrors.Wrapf(types.ErrInvalidAmount, "amount must be greater than or equal to %s", amount.String())
@@ -916,14 +916,14 @@ func (k Keeper) DoClaimDiscountedReward(ctx sdk.Context, msg *types.MsgClaimDisc
 		return
 	}
 
-	nas, _, _, _ := k.GetNetAmountStateEssentials(ctx)
+	nase, _, _, _ := k.GetNetAmountStateEssentials(ctx)
 	// discount rate >= minimum discount rate
 	// if discount rate(e.g. 10%) is lower than minimum discount rate(e.g. 20%), then it is not profitable to claim reward.
-	if nas.DiscountRate.LT(msg.MinimumDiscountRate) {
-		err = sdkerrors.Wrapf(types.ErrDiscountRateTooLow, "current discount rate: %s", nas.DiscountRate)
+	if nase.DiscountRate.LT(msg.MinimumDiscountRate) {
+		err = sdkerrors.Wrapf(types.ErrDiscountRateTooLow, "current discount rate: %s", nase.DiscountRate)
 		return
 	}
-	discountedMintRate = nas.MintRate.Mul(sdk.OneDec().Sub(nas.DiscountRate))
+	discountedMintRate = nase.MintRate.Mul(sdk.OneDec().Sub(nase.DiscountRate))
 
 	var claimableCoin sdk.Coin
 	var burnAmt sdk.Coin
