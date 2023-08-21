@@ -59,9 +59,15 @@ func (k Keeper) GetNetAmountStateEssentials(ctx sdk.Context) (
 			tokenValue = k.calcTokenValueWithInsuranceCoverage(ctx, tokenValue, pairedIns)
 			totalLiquidTokens = totalLiquidTokens.Add(tokenValue)
 
+			beforeCachedCtxConsumed := ctx.GasMeter().GasConsumed()
 			cachedCtx, _ := ctx.CacheContext()
 			endingPeriod := k.distributionKeeper.IncrementValidatorPeriod(cachedCtx, validator)
 			delRewards := k.distributionKeeper.CalculateDelegationRewards(cachedCtx, validator, del, endingPeriod)
+			afterCachedCtxConsumed := cachedCtx.GasMeter().GasConsumed()
+			cachedCtx.GasMeter().RefundGas(
+				afterCachedCtxConsumed-beforeCachedCtxConsumed,
+				"cachedCtx does not write state",
+			)
 			// chunk's remaining reward is calculated by
 			// 1. rest = del_reward - insurance_commission
 			// 2. remaining = rest x (1 - module_fee_rate)

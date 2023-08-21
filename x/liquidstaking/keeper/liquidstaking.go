@@ -596,8 +596,6 @@ func (k Keeper) DoLiquidStake(ctx sdk.Context, msg *types.MsgLiquidStake) (
 	g2 := ctx.GasMeter().GasConsumed()
 	diff := g2 - g
 	g = g2
-	k.fileLogger.Debug("beforeGetNetAmountStateEssentials", "gas", g2, "diff", diff)
-	nas := k.GetNetAmountStateEssentials(ctx)
 	k.fileLogger.Debug(fmt.Sprintf("%s:beforeGetNetAmountStateEssentials", msg.Type()), "gas", g2, "diff", diff)
 	nas, _, _, _ := k.GetNetAmountStateEssentials(ctx)
 
