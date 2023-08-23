@@ -27,12 +27,11 @@ The significance of 5.75% lies in safeguarding the security of the `liquidstakin
 
 # Validation Commission Change Ante Handler
 
-The liquidstaking module has fee rate competition mechanism, so validator have incentive to lower their commission rate to get delegations from liquid staking module.
-At every epoch, the liquidstaking module will check the validator commission rate + insurance fee rate and sorts by ascending order(insurance with lower fee rate comes first).
+The `liquidstaking` module sorts validator-insurance pairs in ascending order of the combined insurance fee and validator commission. Only pairs within a specific ranking can participate in liquidstaking. As a result, validators and insurers voluntarily lower their fee rates to engage in a fee rate competition mechanism, aiming to secure more delegation rewards.
+The logic for calculating the ranking takes place during each epoch. Therefore, malicious validators can manipulate the ranking by setting a low commission rate just before the epoch and then increasing it significantly using the MsgEditValidator message after the epoch has passed. This can render the natural fee rate competition meaningless.
 
-But validator can edit its commission rate at any time by using MsgEditValidator which can make the fee rate competition mechanism meaningless.
-To avoid this, we need to impose restrictions on validator commission changes.
 
 ## ValCommissionChangeLimitDecorator
-It only accepts MsgEditValidator when current block time is within 23 hours and 50 minutes of the next epoch.
-staking module have 24 hours limit for continuous MsgEditValidator, so validator can change only one time in that period.
+To prevent this, the `liquidstaking` module imposes a restriction on the frequency of commission rate changes.
+It only accepts `MsgEditValidator` when current block time is within a certain time window (23 hours and 50 minutes before the upcoming epoch).
+`staking` module have 24 hours limit for continuous `MsgEditValidator`, therefore validators can change their commission rates only once per epoch.
