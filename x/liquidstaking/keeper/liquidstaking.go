@@ -935,6 +935,11 @@ func (k Keeper) DoClaimDiscountedReward(ctx sdk.Context, msg *types.MsgClaimDisc
 	claimableCoin = k.bankKeeper.GetBalance(ctx, types.RewardPool, k.stakingKeeper.BondDenom(ctx))
 	burnAmt = msg.Amount
 
+	// sanity check to avoid division by zero
+	if discountedMintRate.IsZero() {
+		err = sdkerrors.Wrapf(types.ErrInvalidAmount, "discounted mint rate must be greater than zero")
+		return
+	}
 	// claim amount = (ls token amount / discounted mint rate)
 	claimAmt := burnAmt.Amount.ToDec().QuoTruncate(discountedMintRate).TruncateInt()
 	// Requester can claim only up to claimable amount
