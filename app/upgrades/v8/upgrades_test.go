@@ -86,6 +86,10 @@ func (s *UpgradeTestSuite) TestUpgradeV8() {
 					params.DynamicFeeRate.MaxFeeRate, types.DefaultMaxFee)
 				s.Require().EqualValues(
 					params.MaximumDiscountRate, types.DefaultMaximumDiscountRate)
+
+				liquidBondDenom := s.app.LiquidStakingKeeper.GetLiquidBondDenom(s.ctx)
+				s.Require().EqualValues(
+					liquidBondDenom, types.DefaultLiquidBondDenom)
 			},
 			true,
 		},
