@@ -932,7 +932,9 @@ func (k Keeper) DoClaimDiscountedReward(ctx sdk.Context, msg *types.MsgClaimDisc
 	var claimableCoin sdk.Coin
 	var burnAmt sdk.Coin
 
-	claimableCoin = k.bankKeeper.GetBalance(ctx, types.RewardPool, k.stakingKeeper.BondDenom(ctx))
+	rewardPoolCoins := k.bankKeeper.SpendableCoins(ctx, types.RewardPool)
+	bondDenom := k.stakingKeeper.BondDenom(ctx)
+	claimableCoin = sdk.NewCoin(bondDenom, rewardPoolCoins.AmountOf(bondDenom))
 	burnAmt = msg.Amount
 
 	// sanity check to avoid division by zero
