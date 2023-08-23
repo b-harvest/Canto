@@ -24,6 +24,7 @@ func CreateUpgradeHandler(
 
 		params := liquidstakingtypes.DefaultParams()
 		liquidstakingKeeper.SetParams(ctx, params)
+		liquidstakingKeeper.SetLiquidBondDenom(ctx, liquidstakingtypes.DefaultLiquidBondDenom)
 
 		// Leave modules are as-is to avoid running InitGenesis.
 		logger.Debug("running module migrations ...")
