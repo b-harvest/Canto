@@ -3,9 +3,10 @@ package keeper_test
 import (
 	"time"
 
+	"github.com/evmos/ethermint/tests"
+
 	"github.com/Canto-Network/Canto/v7/x/govshuttle"
 	"github.com/Canto-Network/Canto/v7/x/govshuttle/types"
-	"github.com/evmos/ethermint/tests"
 )
 
 func (suite *KeeperTestSuite) TestDefaultGenesis() {
@@ -17,7 +18,10 @@ func (suite *KeeperTestSuite) TestDefaultGenesis() {
 }
 
 func (suite *KeeperTestSuite) TestImportExportGenesisEmpty() {
+	_, found := suite.app.GovshuttleKeeper.GetPort(suite.ctx)
+	suite.Require().False(found)
 	genState := govshuttle.ExportGenesis(suite.ctx, suite.app.GovshuttleKeeper)
+	suite.Require().Nil(genState.PortAddress)
 
 	// Copy genState to genState2 and init with it
 	var genState2 types.GenesisState
@@ -25,9 +29,13 @@ func (suite *KeeperTestSuite) TestImportExportGenesisEmpty() {
 	suite.app.AppCodec().MustUnmarshalJSON(bz, &genState2)
 	govshuttle.InitGenesis(suite.ctx, suite.app.GovshuttleKeeper, suite.app.AccountKeeper, genState2)
 
+	_, found = suite.app.GovshuttleKeeper.GetPort(suite.ctx)
+	suite.Require().False(found)
+
 	genState3 := govshuttle.ExportGenesis(suite.ctx, suite.app.GovshuttleKeeper)
 	suite.Equal(*genState, genState2)
 	suite.Equal(genState2, *genState3)
+	suite.Require().Nil(genState.PortAddress)
 }
 
 func (suite *KeeperTestSuite) TestInitExportGenesis() {
