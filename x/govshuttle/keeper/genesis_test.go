@@ -31,7 +31,8 @@ func (suite *KeeperTestSuite) TestImportExportGenesisEmpty() {
 }
 
 func (suite *KeeperTestSuite) TestInitExportGenesis() {
-	expGenesis := types.NewGenesisState(types.DefaultParams(), tests.GenerateAddress())
+	portAddress := tests.GenerateAddress()
+	expGenesis := types.NewGenesisState(types.DefaultParams(), portAddress.Bytes())
 
 	govshuttle.InitGenesis(suite.ctx, suite.app.GovshuttleKeeper, suite.app.AccountKeeper, *expGenesis)
 	genState := govshuttle.ExportGenesis(suite.ctx, suite.app.GovshuttleKeeper)
