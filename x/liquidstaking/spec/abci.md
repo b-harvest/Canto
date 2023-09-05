@@ -22,11 +22,11 @@ In case of the same ranking, the ranking is assigned in a "first come, first ser
 | 5    | 5%       | 2%                        | 7%    | 1       |
 
 
-When a chunk is liquid staked, pairing is done sequentially starting from the insurance with the highest ranking. Therefore, in the above diagram, the 3 chunks that are staked will be paired with insurance 5, 3, and 1 in that order.
+When a chunk is liquid staked, pairing is done sequentially starting from the insurance with the highest ranking. Therefore, in the above diagram, the 3 chunks that are staked will be paired with insurance 5, 3, 1, 2 and 4 in that order.
 
 Before reaching the next epoch, a new insurance, Insurance 6, has been added, which refers to Validator 4. The total fee for this insurance-validator pair is 5%, making it more attractive in terms of fees compared to the existing insurance-validator pairs.
 Therefore, in the next epoch, this insurance-validator pair will occupy the top position in the ranking, and since the max chunk slot is 5, the insurance with the lowest ranking, Insurance 4, will be pushed out of the slot.
-Furthermore, among the chunks paired with insurance, the one with the lowest ranking, Insurance 1 (rank-out), is replaced by Insurance 6 (rank-in). In other words, the chunks paired with Insurance 1 are re-paired with Insurance 6.
+In other words, the chunks paired with Insurance 4 (rank-out) are re-paired with Insurance 6 (rank-in).
 
 ## Re-pairing
 The re-pairing process depends on whether the rank-in insurance points to the same validator as the rank-out insurance or not.
@@ -35,14 +35,14 @@ The re-pairing process depends on whether the rank-in insurance points to the sa
 
 ![re-pairing-same-validator](./re-pairing-same-validator.png)
 
-In this case, where both the rank-in and rank-out insurances indicate the same validator, the re-pairing process is relatively straightforward. Since the validator remains the same, there is no need to modify the chunk's delegation. The only change required is to update the insurance reference for the chunk, ensuring that it correctly reflects the rank-in insurance. This process ensures that the chunk's stake continues to be properly insured by the same validator, and it can be accomplished by updating the insurance reference without additional delegation changes.
+In this case, where both the rank-in and rank-out insurances indicate the same validator, the re-pairing process is relatively straightforward. Since the validator remains the same, there is no need to modify the chunk's delegation. The only change required is to update the insurance reference for the chunk, ensuring that it correctly reflects the rank-in insurance. This process ensures that the chunk's delegation continues to be properly insured by the same validator, and it can be accomplished by updating the insurance reference without additional delegation changes.
 
 **Case 2**: Rank-in insurance points to a different validator than the rank-out insurance
 
 ![re-pairing-different-validator](./re-pairing-different-validator.png)
 
-In this case, a more complex re-pairing process is necessary as the chunk's delegation needs to be realigned with the change in the insured validator. This entails re-delegating the chunk's stake from the validator specified by the rank-out insurance to the new validator indicated by the rank-in insurance. This adjustment ensures that the chunk's stake is appropriately insured by the rank-in insurance and maintains the security and integrity of the liquid staking system.
-Since the re-delegation period is the same as the epoch duration, the re-delegation process will be completed during the next epoch. This ensures a smooth transition in the liquid staking system, with the chunk's stake effectively moved to the new validator specified by the rank-in insurance at the beginning of the next epoch.
+In this case, a more complex re-pairing process is necessary as the chunk's delegation needs to be realigned with the change in the insured validator. This entails re-delegating the chunk's stake from the validator specified by the rank-out insurance to the new validator indicated by the rank-in insurance. This adjustment ensures that the chunk's stake is appropriately insured by the rank-in insurance and maintains the security and integrity of the liquid staking module.
+Since the re-delegation period is the same as the epoch duration, the re-delegation process will be completed during the next epoch. This ensures a smooth transition with the chunk's delegation effectively moved to the new validator specified by the rank-in insurance at the beginning of the next epoch.
 
 ## Slashing Penalty Covering
 
@@ -70,7 +70,6 @@ Arbitragers will purchase those tokens from the reward pool using lsCanto. Rathe
 
 A chunk can indeed have both paired insurance and unpairing insurance simultaneously. 
 This situation arises during re-pairing when an insurance with a high fee rate, initially paired with the chunk for a limited chunk slot, is replaced with a lower fee rate insurance.
-This is essential for accurate accountability of slahsing penalties over time.
 
 If the cause of the loss occurred before the epoch, then the responsibility for covering the loss lies with the unpairing insurance. 
 However, if the cause of the loss occurred after the epoch, then the paired insurance takes responsibility for covering the loss. 
@@ -86,7 +85,7 @@ The above diagram illustrates the re-pairing (re-delegation) process and penalty
 1. An orange insurance with a lower fee rate (3%) than the blue insurance (5%) was offered. However, as all chunk slots are already occupied, and the epoch transition has not occurred yet, the orange insurance remains in a pairing state without being applied.
 2. Validator A double signs, but as of now, no evidence has been submitted, and therefore, no penalty has been imposed.
 3. The epoch has been reached, and the orange insurance is paired with the chunk, while the original blue insurance transitions into an unpairing insurance.
-4. Evidence of a double sign by Validator A is submitted and accepted. During this process, the delegation shares of the chunk that were originally with Validator B become affected, resulting in the chunk's delegation shares differing from the `sharesDst` in the `ReDelegation` object. This indicates a change in the delegation due to the penalty imposed on Validator A.
+4. Evidence of a double sign by Validator A is submitted and accepted. During this process, the delegation shares of the chunk that were originally with Validator B become affected, resulting in the chunk's delegation shares differing from the `sharesDst` in the `ReDelegation` object. This indicates a decrease in the delegation shares due to the penalty imposed on Validator A.
 5. In the upcoming epoch, the unpairing insurance will be responsible for covering the loss incurred due to the penalty imposed on Validator A.
 
 The cause of the slashing occurred **before the epoch (re-pairing)**, so the unpairing insurance (blue one) is responsible for covering the loss because that loss is not related to the paired insurance (orange one). This rule applies even in cases where the paired insurance and the unpairing insurance point to the same validator.
@@ -98,7 +97,3 @@ Re-delegation can occur when there was re-pairing in the previous epoch, and ins
 However, the `Redelegation` object is deleted at the `BeginBlock` of the `staking` module when the re-delegation period is over. Additionally, the `staking` module's `BeginBlock` is executed before the `liquidstaking` module's `BeginBlock`.
 
 Therefore, if we rely solely on the `EndBlock`, we cannot precisely track responsibility because the `Redelegation` object has been deleted.
-
-
-
-
