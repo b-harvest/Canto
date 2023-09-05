@@ -11,7 +11,7 @@ Each insurance-validator pair is ranked at epoch. The ranking is calculated base
 
 The above figure is a diagram illustrating the insurance-validator pairs' ranking calcualtion and re-pairing of chunks process in the liquid staking module.
 Five insurances have been allocated to the available chunk slot (`max chunk slot = 5`), each with the following insurance fees and the ranking (Ranking is determined in ascending order of insurance fees and validator commission rates).
-In case of the same ranking, the ranking is assigned in a "first come, first served" manner (e.g., insurance 2 and 5).
+In case of the same ranking, the ranking is assigned in a "first come, first served" manner (e.g., insurance 2 and 4).
 
 | id   | fee rate | validator commission rate | total | ranking |
 |------|----------|---------------------------|-------|---------|
