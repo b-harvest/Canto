@@ -10,11 +10,15 @@ protoc_gen_gocosmos() {
     return 1
   fi
 
-  go get github.com/regen-network/cosmos-proto/protoc-gen-gocosmos@latest 2>/dev/null
+  echo "a"
+  go get github.com/regen-network/cosmos-proto/protoc-gen-gocosmos@latest
+  echo "b"
 }
 
 protoc_gen_doc() {
-  go get github.com/pseudomuto/protoc-gen-doc/cmd/protoc-gen-doc 2>/dev/null
+  echo "c"
+  go get github.com/pseudomuto/protoc-gen-doc/cmd/protoc-gen-doc
+  echo "d"
 }
 
 echo "1"

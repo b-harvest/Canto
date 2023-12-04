@@ -4236,20 +4236,7 @@ paths:
                 type: object
                 properties:
                   fee:
-                    type: object
-                    properties:
-                      denom:
-                        type: string
-                      amount:
-                        type: string
-                    description: >-
-                      Coin defines a token with a denomination and an amount.
-
-
-                      NOTE: The amount field is an Int which implements the
-                      custom method
-
-                      signatures required by gogoproto.
+                    type: string
                   pool_creation_fee:
                     type: object
                     properties:
@@ -34881,17 +34868,7 @@ definitions:
     type: object
     properties:
       fee:
-        type: object
-        properties:
-          denom:
-            type: string
-          amount:
-            type: string
-        description: |-
-          Coin defines a token with a denomination and an amount.
-
-          NOTE: The amount field is an Int which implements the custom method
-          signatures required by gogoproto.
+        type: string
       pool_creation_fee:
         type: object
         properties:
@@ -35141,20 +35118,7 @@ definitions:
         type: object
         properties:
           fee:
-            type: object
-            properties:
-              denom:
-                type: string
-              amount:
-                type: string
-            description: >-
-              Coin defines a token with a denomination and an amount.
-
-
-              NOTE: The amount field is an Int which implements the custom
-              method
-
-              signatures required by gogoproto.
+            type: string
           pool_creation_fee:
             type: object
             properties:
