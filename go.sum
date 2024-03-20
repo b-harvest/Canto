@@ -275,8 +275,8 @@ github.com/aws/aws-sdk-go v1.44.122/go.mod h1:y4AeaBuwd2Lk+GepC1E9v0qOiTws0MIWAX
 github.com/aws/aws-sdk-go v1.44.224 h1:09CiaaF35nRmxrzWZ2uRq5v6Ghg/d2RiPjZnSgtt+RQ=
 github.com/aws/aws-sdk-go v1.44.224/go.mod h1:aVsgQcEevwlmQ7qHE9I3h+dtQgpqhFB+i8Phjh7fkwI=
 github.com/aws/aws-sdk-go-v2 v0.18.0/go.mod h1:JWVYvqSMppoMJC0x5wdwiImzgXTI9FuZwxzkQq9wy+g=
-github.com/b-harvest/cometbft v0.38.2-txcnt-limit-poc1 h1:cYFIr4wN24NWcqo8ljisOEW04hgMc5OwOTzdb4KEx5o=
-github.com/b-harvest/cometbft v0.38.2-txcnt-limit-poc1/go.mod h1:PIi48BpzwlHqtV3mzwPyQgOyOnU94BNBimLS2ebBHOg=
+github.com/b-harvest/cometbft v0.38.2-txcnt-limit-poc2 h1:FxRB0oU/u2Llxd72bFlk8HJn5LSJ0ZjeU9KRJ02/Yr4=
+github.com/b-harvest/cometbft v0.38.2-txcnt-limit-poc2/go.mod h1:PIi48BpzwlHqtV3mzwPyQgOyOnU94BNBimLS2ebBHOg=
 github.com/b-harvest/ethermint v0.0.0-20240123055858-d654db42d906 h1:bxyMiyxlfQ9ItahUdDv0Auz7Wgs15MpyqPHF0x2cJyQ=
 github.com/b-harvest/ethermint v0.0.0-20240123055858-d654db42d906/go.mod h1:IB0HAZP7DLOO4vVQB4ro1rCepf6UdfM0zXRuLxEl4jQ=
 github.com/benbjohnson/clock v1.1.0/go.mod h1:J11/hYXuz8f4ySSvYwY0FKfm+ezbsZBKZxNJlLklBHA=
