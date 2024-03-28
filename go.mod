@@ -83,7 +83,7 @@ require (
 	github.com/fatih/color v1.16.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/getsentry/sentry-go v0.25.0 // indirect
-	github.com/go-logr/logr v1.2.3 // indirect
+	github.com/go-logr/logr v1.2.4 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/go-task/slim-sprig v0.0.0-20230315185526-52ccab3ef572 // indirect
 	github.com/gogo/googleapis v1.4.1 // indirect
@@ -248,8 +248,13 @@ require (
 
 replace (
 	cosmossdk.io/core => cosmossdk.io/core v0.11.0
+	cosmossdk.io/errors => github.com/b-harvest/cosmos-sdk/errors v0.0.0-20240327201131-4ccd2aba1a7c
+	cosmossdk.io/store => github.com/b-harvest/cosmos-sdk/store v0.0.0-20240327201131-4ccd2aba1a7c
 	github.com/99designs/keyring => github.com/cosmos/keyring v1.2.0
-	github.com/evmos/ethermint => github.com/b-harvest/ethermint v0.0.0-20240123055858-d654db42d906
+
+	github.com/cometbft/cometbft => github.com/b-harvest/cometbft v0.0.0-20240327190023-5aa38c826f97
+	github.com/cosmos/cosmos-sdk => github.com/b-harvest/cosmos-sdk v0.0.0-20240327201131-4ccd2aba1a7c
+	github.com/evmos/ethermint => github.com/b-harvest/ethermint v0.0.0-20240328052617-4d7fcbb6d915
 	// replace broken goleveldb
 	github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
 )
