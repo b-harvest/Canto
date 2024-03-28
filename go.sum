@@ -275,8 +275,8 @@ github.com/aws/aws-sdk-go v1.44.122/go.mod h1:y4AeaBuwd2Lk+GepC1E9v0qOiTws0MIWAX
 github.com/aws/aws-sdk-go v1.44.224 h1:09CiaaF35nRmxrzWZ2uRq5v6Ghg/d2RiPjZnSgtt+RQ=
 github.com/aws/aws-sdk-go v1.44.224/go.mod h1:aVsgQcEevwlmQ7qHE9I3h+dtQgpqhFB+i8Phjh7fkwI=
 github.com/aws/aws-sdk-go-v2 v0.18.0/go.mod h1:JWVYvqSMppoMJC0x5wdwiImzgXTI9FuZwxzkQq9wy+g=
-github.com/b-harvest/cometbft v0.38.0-rc3.0.20240328045123-90d81740f81a h1:oD6g2/PrUoyrh4billy0yKlU40exb2Tv+rpSjBK7y+w=
-github.com/b-harvest/cometbft v0.38.0-rc3.0.20240328045123-90d81740f81a/go.mod h1:PIi48BpzwlHqtV3mzwPyQgOyOnU94BNBimLS2ebBHOg=
+github.com/b-harvest/cometbft v0.38.0-rc3.0.20240328045846-c16a2852b7ba h1:aKmmiSnFCMxzb4DQ0hEzZbuh8zxdbfjq1JIvbglwR+k=
+github.com/b-harvest/cometbft v0.38.0-rc3.0.20240328045846-c16a2852b7ba/go.mod h1:PIi48BpzwlHqtV3mzwPyQgOyOnU94BNBimLS2ebBHOg=
 github.com/b-harvest/cosmos-sdk v0.50.4-0.20240328021209-0cdf0d609d89 h1:pupNYn8zW03wLmVqDnaf9R0oQnyXzzatY4QWgCvyZvA=
 github.com/b-harvest/cosmos-sdk v0.50.4-0.20240328021209-0cdf0d609d89/go.mod h1:tlrkY1sntOt1q0OX/rqF0zRJtmXNoffAS6VFTcky+w8=
 github.com/b-harvest/ethermint v0.0.0-20240123055858-d654db42d906 h1:bxyMiyxlfQ9ItahUdDv0Auz7Wgs15MpyqPHF0x2cJyQ=
