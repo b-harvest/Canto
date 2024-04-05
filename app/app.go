@@ -128,6 +128,7 @@ import (
 	erc20v1 "github.com/Canto-Network/Canto/v7/api/canto/erc20/v1"
 	evmv1 "github.com/evmos/ethermint/api/ethermint/evm/v1"
 	feemarketv1 "github.com/evmos/ethermint/api/ethermint/feemarket/v1"
+	evmapp "github.com/evmos/ethermint/app"
 	ethante "github.com/evmos/ethermint/app/ante"
 	enccodec "github.com/evmos/ethermint/encoding/codec"
 	"github.com/evmos/ethermint/ethereum/eip712"
@@ -411,6 +412,17 @@ func NewCanto(
 		tkeys:             tkeys,
 		memKeys:           memKeys,
 	}
+
+	executor := cast.ToString(appOpts.Get(srvflags.EVMBlockExecutor))
+	executor = "block-stm"
+	if executor == "block-stm" {
+		sdk.SetAddrCacheEnabled(false)
+		workers := cast.ToInt(appOpts.Get(srvflags.EVMBlockSTMWorkers))
+		workers = 0
+		app.SetTxExecutor(evmapp.STMTxExecutor(app.GetStoreKeys(), workers))
+	} else {
+		app.SetTxExecutor(evmapp.DefaultTxExecutor)
+	} // add the capability keeper
 
 	// init params keeper and subspaces
 	app.ParamsKeeper = initParamsKeeper(appCodec, legacyAmino, keys[paramstypes.StoreKey], tkeys[paramstypes.TStoreKey])
@@ -1170,8 +1182,14 @@ func (app *Canto) GetKey(storeKey string) *storetypes.KVStoreKey {
 
 // GetStoreKeys returns all the stored store keys.
 func (app *Canto) GetStoreKeys() []storetypes.StoreKey {
-	keys := make([]storetypes.StoreKey, len(app.keys))
+	keys := make([]storetypes.StoreKey, 0, len(app.keys))
 	for _, key := range app.keys {
+		keys = append(keys, key)
+	}
+	for _, key := range app.tkeys {
+		keys = append(keys, key)
+	}
+	for _, key := range app.memKeys {
 		keys = append(keys, key)
 	}
 
