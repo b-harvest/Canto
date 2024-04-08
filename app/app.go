@@ -818,6 +818,7 @@ func NewCanto(
 	// NOTE: capability module's beginblocker must come before any modules using capabilities (e.g. IBC)
 	app.ModuleManager.SetOrderBeginBlockers(
 		// Note: epochs' begin should be "real" start of epochs, we keep epochs beginblock at the beginning
+		authtypes.ModuleName,
 		epochstypes.ModuleName,
 		capabilitytypes.ModuleName,
 		distrtypes.ModuleName,
@@ -830,7 +831,6 @@ func NewCanto(
 		authz.ModuleName,
 		csrtypes.ModuleName,
 		// no-op modules
-		authtypes.ModuleName,
 		banktypes.ModuleName,
 		govtypes.ModuleName,
 		genutiltypes.ModuleName,
@@ -850,6 +850,7 @@ func NewCanto(
 
 	// NOTE: fee market module must go last in order to retrieve the block gas used.
 	app.ModuleManager.SetOrderEndBlockers(
+		authtypes.ModuleName,
 		crisistypes.ModuleName,
 		govtypes.ModuleName,
 		evmtypes.ModuleName,
@@ -862,7 +863,6 @@ func NewCanto(
 		ibctransfertypes.ModuleName,
 		ibcfeetypes.ModuleName,
 		capabilitytypes.ModuleName,
-		authtypes.ModuleName,
 		banktypes.ModuleName,
 		distrtypes.ModuleName,
 		slashingtypes.ModuleName,
