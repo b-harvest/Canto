@@ -254,12 +254,14 @@ require (
 
 replace (
 	cosmossdk.io/core => cosmossdk.io/core v0.11.0
-	cosmossdk.io/store => github.com/b-harvest/cosmos-sdk/store v0.0.0-20240403064337-5fb99998e49a
+	cosmossdk.io/store => github.com/b-harvest/cosmos-sdk/store v0.0.0-20240415041328-871ecb098c6f
 
 	github.com/99designs/keyring => github.com/cosmos/keyring v1.2.0
-	github.com/cosmos/cosmos-sdk => github.com/b-harvest/cosmos-sdk v0.0.0-20240403064337-5fb99998e49a
+	github.com/cometbft/cometbft => github.com/b-harvest/cometbft v0.0.0-20240415035715-66d776c77df0
+	github.com/cosmos/cosmos-sdk => github.com/b-harvest/cosmos-sdk v0.0.0-20240415041328-871ecb098c6f
 
-	github.com/evmos/ethermint => github.com/b-harvest/ethermint v0.0.0-20240404092552-17039c90eb1f
+	github.com/evmos/ethermint => github.com/b-harvest/ethermint v0.0.0-20240415041715-dedf6ce99f64
+
 	// replace broken goleveldb
 	github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
 	github.com/tidwall/btree => github.com/yihuang/btree v0.0.0-20240318010431-d365682df9a7
