@@ -278,6 +278,8 @@ github.com/b-harvest/cosmos-sdk/store v0.0.0-20240415055415-609cd9fb8d44 h1:Nm6d
 github.com/b-harvest/cosmos-sdk/store v0.0.0-20240415055415-609cd9fb8d44/go.mod h1:lfuLI1f4o+0SGtlHQS4x5qsjRcZZfYqG8bp3k8hM0M8=
 github.com/b-harvest/ethermint v0.0.0-20240415055458-eeecaa6544dc h1:drxbwaHhEMoZkG5BOo7+zd3YCkUw3tRjFZPt71Rukrs=
 github.com/b-harvest/ethermint v0.0.0-20240415055458-eeecaa6544dc/go.mod h1:iX30ImRPgjiJu/KokvhOgJOWSh8/qUFBFHdVLClwHmY=
+github.com/b-harvest/go-block-stm v0.0.0-20240417112225-def123fc8d09 h1:zUYmbhfrIsJJulxMZ7V15LrkENPGsyS5qD6VQhk7J2I=
+github.com/b-harvest/go-block-stm v0.0.0-20240417112225-def123fc8d09/go.mod h1:wfjRXpaJlOhZ0awasgWFmvC/MdPmoZzWhVw5f0n121g=
 github.com/b-harvest/go-ethereum v0.0.0-20240411010935-7e593a83bb81 h1:SgMyXjdF2rkIudbevJ1yzfy/cnoRa4yad/eg5jce8hk=
 github.com/b-harvest/go-ethereum v0.0.0-20240411010935-7e593a83bb81/go.mod h1:/6CsT5Ceen2WPLI/oCA3xMcZ5sWMF/D46SjM/ayY0Oo=
 github.com/benbjohnson/clock v1.1.0/go.mod h1:J11/hYXuz8f4ySSvYwY0FKfm+ezbsZBKZxNJlLklBHA=
@@ -1140,8 +1142,6 @@ github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 h1:bAn7/zixMGCfxrRT
 github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673/go.mod h1:N3UwUGtsrSj3ccvlPHLoLsHnpR27oXr4ZE984MbSER8=
 github.com/yihuang/btree v0.0.0-20240318010431-d365682df9a7 h1:TgWa3HbVnYmB4cYKvT+bY/6r6yqZZLCd6T1RMLi6qeg=
 github.com/yihuang/btree v0.0.0-20240318010431-d365682df9a7/go.mod h1:twD9XRA5jj9VUQGELzDO4HPQTNJsoWWfYEL+EUQ2cKY=
-github.com/yihuang/go-block-stm v0.0.0-20240321085908-ff6b9b121972 h1:JWX+37iE+HxaKCbDacDpoM9mFReuadR2RGOB98hbt/A=
-github.com/yihuang/go-block-stm v0.0.0-20240321085908-ff6b9b121972/go.mod h1:wfjRXpaJlOhZ0awasgWFmvC/MdPmoZzWhVw5f0n121g=
 github.com/yuin/goldmark v1.1.25/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.1.32/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
