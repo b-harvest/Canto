@@ -257,7 +257,7 @@ replace (
 	cosmossdk.io/store => github.com/b-harvest/cosmos-sdk/store v0.0.0-20240415055415-609cd9fb8d44
 
 	github.com/99designs/keyring => github.com/cosmos/keyring v1.2.0
-	github.com/cometbft/cometbft => github.com/b-harvest/cometbft v0.0.0-20240415055329-b0d9e68997fa
+	github.com/cometbft/cometbft => github.com/b-harvest/cometbft v0.38.0-rc3.0.20240425164826-b24c928fe425
 	github.com/cosmos/cosmos-sdk => github.com/b-harvest/cosmos-sdk v0.0.0-20240415055415-609cd9fb8d44
 	github.com/ethereum/go-ethereum => github.com/b-harvest/go-ethereum v0.0.0-20240411010935-7e593a83bb81
 	github.com/evmos/ethermint => github.com/b-harvest/ethermint v0.0.0-20240415055458-eeecaa6544dc
