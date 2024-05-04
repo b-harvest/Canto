@@ -276,8 +276,8 @@ github.com/b-harvest/cometbft v0.38.0-rc3.0.20240504113700-95aa56454e56 h1:Txqwc
 github.com/b-harvest/cometbft v0.38.0-rc3.0.20240504113700-95aa56454e56/go.mod h1:PIi48BpzwlHqtV3mzwPyQgOyOnU94BNBimLS2ebBHOg=
 github.com/b-harvest/cosmos-sdk v0.50.4-0.20240504113508-2d1b64cc8068 h1:ca0h9BysVBfEqbwRZ3hDscwtfuh3TPlt00eWLH76T2s=
 github.com/b-harvest/cosmos-sdk v0.50.4-0.20240504113508-2d1b64cc8068/go.mod h1:VZELlTvdiSDXIObEG6BX5a1aMCRIkvhqKSPEAbI4MjU=
-github.com/b-harvest/ethermint v0.0.0-20240426083134-b156e23dfe07 h1:malOQOeoVJivkP8rp6mB7CpErAgLv4i/HbgJtbe1z4Y=
-github.com/b-harvest/ethermint v0.0.0-20240426083134-b156e23dfe07/go.mod h1:RCk8XMeT47RKxOAeaz35Gct1bYt9nNwrF+Uw913WM84=
+github.com/b-harvest/ethermint v0.0.0-20240504095842-e4c5b56f6db4 h1:0Gb0k2UgotWpXzDgWrXhnhpPyxe8qQT9LpJ/5IyXRCE=
+github.com/b-harvest/ethermint v0.0.0-20240504095842-e4c5b56f6db4/go.mod h1:zQpVVsF8kUq/2L0JY1OmB9xhqEKhQLUqc5zuMEjxw8w=
 github.com/benbjohnson/clock v1.1.0/go.mod h1:J11/hYXuz8f4ySSvYwY0FKfm+ezbsZBKZxNJlLklBHA=
 github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973/go.mod h1:Dwedo/Wpr24TaqPxmxbtue+5NUziq4I4S80YR8gNf3Q=
 github.com/beorn7/perks v1.0.0/go.mod h1:KWe93zE9D1o94FZ5RNwFwVgaQK1VOXiVxmqh+CedLV8=
