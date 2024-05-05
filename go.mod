@@ -254,7 +254,7 @@ require (
 replace (
 	cosmossdk.io/core => cosmossdk.io/core v0.11.0
 	github.com/99designs/keyring => github.com/cosmos/keyring v1.2.0
-	github.com/cometbft/cometbft => github.com/b-harvest/cometbft v0.38.0-rc3.0.20240505083954-53ef8cb18966
+	github.com/cometbft/cometbft => github.com/b-harvest/cometbft v0.38.0-rc3.0.20240505095832-67939467d1c7
 	github.com/cosmos/cosmos-sdk => github.com/b-harvest/cosmos-sdk v0.50.4-0.20240504120439-e624d17f174c
 	//github.com/evmos/ethermint => github.com/b-harvest/ethermint v0.0.0-20240504095842-e4c5b56f6db4
 	github.com/ethereum/go-ethereum => github.com/b-harvest/go-ethereum v1.10.27-0.20240411010935-7e593a83bb81
