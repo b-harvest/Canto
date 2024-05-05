@@ -272,12 +272,14 @@ github.com/aws/aws-sdk-go v1.44.122/go.mod h1:y4AeaBuwd2Lk+GepC1E9v0qOiTws0MIWAX
 github.com/aws/aws-sdk-go v1.44.224 h1:09CiaaF35nRmxrzWZ2uRq5v6Ghg/d2RiPjZnSgtt+RQ=
 github.com/aws/aws-sdk-go v1.44.224/go.mod h1:aVsgQcEevwlmQ7qHE9I3h+dtQgpqhFB+i8Phjh7fkwI=
 github.com/aws/aws-sdk-go-v2 v0.18.0/go.mod h1:JWVYvqSMppoMJC0x5wdwiImzgXTI9FuZwxzkQq9wy+g=
-github.com/b-harvest/cometbft v0.38.0-rc3.0.20240504113700-95aa56454e56 h1:TxqwcMqaeoOj9wB1GHEg5eE93ep7NXDPZrXRnwFGy6w=
-github.com/b-harvest/cometbft v0.38.0-rc3.0.20240504113700-95aa56454e56/go.mod h1:PIi48BpzwlHqtV3mzwPyQgOyOnU94BNBimLS2ebBHOg=
+github.com/b-harvest/cometbft v0.38.0-rc3.0.20240505083954-53ef8cb18966 h1:BTl+xkPBRuGBWw2KCCgvcD2UR2OW8vCxp1hwEdk1x2k=
+github.com/b-harvest/cometbft v0.38.0-rc3.0.20240505083954-53ef8cb18966/go.mod h1:PIi48BpzwlHqtV3mzwPyQgOyOnU94BNBimLS2ebBHOg=
 github.com/b-harvest/cosmos-sdk v0.50.4-0.20240504120439-e624d17f174c h1:lWfDD6XXWXFiaSZvtWJjM4/REE/iewt+RR5LDkHMqfw=
 github.com/b-harvest/cosmos-sdk v0.50.4-0.20240504120439-e624d17f174c/go.mod h1:VZELlTvdiSDXIObEG6BX5a1aMCRIkvhqKSPEAbI4MjU=
-github.com/b-harvest/ethermint v0.0.0-20240504095842-e4c5b56f6db4 h1:0Gb0k2UgotWpXzDgWrXhnhpPyxe8qQT9LpJ/5IyXRCE=
-github.com/b-harvest/ethermint v0.0.0-20240504095842-e4c5b56f6db4/go.mod h1:zQpVVsF8kUq/2L0JY1OmB9xhqEKhQLUqc5zuMEjxw8w=
+github.com/b-harvest/ethermint v0.6.1-0.20240505082419-1eceab638a7e h1:Gos4qsOqZku6EfgRvgMcKvenJxr9YzKI1/mhvrHM750=
+github.com/b-harvest/ethermint v0.6.1-0.20240505082419-1eceab638a7e/go.mod h1:zQpVVsF8kUq/2L0JY1OmB9xhqEKhQLUqc5zuMEjxw8w=
+github.com/b-harvest/go-ethereum v1.10.27-0.20240411010935-7e593a83bb81 h1:Wme3jnkidTdyL1WITAnaSTcSp2iZs2T4ZFVMC77UgKQ=
+github.com/b-harvest/go-ethereum v1.10.27-0.20240411010935-7e593a83bb81/go.mod h1:/6CsT5Ceen2WPLI/oCA3xMcZ5sWMF/D46SjM/ayY0Oo=
 github.com/benbjohnson/clock v1.1.0/go.mod h1:J11/hYXuz8f4ySSvYwY0FKfm+ezbsZBKZxNJlLklBHA=
 github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973/go.mod h1:Dwedo/Wpr24TaqPxmxbtue+5NUziq4I4S80YR8gNf3Q=
 github.com/beorn7/perks v1.0.0/go.mod h1:KWe93zE9D1o94FZ5RNwFwVgaQK1VOXiVxmqh+CedLV8=
@@ -487,8 +489,6 @@ github.com/envoyproxy/go-control-plane v0.10.2-0.20220325020618-49ff273808a1/go.
 github.com/envoyproxy/protoc-gen-validate v0.1.0/go.mod h1:iSmxcyjqTsJpI2R4NaDN7+kN2VEUnK/pcBlmesArF7c=
 github.com/envoyproxy/protoc-gen-validate v1.0.4 h1:gVPz/FMfvh57HdSJQyvBtF00j8JU4zdyUgIUNhlgg0A=
 github.com/envoyproxy/protoc-gen-validate v1.0.4/go.mod h1:qys6tmnRsYrQqIhm2bvKZH4Blx/1gTIZ2UKVY1M+Yew=
-github.com/ethereum/go-ethereum v1.10.26 h1:i/7d9RBBwiXCEuyduBQzJw/mKmnvzsN14jqBmytw72s=
-github.com/ethereum/go-ethereum v1.10.26/go.mod h1:EYFyF19u3ezGLD4RqOkLq+ZCXzYbLoNDdZlMt7kyKFg=
 github.com/fatih/color v1.7.0/go.mod h1:Zm6kSWBoL9eyXnKyktHP6abPY2pDugNf5KwzbycvMj4=
 github.com/fatih/color v1.13.0/go.mod h1:kLAiJbzzSOZDVNGyDpeOxJ47H46qBXwg5ILebYFFOfk=
 github.com/fatih/color v1.16.0 h1:zmkK9Ngbjj+K0yRhTVONQh1p/HknKYSlNT+vZCzyokM=
