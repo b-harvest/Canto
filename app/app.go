@@ -140,6 +140,7 @@ import (
 	_ "github.com/Canto-Network/Canto/v7/client/docs/statik"
 
 	"github.com/Canto-Network/Canto/v7/app/ante"
+	memiavlstore "github.com/Canto-Network/Canto/v7/store"
 	"github.com/Canto-Network/Canto/v7/x/epochs"
 	epochskeeper "github.com/Canto-Network/Canto/v7/x/epochs/keeper"
 	epochstypes "github.com/Canto-Network/Canto/v7/x/epochs/types"
@@ -335,6 +336,7 @@ func NewCanto(
 
 	eip712.SetEncodingConfig(encodingConfig)
 
+	baseAppOptions = memiavlstore.SetupMemIAVL(logger, homePath, appOpts, false, false, baseAppOptions)
 	// create and set dummy vote extension handler
 	voteExtOp := func(bApp *baseapp.BaseApp) {
 		voteExtHandler := simapp.NewVoteExtensionHandler()

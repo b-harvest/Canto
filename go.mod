@@ -1,8 +1,8 @@
 module github.com/Canto-Network/Canto/v7
 
-go 1.21
+go 1.22
 
-toolchain go1.21.4
+toolchain go1.22.3
 
 require (
 	cosmossdk.io/api v0.7.4
@@ -18,6 +18,7 @@ require (
 	cosmossdk.io/x/feegrant v0.1.0
 	cosmossdk.io/x/tx v0.13.2
 	cosmossdk.io/x/upgrade v0.1.0
+	github.com/Canto-Network/Canto/v7/memiavl v0.0.4
 	github.com/cometbft/cometbft v0.38.6
 	github.com/cosmos/cosmos-db v1.0.2
 	github.com/cosmos/cosmos-proto v1.0.0-beta.5
@@ -254,6 +255,8 @@ require (
 replace (
 	cosmossdk.io/core => cosmossdk.io/core v0.11.0
 	github.com/99designs/keyring => github.com/cosmos/keyring v1.2.0
+	github.com/Canto-Network/Canto/v7/memiavl => ./memiavl
+	github.com/Canto-Network/Canto/v7/store => ./store
 	github.com/evmos/ethermint => github.com/b-harvest/ethermint v0.0.0-20240512131823-0f395e7a7233
 	// replace broken goleveldb
 	github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
