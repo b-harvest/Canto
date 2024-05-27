@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"sync"
 
+	memiavlstore "github.com/Canto-Network/Canto/v7/store"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/migrations/legacytx"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
@@ -334,6 +335,8 @@ func NewCanto(
 	legacytx.RegressionTestingAminoCodec = legacyAmino
 
 	eip712.SetEncodingConfig(encodingConfig)
+
+	baseAppOptions = memiavlstore.SetupMemIAVL(logger, homePath, appOpts, false, false, baseAppOptions)
 
 	// create and set dummy vote extension handler
 	voteExtOp := func(bApp *baseapp.BaseApp) {
