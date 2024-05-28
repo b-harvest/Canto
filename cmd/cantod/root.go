@@ -16,6 +16,7 @@ import (
 
 	"cosmossdk.io/log"
 	confixcmd "cosmossdk.io/tools/confix/cmd"
+	memiavlcfg "github.com/Canto-Network/Canto/v7/store/config"
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/config"
@@ -236,6 +237,11 @@ func txCommand() *cobra.Command {
 // initAppConfig helps to override default appConfig template and configs.
 // return "", nil if no custom configuration is required for the application.
 func initAppConfig() (string, interface{}) {
+	type CustomAppConfig struct {
+		servercfg.Config
+		MemIAVL memiavlcfg.MemIAVLConfig `mapstructure:"memiavl"`
+	}
+
 	customAppTemplate, customAppConfig := servercfg.AppConfig(cmdcfg.BaseDenom)
 
 	srvCfg, ok := customAppConfig.(servercfg.Config)
@@ -246,7 +252,14 @@ func initAppConfig() (string, interface{}) {
 	srvCfg.StateSync.SnapshotInterval = 1500
 	srvCfg.StateSync.SnapshotKeepRecent = 2
 
-	return customAppTemplate, srvCfg
+	customAppConfig = CustomAppConfig{
+		Config:  srvCfg,
+		MemIAVL: memiavlcfg.DefaultMemIAVLConfig(),
+	}
+
+	customAppTemplate += memiavlcfg.DefaultConfigTemplate
+
+	return customAppTemplate, customAppConfig
 }
 
 type appCreator struct {
