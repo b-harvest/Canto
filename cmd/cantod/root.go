@@ -306,13 +306,13 @@ func (a appCreator) appExport(
 	}
 
 	if height != -1 {
-		cantoApp = app.NewCanto(logger, db, traceStore, false, map[int64]bool{}, "", uint(1), false, appOpts)
+		cantoApp = app.NewCanto(logger, db, traceStore, false, map[int64]bool{}, homePath, uint(1), false, appOpts)
 
 		if err := cantoApp.LoadHeight(height); err != nil {
 			return servertypes.ExportedApp{}, err
 		}
 	} else {
-		cantoApp = app.NewCanto(logger, db, traceStore, true, map[int64]bool{}, "", uint(1), false, appOpts)
+		cantoApp = app.NewCanto(logger, db, traceStore, true, map[int64]bool{}, homePath, uint(1), false, appOpts)
 	}
 
 	return cantoApp.ExportAppStateAndValidators(forZeroHeight, jailAllowedAddrs, modulesToExport)
