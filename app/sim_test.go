@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	upgradetypes "cosmossdk.io/x/upgrade/types"
+	storeflag "github.com/Canto-Network/Canto/v7/store"
 	"github.com/Canto-Network/Canto/v7/types"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
@@ -86,9 +87,12 @@ func TestFullAppSimulation(t *testing.T) {
 	appOptions[flags.FlagHome] = DefaultNodeHome
 	appOptions[server.FlagInvCheckPeriod] = simcli.FlagPeriodValue
 	appOptions[flags.FlagChainID] = "canto_9000-1"
+	appOptions[storeflag.FlagMemIAVL] = true
 
 	// TODO: shadowed
-	cantoApp := NewCanto(logger, db, nil, true, map[int64]bool{}, DefaultNodeHome, simcli.FlagPeriodValue, true, appOptions, fauxMerkleModeOpt, baseapp.SetChainID(types.TestnetChainID+"-1"))
+
+	cantoApp := NewCanto(logger, db, nil, true, map[int64]bool{}, DefaultNodeHome, simcli.FlagPeriodValue, true, appOptions, baseapp.SetChainID(types.TestnetChainID+"-1"))
+
 	require.Equal(t, cantoconfig.AppName, cantoApp.Name())
 
 	// run randomized simulation
