@@ -1,6 +1,7 @@
 package store
 
 import (
+	"github.com/Canto-Network/Canto/v7/store/config"
 	"path/filepath"
 
 	"cosmossdk.io/log"
@@ -36,6 +37,11 @@ func SetupMemIAVL(logger log.Logger, homePath string, appOpts servertypes.AppOpt
 			CacheSize:           cast.ToInt(appOpts.Get(FlagCacheSize)),
 			SnapshotWriterLimit: cast.ToInt(appOpts.Get(FlagSnapshotWriterLimit)),
 		}
+
+		// TODO: Temporary default config for test
+		opts.CacheSize = config.DefaultCacheSize
+		opts.SnapshotInterval = memiavl.DefaultSnapshotInterval
+		opts.SnapshotKeepRecent = 1
 
 		if opts.ZeroCopy {
 			// it's unsafe to cache zero-copied byte slices without copying them

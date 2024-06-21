@@ -91,7 +91,7 @@ func TestFullAppSimulation(t *testing.T) {
 
 	// TODO: shadowed
 
-	cantoApp := NewCanto(logger, db, nil, true, map[int64]bool{}, DefaultNodeHome, simcli.FlagPeriodValue, true, appOptions, baseapp.SetChainID(types.TestnetChainID+"-1"))
+	cantoApp := NewCanto(logger, db, nil, true, map[int64]bool{}, dir, simcli.FlagPeriodValue, true, appOptions, baseapp.SetChainID(types.TestnetChainID+"-1"))
 
 	require.Equal(t, cantoconfig.AppName, cantoApp.Name())
 
