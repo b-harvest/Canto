@@ -13,7 +13,6 @@ import (
 	upgradetypes "cosmossdk.io/x/upgrade/types"
 	storeflag "github.com/Canto-Network/Canto/v7/store"
 	"github.com/Canto-Network/Canto/v7/types"
-	dbm "github.com/cosmos/cosmos-db"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
 
@@ -282,7 +281,7 @@ func TestAppStateDeterminism(t *testing.T) {
 	appOptions.SetDefault(flags.FlagChainID, "canto_9000-1")
 	appOptions.SetDefault(flags.FlagHome, DefaultNodeHome)
 	appOptions.SetDefault(server.FlagInvCheckPeriod, simcli.FlagPeriodValue)
-	//appOptions.SetDefault(storeflag.FlagMemIAVL, true)
+	appOptions.SetDefault(storeflag.FlagMemIAVL, true)
 
 	if simcli.FlagVerboseValue {
 		appOptions.SetDefault(flags.FlagLogLevel, "debug")
@@ -305,14 +304,11 @@ func TestAppStateDeterminism(t *testing.T) {
 				logger = log.NewNopLogger()
 			}
 
-			db := dbm.NewMemDB()
-			dir, err := os.MkdirTemp("", "app-sim")
-			require.NoError(t, err)
-			//db, dir, logger, skip, err := simtestutil.SetupSimulation(config, "leveldb-app-sim", "Simulation", simcli.FlagVerboseValue, simcli.FlagEnabledValue)
-			//if skip {
-			//	t.Skip("skipping application import/export simulation")
-			//}
-			//require.NoError(t, err, "simulation setup failed")
+			db, dir, logger, skip, err := simtestutil.SetupSimulation(config, "leveldb-app-sim", "Simulation", simcli.FlagVerboseValue, simcli.FlagEnabledValue)
+			if skip {
+				t.Skip("skipping application simulation")
+			}
+			require.NoError(t, err, "simulation setup failed")
 
 			app := NewCanto(logger, db, nil, true, map[int64]bool{}, dir, simcli.FlagPeriodValue, true, appOptions, baseapp.SetChainID(types.TestnetChainID+"-1"))
 

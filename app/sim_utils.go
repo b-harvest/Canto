@@ -4,6 +4,7 @@ import (
 	"math/rand"
 
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
+	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
@@ -72,11 +73,14 @@ func RandomAccounts(r *rand.Rand, n int) []simtypes.Account {
 		privkeySeed := make([]byte, 15)
 		r.Read(privkeySeed)
 
-		privKey, err := ethsecp256k1.GenerateKey()
+		priv := secp256k1.GenPrivKeyFromSecret(privkeySeed)
+		// change secp256k1 to ethsecp256k1
+		privKey, err := crypto.ToECDSA(priv.Bytes())
 		if err != nil {
 			panic(err)
 		}
-		accs[i].PrivKey = privKey
+		ethPrivKey := &ethsecp256k1.PrivKey{Key: crypto.FromECDSA(privKey)}
+		accs[i].PrivKey = ethPrivKey
 		accs[i].PubKey = accs[i].PrivKey.PubKey()
 		accs[i].Address = sdk.AccAddress(accs[i].PubKey.Address())
 
@@ -86,7 +90,6 @@ func RandomAccounts(r *rand.Rand, n int) []simtypes.Account {
 	return accs
 }
 
-// RandomGenesisAccounts is used by the auth module to create random genesis accounts in simulation when a genesis.json is not specified.
 // In contrast, the default auth module's RandomGenesisAccounts implementation creates only base accounts and vestings accounts.
 func RandomGenesisAccounts(simState *module.SimulationState) authtypes.GenesisAccounts {
 	emptyCodeHash := crypto.Keccak256(nil)
