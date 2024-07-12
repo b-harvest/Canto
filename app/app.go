@@ -1387,6 +1387,8 @@ func (app *Canto) setupUpgradeHandlers() {
 			app.configurator,
 			app.IBCKeeper.ClientKeeper,
 			app.StakingKeeper,
+			app.CSRKeeper,
+			app.GovshuttleKeeper,
 		),
 	)
 

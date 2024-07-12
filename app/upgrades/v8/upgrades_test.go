@@ -86,6 +86,18 @@ func (s *UpgradeTestSuite) TestUpgradeV8() {
 				params, err := s.app.StakingKeeper.GetParams(s.ctx)
 				s.Require().NoError(err)
 				s.Require().Equal(v8.MinCommissionRate, params.MinCommissionRate)
+
+				csrs := s.app.CSRKeeper.GetAllCSRs(s.ctx)
+				s.Require().NotEqual(0, len(csrs))
+
+				turnstile, ok := s.app.CSRKeeper.GetTurnstile(s.ctx)
+				s.Require().True(ok)
+				s.Require().Equal(v8.TunstileState, turnstile.String())
+
+				port, ok := s.app.GovshuttleKeeper.GetPort(s.ctx)
+				s.Require().True(ok)
+				s.Require().Equal(v8.PortState, port.String())
+
 			},
 			true,
 		},

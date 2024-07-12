@@ -89,7 +89,7 @@ func (suite *KeeperTestSuite) TestImportExportGenesis() {
 	c := suite.app.CSRKeeper.GetAllCSRs(suite.ctx)
 	suite.Equal(csrs, c)
 
-	ta, found := suite.app.CSRKeeper.GetTurnstile(suite.ctx)
+	turnstileWanted, found := suite.app.CSRKeeper.GetTurnstile(suite.ctx)
 	suite.True(found)
-	suite.Equal(turnstileAddress, ta)
+	suite.Equal(turnstileAddress, turnstileWanted)
 }

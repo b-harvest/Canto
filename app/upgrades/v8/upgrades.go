@@ -6,6 +6,8 @@ import (
 	"cosmossdk.io/collections"
 	sdkmath "cosmossdk.io/math"
 	upgradetypes "cosmossdk.io/x/upgrade/types"
+	csrkeeper "github.com/Canto-Network/Canto/v7/x/csr/keeper"
+	govshuttlekeeper "github.com/Canto-Network/Canto/v7/x/govshuttle/keeper"
 	"github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -14,6 +16,7 @@ import (
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	clientkeeper "github.com/cosmos/ibc-go/v8/modules/core/02-client/keeper"
 	"github.com/cosmos/ibc-go/v8/modules/core/exported"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 var MinCommissionRate = sdkmath.LegacyNewDecWithPrec(5, 2) // 5%
@@ -26,6 +29,8 @@ func CreateUpgradeHandler(
 	configurator module.Configurator,
 	clientKeeper clientkeeper.Keeper,
 	stakingKeeper *stakingkeeper.Keeper,
+	csrKeeper csrkeeper.Keeper,
+	govshuttleKeeper govshuttlekeeper.Keeper,
 ) upgradetypes.UpgradeHandler {
 	return func(ctx context.Context, _ upgradetypes.Plan, vm module.VersionMap) (module.VersionMap, error) {
 		sdkCtx := sdk.UnwrapSDKContext(ctx)
@@ -66,6 +71,27 @@ func CreateUpgradeHandler(
 			}
 			params.MinCommissionRate = MinCommissionRate
 			stakingKeeper.SetParams(ctx, params)
+
+			// hardcode for missing states
+			csrs := csrKeeper.GetAllCSRs(sdkCtx)
+			if len(csrs) == 0 {
+				csrs = GetCSRState(logger)
+			}
+
+			for _, csr := range csrs {
+				csrKeeper.SetCSR(sdkCtx, csr)
+			}
+
+			_, exist := csrKeeper.GetTurnstile(sdkCtx)
+			if !exist {
+				csrKeeper.SetTurnstile(sdkCtx, common.HexToAddress(TunstileState))
+			}
+
+			_, exist = govshuttleKeeper.GetPort(sdkCtx)
+			if !exist {
+				govshuttleKeeper.SetPort(sdkCtx, common.HexToAddress(PortState))
+			}
+
 		}
 
 		return vm, nil
