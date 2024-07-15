@@ -30,9 +30,9 @@ func (k Keeper) GetTokenPairs(ctx sdk.Context) []types.TokenPair {
 func (k Keeper) GetTokenPairID(ctx sdk.Context, token string) []byte {
 	if common.IsHexAddress(token) {
 		addr := common.HexToAddress(token)
-		return k.GetERC20Map(ctx, addr)
+		return k.GetTokenPairIdByERC20Addr(ctx, addr)
 	}
-	return k.GetDenomMap(ctx, token)
+	return k.GetTokenPairIdByDenom(ctx, token)
 }
 
 // GetTokenPair - get registered token pair from the identifier
@@ -64,8 +64,8 @@ func (k Keeper) SetTokenPair(ctx sdk.Context, tokenPair types.TokenPair) {
 func (k Keeper) DeleteTokenPair(ctx sdk.Context, tokenPair types.TokenPair) {
 	id := tokenPair.GetID()
 	k.deleteTokenPair(ctx, id)
-	k.deleteERC20Map(ctx, tokenPair.GetERC20Contract())
-	k.deleteDenomMap(ctx, tokenPair.Denom)
+	k.deleteTokenPairIdByERC20Addr(ctx, tokenPair.GetERC20Contract())
+	k.deleteTokenPairIdByDenom(ctx, tokenPair.Denom)
 }
 
 // deleteTokenPair deletes the token pair for the given id
@@ -74,38 +74,38 @@ func (k Keeper) deleteTokenPair(ctx sdk.Context, id []byte) {
 	store.Delete(id)
 }
 
-// GetERC20Map returns the token pair id for the given address
-func (k Keeper) GetERC20Map(ctx sdk.Context, erc20 common.Address) []byte {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefixTokenPairByERC20)
+// GetTokenPairIdByERC20Addr returns the token pair id for the given address
+func (k Keeper) GetTokenPairIdByERC20Addr(ctx sdk.Context, erc20 common.Address) []byte {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefixTokenPairByERC20Address)
 	return store.Get(erc20.Bytes())
 }
 
-// GetDenomMap returns the token pair id for the given denomination
-func (k Keeper) GetDenomMap(ctx sdk.Context, denom string) []byte {
+// GetTokenPairIdByDenom returns the token pair id for the given denomination
+func (k Keeper) GetTokenPairIdByDenom(ctx sdk.Context, denom string) []byte {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefixTokenPairByDenom)
 	return store.Get([]byte(denom))
 }
 
-// SetERC20Map sets the token pair id for the given address
-func (k Keeper) SetERC20Map(ctx sdk.Context, erc20 common.Address, id []byte) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefixTokenPairByERC20)
+// SetTokenPairIdByERC20Addr sets the token pair id for the given address
+func (k Keeper) SetTokenPairIdByERC20Addr(ctx sdk.Context, erc20 common.Address, id []byte) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefixTokenPairByERC20Address)
 	store.Set(erc20.Bytes(), id)
 }
 
-// deleteERC20Map deletes the token pair id for the given address
-func (k Keeper) deleteERC20Map(ctx sdk.Context, erc20 common.Address) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefixTokenPairByERC20)
+// deleteTokenPairIdByERC20Addr deletes the token pair id for the given address
+func (k Keeper) deleteTokenPairIdByERC20Addr(ctx sdk.Context, erc20 common.Address) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefixTokenPairByERC20Address)
 	store.Delete(erc20.Bytes())
 }
 
-// SetDenomMap sets the token pair id for the denomination
-func (k Keeper) SetDenomMap(ctx sdk.Context, denom string, id []byte) {
+// SetTokenPairIdByDenom sets the token pair id for the denomination
+func (k Keeper) SetTokenPairIdByDenom(ctx sdk.Context, denom string, id []byte) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefixTokenPairByDenom)
 	store.Set([]byte(denom), id)
 }
 
-// deleteDenomMap deletes the token pair id for the given denom
-func (k Keeper) deleteDenomMap(ctx sdk.Context, denom string) {
+// deleteTokenPairIdByDenom deletes the token pair id for the given denom
+func (k Keeper) deleteTokenPairIdByDenom(ctx sdk.Context, denom string) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefixTokenPairByDenom)
 	store.Delete([]byte(denom))
 }
@@ -118,7 +118,7 @@ func (k Keeper) IsTokenPairRegistered(ctx sdk.Context, id []byte) bool {
 
 // IsERC20Registered check if registered ERC20 token is registered
 func (k Keeper) IsERC20Registered(ctx sdk.Context, erc20 common.Address) bool {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefixTokenPairByERC20)
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefixTokenPairByERC20Address)
 	return store.Has(erc20.Bytes())
 }
 
@@ -126,4 +126,58 @@ func (k Keeper) IsERC20Registered(ctx sdk.Context, erc20 common.Address) bool {
 func (k Keeper) IsDenomRegistered(ctx sdk.Context, denom string) bool {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefixTokenPairByDenom)
 	return store.Has([]byte(denom))
+}
+
+func (k Keeper) GetAllTokenPairDenomIndexes(ctx sdk.Context) []types.TokenPairDenomIndex {
+	var idxs []types.TokenPairDenomIndex
+	k.IterateTokenPairDenomIndex(ctx, func(denom string, id []byte) (stop bool) {
+		idx := types.TokenPairDenomIndex{
+			Denom:       denom,
+			TokenPairId: id,
+		}
+		idxs = append(idxs, idx)
+		return false
+	})
+	return idxs
+}
+
+func (k Keeper) IterateTokenPairDenomIndex(ctx sdk.Context, cb func(denom string, id []byte) (stop bool)) {
+	prefixStore := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefixTokenPairByDenom)
+	iter := prefixStore.Iterator(nil, nil)
+	defer iter.Close()
+
+	for ; iter.Valid(); iter.Next() {
+		denom := string(iter.Key())
+		id := iter.Value()
+		if cb(denom, id) {
+			break
+		}
+	}
+}
+
+func (k Keeper) GetAllTokenPairERC20AddressIndexes(ctx sdk.Context) []types.TokenPairERC20AddressIndex {
+	var idxs []types.TokenPairERC20AddressIndex
+	k.IterateTokenPairERC20AddressIndex(ctx, func(erc20Addr common.Address, id []byte) (stop bool) {
+		idx := types.TokenPairERC20AddressIndex{
+			Erc20Address: erc20Addr.Bytes(),
+			TokenPairId:  id,
+		}
+		idxs = append(idxs, idx)
+		return false
+	})
+	return idxs
+}
+
+func (k Keeper) IterateTokenPairERC20AddressIndex(ctx sdk.Context, cb func(erc20Addr common.Address, id []byte) (stop bool)) {
+	prefixStore := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefixTokenPairByERC20Address)
+	iter := prefixStore.Iterator(nil, nil)
+	defer iter.Close()
+
+	for ; iter.Valid(); iter.Next() {
+		erc20Addr := common.BytesToAddress(iter.Key())
+		id := iter.Value()
+		if cb(erc20Addr, id) {
+			break
+		}
+	}
 }
