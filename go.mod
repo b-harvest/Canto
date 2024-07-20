@@ -253,6 +253,8 @@ require (
 
 replace (
 	cosmossdk.io/core => cosmossdk.io/core v0.11.0
+	// add working_hash.log for debugging
+	cosmossdk.io/store => github.com/b-harvest/cosmos-sdk/store v1.1.0-working-hash-log-1
 	github.com/99designs/keyring => github.com/cosmos/keyring v1.2.0
 	github.com/evmos/ethermint => github.com/b-harvest/ethermint v0.0.0-20240719053932-0712f9406146
 	// replace broken goleveldb

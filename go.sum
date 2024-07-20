@@ -202,8 +202,6 @@ cosmossdk.io/math v1.3.0 h1:RC+jryuKeytIiictDslBP9i1fhkVm6ZDmZEoNP316zE=
 cosmossdk.io/math v1.3.0/go.mod h1:vnRTxewy+M7BtXBNFybkuhSH4WfedVAAnERHgVFhp3k=
 cosmossdk.io/simapp v0.0.0-20231103111158-e83a20081ced h1:l5rW4cKGOGyo2ZinzmuhleebC5OpMEv3qsabKyRXUV0=
 cosmossdk.io/simapp v0.0.0-20231103111158-e83a20081ced/go.mod h1:EdpAqccZXp8XnV2FFMCdEt+Xq+3pbzIb2KzGAyi6GGc=
-cosmossdk.io/store v1.1.0 h1:LnKwgYMc9BInn9PhpTFEQVbL9UK475G2H911CGGnWHk=
-cosmossdk.io/store v1.1.0/go.mod h1:oZfW/4Fc/zYqu3JmQcQdUJ3fqu5vnYTn3LZFFy8P8ng=
 cosmossdk.io/tools/confix v0.1.0 h1:2OOZTtQsDT5e7P3FM5xqM0bPfluAxZlAwxqaDmYBE+E=
 cosmossdk.io/tools/confix v0.1.0/go.mod h1:TdXKVYs4gEayav5wM+JHT+kTU2J7fozFNqoVaN+8CdY=
 cosmossdk.io/x/circuit v0.1.0 h1:IAej8aRYeuOMritczqTlljbUVHq1E85CpBqaCTwYgXs=
@@ -272,6 +270,8 @@ github.com/aws/aws-sdk-go v1.44.122/go.mod h1:y4AeaBuwd2Lk+GepC1E9v0qOiTws0MIWAX
 github.com/aws/aws-sdk-go v1.44.224 h1:09CiaaF35nRmxrzWZ2uRq5v6Ghg/d2RiPjZnSgtt+RQ=
 github.com/aws/aws-sdk-go v1.44.224/go.mod h1:aVsgQcEevwlmQ7qHE9I3h+dtQgpqhFB+i8Phjh7fkwI=
 github.com/aws/aws-sdk-go-v2 v0.18.0/go.mod h1:JWVYvqSMppoMJC0x5wdwiImzgXTI9FuZwxzkQq9wy+g=
+github.com/b-harvest/cosmos-sdk/store v1.1.0-working-hash-log-1 h1:90XqDE/Z8DGESxrMs2RpmxX4qo834vzfczE/DnLYN5o=
+github.com/b-harvest/cosmos-sdk/store v1.1.0-working-hash-log-1/go.mod h1:ZW4eIE98wivInyQyhxU2nHqEielc/iZAcr41qNyWSrw=
 github.com/b-harvest/ethermint v0.0.0-20240719053932-0712f9406146 h1:qHtvqI+MSRvC6A6XWduH0DwYpi2dbnxxtg7R5paVb4A=
 github.com/b-harvest/ethermint v0.0.0-20240719053932-0712f9406146/go.mod h1:aANWhD82KaHGd2Q2zzaYR4m8KEn0ONiZ+fNkVmnddEs=
 github.com/benbjohnson/clock v1.1.0/go.mod h1:J11/hYXuz8f4ySSvYwY0FKfm+ezbsZBKZxNJlLklBHA=
