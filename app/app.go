@@ -337,7 +337,8 @@ func NewCanto(
 
 	eip712.SetEncodingConfig(encodingConfig)
 
-	baseAppOptions = append(baseAppOptions, baseapp.SetOptimisticExecution())
+	// TODO: Suspected bug in OptimisticExecution, temporarily commented out.
+	//baseAppOptions = append(baseAppOptions, baseapp.SetOptimisticExecution())
 
 	// NOTE we use custom transaction decoder that supports the sdk.Tx interface instead of sdk.StdTx
 	// Setup Mempool and Proposal Handlers
