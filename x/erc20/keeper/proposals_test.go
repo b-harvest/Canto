@@ -82,24 +82,8 @@ func (suite KeeperTestSuite) TestRegisterCoin() {
 			"fail: metadata different that stored",
 			func() {
 				metadata.Base = gravitonDenom
-				validMetadata := banktypes.Metadata{
-					Description: "description",
-					Base:        gravitonIBCDenom,
-					// NOTE: Denom units MUST be increasing
-					DenomUnits: []*banktypes.DenomUnit{
-						{
-							Denom:    gravitonIBCDenom,
-							Exponent: 0,
-						},
-						{
-							Denom:    gravitonDenom,
-							Exponent: defaultExponent,
-						},
-					},
-					Name:    "different name",
-					Symbol:  gravitonSymbol,
-					Display: gravitonDenom,
-				}
+				validMetadata := metadata
+				validMetadata.Name = "different"
 
 				err := suite.app.BankKeeper.MintCoins(suite.ctx, inflationtypes.ModuleName, sdk.Coins{sdk.NewInt64Coin(validMetadata.Base, 1)})
 				suite.Require().NoError(err)
@@ -165,6 +149,9 @@ func (suite KeeperTestSuite) TestRegisterCoin() {
 				metadata.Base = gravitonIBCDenom
 				err := suite.app.BankKeeper.MintCoins(suite.ctx, inflationtypes.ModuleName, sdk.Coins{sdk.NewInt64Coin(metadata.Base, 1)})
 				suite.Require().NoError(err)
+
+				acc := suite.app.AccountKeeper.GetAccount(suite.ctx, types.ModuleAddress.Bytes())
+				suite.app.AccountKeeper.RemoveAccount(suite.ctx, acc)
 			},
 			false,
 		},
@@ -177,6 +164,7 @@ func (suite KeeperTestSuite) TestRegisterCoin() {
 
 				tokenPair, err := suite.app.Erc20Keeper.RegisterCoin(suite.ctx, metadata)
 				suite.Require().NoError(err)
+				suite.Commit()
 
 				// check token pair is stored
 				suite.Require().Equal(types.OWNER_MODULE, tokenPair.ContractOwner)
