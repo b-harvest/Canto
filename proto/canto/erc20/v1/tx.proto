@@ -43,7 +43,7 @@ service Msg {
 // MsgConvertCoin defines a Msg to convert a native Cosmos coin to a ERC20 token
 message MsgConvertCoin {
   option (cosmos.msg.v1.signer) = "sender";
-  option (amino.name) = "canto/MsgConvertCoin";
+  option (amino.name) = "canto/x/erc20/MsgConvertCoin";
 
   // Cosmos coin which denomination is registered in a token pair. The coin
   // amount defines the amount of coins to convert.
@@ -61,7 +61,7 @@ message MsgConvertCoinResponse {}
 // coin.
 message MsgConvertERC20 {
   //  option (cosmos.msg.v1.signer) = "sender";
-  option (amino.name) = "canto/MsgConvertERC20";
+  option (amino.name) = "canto/x/erc20/MsgConvertERC20";
 
   // ERC20 token contract address registered in a token pair
   string contract_address = 1;
@@ -109,7 +109,7 @@ message MsgRegisterCoin {
   // authority is the address that controls the module (defaults to x/gov unless
   // overwritten).
   string authority = 1 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
-  option (amino.name) = "canto/MsgRegisterCoin";
+  option (amino.name) = "canto/x/erc20/MsgRegisterCoin";
 
   option (gogoproto.equal) = false;
   // title of the proposal
@@ -130,7 +130,7 @@ message MsgRegisterERC20 {
   // authority is the address that controls the module (defaults to x/gov unless
   // overwritten).
   string authority = 1 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
-  option (amino.name) = "canto/MsgRegisterERC20";
+  option (amino.name) = "canto/x/erc20/MsgRegisterERC20";
 
   option (gogoproto.equal) = false;
   // title of the proposa  string title = 1;
@@ -151,7 +151,7 @@ message MsgToggleTokenConversion {
   // authority is the address that controls the module (defaults to x/gov unless
   // overwritten).
   string authority = 1 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
-  option (amino.name) = "canto/MsgToggleTokenConversion";
+  option (amino.name) = "canto/x/erc20/MsgToggleTokenConversion";
   option (gogoproto.equal) = true;
   // title of the proposal
   string title = 2;

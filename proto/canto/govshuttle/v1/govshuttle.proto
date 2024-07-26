@@ -14,6 +14,7 @@ message Params { option (gogoproto.goproto_stringer) = false; }
 // Deprecated: This legacy proposal is deprecated in favor of Msg-based gov
 // proposals, see MsgLendingMarketProposal.
 message LendingMarketProposal {
+  option deprecated = true;
   option (gogoproto.equal) = false;
   option (cosmos_proto.implements_interface) =
       "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1.Content";
@@ -30,6 +31,7 @@ message LendingMarketProposal {
 // Deprecated: This legacy proposal is deprecated in favor of Msg-based gov
 // proposals, see MsgTreasuryProposal.
 message TreasuryProposal {
+  option deprecated = true;
   option (gogoproto.equal) = false;
   option (cosmos_proto.implements_interface) =
       "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1.Content";

@@ -54,8 +54,6 @@ func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 }
 
 func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
-	legacy.RegisterAminoMsg(cdc, &LendingMarketProposal{}, "canto/LendingMarketProposal")
-	legacy.RegisterAminoMsg(cdc, &TreasuryProposal{}, "canto/TreasuryProposal")
-	legacy.RegisterAminoMsg(cdc, &MsgLendingMarketProposal{}, "canto/MsgLendingMarketProposal")
-	legacy.RegisterAminoMsg(cdc, &MsgTreasuryProposal{}, "canto/MsgTreasuryProposal")
+	legacy.RegisterAminoMsg(cdc, &MsgLendingMarketProposal{}, "canto/x/govshuttle/MsgLendingMarketProposal")
+	legacy.RegisterAminoMsg(cdc, &MsgTreasuryProposal{}, "canto/x/govshuttle/MsgTreasuryProposal")
 }

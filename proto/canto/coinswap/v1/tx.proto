@@ -37,7 +37,7 @@ service Msg {
 // MsgAddLiquidity defines a msg for adding liquidity to a reserve pool
 message MsgAddLiquidity {
   option (cosmos.msg.v1.signer) = "sender";
-  option (amino.name) = "canto/MsgAddLiquidity";
+  option (amino.name) = "canto/x/coinswap/MsgAddLiquidity";
 
   cosmos.base.v1beta1.Coin max_token = 1 [
     (gogoproto.nullable) = false,
@@ -65,7 +65,7 @@ message MsgAddLiquidityResponse { cosmos.base.v1beta1.Coin mint_token = 1; }
 // MsgRemoveLiquidity defines a msg for removing liquidity from a reserve pool
 message MsgRemoveLiquidity {
   option (cosmos.msg.v1.signer) = "sender";
-  option (amino.name) = "canto/MsgRemoveLiquidity";
+  option (amino.name) = "canto/x/coinswap/MsgRemoveLiquidity";
 
   cosmos.base.v1beta1.Coin withdraw_liquidity = 1 [
     (gogoproto.nullable) = false,
@@ -95,7 +95,7 @@ message MsgRemoveLiquidityResponse {
 // MsgSwapOrder defines a msg for swap order
 message MsgSwapOrder {
   option (cosmos.msg.v1.signer) = "input";
-  option (amino.name) = "canto/MsgSwapOrder";
+  option (amino.name) = "canto/x/coinswap/MsgSwapOrder";
 
   Input input = 1 [ (gogoproto.nullable) = false ];
   Output output = 2 [ (gogoproto.nullable) = false ];
