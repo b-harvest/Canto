@@ -113,13 +113,13 @@ func TestWorkingHash(t *testing.T) {
 	})
 	require.NoError(t, err)
 
+	// Call FinalizeBlock to calculate each module's working hash.
+	// Without calling this, all module's root node will have empty hash.
 	_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
 		Height: gdoc.InitialHeight,
 		Time:   time.Now(),
 	})
 	require.NoError(t, err)
-	//_, err = app.Commit()
-	//require.NoError(t, err)
 
 	storeKeys := app.GetStoreKeys()
 	// deterministicKeys are module keys which has always same working hash whenever run this test. (non deterministic module: staking)
