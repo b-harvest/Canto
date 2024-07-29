@@ -149,7 +149,7 @@ func TestWorkingHash(t *testing.T) {
 		stakingtypes.StoreKey:     "48c4ec05af62a8171124c88c2aeca67ca281a71df7047767ba0004d82e80ad84",
 		upgradetypes.StoreKey:     "530a41d3858a8f8fb48ec710e543d633ff0b9ab71500f7c98a13515e53a0f6cd",
 	}
-	// workingHashWithZeroInitialHeight is the working hash of the IAVL store with correct initial height 4 with given genesis.
+	// workingHashWithCorrectInitialHeight is the working hash of the IAVL store with correct initial height 4 with given genesis.
 	workingHashWithCorrectInitialHeight := map[string]string{
 		authtypes.StoreKey:        "b513a8bc783341508209bef42f2ca0d97f2e12e3f977e494d30ccd06ba2049f3",
 		banktypes.StoreKey:        "cf0406a0e743fd4297d67b80dc245c81c466d722c8f2415c97b892d1da592c19",
