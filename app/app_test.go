@@ -8,17 +8,18 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
+
+	dbm "github.com/cosmos/cosmos-db"
+
+	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/state"
+	cbfttypes "github.com/cometbft/cometbft/types"
+
 	"cosmossdk.io/log"
 	"cosmossdk.io/store/iavl"
 	storetypes "cosmossdk.io/store/types"
 	upgradetypes "cosmossdk.io/x/upgrade/types"
-	coinswaptypes "github.com/Canto-Network/Canto/v7/x/coinswap/types"
-	epochstypes "github.com/Canto-Network/Canto/v7/x/epochs/types"
-	inflationtypes "github.com/Canto-Network/Canto/v7/x/inflation/types"
-	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/state"
-	tmtypes2 "github.com/cometbft/cometbft/types"
-	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -30,13 +31,17 @@ import (
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+
 	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
 	ibctransfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
+
 	evmtypes "github.com/evmos/ethermint/x/evm/types"
 	feemarkettypes "github.com/evmos/ethermint/x/feemarket/types"
-	"github.com/stretchr/testify/require"
 
 	"github.com/Canto-Network/Canto/v7/types"
+	coinswaptypes "github.com/Canto-Network/Canto/v7/x/coinswap/types"
+	epochstypes "github.com/Canto-Network/Canto/v7/x/epochs/types"
+	inflationtypes "github.com/Canto-Network/Canto/v7/x/inflation/types"
 )
 
 func TestCantoExport(t *testing.T) {
@@ -107,7 +112,7 @@ func TestWorkingHash(t *testing.T) {
 		Time:            gdoc.GenesisTime,
 		ChainId:         gdoc.ChainID,
 		ConsensusParams: &pbparams,
-		Validators:      tmtypes2.TM2PB.ValidatorUpdates(gs.Validators),
+		Validators:      cbfttypes.TM2PB.ValidatorUpdates(gs.Validators),
 		AppStateBytes:   gdoc.AppState,
 		InitialHeight:   gdoc.InitialHeight,
 	})
