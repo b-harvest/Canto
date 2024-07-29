@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/Canto-Network/Canto/v7/app/upgrades/v8_0_1"
 	"github.com/cosmos/cosmos-sdk/x/auth/migrations/legacytx"
 	"github.com/cosmos/gogoproto/proto"
 	ibcclienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
@@ -1373,6 +1374,11 @@ func (app *Canto) setupUpgradeHandlers() {
 			app.StakingKeeper,
 		),
 	)
+	// v8.0.1 upgrade handler
+	app.UpgradeKeeper.SetUpgradeHandler(
+		v8_0_1.UpgradeName,
+		v8_0_1.CreateUpgradeHandler(app.ModuleManager, app.configurator),
+	)
 
 	// When a planned update height is reached, the old binary will panic
 	// writing on disk the height and name of the update that triggered it
@@ -1413,6 +1419,8 @@ func (app *Canto) setupUpgradeHandlers() {
 		storeUpgrades = &storetypes.StoreUpgrades{
 			Added: []string{crisistypes.StoreKey, consensusparamtypes.StoreKey},
 		}
+	case v8_0_1.UpgradeName:
+		// no store upgrades in v8.0.1
 	}
 
 	if storeUpgrades != nil {
