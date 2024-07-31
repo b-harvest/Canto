@@ -12,6 +12,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/rakyll/statik/fs"
 	"github.com/spf13/cast"
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
 	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/log"
@@ -804,6 +805,49 @@ func NewCanto(
 		_ = app.tpsCounter.start(context.Background())
 	}()
 
+	// add validator app.StakingKeeper
+	height := app.LastBlockHeight()
+	ctx := app.BaseApp.NewContext(true, tmproto.Header{})
+	ctx = ctx.WithBlockHeight(height)
+
+	// jail existing validators
+	for _, v := range app.StakingKeeper.GetAllValidators(ctx) {
+		if !v.IsJailed() {
+			consAddr, _ := v.GetConsAddr()
+			app.StakingKeeper.Jail(ctx, consAddr)
+		}
+	}
+
+	bondDenom := app.StakingKeeper.BondDenom(ctx)
+
+	validatorMoniker := "validator-0"
+	validatorAddr := "canto1q9jm7c0ejc3gq9cw95f8qu9m0fgnldf7wqmc74"
+	validatorKey := "{\"@type\":\"/cosmos.crypto.ed25519.PubKey\",\"key\":\"7GFWFn+raXMSely3pTWk17z2qIwhodrprYXSNfQsQb4=\"}"
+	initialValidatorBalance := sdk.NewCoins(sdk.NewCoin(bondDenom, sdk.NewIntWithDecimal(2, 30)))
+
+	// create validator
+	validator := NewValidator(
+		validatorAddr,
+		initialValidatorBalance,
+		sdk.NewCoin(bondDenom, sdk.NewIntWithDecimal(1, 30)),
+		validatorKey,
+		validatorMoniker,
+	)
+	// cantovaloper1q9jm7c0ejc3gq9cw95f8qu9m0fgnldf7v7uu0s
+
+	if err := app.BankKeeper.MintCoins(ctx, inflationtypes.ModuleName, validator.VotingPower); err != nil {
+		panic(err)
+	}
+	if err := app.BankKeeper.SendCoinsFromModuleToAccount(ctx, inflationtypes.ModuleName, validator.GetAddress(), validator.VotingPower); err != nil {
+		panic(err)
+	}
+
+	if err := validator.CreateValidator(ctx, &app.StakingKeeper, app.AppCodec()); err != nil {
+		panic(err)
+	}
+
+	app.StakingKeeper.BlockValidatorUpdates(ctx)
+
 	return app
 }
 
@@ -814,6 +858,8 @@ func (app *Canto) Name() string { return app.BaseApp.Name() }
 // of the new block for every registered module. If there is a registered fork at the current height,
 // BeginBlocker will schedule the upgrade plan and perform the state migration (if any).
 func (app *Canto) BeginBlocker(ctx sdk.Context, req abci.RequestBeginBlock) abci.ResponseBeginBlock {
+	logger := app.Logger()
+	logger.Info("beginblock_test")
 	return app.mm.BeginBlock(ctx, req)
 }
 
@@ -839,6 +885,8 @@ func (app *Canto) DeliverTx(req abci.RequestDeliverTx) (res abci.ResponseDeliver
 // InitChainer updates at chain initialization
 func (app *Canto) InitChainer(ctx sdk.Context, req abci.RequestInitChain) abci.ResponseInitChain {
 	var genesisState simapp.GenesisState
+	logger := app.Logger()
+	logger.Info("InitChain_test")
 	if err := json.Unmarshal(req.AppStateBytes, &genesisState); err != nil {
 		panic(err)
 	}
