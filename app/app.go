@@ -1040,6 +1040,7 @@ func (app *Canto) Name() string { return app.BaseApp.Name() }
 
 // PreBlocker updates every pre begin block
 func (app *Canto) PreBlocker(ctx sdk.Context, _ *abci.RequestFinalizeBlock) (*sdk.ResponsePreBlock, error) {
+	fmt.Println("@@@@@@@@@@@@ PREBLOCKER @@@@@@@@@ ")
 	return app.ModuleManager.PreBlock(ctx)
 }
 
@@ -1047,6 +1048,7 @@ func (app *Canto) PreBlocker(ctx sdk.Context, _ *abci.RequestFinalizeBlock) (*sd
 // of the new block for every registered module. If there is a registered fork at the current height,
 // BeginBlocker will schedule the upgrade plan and perform the state migration (if any).
 func (app *Canto) BeginBlocker(ctx sdk.Context) (sdk.BeginBlock, error) {
+	fmt.Println("@@@@@@@@@@@@ BEGINBLOCKER @@@@@@@@@ ")
 	return app.ModuleManager.BeginBlock(ctx)
 }
 
@@ -1068,6 +1070,7 @@ func (app *Canto) InitChainer(ctx sdk.Context, req *abci.RequestInitChain) (*abc
 	if err := app.UpgradeKeeper.SetModuleVersionMap(ctx, app.ModuleManager.GetVersionMap()); err != nil {
 		panic(err)
 	}
+	fmt.Println("@@@@@@@@@@@@ init @@@@@@@@@ ")
 	return app.ModuleManager.InitGenesis(ctx, app.appCodec, genesisState)
 }
 
@@ -1371,12 +1374,21 @@ func (app *Canto) setupUpgradeHandlers() {
 			app.configurator,
 			app.IBCKeeper.ClientKeeper,
 			app.StakingKeeper,
+			app.BankKeeper,
+			app.appCodec,
+			//app.appCodec,
 		),
 	)
 
 	// When a planned update height is reached, the old binary will panic
 	// writing on disk the height and name of the update that triggered it
 	// This will read that value, and execute the preparations for the upgrade.
+
+	//upgradeInfo := upgradetypes.Plan{
+	//	Name:   "v8.0.0",
+	//	Height: 10738896,
+	//}
+
 	upgradeInfo, err := app.UpgradeKeeper.ReadUpgradeInfoFromDisk()
 	if err != nil {
 		panic(fmt.Errorf("failed to read upgrade info from disk: %w", err))
@@ -1416,10 +1428,31 @@ func (app *Canto) setupUpgradeHandlers() {
 	}
 
 	if storeUpgrades != nil {
+		fmt.Println("@@@@@@@@@@@@ store upgrade @@@@@@@@@ ")
 		// configure store loader that checks if version == upgradeHeight and applies store upgrades
 		app.SetStoreLoader(upgradetypes.UpgradeStoreLoader(upgradeInfo.Height, storeUpgrades))
+		//app.SetStoreLoader(UpgradeStoreLoader(upgradeInfo.Height, storeUpgrades))
 	}
+
 }
+
+//// UpgradeStoreLoader is used to prepare baseapp with a fixed StoreLoader
+//// pattern. This is useful for custom upgrade loading logic.
+//func UpgradeStoreLoader(upgradeHeight int64, storeUpgrades *storetypes.StoreUpgrades) baseapp.StoreLoader {
+//	return func(ms storetypes.CommitMultiStore) error {
+//		//if upgradeHeight == ms.LastCommitID().Version+1 {
+//		// Check if the current commit version and upgrade height matches
+//		if len(storeUpgrades.Renamed) > 0 || len(storeUpgrades.Deleted) > 0 || len(storeUpgrades.Added) > 0 {
+//			return ms.LoadLatestVersionAndUpgrade(storeUpgrades)
+//		}
+//		//}
+//
+//		fmt.Println("@@@@@@@@ upgrade store loader ")
+//
+//		// Otherwise load default store loader
+//		return baseapp.DefaultStoreLoader(ms)
+//	}
+//}
 
 func setupLegacyKeyTables(k *paramskeeper.Keeper) {
 	for _, subspace := range k.GetSubspaces() {
