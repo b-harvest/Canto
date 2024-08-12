@@ -15,6 +15,7 @@ import (
 
 	tmcli "github.com/tendermint/tendermint/libs/cli"
 	"github.com/tendermint/tendermint/libs/log"
+	tmtypes "github.com/tendermint/tendermint/types"
 	dbm "github.com/tendermint/tm-db"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
@@ -132,6 +133,8 @@ func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
 
 	// add rosetta
 	rootCmd.AddCommand(sdkserver.RosettaCommand(encodingConfig.InterfaceRegistry, encodingConfig.Marshaler))
+
+	rootCmd.PersistentFlags().Int64Var(&tmtypes.PriorityResetHeight, "reset-priority-height", 0, "reset priority height")
 
 	return rootCmd, encodingConfig
 }

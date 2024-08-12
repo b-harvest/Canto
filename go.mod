@@ -175,7 +175,7 @@ replace (
 	github.com/99designs/keyring => github.com/cosmos/keyring v1.1.7-0.20210622111912-ef00f8ac3d76
 	github.com/evmos/ethermint => github.com/Canto-Network/ethermint v0.19.3-hotfix
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
-	github.com/tendermint/tendermint => github.com/informalsystems/tendermint v0.34.25
+	github.com/tendermint/tendermint => github.com/b-harvest/tendermint v0.34.25-fix-priority
 	google.golang.org/grpc => google.golang.org/grpc v1.33.2
 )
 
