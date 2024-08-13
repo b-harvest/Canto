@@ -255,7 +255,7 @@ require (
 replace (
 	cosmossdk.io/core => cosmossdk.io/core v0.11.0
 	github.com/99designs/keyring => github.com/cosmos/keyring v1.2.0
-	github.com/cometbft/cometbft => github.com/b-harvest/cometbft v0.38.7-0.20240813111838-f355fccb8621
+	github.com/cometbft/cometbft => github.com/b-harvest/cometbft v0.38.7-0.20240813113152-2efee0b599b4
 	github.com/evmos/ethermint => github.com/b-harvest/ethermint v0.22.0-sdk50-1
 	// replace broken goleveldb
 	github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
