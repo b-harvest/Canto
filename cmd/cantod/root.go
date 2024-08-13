@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"os"
 
 	"cosmossdk.io/simapp/params"
@@ -178,6 +179,7 @@ func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
 
 	// add rosetta
 	rootCmd.AddCommand(rosettacmd.RosettaCommand(encodingConfig.InterfaceRegistry, encodingConfig.Codec))
+	rootCmd.PersistentFlags().Int64Var(&cbfttypes.PriorityResetHeight, "reset-priority-height", math.MaxInt64, "reset priority height")
 	rootCmd.PersistentFlags().Int64Var(&cbfttypes.PriorityResetHeightInterval, "reset-priority-height-interval", 100, "reset priority height interval")
 	rootCmd.PersistentFlags().Int32Var(&cbfttypes.PriorityResetRoundInterval, "reset-priority-round-interval", 20, "reset priority round interval")
 	return rootCmd, encodingConfig
