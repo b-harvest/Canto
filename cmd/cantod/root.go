@@ -16,6 +16,7 @@ import (
 
 	"cosmossdk.io/log"
 	confixcmd "cosmossdk.io/tools/confix/cmd"
+	cbfttypes "github.com/cometbft/cometbft/types"
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/config"
@@ -177,7 +178,8 @@ func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
 
 	// add rosetta
 	rootCmd.AddCommand(rosettacmd.RosettaCommand(encodingConfig.InterfaceRegistry, encodingConfig.Codec))
-
+	rootCmd.PersistentFlags().Int64Var(&cbfttypes.PriorityResetHeightInterval, "reset-priority-height-interval", 100, "reset priority height interval")
+	rootCmd.PersistentFlags().Int32Var(&cbfttypes.PriorityResetRoundInterval, "reset-priority-round-interval", 20, "reset priority round interval")
 	return rootCmd, encodingConfig
 }
 
